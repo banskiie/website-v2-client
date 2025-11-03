@@ -22,6 +22,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
+import { toast } from "sonner"
 
 const Login = () => {
   const [isPending, startTransition] = React.useTransition()
@@ -53,8 +54,12 @@ const Login = () => {
         } catch (error: any) {
           console.error(error.errors)
           if (error.name == "CombinedGraphQLErrors") {
+            if (error.errors[0].extensions.code == "INVALID_CREDENTIALS")
+              formApi.fieldInfo.username.instance?.setErrorMap({
+                onSubmit: { message: error.errors[0].message },
+              })
             const fieldErrors = error.errors[0].extensions.fields
-            if (fieldErrors)
+            if (fieldErrors) {
               fieldErrors.map(
                 ({ path, message }: { path: string; message: string }) =>
                   formApi.fieldInfo[
@@ -63,6 +68,7 @@ const Login = () => {
                     onSubmit: { message },
                   })
               )
+            }
           }
         }
       }),

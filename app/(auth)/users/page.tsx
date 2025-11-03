@@ -2,13 +2,8 @@
 import ColumnFilter from "@/components/table/column-filter"
 import DataTable from "@/components/table/data-table"
 import SortHeader from "@/components/table/sort-header"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  ButtonGroup,
-  ButtonGroupSeparator,
-  ButtonGroupText,
-} from "@/components/ui/button-group"
+import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group"
 import {
   InputGroup,
   InputGroupInput,
@@ -35,7 +30,7 @@ import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 import { ColumnDef } from "@tanstack/react-table"
 import { InfoIcon, Settings, Trash2Icon, UserCircle } from "lucide-react"
-import React, { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import FormDialog from "./dialogs/form"
 import { toast } from "sonner"
 import {
@@ -48,6 +43,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import ViewDialog from "./dialogs/view"
 import RoleBadge from "@/components/badges/role-badge"
+import StatusDialog from "./dialogs/status"
+import ActiveBadge from "@/components/badges/active-badge"
+import { Checkbox } from "@/components/ui/checkbox"
+import BatchMenu from "./dialogs/batch"
 
 const USERS = gql`
   query Users(
@@ -95,14 +94,22 @@ const USER_CHANGED = gql`
         role
         isActive
       }
+      users {
+        _id
+        name
+        username
+        role
+        isActive
+      }
     }
   }
 `
 
 const ActionsColumn = ({ data }: { data?: IUserInput }) => {
   const user = useMemo(() => data, [data])
+  const [menuOpen, setMenuOpen] = useState(false)
   return (
-    <DropdownMenu>
+    <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon-sm">
           <Settings />
@@ -113,7 +120,13 @@ const ActionsColumn = ({ data }: { data?: IUserInput }) => {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <ViewDialog _id={user?._id} />
-          <FormDialog _id={user?._id} />
+          <FormDialog _id={user?._id} onClose={() => setMenuOpen(false)} />
+          <DropdownMenuSeparator />
+          <StatusDialog
+            _id={user?._id}
+            onClose={() => setMenuOpen(false)}
+            isActive={user?.isActive}
+          />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -144,6 +157,8 @@ const Page = () => {
   const [filter, setFilter] = useState<
     { key: string; value: string; type: string }[]
   >([])
+  // Selected Rows
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   // Table Data Fetching
   const { data, loading, fetchMore, subscribeToMore }: any = useQuery(USERS, {
     variables: {
@@ -162,7 +177,7 @@ const Page = () => {
       document: USER_CHANGED,
       updateQuery: (prev: any, { subscriptionData }: any) => {
         if (!subscriptionData.data) return prev
-        const { type, user } = subscriptionData.data.userChanged
+        const { type, user, users } = subscriptionData.data.userChanged
         // Update the users list based on the type of change
         switch (type) {
           case "CREATE":
@@ -210,6 +225,31 @@ const Page = () => {
                 total: prev.users.total - 1,
                 edges: prev.users.edges.filter(
                   (edge: any) => edge.node._id !== deletedUser._id
+                ),
+              },
+            })
+          case "BATCH_UPDATE":
+            const updatedUsers = users
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Batch update successful for ${updatedUsers.length} users.`
+            )
+            const updatedIds = new Set(updatedUsers.map((u: any) => u._id))
+            return Object.assign({}, prev, {
+              users: {
+                ...prev.users,
+                edges: prev.users.edges.map((edge: any) =>
+                  updatedIds.has(edge.node._id)
+                    ? {
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedUsers.find(
+                            (u: any) => u._id === edge.node._id
+                          ),
+                        },
+                      }
+                    : edge
                 ),
               },
             })
@@ -262,6 +302,51 @@ const Page = () => {
   // Table Columns
   const columns: ColumnDef<IUser>[] = useMemo(
     () => [
+      {
+        id: "select",
+        footer: () => {
+          return (
+            <Checkbox
+              checked={
+                selectedIds.size === data?.users.edges.length &&
+                data?.users.edges.length > 0
+              }
+              className="hover:cursor-pointer"
+              onCheckedChange={(value: boolean) => {
+                if (value) {
+                  const allIds = new Set<string>(
+                    data?.users.edges.map((edge: any) => edge.node._id)
+                  )
+                  setSelectedIds(allIds)
+                } else {
+                  setSelectedIds(new Set())
+                }
+              }}
+            />
+          )
+        },
+        cell: ({ row }) => {
+          const isChecked = selectedIds.has((row.original as any)._id)
+          return (
+            <Checkbox
+              checked={isChecked}
+              className="hover:cursor-pointer"
+              onCheckedChange={(value: boolean) => {
+                setSelectedIds((prev) => {
+                  const newSet = new Set(prev)
+                  if (value) {
+                    newSet.add((row.original as any)._id)
+                  } else {
+                    newSet.delete((row.original as any)._id)
+                  }
+                  return newSet
+                })
+              }}
+            />
+          )
+        },
+        size: 10,
+      },
       {
         accessorKey: "name",
         header: () => (
@@ -346,15 +431,10 @@ const Page = () => {
             onFilterChange={onFilter}
           />
         ),
-        cell: ({ row }) =>
-          row.original.isActive ? (
-            <Badge>Active</Badge>
-          ) : (
-            <Badge>Inactive</Badge>
-          ),
+        cell: ({ row }) => <ActiveBadge isActive={row.original.isActive} />,
       },
     ],
-    [sort, onSort, filter, onFilter]
+    [sort, onSort, filter, onFilter, selectedIds, data?.users]
   )
 
   // Next Page
@@ -446,14 +526,29 @@ const Page = () => {
           )}
         </InputGroup>
         <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <>
+              <BatchMenu
+                ids={Array.from(selectedIds)}
+                clearSelected={() => setSelectedIds(new Set())}
+              />
+              <Button
+                variant="outline-destructive"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                <Trash2Icon className="size-3.5" />
+                Clear Selection
+              </Button>
+            </>
+          )}
           {sort && (
-            <Button variant="destructive" onClick={() => onSort(null)}>
+            <Button variant="outline-destructive" onClick={() => onSort(null)}>
               <Trash2Icon className="size-3.5" />
               Clear Sorting
             </Button>
           )}
           {filter.length > 0 && (
-            <Button variant="destructive" onClick={() => onFilter([])}>
+            <Button variant="outline-destructive" onClick={() => onFilter([])}>
               <Trash2Icon className="size-3.5" />
               Clear Filtering
             </Button>
@@ -472,7 +567,13 @@ const Page = () => {
               <span className="text-sm text-muted-foreground">
                 Showing {(page.current - 1) * rows + 1}-
                 {page.current === page.max ? total : page.current * rows} out of{" "}
-                {total} result{total === 1 ? "" : "s"}.
+                {total} result{total === 1 ? "" : "s"}.{" "}
+                {selectedIds.size > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    ({selectedIds.size} row{selectedIds.size > 1 ? "s" : ""}{" "}
+                    selected)
+                  </span>
+                )}
               </span>
               {(sort || filter.length > 0 || search) && (
                 <Tooltip>

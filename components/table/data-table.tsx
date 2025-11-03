@@ -1,9 +1,16 @@
 "use client"
-import React, { cloneElement, ReactElement, ReactNode, useState } from "react"
+import React, {
+  cloneElement,
+  ReactElement,
+  ReactNode,
+  useEffect,
+  useState,
+} from "react"
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
+  RowSelectionState,
   useReactTable,
 } from "@tanstack/react-table"
 import {
@@ -15,6 +22,8 @@ import {
   TableCell,
 } from "../ui/table"
 import LoadingPage from "@/components/loading-page"
+import { on } from "events"
+import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
   loading?: boolean
@@ -103,7 +112,11 @@ const DataTable = <TData, TValue>({
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}
+                    className={cn(
+                      cell.column.id !== "select" && "cursor-pointer"
+                    )}
                     onClick={() => {
+                      if (cell.column.id === "select") return
                       setViewId((row.original as any)._id)
                       setOpenView((prev) => !prev)
                     }}

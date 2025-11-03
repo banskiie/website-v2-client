@@ -1,7 +1,12 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
-import { CheckIcon, ChevronsUpDownIcon, Eraser } from "lucide-react"
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronsUpDownIcon,
+  Eraser,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Select,
@@ -25,7 +30,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Label } from "../ui/label"
+import { Label } from "@/components/ui/label"
+import { DateRange } from "react-day-picker"
+import { formatDateRange } from "little-date"
+import { Calendar } from "@/components/ui/calendar"
+import { set } from "zod"
+import {
+  addHours,
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  endOfYear,
+  format,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+} from "date-fns"
 
 type IOption = {
   label: string
@@ -59,6 +80,27 @@ const ColumnFilter = ({
   )
   let filterComponent
   const [openCommand, setOpenCommand] = useState(false)
+  // Date Range Picker State
+  const [openDateRangePopover, setOpenDateRangePopover] = React.useState(false)
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
+    from: undefined,
+    to: undefined,
+  })
+
+  useEffect(() => {
+    if (
+      filterType === "DATE_RANGE" &&
+      filterValue.find((f) => f.key === filterKey)
+    ) {
+      const [from, to] = filterValue
+        .find((f) => f.key === filterKey)!
+        .value.split("_")
+      setDateRange({
+        from: from ? new Date(from) : undefined,
+        to: to ? new Date(to) : undefined,
+      })
+    }
+  }, [filterType, filterValue, filterKey])
 
   switch (filterType) {
     case "TEXT":
@@ -242,6 +284,148 @@ const ColumnFilter = ({
           )}
         </>
       )
+      break
+    case "DATE_RANGE":
+      filterComponent = (
+        <Popover
+          open={openDateRangePopover}
+          onOpenChange={setOpenDateRangePopover}
+        >
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              id="date"
+              className={cn(
+                "w-full justify-between font-medium text-muted-foreground",
+                dateRange?.from && dateRange?.to && "text-black"
+              )}
+            >
+              {dateRange?.from && dateRange?.to
+                ? formatDateRange(dateRange.from, dateRange.to, {
+                    includeTime: false,
+                  })
+                : `Filter ${label}`}
+              <ChevronDownIcon />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-auto overflow-hidden p-0 flex"
+            align="start"
+          >
+            <div className="p-2 flex flex-col items-center border-r space-y-1.5">
+              <Label className="text-sm font-normal text-muted-foreground text-center">
+                Quick Select
+              </Label>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() =>
+                  setDateRange({
+                    from: startOfDay(new Date()),
+                    to: endOfDay(new Date()),
+                  })
+                }
+              >
+                Today
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() =>
+                  setDateRange({
+                    from: startOfWeek(new Date()),
+                    to: endOfWeek(new Date()),
+                  })
+                }
+              >
+                This Week
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() =>
+                  setDateRange({
+                    from: startOfMonth(new Date()),
+                    to: endOfMonth(new Date()),
+                  })
+                }
+              >
+                This Month
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() =>
+                  setDateRange({
+                    from: startOfYear(new Date()),
+                    to: endOfYear(new Date()),
+                  })
+                }
+              >
+                This Year
+              </Button>
+            </div>
+            <div>
+              <Calendar
+                mode="range"
+                defaultMonth={dateRange?.from}
+                selected={dateRange}
+                onSelect={setDateRange}
+                numberOfMonths={2}
+              />
+              <div className="p-2 flex gap-2 justify-end">
+                <Button
+                  variant="outline-destructive"
+                  size="sm"
+                  onClick={() => {
+                    setDateRange({ from: undefined, to: undefined })
+                    onFilterChange((prev: any) =>
+                      prev.filter((f: any) => f.key !== filterKey)
+                    )
+                  }}
+                >
+                  Reset
+                </Button>
+                <Button
+                  variant="outline-info"
+                  size="sm"
+                  onClick={() => {
+                    setDateRange({ from: undefined, to: undefined })
+                  }}
+                >
+                  Clear
+                </Button>
+                <Button
+                  variant="outline-success"
+                  size="sm"
+                  onClick={() => {
+                    if (!dateRange?.from || !dateRange?.to) return
+                    const dateRangeISO = `${format(
+                      new Date(dateRange?.from),
+                      "yyyy-MM-dd"
+                    )}_${format(new Date(dateRange?.to), "yyyy-MM-dd")}`
+                    onFilterChange((prev: any) => [
+                      ...prev.filter((f: any) => f.key !== filterKey),
+                      {
+                        key: filterKey,
+                        value: dateRangeISO,
+                        type: "DATE_RANGE",
+                      },
+                    ])
+                  }}
+                >
+                  Filter
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      )
+      break
     default:
       break
   }
