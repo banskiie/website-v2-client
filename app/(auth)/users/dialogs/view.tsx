@@ -15,6 +15,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import RoleBadge from "@/components/badges/role-badge"
+import { Label } from "@/components/ui/label"
 
 const USER = gql`
   query User($_id: ID!) {
@@ -52,7 +53,6 @@ const ViewDialog = (props: Props) => {
       setOpen(value)
     }
   }
-  // Fetch existing date if updating
   const { data }: any = useQuery(USER, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
@@ -90,27 +90,23 @@ const ViewDialog = (props: Props) => {
           </DialogHeader>
           <div className="flex flex-col gap-2 -mt-2">
             <div>
-              <span className="block text-sm text-muted-foreground">Name</span>
+              <Label>Name</Label>
               <span className="block text-sm">{data?.user?.name}</span>
             </div>
             <div>
-              <span className="block text-sm text-muted-foreground">Email</span>
+              <Label>Email</Label>
               <span className="block text-sm">{data?.user?.email}</span>
             </div>
             <div>
-              <span className="block text-sm text-muted-foreground">
-                Contact Number
-              </span>
+              <Label>Contact Number</Label>
               <span className="block text-sm">{data?.user?.contactNumber}</span>
             </div>
             <div>
-              <span className="block text-sm text-muted-foreground">
-                Username
-              </span>
+              <Label>Username</Label>
               <span className="block text-sm">{data?.user?.username}</span>
             </div>
             <div>
-              <span className="block text-sm text-muted-foreground">Role</span>
+              <Label>Role</Label>
               <RoleBadge role={data?.user?.role} />
             </div>
           </div>

@@ -395,6 +395,18 @@ const Page = () => {
         size: 240,
       },
       {
+        accessorKey: "eventCount",
+        header: () => (
+          <SortHeader
+            label="Events"
+            sortKey="eventCount"
+            sortState={sort}
+            onSortChange={onSort}
+          />
+        ),
+        size: 10,
+      },
+      {
         accessorKey: "tournamentDates",
         header: () => (
           <SortHeader
