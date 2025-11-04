@@ -292,22 +292,40 @@ const ColumnFilter = ({
           onOpenChange={setOpenDateRangePopover}
         >
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              id="date"
-              className={cn(
-                "w-full justify-between font-medium text-muted-foreground",
-                dateRange?.from && dateRange?.to && "text-black"
+            <div className="w-full flex items-center">
+              <Button
+                variant="outline"
+                id="date"
+                className={cn(
+                  "flex-1 justify-between font-medium text-muted-foreground",
+                  dateRange?.from &&
+                    dateRange?.to &&
+                    "text-black rounded-r-none"
+                )}
+              >
+                {dateRange?.from && dateRange?.to
+                  ? formatDateRange(dateRange.from, dateRange.to, {
+                      includeTime: false,
+                    })
+                  : `Filter ${label}`}
+                <ChevronDownIcon />
+              </Button>
+              {dateRange?.from && dateRange?.to && (
+                <Button
+                  className="rounded-tl-none rounded-bl-none"
+                  variant="destructive"
+                  onClick={() => {
+                    onFilterChange((prev: any) =>
+                      prev.filter((f: any) => f.key !== filterKey)
+                    )
+                  }}
+                >
+                  <Eraser />
+                </Button>
               )}
-            >
-              {dateRange?.from && dateRange?.to
-                ? formatDateRange(dateRange.from, dateRange.to, {
-                    includeTime: false,
-                  })
-                : `Filter ${label}`}
-              <ChevronDownIcon />
-            </Button>
+            </div>
           </PopoverTrigger>
+
           <PopoverContent
             className="w-auto overflow-hidden p-0 flex"
             align="start"
