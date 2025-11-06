@@ -1,5 +1,4 @@
 "use client"
-
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { useState } from "react"
@@ -17,17 +16,17 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-const TOURNAMENT = gql`
-  query Tournament($_id: ID!) {
-    tournament(_id: $_id) {
+const EVENT = gql`
+  query Event($_id: ID!) {
+    event(_id: $_id) {
       name
     }
   }
 `
 
-const CHANGE_STATUS = gql`
-  mutation ChangeTournamentStatus($_id: ID!) {
-    changeTournamentStatus(_id: $_id) {
+const CHANGE_DISSOLVE_STATUS = gql`
+  mutation ChangeEventDissolveStatus($_id: ID!) {
+    changeEventDissolveStatus(_id: $_id) {
       ok
       message
     }
@@ -37,35 +36,35 @@ const CHANGE_STATUS = gql`
 type Props = {
   _id?: string
   onClose?: () => void
-  isActive?: boolean
+  isDissolved?: boolean
 }
 
-const StatusDialog = (props: Props) => {
+const DissolveDialog = (props: Props) => {
   // Dialog open state
   const [open, setOpen] = useState(false)
   // Fetch existing date if updating
-  const { data, loading: tournamentLoading }: any = useQuery(TOURNAMENT, {
+  const { data, loading: eventLoading }: any = useQuery(EVENT, {
     variables: { _id: props._id },
     skip: !open || !Boolean(props._id),
     fetchPolicy: "network-only",
   })
   // Mutation for changing status
   const [changeStatus, { loading: changeStatusLoading }] = useMutation(
-    CHANGE_STATUS,
+    CHANGE_DISSOLVE_STATUS,
     {
       variables: { _id: props._id },
     }
   )
   // Loading State
-  const loading = tournamentLoading || changeStatusLoading
+  const loading = eventLoading || changeStatusLoading
 
   const onSubmit = async () => {
     try {
       const result: any = await changeStatus()
       if (result) onClose()
     } catch (error: any) {
-      console.error("Error changing tournament status:", error)
-      toast.error(error.message || "Failed to change tournament status.")
+      console.error("Error changing event status:", error)
+      toast.error(error.message || "Failed to change event status.")
     }
   }
 
@@ -80,31 +79,31 @@ const StatusDialog = (props: Props) => {
         <AlertDialogTrigger asChild>
           <DropdownMenuItem
             className={cn(
-              props?.isActive ? "text-destructive" : "text-success"
+              props?.isDissolved ? "text-success" : "text-destructive "
             )}
             onSelect={(e) => e.preventDefault()}
           >
-            {props?.isActive ? "Deactivate" : "Activate"}
+            {props?.isDissolved ? "Reactivate" : "Dissolve"}
           </DropdownMenuItem>
         </AlertDialogTrigger>
         <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {props?.isActive ? "Deactivate" : "Activate"} Tournament:{" "}
-              {data?.tournament?.name}
+              {props?.isDissolved ? "Reactivate" : "Dissolve"} Event:{" "}
+              {data?.event?.name}
             </AlertDialogTitle>
             <AlertDialogDescription>
               <span className="block text-foreground">
                 Are you sure you want to{" "}
                 <span
                   className={cn(
-                    props?.isActive ? "text-destructive" : "text-success",
+                    props?.isDissolved ? "text-success" : "text-destructive",
                     "font-semibold underline"
                   )}
                 >
-                  {props?.isActive ? "deactivate" : "activate"}
+                  {props?.isDissolved ? "reactivate" : "dissolve"}
                 </span>{" "}
-                this tournament?
+                this event?
               </span>
               <span className="block text-xs">
                 (This may have unintended consequences on their access to the
@@ -118,13 +117,11 @@ const StatusDialog = (props: Props) => {
             </Button>
             <Button
               loading={loading}
-              variant={props?.isActive ? "destructive" : "success"}
               onClick={onSubmit}
-              className={cn(
-                props?.isActive ? "bg-destructive w-26" : "bg-success w-22"
-              )}
+              variant={props?.isDissolved ? "success" : "destructive"}
+              className={cn(props?.isDissolved ? "w-26" : "w-22")}
             >
-              {props?.isActive ? "Deactivate" : "Activate"}
+              {props?.isDissolved ? "Reactivate" : "Dissolve"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -133,4 +130,4 @@ const StatusDialog = (props: Props) => {
   )
 }
 
-export default StatusDialog
+export default DissolveDialog

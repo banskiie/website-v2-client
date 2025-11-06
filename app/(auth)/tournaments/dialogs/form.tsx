@@ -9,14 +9,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Role } from "@/types/user.interface"
-import { UserSchema } from "@/validators/user.validator"
+import { TournamentSchema } from "@/validators/tournament.validator"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
-import React, { useEffect, useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, ChevronsUpDownIcon, CirclePlus, Eraser } from "lucide-react"
+import { CalendarIcon, CirclePlus } from "lucide-react"
 import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import {
@@ -24,33 +23,44 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
 import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { format } from "date-fns"
+import { Calendar } from "@/components/ui/calendar"
 
-const USER = gql`
-  query User($_id: ID!) {
-    user(_id: $_id) {
+const TOURNAMENT = gql`
+  query Tournament($_id: ID!) {
+    tournament(_id: $_id) {
       name
-      email
-      contactNumber
-      username
-      role
+      settings {
+        hasEarlyBird
+        hasFreeJersey
+        ticket
+        maxEntriesPerPlayer
+      }
+      dates {
+        registrationStart
+        registrationEnd
+        earlyBirdRegistrationEnd
+        earlyBirdPaymentEnd
+        registrationPaymentEnd
+        tournamentStart
+        tournamentEnd
+      }
+      banks {
+        name
+        accountNumber
+        imageURL
+      }
     }
   }
 `
 
 const CREATE = gql`
-  mutation CreateUser($input: CreateUserInput!) {
-    createUser(input: $input) {
+  mutation CreateTournament($input: CreateTournamentInput!) {
+    createTournament(input: $input) {
       ok
       message
     }
@@ -58,8 +68,8 @@ const CREATE = gql`
 `
 
 const UPDATE = gql`
-  mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input) {
+  mutation UpdateTournament($input: UpdateTournamentInput!) {
+    updateTournament(input: $input) {
       ok
       message
     }
@@ -78,7 +88,7 @@ const FormDialog = (props: Props) => {
   const isUpdate = Boolean(props._id)
   const [isPending, startTransition] = useTransition()
   // Fetch existing date if updating
-  const { data, loading: fetchLoading }: any = useQuery(USER, {
+  const { data, loading: fetchLoading }: any = useQuery(TOURNAMENT, {
     variables: { _id: props._id },
     skip: !open || !isUpdate,
     fetchPolicy: "no-cache",
@@ -86,30 +96,48 @@ const FormDialog = (props: Props) => {
   // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
   // Combined loading state
-  const isLoading = isPending || fetchLoading
-  // Role Options
-  const [openRoles, setOpenRoles] = useState(false)
-  const Roles = Object.values(Role).map((role) => ({
-    label: role.toLocaleLowerCase().replaceAll("_", " "),
-    value: role,
-  }))
-
+  const loading = isUpdate ? isPending || fetchLoading : false
+  // Form setup
   const form = useForm({
     defaultValues: {
       name: "",
-      email: "",
-      contactNumber: "",
-      username: "",
-      role: Role.SUPPORT,
-    },
-    validators: {
-      onSubmit: UserSchema,
-    },
-    listeners: {
-      onChange: ({ formApi, fieldApi }) => {
-        // console.log(fieldApi.name, fieldApi.state.value)
+      banks: [{ name: "", accountNumber: "", imageURL: "" }],
+      settings: {
+        hasEarlyBird: false,
+        hasFreeJersey: false,
+        ticket: "",
+        maxEntriesPerPlayer: 3,
       },
-    }, // this is just for demo purposes
+      dates: {
+        registrationStart: undefined as Date | undefined,
+        registrationEnd: undefined as Date | undefined,
+        earlyBirdRegistrationEnd: undefined as Date | undefined,
+        earlyBirdPaymentEnd: undefined as Date | undefined,
+        registrationPaymentEnd: undefined as Date | undefined,
+        tournamentStart: undefined as Date | undefined,
+        tournamentEnd: undefined as Date | undefined,
+      },
+    },
+
+    validators: {
+      onSubmit: ({ formApi, value }) => {
+        try {
+          TournamentSchema.parse(value)
+        } catch (error: any) {
+          const formErrors = JSON.parse(error)
+          formErrors.map(
+            ({ path, message }: { path: string[]; message: string }) => {
+              const fieldPath = path.join(".")
+              formApi.fieldInfo[
+                fieldPath as keyof typeof formApi.fieldInfo
+              ]?.instance?.setErrorMap({
+                onSubmit: { message },
+              })
+            }
+          )
+        }
+      },
+    },
     onSubmit: ({ value, formApi }) =>
       startTransition(async () => {
         try {
@@ -125,12 +153,13 @@ const FormDialog = (props: Props) => {
             const fieldErrors = error.errors[0].extensions.fields
             if (fieldErrors)
               fieldErrors.map(
-                ({ path, message }: { path: string; message: string }) =>
+                ({ path, message }: { path: string; message: string }) => {
                   formApi.fieldInfo[
                     path as keyof typeof formApi.fieldInfo
-                  ].instance?.setErrorMap({
+                  ]?.instance?.setErrorMap({
                     onSubmit: { message },
                   })
+                }
               )
           }
         }
@@ -139,13 +168,44 @@ const FormDialog = (props: Props) => {
 
   useEffect(() => {
     if (data) {
-      const { name, email, contactNumber, username, role } = data.user
-      form.setFieldValue("name", name)
-      form.setFieldValue("email", email)
-      form.setFieldValue("contactNumber", contactNumber)
-      form.setFieldValue("username", username)
-      form.setFieldValue("role", role)
-      // form.reset({ name, email, contactNumber, username, role })
+      const { name, settings, banks, dates } = data.tournament
+      form.reset({
+        name,
+        settings: {
+          hasEarlyBird: settings.hasEarlyBird,
+          hasFreeJersey: settings.hasFreeJersey,
+          ticket: settings.ticket,
+          maxEntriesPerPlayer: settings.maxEntriesPerPlayer,
+        },
+        banks: banks.map((bank: any) => ({
+          name: bank.name,
+          accountNumber: bank.accountNumber,
+          imageURL: bank.imageURL,
+        })),
+        dates: {
+          registrationStart: dates.registrationStart
+            ? new Date(dates.registrationStart)
+            : undefined,
+          registrationEnd: dates.registrationEnd
+            ? new Date(dates.registrationEnd)
+            : undefined,
+          earlyBirdRegistrationEnd: dates.earlyBirdRegistrationEnd
+            ? new Date(dates.earlyBirdRegistrationEnd)
+            : undefined,
+          earlyBirdPaymentEnd: dates.earlyBirdPaymentEnd
+            ? new Date(dates.earlyBirdPaymentEnd)
+            : undefined,
+          registrationPaymentEnd: dates.registrationPaymentEnd
+            ? new Date(dates.registrationPaymentEnd)
+            : undefined,
+          tournamentStart: dates.tournamentStart
+            ? new Date(dates.tournamentStart)
+            : undefined,
+          tournamentEnd: dates.tournamentEnd
+            ? new Date(dates.tournamentEnd)
+            : undefined,
+        },
+      })
     }
   }, [isUpdate, data])
 
@@ -166,7 +226,7 @@ const FormDialog = (props: Props) => {
           ) : (
             <Button variant="outline-success">
               <CirclePlus className="size-3.5" />
-              Add User
+              Add Tournament
             </Button>
           )}
         </DialogTrigger>
@@ -176,205 +236,749 @@ const FormDialog = (props: Props) => {
           showCloseButton={false}
         >
           <DialogHeader>
-            <DialogTitle>{isUpdate ? "Edit User" : "Create User"}</DialogTitle>
+            <DialogTitle>
+              {isUpdate ? "Edit Tournament" : "Create Tournament"}
+            </DialogTitle>
             <DialogDescription>
               {isUpdate
-                ? "Update existing user details."
-                : "Create a new user in the system."}
+                ? "Update existing tournament details."
+                : "Create a new tournament in the system."}
             </DialogDescription>
           </DialogHeader>
           <form
-            className="-mt-2 mb-2"
-            id="user-form"
+            className=""
+            id="tournament-form"
             onSubmit={(e) => {
               e.preventDefault()
               form.handleSubmit()
             }}
           >
-            <FieldSet>
-              <form.Field
-                name="name"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Name</FieldLabel>
-                      <InputGroup className="-my-1">
-                        <InputGroupInput
-                          placeholder="Name"
-                          disabled={isPending}
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
+            <form.Subscribe
+              selector={(state) => state.values}
+              children={(state) => (
+                <Tabs defaultValue="details" className="">
+                  <TabsList className="w-full grid grid-cols-3 -mt-2 mb-1">
+                    <TabsTrigger value="details">Details</TabsTrigger>
+                    <TabsTrigger value="dates">Dates</TabsTrigger>
+                    <TabsTrigger value="banks">Banks</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="details">
+                    <FieldSet className="h-[48vh] overflow-y-auto">
+                      <form.Field
+                        name="name"
+                        children={(field) => {
+                          const isInvalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                              <InputGroup className="-my-1">
+                                <InputGroupInput
+                                  placeholder="Name"
+                                  disabled={loading}
+                                  id={field.name}
+                                  name={field.name}
+                                  value={field.state.value}
+                                  onBlur={field.handleBlur}
+                                  onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                  }
+                                  aria-invalid={isInvalid}
+                                />
+                              </InputGroup>
+                              {isInvalid && (
+                                <FieldError errors={field.state.meta.errors} />
+                              )}
+                            </Field>
+                          )
+                        }}
+                      />
+                      <div className="grid grid-cols-3 gap-2">
+                        <form.Field
+                          name="settings.ticket"
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field
+                                data-invalid={isInvalid}
+                                className="col-span-2"
+                              >
+                                <FieldLabel htmlFor={field.name}>
+                                  Ticket Name
+                                </FieldLabel>
+                                <InputGroup className="-my-1">
+                                  <InputGroupInput
+                                    placeholder="ex. V8"
+                                    disabled={loading}
+                                    id={field.name}
+                                    name={field.name}
+                                    value={field.state.value}
+                                    onBlur={field.handleBlur}
+                                    onChange={(e) =>
+                                      field.handleChange(e.target.value)
+                                    }
+                                    aria-invalid={isInvalid}
+                                  />
+                                </InputGroup>
+                                {isInvalid && (
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                )}
+                              </Field>
+                            )
+                          }}
                         />
-                      </InputGroup>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              />
-              <form.Field
-                name="username"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Username</FieldLabel>
-                      <InputGroup className="-my-1.5">
-                        <InputGroupInput
-                          disabled={isPending}
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                          placeholder="Username"
+                        <form.Field
+                          name="settings.maxEntriesPerPlayer"
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field data-invalid={isInvalid}>
+                                <FieldLabel htmlFor={field.name}>
+                                  Entries Per Player
+                                </FieldLabel>
+                                <InputGroup className="-my-1">
+                                  <InputGroupInput
+                                    placeholder="Name"
+                                    disabled={loading}
+                                    id={field.name}
+                                    name={field.name}
+                                    value={field.state.value}
+                                    onBlur={field.handleBlur}
+                                    onChange={(e) =>
+                                      field.handleChange(
+                                        parseInt(e.target.value)
+                                      )
+                                    }
+                                    type="number"
+                                    aria-invalid={isInvalid}
+                                    min={0}
+                                  />
+                                </InputGroup>
+                                {isInvalid && (
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                )}
+                              </Field>
+                            )
+                          }}
                         />
-                      </InputGroup>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              />
-              <form.Field
-                name="contactNumber"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Contact No.</FieldLabel>
-                      <InputGroup className="-my-1.5">
-                        <InputGroupInput
-                          disabled={isPending}
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                          placeholder="Contact No."
-                        />
-                      </InputGroup>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              />
-              <form.Field
-                name="email"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Email Address
-                      </FieldLabel>
-                      <InputGroup className="-my-1.5">
-                        <InputGroupInput
-                          disabled={isPending}
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                          placeholder="Email Address"
-                          type="email"
-                        />
-                      </InputGroup>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              />
-              <form.Field
-                name="role"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Role</FieldLabel>
-                      <Popover open={openRoles} onOpenChange={setOpenRoles}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            id={field.name}
-                            name={field.name}
-                            disabled={isPending}
-                            aria-expanded={openRoles}
-                            onBlur={field.handleBlur}
-                            variant="outline"
-                            role="combobox"
-                            aria-invalid={isInvalid}
-                            className="w-full justify-between font-normal capitalize -mt-2"
-                            type="button"
-                          >
-                            {field.state.value
-                              ? Roles.find((o) => o.value === field.state.value)
-                                  ?.label
-                              : "Select Role"}
-                            <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0">
-                          <Command>
-                            <CommandInput placeholder="Select Role" />
-                            <CommandList className="max-h-72 overflow-y-auto">
-                              <CommandEmpty>No role found.</CommandEmpty>
-                              <CommandGroup>
-                                <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
-                                  Roles
-                                </Label>
-                                {Roles?.map((o) => (
-                                  <CommandItem
-                                    key={o.value}
-                                    value={o.value}
-                                    onSelect={(v) => {
-                                      field.handleChange(v as Role)
-                                      setOpenRoles(false)
-                                    }}
-                                    className="capitalize"
-                                  >
-                                    <CheckIcon
-                                      className={cn(
-                                        "h-4 w-4",
-                                        field.state.value === o.value
-                                          ? "opacity-100"
-                                          : "opacity-0"
-                                      )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Settings</Label>
+                        <div className="rounded-md border py-3 space-y-2">
+                          <form.Field
+                            name="settings.hasEarlyBird"
+                            children={(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <div className="flex items-start gap-1 px-1.5">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(val) => {
+                                        field.handleChange(val as boolean)
+                                        form.setFieldValue(
+                                          "dates.earlyBirdRegistrationEnd",
+                                          undefined
+                                        )
+                                        form.setFieldValue(
+                                          "dates.earlyBirdPaymentEnd",
+                                          undefined
+                                        )
+                                      }}
+                                      className="m-1"
+                                      aria-invalid={isInvalid}
+                                      disabled={loading}
                                     />
-                                    {o.label}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
+                                    <div className="grid">
+                                      <FieldLabel htmlFor={field.name}>
+                                        Early Bird
+                                      </FieldLabel>
+                                      <span className="text-muted-foreground text-xs">
+                                        This tournament has{" "}
+                                        <span className="underline font-medium">
+                                          {field.state.value ? "" : " no"} early
+                                          bird bonuses and deadlines.
+                                        </span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {isInvalid && (
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                    />
+                                  )}
+                                </Field>
+                              )
+                            }}
+                          />
+                          <form.Field
+                            name="settings.hasFreeJersey"
+                            children={(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <div className="flex items-start gap-1 px-1.5">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(val) => {
+                                        field.handleChange(val as boolean)
+                                      }}
+                                      className="m-1"
+                                      aria-invalid={isInvalid}
+                                      disabled={loading}
+                                    />
+                                    <div className="grid">
+                                      <FieldLabel htmlFor={field.name}>
+                                        Free Jersey
+                                      </FieldLabel>
+                                      <span className="text-muted-foreground text-xs">
+                                        Players{" "}
+                                        <span className="font-medium underline">
+                                          {field.state.value
+                                            ? "receive"
+                                            : "do not receive"}{" "}
+                                          a free jersey upon registration.
+                                        </span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {isInvalid && (
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                    />
+                                  )}
+                                </Field>
+                              )
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </FieldSet>
+                  </TabsContent>
+                  <TabsContent value="dates">
+                    <FieldSet className="h-[48vh] overflow-y-auto">
+                      <div className="grid grid-cols-2 p-2.5 border rounded-md gap-2">
+                        <form.Field
+                          name="dates.tournamentStart"
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field data-invalid={isInvalid}>
+                                <FieldLabel id="tournament-start-date">
+                                  Start Date
+                                </FieldLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      id="tournament-start-date"
+                                      name="tournament-start-date"
+                                      variant="outline"
+                                      data-empty={!field.state.value}
+                                      className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -mt-1"
+                                      disabled={loading}
+                                    >
+                                      <CalendarIcon className="size-3.5" />
+                                      {field.state.value ? (
+                                        format(field.state.value, "PP")
+                                      ) : (
+                                        <span>Select Start Date</span>
+                                      )}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.state.value}
+                                      onSelect={field.handleChange}
+                                      disabled={{
+                                        before:
+                                          (state.dates
+                                            .registrationEnd as Date) ||
+                                          undefined,
+                                        after:
+                                          (state.dates.tournamentEnd as Date) ||
+                                          undefined,
+                                      }}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                {isInvalid && (
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                )}
+                              </Field>
+                            )
+                          }}
+                        />
+                        <form.Field
+                          name="dates.tournamentEnd"
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field data-invalid={isInvalid}>
+                                <FieldLabel id="tournament-end-date">
+                                  End Date
+                                </FieldLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      id="tournament-end-date"
+                                      name="tournament-end-date"
+                                      variant="outline"
+                                      data-empty={!field.state.value}
+                                      className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -mt-1"
+                                      disabled={loading}
+                                    >
+                                      <CalendarIcon className="size-3.5" />
+                                      {field.state.value ? (
+                                        format(field.state.value, "PP")
+                                      ) : (
+                                        <span>Select End Date</span>
+                                      )}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.state.value}
+                                      onSelect={field.handleChange}
+                                      disabled={{
+                                        before:
+                                          (state.dates
+                                            .tournamentStart as Date) ||
+                                          undefined,
+                                      }}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                {isInvalid && (
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                )}
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 p-2.5 border rounded-md gap-2">
+                        <form.Field
+                          name="dates.registrationStart"
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field data-invalid={isInvalid}>
+                                <FieldLabel id="registration-start-date">
+                                  Reg. Start
+                                </FieldLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      id="registration-start-date"
+                                      name="registration-start-date"
+                                      variant="outline"
+                                      data-empty={!field.state.value}
+                                      className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -mt-1"
+                                      disabled={loading}
+                                    >
+                                      <CalendarIcon className="size-3.5" />
+                                      {field.state.value ? (
+                                        format(field.state.value, "PP")
+                                      ) : (
+                                        <span>Select Start Date</span>
+                                      )}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.state.value}
+                                      onSelect={field.handleChange}
+                                      disabled={{
+                                        after:
+                                          (state.dates
+                                            .registrationEnd as Date) ||
+                                          undefined,
+                                      }}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                {isInvalid && (
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                )}
+                              </Field>
+                            )
+                          }}
+                        />
+                        <form.Field
+                          name="dates.registrationEnd"
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field data-invalid={isInvalid}>
+                                <FieldLabel id="registration-end-date">
+                                  Reg. End
+                                </FieldLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      id="registration-end-date"
+                                      name="registration-end-date"
+                                      variant="outline"
+                                      data-empty={!field.state.value}
+                                      className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -mt-1"
+                                      disabled={loading}
+                                    >
+                                      <CalendarIcon className="size-3.5" />
+                                      {field.state.value ? (
+                                        format(field.state.value, "PP")
+                                      ) : (
+                                        <span>Select End Date</span>
+                                      )}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.state.value}
+                                      onSelect={field.handleChange}
+                                      disabled={{
+                                        before:
+                                          (state.dates
+                                            .registrationStart as Date) ||
+                                          undefined,
+                                      }}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                {isInvalid && (
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                )}
+                              </Field>
+                            )
+                          }}
+                        />
+                        <form.Field
+                          name="dates.registrationPaymentEnd"
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field data-invalid={isInvalid}>
+                                <FieldLabel id="registration-payment-end-date">
+                                  Reg. Payment End
+                                </FieldLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      id="registration-payment-end-date"
+                                      name="registration-payment-end-date"
+                                      variant="outline"
+                                      data-empty={!field.state.value}
+                                      className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -mt-1"
+                                      disabled={loading}
+                                    >
+                                      <CalendarIcon className="size-3.5" />
+                                      {field.state.value ? (
+                                        format(field.state.value, "PP")
+                                      ) : (
+                                        <span>Select Payment End Date</span>
+                                      )}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.state.value}
+                                      onSelect={field.handleChange}
+                                      disabled={{
+                                        after:
+                                          (state.dates
+                                            .tournamentStart as Date) ||
+                                          undefined,
+                                      }}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                {isInvalid && (
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                )}
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
+                      {state.settings.hasEarlyBird && (
+                        <div className="grid grid-cols-2 p-2.5 border rounded-md gap-2">
+                          <form.Field
+                            name="dates.earlyBirdRegistrationEnd"
+                            children={(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <FieldLabel id="eb-end-date">
+                                    Early Bird End Date
+                                  </FieldLabel>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        id="eb-end-date"
+                                        name="eb-end-date"
+                                        variant="outline"
+                                        data-empty={!field.state.value}
+                                        className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -mt-1"
+                                        disabled={loading}
+                                      >
+                                        <CalendarIcon className="size-3.5" />
+                                        {field.state.value ? (
+                                          format(field.state.value, "PP")
+                                        ) : (
+                                          <span>
+                                            Select Early Bird End Date
+                                          </span>
+                                        )}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                      <Calendar
+                                        mode="single"
+                                        selected={field.state.value}
+                                        onSelect={field.handleChange}
+                                        disabled={{
+                                          before:
+                                            (state.dates
+                                              .registrationStart as Date) ||
+                                            undefined,
+                                        }}
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                  {isInvalid && (
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                    />
+                                  )}
+                                </Field>
+                              )
+                            }}
+                          />
+                          <form.Field
+                            name="dates.earlyBirdPaymentEnd"
+                            children={(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <FieldLabel id="eb-payment-end-date">
+                                    Early Bird Payment End Date
+                                  </FieldLabel>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        id="eb-payment-end-date"
+                                        name="eb-payment-end-date"
+                                        variant="outline"
+                                        data-empty={!field.state.value}
+                                        className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -mt-1"
+                                        disabled={loading}
+                                      >
+                                        <CalendarIcon className="size-3.5" />
+                                        {field.state.value ? (
+                                          format(field.state.value, "PP")
+                                        ) : (
+                                          <span>Select Payment End Date</span>
+                                        )}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                      <Calendar
+                                        mode="single"
+                                        selected={field.state.value}
+                                        onSelect={field.handleChange}
+                                        disabled={{
+                                          after:
+                                            (state.dates
+                                              .registrationEnd as Date) ||
+                                            undefined,
+                                          before:
+                                            (state.dates
+                                              .earlyBirdRegistrationEnd as Date) ||
+                                            undefined,
+                                        }}
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                  {isInvalid && (
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                    />
+                                  )}
+                                </Field>
+                              )
+                            }}
+                          />
+                        </div>
                       )}
-                    </Field>
-                  )
-                }}
-              />
-            </FieldSet>
+                    </FieldSet>
+                  </TabsContent>
+                  <TabsContent value="banks">
+                    <FieldSet className="h-[48vh] overflow-y-auto">
+                      <form.Field
+                        name="banks"
+                        mode="array"
+                        children={(field) => (
+                          <>
+                            {field.state.value.map((_, index) => (
+                              <FieldSet
+                                className="p-2.5 pb-4 border rounded-md"
+                                key={index}
+                                disabled={loading}
+                              >
+                                <form.Field
+                                  name={`banks[${index}].name`}
+                                  children={(subField) => {
+                                    const isInvalid =
+                                      subField.state.meta.isTouched &&
+                                      !subField.state.meta.isValid
+                                    return (
+                                      <Field data-invalid={isInvalid}>
+                                        <FieldLabel htmlFor={subField.name}>
+                                          Name
+                                        </FieldLabel>
+                                        <InputGroup className="-my-1">
+                                          <InputGroupInput
+                                            placeholder="Name"
+                                            disabled={isPending}
+                                            id={subField.name}
+                                            name={subField.name}
+                                            value={subField.state.value}
+                                            onBlur={subField.handleBlur}
+                                            onChange={(e) =>
+                                              subField.handleChange(
+                                                e.target.value
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                          />
+                                        </InputGroup>
+                                        {isInvalid && (
+                                          <FieldError
+                                            errors={subField.state.meta.errors}
+                                          />
+                                        )}
+                                      </Field>
+                                    )
+                                  }}
+                                />
+                                <form.Field
+                                  name={`banks[${index}].accountNumber`}
+                                  children={(subField) => {
+                                    const isInvalid =
+                                      subField.state.meta.isTouched &&
+                                      !subField.state.meta.isValid
+                                    return (
+                                      <Field data-invalid={isInvalid}>
+                                        <FieldLabel htmlFor={subField.name}>
+                                          Account Number
+                                        </FieldLabel>
+                                        <InputGroup className="-my-1">
+                                          <InputGroupInput
+                                            placeholder="Account Number"
+                                            disabled={isPending}
+                                            id={subField.name}
+                                            name={subField.name}
+                                            value={subField.state.value}
+                                            onBlur={subField.handleBlur}
+                                            onChange={(e) =>
+                                              subField.handleChange(
+                                                e.target.value
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                          />
+                                        </InputGroup>
+                                        {isInvalid && (
+                                          <FieldError
+                                            errors={subField.state.meta.errors}
+                                          />
+                                        )}
+                                      </Field>
+                                    )
+                                  }}
+                                />
+                                {field.state.value.length > 1 && (
+                                  <Button
+                                    onClick={() => field.removeValue(index)}
+                                    aria-label={`Remove email ${index + 1}`}
+                                    type="button"
+                                    variant="outline-destructive"
+                                  >
+                                    Remove Bank
+                                  </Button>
+                                )}
+                              </FieldSet>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline-info"
+                              size="sm"
+                              onClick={() =>
+                                field.pushValue({
+                                  name: "",
+                                  accountNumber: "",
+                                  imageURL: "",
+                                })
+                              }
+                              disabled={loading}
+                            >
+                              Add Bank
+                            </Button>
+                          </>
+                        )}
+                      />
+                    </FieldSet>
+                  </TabsContent>
+                </Tabs>
+              )}
+            />
           </form>
           <DialogFooter>
             <DialogClose asChild>
@@ -384,9 +988,9 @@ const FormDialog = (props: Props) => {
             </DialogClose>
             <Button
               className="w-20"
-              loading={isLoading}
+              loading={loading}
               type="submit"
-              form="user-form"
+              form="tournament-form"
             >
               Submit
             </Button>

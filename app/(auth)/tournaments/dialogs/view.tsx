@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/hover-card"
 import { Info } from "lucide-react"
 import { formatDateRange } from "little-date"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const TOURNAMENT = gql`
   query Tournament($_id: ID!) {
@@ -88,7 +89,7 @@ const ViewDialog = (props: Props) => {
     }
   }
   // Fetch existing date if updating
-  const { data }: any = useQuery(TOURNAMENT, {
+  const { data, loading }: any = useQuery(TOURNAMENT, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
     fetchPolicy: "no-cache",
@@ -120,7 +121,7 @@ const ViewDialog = (props: Props) => {
           showCloseButton={false}
         >
           <DialogHeader>
-            <DialogTitle>View Tournament: {tournament?.name}</DialogTitle>
+            <DialogTitle>View Tournament</DialogTitle>
             <DialogDescription>
               View the details of this tournament below.
             </DialogDescription>
@@ -133,10 +134,14 @@ const ViewDialog = (props: Props) => {
               <TabsTrigger value="events">Events</TabsTrigger>
             </TabsList>
             <TabsContent value="details">
-              <div className="grid grid-cols-1 content-start gap-2 h-[36vh] overflow-y-auto">
+              <div className="flex flex-col content-start gap-2 h-[36vh] overflow-y-auto">
                 <div className="col-span-2">
                   <Label>Name</Label>
-                  <span className="block text-sm">{tournament?.name}</span>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span className="block text-sm">{tournament?.name}</span>
+                  )}
                 </div>
                 <div>
                   <Label>
@@ -158,9 +163,13 @@ const ViewDialog = (props: Props) => {
                       </HoverCardContent>
                     </HoverCard>
                   </Label>
-                  <span className="block text-sm">
-                    {tournament?.settings?.ticket}
-                  </span>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span className="block text-sm">
+                      {tournament?.settings?.ticket}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <Label>
@@ -179,9 +188,13 @@ const ViewDialog = (props: Props) => {
                       </HoverCardContent>
                     </HoverCard>
                   </Label>
-                  <span className="block text-sm">
-                    {tournament?.settings?.maxEntriesPerPlayer}
-                  </span>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span className="block text-sm">
+                      {tournament?.settings?.maxEntriesPerPlayer}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <Label>
@@ -202,7 +215,11 @@ const ViewDialog = (props: Props) => {
                       </HoverCardContent>
                     </HoverCard>
                   </Label>
-                  <StatusBadge status={tournament?.settings?.hasFreeJersey} />
+                  {loading ? (
+                    <Skeleton className="my-1 w-20 h-4.25" />
+                  ) : (
+                    <StatusBadge status={tournament?.settings?.hasFreeJersey} />
+                  )}
                 </div>
                 <div>
                   <Label>
@@ -221,16 +238,24 @@ const ViewDialog = (props: Props) => {
                       </HoverCardContent>
                     </HoverCard>
                   </Label>
-                  <StatusBadge status={tournament?.settings?.hasEarlyBird} />
+                  {loading ? (
+                    <Skeleton className="my-1 w-20 h-4.25" />
+                  ) : (
+                    <StatusBadge status={tournament?.settings?.hasEarlyBird} />
+                  )}
                 </div>
                 <div>
                   <Label>Status</Label>
-                  <ActiveBadge isActive={tournament?.isActive} />
+                  {loading ? (
+                    <Skeleton className="my-1 w-20 h-4.25" />
+                  ) : (
+                    <ActiveBadge isActive={tournament?.isActive} />
+                  )}
                 </div>
               </div>
             </TabsContent>
             <TabsContent value="dates">
-              <div className="grid grid-cols-1 content-start gap-2 h-[36vh] overflow-y-auto">
+              <div className="flex flex-col content-start gap-2 h-[36vh] overflow-y-auto">
                 <div>
                   <Label>Tournament Period</Label>
                   <span className="block text-sm">
@@ -238,7 +263,10 @@ const ViewDialog = (props: Props) => {
                       new Date(
                         tournament?.dates?.tournamentStart || new Date()
                       ),
-                      new Date(tournament?.dates?.tournamentEnd || new Date())
+                      new Date(tournament?.dates?.tournamentEnd || new Date()),
+                      {
+                        includeTime: false,
+                      }
                     )}
                   </span>
                 </div>
@@ -246,90 +274,120 @@ const ViewDialog = (props: Props) => {
                   <>
                     <div>
                       <Label>Early Bird Registration Period</Label>
-                      <span className="block text-sm">
-                        {formatDateRange(
-                          new Date(
-                            tournament?.dates?.registrationStart || new Date()
-                          ),
-                          new Date(
-                            tournament?.dates?.earlyBirdRegistrationEnd ||
-                              new Date()
-                          )
-                        )}
-                      </span>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-sm">
+                          {formatDateRange(
+                            new Date(
+                              tournament?.dates?.registrationStart || new Date()
+                            ),
+                            new Date(
+                              tournament?.dates?.earlyBirdRegistrationEnd ||
+                                new Date()
+                            ),
+                            {
+                              includeTime: false,
+                            }
+                          )}
+                        </span>
+                      )}
                     </div>
                     <div>
                       <Label>Early Bird Payment Deadline</Label>
-                      <span className="block text-sm">
-                        {formatDateRange(
-                          new Date(
-                            tournament?.dates?.earlyBirdPaymentEnd || new Date()
-                          ),
-                          new Date(
-                            tournament?.dates?.earlyBirdPaymentEnd || new Date()
-                          ),
-                          {
-                            includeTime: false,
-                          }
-                        )}
-                      </span>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-sm">
+                          {formatDateRange(
+                            new Date(
+                              tournament?.dates?.earlyBirdPaymentEnd ||
+                                new Date()
+                            ),
+                            new Date(
+                              tournament?.dates?.earlyBirdPaymentEnd ||
+                                new Date()
+                            ),
+                            {
+                              includeTime: false,
+                            }
+                          )}
+                        </span>
+                      )}
                     </div>
                   </>
                 ) : null}
                 <div>
                   <Label>Registration Period</Label>
-                  <span className="block text-sm">
-                    {formatDateRange(
-                      new Date(
-                        tournament?.dates?.registrationStart || new Date()
-                      ),
-                      new Date(tournament?.dates?.registrationEnd || new Date())
-                    )}
-                  </span>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span className="block text-sm">
+                      {formatDateRange(
+                        new Date(
+                          tournament?.dates?.registrationStart || new Date()
+                        ),
+                        new Date(
+                          tournament?.dates?.registrationEnd || new Date()
+                        ),
+                        {
+                          includeTime: false,
+                        }
+                      )}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <Label>Registration Payment Deadline</Label>
-                  <span className="block text-sm">
-                    {formatDateRange(
-                      new Date(
-                        tournament?.dates?.registrationPaymentEnd || new Date()
-                      ),
-                      new Date(
-                        tournament?.dates?.registrationPaymentEnd || new Date()
-                      ),
-                      {
-                        includeTime: false,
-                      }
-                    )}
-                  </span>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span className="block text-sm">
+                      {formatDateRange(
+                        new Date(
+                          tournament?.dates?.registrationPaymentEnd ||
+                            new Date()
+                        ),
+                        new Date(
+                          tournament?.dates?.registrationPaymentEnd ||
+                            new Date()
+                        ),
+                        {
+                          includeTime: false,
+                        }
+                      )}
+                    </span>
+                  )}
                 </div>
               </div>
             </TabsContent>
             <TabsContent value="banks" className="flex flex-col gap-2">
-              <div className="grid grid-cols-1 content-start gap-2 h-[36vh] overflow-y-auto">
-                {tournament?.banks?.length > 0 ? (
-                  <div>
-                    <Label>Banks ({tournament?.banks?.length}) </Label>
-                    {tournament?.banks.map((bank: any, index: number) => (
+              <div className="h-[36vh] overflow-y-auto">
+                <div>
+                  <Label>Banks </Label>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : tournament?.banks?.length > 0 ? (
+                    tournament?.banks.map((bank: any, index: number) => (
                       <span className="block text-sm" key={index}>
                         {index + 1}. {bank?.name} - {bank?.accountNumber}
                       </span>
-                    ))}
-                  </div>
-                ) : null}
+                    ))
+                  ) : null}
+                </div>
               </div>
             </TabsContent>
             <TabsContent value="events" className="flex flex-col gap-2">
-              <div className="grid grid-cols-1 content-start gap-2 h-[36vh] overflow-y-auto">
-                {tournament?.events?.length > 0 ? (
-                  <div>
-                    <Label>Events ({tournament?.events?.length}) </Label>
-                    {tournament?.events.map((event: any, index: number) => (
-                      <span className="block text-sm" key={index}>
-                        {index + 1}. {event?.name}
-                      </span>
-                    ))}
-                  </div>
+              <div className="h-[36vh] overflow-y-auto">
+                <Label>Events</Label>
+                {loading ? (
+                  <Skeleton className="w-full my-1 h-3" />
+                ) : tournament?.events?.length > 0 ? (
+                  tournament?.events.map((event: any, index: number) => (
+                    <span className="block text-sm" key={index}>
+                      {index + 1}. {event?.name}
+                    </span>
+                  ))
                 ) : null}
               </div>
             </TabsContent>

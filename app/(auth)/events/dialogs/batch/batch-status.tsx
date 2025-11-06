@@ -26,11 +26,11 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
-const BATCH_CHANGE_TOURNAMENT_STATUS = gql`
-  mutation BatchChangeTournamentStatus(
-    $input: BatchChangeTournamentStatusInput!
+const BATCH_CHANGE_EVENT_DISSOLVE_STATUS = gql`
+  mutation BatchChangeEventDissolveStatus(
+    $input: BatchChangeEventDissolveStatusInput!
   ) {
-    batchChangeTournamentStatus(input: $input) {
+    batchChangeEventDissolveStatus(input: $input) {
       ok
       message
     }
@@ -46,12 +46,13 @@ type Props = {
 const BatchStatusDialog = (props: Props) => {
   // Dialog open state
   const [open, setOpen] = useState(false)
-  const [isActive, setIsActive] = useState(true)
+  const [isDissolved, setIsDissolved] = useState(true)
+
   // Mutation for changing status
   const [changeStatus, { loading: changeStatusLoading }] = useMutation(
-    BATCH_CHANGE_TOURNAMENT_STATUS,
+    BATCH_CHANGE_EVENT_DISSOLVE_STATUS,
     {
-      variables: { input: { _ids: props._ids, isActive } },
+      variables: { input: { _ids: props._ids, isDissolved } },
     }
   )
   // Loading State
@@ -65,8 +66,8 @@ const BatchStatusDialog = (props: Props) => {
         props.clearSelected?.()
       }
     } catch (error: any) {
-      console.error("Error changing tournament status:", error)
-      toast.error(error.message || "Failed to change tournament status.")
+      console.error("Error changing event dissolve status:", error)
+      toast.error(error.message || "Failed to change event dissolve status.")
     }
   }
 
@@ -80,20 +81,22 @@ const BatchStatusDialog = (props: Props) => {
       <form>
         <AlertDialogTrigger asChild>
           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-            Change Status
+            Change Dissolve Status
           </DropdownMenuItem>
         </AlertDialogTrigger>
         <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Batch Change Tournament Status</AlertDialogTitle>
+            <AlertDialogTitle>
+              Batch Change Event Dissolve Status
+            </AlertDialogTitle>
             <AlertDialogDescription>
               <span className="block text-foreground">
-                Are you sure you want to change the status of the selected
-                tournaments?
+                Are you sure you want to change the status of the selected event
+                dissolve?
               </span>
               <Select
-                onValueChange={(value) => setIsActive(value === "true")}
-                value={isActive.toString()}
+                onValueChange={(value) => setIsDissolved(value === "true")}
+                value={isDissolved.toString()}
               >
                 <SelectTrigger className="w-full mt-2 mb-3 text-black">
                   <SelectValue placeholder="Select a status" />
@@ -101,15 +104,11 @@ const BatchStatusDialog = (props: Props) => {
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Status</SelectLabel>
-                    <SelectItem value="true">Active</SelectItem>
-                    <SelectItem value="false">Inactive</SelectItem>
+                    <SelectItem value="true">Dissolve</SelectItem>
+                    <SelectItem value="false">Reactivate</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <span className="block text-xs">
-                <span className="text-destructive">*</span> Note: This may
-                affect various functionalities for the tournaments.
-              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -117,12 +116,12 @@ const BatchStatusDialog = (props: Props) => {
               Cancel
             </Button>
             <Button
-              variant={isActive ? "success" : "destructive"}
-              className={cn(isActive ? "w-22" : "w-26")}
+              variant={isDissolved ? "destructive" : "success"}
+              className={cn(isDissolved ? "w-22" : "w-26")}
               loading={loading}
               onClick={onSubmit}
             >
-              {isActive ? "Activate" : "Deactivate"}
+              {isDissolved ? "Dissolve" : "Reactivate"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
