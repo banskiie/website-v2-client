@@ -607,7 +607,7 @@ const FormDialog = (props: Props) => {
                               >
                                 <SelectTrigger
                                   aria-invalid={isInvalid}
-                                  className="-mt-1 uppercase"
+                                  className={cn("-mt-1", "uppercase")}
                                 >
                                   <SelectValue placeholder="Select" />
                                 </SelectTrigger>

@@ -34,7 +34,7 @@ import {
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 import { ColumnDef } from "@tanstack/react-table"
-import { InfoIcon, Settings, Trash2Icon, Trophy } from "lucide-react"
+import { InfoIcon, Settings, Trash2Icon, Flag } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import FormDialog from "./dialogs/form"
 import { toast } from "sonner"
@@ -47,12 +47,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import ViewDialog from "./dialogs/view"
-import RoleBadge from "@/components/badges/role-badge"
 import DissolveDialog from "./dialogs/dissolve"
-import ActiveBadge from "@/components/badges/active-badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import BatchMenu from "./dialogs/batch"
-import StatusBadge from "@/components/badges/status-badge"
 import { Badge } from "@/components/ui/badge"
 
 const EVENTS = gql`
@@ -535,7 +532,7 @@ const Page = () => {
   return (
     <div className="w-full h-full flex-1 flex flex-col gap-2">
       <div className="flex items-center gap-1 text-slate-900 -mb-1.5">
-        <Trophy className="size-5" />
+        <Flag className="size-5" />
         <Label className="text-2xl">Events</Label>
       </div>
       <div className="w-full flex justify-between">
