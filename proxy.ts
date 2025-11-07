@@ -74,8 +74,8 @@ export async function proxy(req: NextRequest) {
     (route) => route.needsAuth
   ).map((r) => r.path)
 
-  if (PUBLIC_ROUTES.includes(PATHNAME) && REFRESH_TOKEN)
-    return NextResponse.redirect(new URL("/dashboard", req.url))
+  // if (PUBLIC_ROUTES.includes(PATHNAME) && REFRESH_TOKEN)
+  //   return NextResponse.redirect(new URL("/dashboard", req.url))
 
   if (PROTECTED_ROUTES_PATHS.includes(PATHNAME)) {
     // If no refresh token, redirect to login
