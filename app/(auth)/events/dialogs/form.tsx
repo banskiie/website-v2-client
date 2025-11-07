@@ -854,7 +854,7 @@ const FormDialog = (props: Props) => {
                           return (
                             <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
-                                Minimum Age
+                                Maximum Age
                                 <HoverCard>
                                   <HoverCardTrigger className="inline-block -ml-1 hover:cursor-pointer">
                                     <Info className="size-3.25" />
@@ -906,7 +906,7 @@ const FormDialog = (props: Props) => {
                           return (
                             <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
-                                Maximum Age
+                                Minimum Age
                                 <HoverCard>
                                   <HoverCardTrigger className="inline-block -ml-1 hover:cursor-pointer">
                                     <Info className="size-3.25" />
