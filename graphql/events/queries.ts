@@ -27,7 +27,6 @@ export const PUBLIC_TOURNAMENTS = gql`
         maxAge
         minAge
         isDissolved
-        isActive
         createdAt
         updatedAt
       }

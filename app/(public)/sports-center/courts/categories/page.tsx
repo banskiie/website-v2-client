@@ -185,7 +185,7 @@ export default function CategoriesPage() {
             earlyBirdPricePerPlayer: event.earlyBirdPricePerPlayer,
             // hasEarlyBird: event.hasEarlyBird, it is in the event tourtnament foreign key id and teh settings hasearlybird
             currency: event.currency,
-            isActive: event.isActive,
+            isDissolved: event.isDissolved,
         }
     }) || []
 

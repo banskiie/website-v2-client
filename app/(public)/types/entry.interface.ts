@@ -33,6 +33,10 @@ export interface IEntryStatus {
   by: IUser
 }
 
+export interface EntryStatusHistoryData {
+  entryStatusHistory: IEntryStatus[]
+}
+
 export interface IEntry {
   _id: string
   entryNumber: string

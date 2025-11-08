@@ -1,61 +1,21 @@
 import gql from "graphql-tag";
 
-export const CHECK_ENTRY = gql`
-  query CheckEntry($entryNumber: String!, $entryKey: String!) {
-    checkEntry(entryNumber: $entryNumber, entryKey: $entryKey) {
-      _id
-      entryNumber
-      entryKey
-      club
-      isInSoftware
-      isEarlyBird
-      event {
+export const ENTRY_STATUS_HISTORY = gql`
+  query EntryStatusHistory($referenceNumber: String!) {
+    entryStatusHistory(referenceNumber: $referenceNumber) {
+      status
+      date
+      reason
+      by {
         _id
         name
-        gender
-        type
-        maxEntries
-        pricePerPlayer
-        earlyBirdPricePerPlayer
-        currency
-        location
-        maxAge
-        minAge
-        isDissolved
+        email
+        contactNumber
+        username
+        role
         isActive
         createdAt
         updatedAt
-      }
-      remarks {
-        remark
-        date
-        by {
-          _id
-          name
-          email
-          contactNumber
-          username
-          role
-          isActive
-          createdAt
-          updatedAt
-        }
-      }
-      statuses {
-        status
-        date
-        reason
-        by {
-          _id
-          name
-          email
-          contactNumber
-          username
-          role
-          isActive
-          createdAt
-          updatedAt
-        }
       }
     }
   }

@@ -29,9 +29,9 @@ import { DataReconciliationModal } from "./data-reconciliation"
 import ScrollIndicator from "./scroll-indicator"
 import { useLazyQuery, useQuery } from "@apollo/client/react"
 import { PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
-import { CHECK_ENTRY } from "@/graphql/entries/queries"
+import { ENTRY_STATUS_HISTORY } from "@/graphql/entries/queries"
 import { ITournament } from "@/app/(public)/types/tournament.interface"
-import { CheckEntryData } from "@/app/(public)/types/entry.interface"
+import { CheckEntryData, EntryStatusHistoryData, IEntryStatus } from "@/app/(public)/types/entry.interface"
 // const tournament = tournaments.find(t => t.isActive)
 
 export type PublicTournamentsData = {
@@ -780,117 +780,111 @@ export function CheckEntryModal({
 }) {
   const [showResult, setShowResult] = useState(false)
   const [entryValue, setEntryValue] = useState("")
-  const [foundEntry, setFoundEntry] = useState<any | null>(null)
+  const [statuses, setStatuses] = useState<IEntryStatus[]>([])
   const [error, setError] = useState("")
 
-  const [checkEntry, { loading, data, error: queryError }] =
-    useLazyQuery<CheckEntryData>(CHECK_ENTRY)
+  const [fetchStatusHistory, { loading, error: queryError }] =
+    useLazyQuery<EntryStatusHistoryData>(ENTRY_STATUS_HISTORY)
 
   useEffect(() => {
     if (isOpen) {
       setEntryValue("")
       setError("")
-      setFoundEntry(null)
+      setStatuses([])
       setShowResult(false)
     }
   }, [isOpen])
 
   const handleCheck = async () => {
     if (!entryValue.trim()) {
-      setError("Please enter your Entry Number and Entry Key.")
+      setError("Please enter your Entry Reference Number.")
       return
     }
 
     if (!entryValue.includes("_")) {
-      setError(
-        "Invalid format. Use EntryNum_EntryKey (e.g. V8-009809_kajKER55)."
-      )
+      setError("Invalid format. Use EntryNum_EntryKey (e.g. V8-009809_kajKER55).")
       return
     }
 
-    const [entryNumber, entryKey] = entryValue.split("_")
-
     try {
-      const { data } = await checkEntry({ variables: { entryNumber, entryKey } })
+      const { data } = await fetchStatusHistory({
+        variables: { referenceNumber: entryValue },
+      })
 
-      if (data?.checkEntry) {
-        setFoundEntry(data.checkEntry)
+      if (data?.entryStatusHistory?.length) {
+        setStatuses(data.entryStatusHistory)
         setShowResult(true)
         setError("")
       } else {
-        setError("Entry not found. Please double-check your Entry Number and Key.")
+        setError("No status history found for this entry.")
       }
     } catch (err) {
       console.error(err)
-      setError("Something went wrong while searching. Please try again.")
+      setError("Something went wrong while checking. Please try again.")
     }
   }
 
   const getStatusIcon = (status: string) => {
-    if (status.includes("PENDING"))
-      return <Clock className="w-5 h-5 text-yellow-500" />
-    if (status.includes("APPROVED"))
-      return <CheckCircle className="w-5 h-5 text-green-600" />
-    if (status.includes("VERIFIED"))
-      return <Mail className="w-5 h-5 text-blue-600" />
-    if (status.includes("PAYMENT"))
-      return <Wallet2Icon className="w-5 h-5 text-emerald-600" />
-    if (status.includes("REJECTED"))
-      return <AlertTriangle className="w-5 h-5 text-red-500" />
+    if (status.includes("PENDING")) return <Clock className="w-5 h-5 text-yellow-500" />
+    if (status.includes("APPROVED") || status.includes("ASSIGNED")) return <CheckCircle className="w-5 h-5 text-green-600" />
+    if (status.includes("VERIFIED")) return <Mail className="w-5 h-5 text-blue-600" />
+    if (status.includes("PAYMENT")) return <Wallet2Icon className="w-5 h-5 text-emerald-600" />
+    if (status.includes("REJECTED") || status.includes("CANCELLED")) return <AlertTriangle className="w-5 h-5 text-red-500" />
     return <Clock className="w-5 h-5 text-gray-400" />
   }
 
   const getStatusColor = (status: string) => {
     if (status.includes("PENDING")) return "text-yellow-600"
-    if (status.includes("APPROVED")) return "text-green-700"
+    if (status.includes("APPROVED") || status.includes("ASSIGNED")) return "text-green-700"
     if (status.includes("VERIFIED")) return "text-blue-700"
     if (status.includes("PAYMENT")) return "text-emerald-700"
-    if (status.includes("REJECTED")) return "text-red-700"
+    if (status.includes("REJECTED") || status.includes("CANCELLED")) return "text-red-700"
     return "text-gray-700"
   }
 
   return (
     <>
-      {/* 🔹 Input Modal */}
+      {/* 🟢 Input Modal */}
       <AnimatePresence>
         {isOpen && !showResult && (
           <motion.div
-            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
-            onClick={onClose}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+            // onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 relative"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative overflow-hidden"
               onClick={(e) => e.stopPropagation()}
-              initial={{ y: 50, opacity: 0 }}
+              initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 260, damping: 22 }}
             >
               <button
-                type="button"
                 onClick={(e) => {
                   e.stopPropagation()
                   onClose()
                 }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
               >
                 <X className="w-5 h-5" />
               </button>
 
-              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Trophy className="w-6 h-6 text-yellow-500" />
-                Check Entry
-              </h2>
+              <div className="text-center">
+                <div className="flex justify-center mb-3">
+                  <Trophy className="w-8 h-8 text-yellow-500" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-1">
+                  Check Entry
+                </h2>
+                <p className="text-sm text-gray-500 mb-6">
+                  Enter your <strong>Entry Reference Number</strong> to view its status.
+                </p>
+              </div>
 
-              <p className="text-sm text-gray-600 mb-4 text-left">
-                Enter your <strong>Entry Reference Number</strong> below:
-              </p>
-
-
-              <div className="mb-4">
+              <div className="mb-5">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -901,10 +895,11 @@ export function CheckEntryModal({
                       setEntryValue(e.target.value)
                       setError("")
                     }}
-                    className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${error
-                      ? "border-red-500 focus:ring-red-400"
-                      : "border-gray-300 focus:ring-green-400"
-                      }`}
+                    className={`w-full pl-10 pr-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition ${
+                      error
+                        ? "border-red-500 focus:ring-red-300"
+                        : "border-gray-300 focus:ring-green-400"
+                    }`}
                   />
                 </div>
                 {(error || queryError) && (
@@ -915,7 +910,7 @@ export function CheckEntryModal({
               </div>
 
               <Button
-                className="w-full bg-green-600 text-white cursor-pointer hover:bg-green-700"
+                className="w-full py-2.5 bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:opacity-70"
                 onClick={handleCheck}
                 disabled={loading}
               >
@@ -926,122 +921,94 @@ export function CheckEntryModal({
         )}
       </AnimatePresence>
 
+      {/* ✳️ Result Modal */}
       <AnimatePresence>
-        {showResult && foundEntry && (
+        {showResult && statuses.length > 0 && (
           <motion.div
-            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
-            onClick={() => {
-              setShowResult(false)
-              onClose()
-            }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+            // onClick={() => {
+            //   setShowResult(false)
+            //   onClose()
+            // }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh]"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative overflow-y-auto max-h-[85vh]"
               onClick={(e) => e.stopPropagation()}
-              initial={{ y: 50, opacity: 0 }}
+              initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 260, damping: 22 }}
             >
               <button
                 onClick={() => {
                   setShowResult(false)
                   onClose()
                 }}
-                className="absolute top-6 right-3 text-gray-400 cursor-pointer hover:text-gray-600"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
               >
                 <X className="w-5 h-5" />
               </button>
 
-              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Trophy className="w-6 h-6 text-yellow-500" />
-                Entry Status
-              </h2>
+              <div className="text-center mb-6">
+                <Trophy className="w-8 h-8 mx-auto text-yellow-500 mb-2" />
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Entry Status History
+                </h2>
 
-              <div className="text-sm text-gray-700 space-y-2 mb-4">
-                <p>
-                  <strong>Entry:</strong>{" "}
-                  <span className="font-mono">
-                    {foundEntry.entryNumber}_{foundEntry.entryKey}
-                  </span>
-                </p>
-                <p>
-                  <strong>Event:</strong> {foundEntry.event?.name}
-                </p>
-                <p>
-                  <strong>Club:</strong> {foundEntry.club || "N/A"}
-                </p>
-                <p>
-                  <strong>In Software:</strong>{" "}
-                  {foundEntry.isInSoftware ? "Yes" : "No"}
-                </p>
-                <p>
-                  <strong>Early Bird:</strong>{" "}
-                  {foundEntry.isEarlyBird ? "Yes" : "No"}
-                </p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-2">Statuses</h3>
-                <div className="space-y-3 max-h-60 overflow-y-auto">
-                  {foundEntry.statuses.map((statusItem: any, idx: number) => (
-                    <div key={idx} className="flex items-start gap-3">
-                      {getStatusIcon(statusItem.status)}
-                      <div>
-                        <p
-                          className={`${getStatusColor(
-                            statusItem.status
-                          )} font-medium`}
-                        >
-                          {new Date(statusItem.date).toLocaleString()} →{" "}
-                          {statusItem.status.replaceAll("_", " ")}
-                        </p>
-                        {statusItem.reason && (
-                          <p className="text-sm text-gray-500">
-                            Reason: {statusItem.reason}
-                          </p>
-                        )}
-                        {statusItem.by && (
-                          <p className="text-xs text-gray-400 italic">
-                            by {statusItem.by.name} ({statusItem.by.role})
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+               <div className="mt-3 inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-sm font-medium px-4 py-2 rounded-full shadow-sm border border-amber-100">
+                  Reference Number:&nbsp;
+                   <span className="font-semibold text-amber-800">{entryValue}</span>
                 </div>
+
+                <p className="text-sm text-gray-500 mt-3">
+                  Here’s the detailed status history for your entry.
+                </p>
               </div>
 
-              {foundEntry.remarks?.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="font-semibold text-gray-800 mb-2">Remarks</h3>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {foundEntry.remarks.map((remark: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="border p-2 rounded-md text-sm bg-gray-50"
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                {statuses.map((statusItem, idx) => (
+                  <motion.div
+                    key={idx}
+                    className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                  >
+                    {getStatusIcon(statusItem.status)}
+                    <div>
+                      <p
+                        className={`${getStatusColor(
+                          statusItem.status
+                        )} font-medium text-sm`}
                       >
-                        <p>{remark.remark}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(remark.date).toLocaleString()} —{" "}
-                          {remark.by?.name || "System"}
+                        {new Date(statusItem.date).toLocaleString()} →{" "}
+                        {statusItem.status.replaceAll("_", " ")}
+                      </p>
+                      {statusItem.reason && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Reason: {statusItem.reason}
                         </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      )}
+                      {statusItem.by && (
+                        <p className="text-xs text-gray-400 italic">
+                          by {statusItem.by.name} ({statusItem.by.role})
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
 
-              <div className="mt-6 flex justify-end">
+              <div className="mt-8 flex justify-end">
                 <Button
                   onClick={() => {
                     setShowResult(false)
                     onClose()
                   }}
-                  className="bg-green-600 cursor-pointer text-white hover:bg-green-700"
+                  className="bg-green-600 text-white hover:bg-green-700 transition px-6 py-2.5"
                 >
                   Done
                 </Button>
