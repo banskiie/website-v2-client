@@ -128,12 +128,6 @@ const Page = () => {
       </div>
 
       <div className="py-2 rounded-md bg-slate-50">
-        {/* <Image
-          className="absolute -z-10 w-full opacity-20 object-cover h-[70vh]"
-          src={Test}
-          alt="Test"
-          layout="fill"
-        /> */}
         <ScrollArea>
           <div
             className="w-full flex flex-col h-[70vh] px-2"
