@@ -6,7 +6,6 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
@@ -14,27 +13,20 @@ import { useAuthStore } from "@/store/auth.store"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery, useSubscription } from "@apollo/client/react"
 import { format } from "date-fns"
-import Image from "next/image"
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 // import Test from "@/public/images/unt.png"
 
 const TICKET = gql`
-  query Ticket {
-    ticket(_id: "690d6b7c37f3bcf15e395453") {
+  query Ticket($_id: ID!, $first: Int!) {
+    ticket(_id: $_id, first: $first) {
       _id
       email
       name
       assignedTo {
         _id
         name
-        email
-        contactNumber
-        username
-        role
-        isActive
-        createdAt
-        updatedAt
       }
+      total
       conversation {
         sender
         message
@@ -42,13 +34,6 @@ const TICKET = gql`
         agent {
           _id
           name
-          email
-          contactNumber
-          username
-          role
-          isActive
-          createdAt
-          updatedAt
         }
       }
     }
@@ -82,22 +67,29 @@ const SEND_MESSAGE = gql`
 `
 
 const Page = () => {
+  const [first, setFirst] = useState(10)
   const user = useAuthStore((state) => state.user)
   const { data: ticketData, loading }: any = useQuery(TICKET, {
-    fetchPolicy: "no-cache",
+    fetchPolicy: "cache-and-network",
+    variables: { _id: "690d6b7c37f3bcf15e395453", first },
   })
   const [conversation, setConversation] = useState<any[]>([])
   useSubscription(NEW_MESSAGE_SUBSCRIPTION, {
     onData: ({ data: subscriptionData }) => {
       const newMessage = (subscriptionData as any).data.newMessage
       if (newMessage.ticketId === ticketData?.ticket?._id) {
-        setConversation((prev) => [...prev, newMessage.latestMessage])
+        setConversation((prev) => [newMessage.latestMessage, ...prev])
       }
     },
   })
+  const [ticket, setTicket] = useState<any>(null)
 
   const [message, setMessage] = useState("")
   const [sendMessage] = useMutation(SEND_MESSAGE)
+
+  useEffect(() => {
+    if (!ticket) setTicket(ticketData?.ticket)
+  }, [ticket, ticketData])
 
   useEffect(
     () => setConversation(ticketData?.ticket?.conversation || []),
@@ -106,8 +98,8 @@ const Page = () => {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="bg-white rounded-md px-3 py-1.5">
-        {loading ? (
+      <div className="bg-white rounded-md py-1.5">
+        {!ticket ? (
           <>
             <Skeleton className="w-full my-1 h-6" />
             <Skeleton className="w-full my-1 h-4" />
@@ -115,27 +107,31 @@ const Page = () => {
           </>
         ) : (
           <>
-            <span className="text-2xl block">{ticketData?.ticket?.name}</span>
+            <span className="text-2xl block">{ticket?.name}</span>
             <span className="block text-sm text-muted-foreground">
-              {ticketData?.ticket?.email}
+              {ticket?.email}
             </span>
             <span className="block text-sm text-muted-foreground">
-              Assigned to:{" "}
-              {ticketData?.ticket?.assignedTo?.name || "Unassigned"}
+              Assigned to: {ticket?.assignedTo?.name || "Unassigned"}
             </span>
           </>
         )}
       </div>
 
-      <div className="py-2 rounded-md bg-slate-50">
-        <ScrollArea>
-          <div
-            className="w-full flex flex-col h-[70vh] px-2"
-            ref={(e) => {
-              if (e) e.scrollTop = e.scrollHeight
-            }}
-          >
-            {conversation.map((msg: any) => {
+      <div className="py-2 rounded-md bg-slate-50 border">
+        <div className="w-full flex flex-col h-[70vh] px-2 overflow-y-auto">
+          {ticketData?.ticket?.total > conversation.length && (
+            <Button
+              className=""
+              variant="link"
+              onClick={() => setFirst(first + 10)}
+            >
+              Load More...
+            </Button>
+          )}
+          {[...conversation]
+            .reverse()
+            .map((msg: any, index: number, array: any[]) => {
               const isUser = msg.sender === "USER"
               return (
                 <div
@@ -145,6 +141,11 @@ const Page = () => {
                     msg.sender === "USER" ? "items-start" : "items-end"
                   )}
                 >
+                  {index % 10 === 0 && (
+                    <span className="w-full block text-xs text-muted-foreground text-center">
+                      {format(new Date(Number(msg?.timestamp)), "PPp")}
+                    </span>
+                  )}
                   <HoverCard>
                     <HoverCardTrigger asChild>
                       <div
@@ -163,12 +164,17 @@ const Page = () => {
                         </span>
                         <div
                           className={cn(
-                            "rounded-md p-1.5 px-2.5 my-0.5 w-fit shadow",
+                            "rounded-md p-1.25 px-2.5 my-0.5 w-fit shadow",
                             isUser ? "bg-green-200" : "bg-slate-200"
                           )}
                         >
                           <span>{msg?.message}</span>
                         </div>
+                        {index === array.length - 1 && (
+                          <span className="w-full block text-xs text-muted-foreground text-center">
+                            {format(new Date(Number(msg?.timestamp)), "PPp")}
+                          </span>
+                        )}
                       </div>
                     </HoverCardTrigger>
                     <HoverCardContent
@@ -190,8 +196,7 @@ const Page = () => {
                 </div>
               )
             })}
-          </div>
-        </ScrollArea>
+        </div>
       </div>
 
       <div className="flex gap-2 h-full items-center">
