@@ -19,10 +19,11 @@ import {
   useSubscription,
 } from "@apollo/client/react"
 import { format } from "date-fns"
-import { Send, SendHorizonal, SendToBack } from "lucide-react"
+import { SendHorizonal } from "lucide-react"
 import { useEffect, useRef, useState, useTransition } from "react"
 import { use } from "react"
 import { differenceInMinutes } from "date-fns"
+import { Spinner } from "@/components/ui/spinner"
 
 const TICKET = gql`
   query Ticket($_id: ID!, $first: Int!) {
@@ -77,10 +78,10 @@ const SEND_MESSAGE = gql`
 const Page = ({ params }: { params: Promise<{ id: string }> }) => {
   const { id: _id } = use(params)
   const [isPending, startTransition] = useTransition()
-  const [first, setFirst] = useState(200)
+  const [first, setFirst] = useState(15)
   const user = useAuthStore((state) => state.user)
   const convoRef = useRef<HTMLDivElement>(null)
-  const { data: ticketData }: any = useQuery(TICKET, {
+  const { data: ticketData, loading }: any = useQuery(TICKET, {
     variables: { _id, first },
     fetchPolicy: "cache-and-network",
   })
@@ -97,6 +98,27 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
   const [ticket, setTicket] = useState<any>(null)
   const [message, setMessage] = useState("")
   const [sendMessage] = useMutation(SEND_MESSAGE)
+  const [scrollPosition, setScrollPosition] = useState(0)
+
+  const showScrollToBottom =
+    convoRef.current &&
+    typeof convoRef.current.scrollHeight === "number" &&
+    scrollPosition < convoRef.current.scrollHeight - 800
+
+  useEffect(() => {
+    const ref = convoRef.current
+    if (!ref) return
+    const handleScroll = () => {
+      setScrollPosition(ref.scrollTop)
+      if (
+        ref.scrollTop === 0 &&
+        ticketData?.ticket?.total > conversation.length
+      )
+        setFirst((f) => f + 15)
+    }
+    ref.addEventListener("scroll", handleScroll)
+    return () => ref.removeEventListener("scroll", handleScroll)
+  }, [ticketData?.ticket?.total, conversation.length])
 
   useEffect(() => {
     if (!ticket) setTicket(ticketData?.ticket)
@@ -113,8 +135,8 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
 
   // Only scroll to bottom when a new message is added (not on initial load)
   useEffect(() => {
-    if (convoRef.current && conversation.length <= 10) {
-      scrollTo("bottom")
+    if (convoRef.current && conversation.length <= 15) {
+      convoRef.current.scrollTop = convoRef.current.scrollHeight
     }
   }, [conversation.length])
 
@@ -167,19 +189,15 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
         )}
       </div>
 
-      <div className="py-2 rounded-md bg-slate-50 border">
+      <div className="py-2 rounded-md bg-slate-50 border flex flex-col gap-2">
         <div
           className="w-full flex flex-col h-[70vh] px-2 overflow-y-auto"
           ref={convoRef}
         >
-          {ticketData?.ticket?.total > conversation.length && (
-            <Button
-              variant="link"
-              size="sm"
-              onClick={async () => setFirst((prev) => prev + 10)}
-            >
-              Load More...
-            </Button>
+          {loading && (
+            <div className="w-full flex justify-center items-center">
+              <Spinner className="size-5">Loading</Spinner>
+            </div>
           )}
           {[...conversation]
             .reverse()
@@ -251,7 +269,6 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                           >
                             {msg?.message}
                           </div>
-                          
                         </div>
                       </HoverCardTrigger>
                       <HoverCardContent
@@ -277,6 +294,17 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
               )
             })}
         </div>
+        {showScrollToBottom && (
+          <div className="px-2">
+            <Button
+              className="w-full"
+              variant="link-destructive"
+              onClick={() => scrollTo("bottom")}
+            >
+              Scroll to Bottom
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2 h-full items-center">
