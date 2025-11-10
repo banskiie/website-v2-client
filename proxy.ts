@@ -63,6 +63,11 @@ const PROTECTED_ROUTES = [
     roles: [Role.ADMIN, Role.ORGANIZER, Role.LEVELLER, Role.SUPPORT],
     needsAuth: true,
   },
+  {
+    path: "/tickets",
+    roles: [Role.ADMIN, Role.ORGANIZER, Role.SUPPORT],
+    needsAuth: true,
+  },
 ]
 
 export async function proxy(req: NextRequest) {
@@ -109,5 +114,6 @@ export const config = {
     "/tournaments/:path*",
     "/users/:path*",
     "/videos/:path*",
+    "/tickets/:path*",
   ],
 }
