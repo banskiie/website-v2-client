@@ -14,9 +14,23 @@ export const VERIFY_OTP = gql`
     verifyOTP(email: $email, code: $code) {
       ok
       message
+      ticket {
+        _id
+        name
+        email
+      }
     }
   }
 `
+export const ADD_TICKET_NAME = gql`
+  mutation AddTicketUserName($email: String!, $name: String!) {
+    addTicketUserName(email: $email, name: $name) {
+      ok
+      message
+    }
+  }
+`
+
 
 export const SEND_USER_MESSAGE = gql`
    mutation SendUserMessage($email: String!, $message: String!) {
@@ -26,3 +40,40 @@ export const SEND_USER_MESSAGE = gql`
     }
   }
 `
+export const GET_TICKET_MESSAGES = gql`
+  query Ticket($id: ID!, $first: Int!) {
+    ticket(_id: $id, first: $first) {
+      _id
+      email
+      name
+      total
+      conversation {
+        sender
+        message
+        timestamp
+        agent {
+          name
+          _id
+        }
+      }
+    }
+  }
+`
+
+export const NEW_MESSAGE_SUBSCRIPTION = gql`
+  subscription NewMessage($id: ID!) {
+    newMessage(_id: $id) {
+      ticketId
+      latestMessage {
+        sender
+        message
+        timestamp
+        agent {
+          name
+        }
+      }
+    }
+  }
+`
+
+
