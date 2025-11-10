@@ -568,62 +568,57 @@ export default function SupportPage() {
 
   // Load messages and user info from localStorage on mount
   useEffect(() => {
-    const savedMessages = localStorage.getItem("chat_messages");
-    const savedName = localStorage.getItem("chat_name");
-    const savedEmail = localStorage.getItem("chat_email");
-    const savedStep = localStorage.getItem("chat_step");
+    const savedMessages = localStorage.getItem("chat_messages")
+    const savedName = localStorage.getItem("chat_name")
+    const savedEmail = localStorage.getItem("chat_email")
+    const savedStep = localStorage.getItem("chat_step")
 
-    if (savedMessages) setMessages(JSON.parse(savedMessages));
-    if (savedName) setName(savedName);
-    if (savedEmail) setEmail(savedEmail);
-    if (savedStep) setStep(savedStep as typeof step);
+    if (savedMessages) setMessages(JSON.parse(savedMessages))
+    if (savedName) setName(savedName)
+    if (savedEmail) setEmail(savedEmail)
+    if (savedStep) setStep(savedStep as typeof step)
   }, [])
 
   useEffect(() => {
-    localStorage.setItem("chat_messages", JSON.stringify(messages));
-    localStorage.setItem("chat_name", name);
-    localStorage.setItem("chat_email", email);
-    localStorage.setItem("chat_step", step);
+    localStorage.setItem("chat_messages", JSON.stringify(messages))
+    localStorage.setItem("chat_name", name)
+    localStorage.setItem("chat_email", email)
+    localStorage.setItem("chat_step", step)
   }, [messages, name, email, step])
 
-  // Auto-response logic
   useEffect(() => {
-    // Clear any existing timeout
     if (autoResponseTimeoutRef.current) {
-      clearTimeout(autoResponseTimeoutRef.current);
+      clearTimeout(autoResponseTimeoutRef.current)
     }
 
-    // Check if we should start the timer for auto-response
     if (lastUserMessageTime && !autoResponseShown) {
-      const timeSinceLastUserMessage = Date.now() - lastUserMessageTime;
-      const timeUntilAutoResponse = Math.max(10000 - timeSinceLastUserMessage, 0); // 10 seconds
+      const timeSinceLastUserMessage = Date.now() - lastUserMessageTime
+      const timeUntilAutoResponse = Math.max(10000 - timeSinceLastUserMessage, 0)
 
       autoResponseTimeoutRef.current = setTimeout(() => {
-        showAutoResponse();
-      }, timeUntilAutoResponse);
+        showAutoResponse()
+      }, timeUntilAutoResponse)
     }
 
     return () => {
       if (autoResponseTimeoutRef.current) {
-        clearTimeout(autoResponseTimeoutRef.current);
+        clearTimeout(autoResponseTimeoutRef.current)
       }
-    };
-  }, [lastUserMessageTime, autoResponseShown, messages]);
+    }
+  }, [lastUserMessageTime, autoResponseShown, messages])
 
-  // Reset auto-response tracking when new agent message arrives
   useEffect(() => {
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = messages[messages.length - 1]
     if (lastMessage && lastMessage.sender === "support") {
-      // Agent replied, reset the auto-response tracking
-      setLastUserMessageTime(null);
-      setAutoResponseShown(false);
+      setLastUserMessageTime(null)
+      setAutoResponseShown(false)
 
       // Clear the timeout since agent responded
       if (autoResponseTimeoutRef.current) {
-        clearTimeout(autoResponseTimeoutRef.current);
+        clearTimeout(autoResponseTimeoutRef.current)
       }
     }
-  }, [messages]);
+  }, [messages])
 
   const showAutoResponse = () => {
     if (autoResponseShown) return
@@ -645,7 +640,7 @@ export default function SupportPage() {
       },
     ])
 
-    setAutoResponseShown(true);
+    setAutoResponseShown(true)
   }
 
   const handleClearChat = () => {
@@ -661,7 +656,7 @@ export default function SupportPage() {
     setAutoResponseShown(false)
 
     if (autoResponseTimeoutRef.current) {
-      clearTimeout(autoResponseTimeoutRef.current);
+      clearTimeout(autoResponseTimeoutRef.current)
     }
   }
 
@@ -735,24 +730,24 @@ export default function SupportPage() {
 
         if (ticket?._id) {
           setTicketId(ticket._id);
-          console.log('✅ Ticket ID set to state:', ticket._id);
+          console.log('Ticket ID set to state:', ticket._id)
         } else {
-          console.log('❌ No ticket _id found in response');
+          console.log('No ticket _id found in response')
         }
 
         // Check if name already exists
         if (ticket?.name && ticket.name.trim() !== "") {
-          console.log('✅ Name exists, going directly to chat');
+          console.log('Name exists, going directly to chat');
           setName(ticket.name)
           setStep("otp-success")
           setTimeout(() => setStep("chat"), 2000)
         } else {
-          console.log('❌ No name found, going to name input step');
+          console.log('No name found, going to name input step');
           setStep("otp-success");
           setTimeout(() => setStep("name"), 2000)
         }
       } else {
-        console.log('❌ OTP verification failed');
+        console.log('OTP verification failed');
         setError(data.verifyOTP.message)
       }
       console.log('========================');
@@ -780,7 +775,6 @@ export default function SupportPage() {
     },
   })
 
-  // --- INTRO ANIMATION HANDLER ---
   useEffect(() => {
     const timer = setTimeout(() => {
       setIntroDone(true)
