@@ -414,7 +414,7 @@
 //                             <Button
 //                               onClick={handleCreateTicket}
 //                               disabled={!selectedTicketType}
-//                               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+//                               className="w-full bg-gradient-to-r from-green-500 to-purple-600 text-white hover:from-green-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 //                             >
 //                               <Ticket className="h-4 w-4 mr-2" />
 //                               Create New Ticket
@@ -428,12 +428,12 @@
 //               ) : (
 //                 <div className="flex flex-col h-full">
 //                   {/* Ticket Info */}
-//                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-//                     <p className="text-sm font-medium text-blue-800">
+//                   <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+//                     <p className="text-sm font-medium text-green-800">
 //                       Ticket Number: <span className="font-bold">{ticketNumber}</span>
 //                     </p>
 //                     {selectedTicketType && (
-//                       <p className="text-sm text-blue-700 mt-1">
+//                       <p className="text-sm text-green-700 mt-1">
 //                         Type: <span className="font-medium">{selectedTicketType}</span>
 //                       </p>
 //                     )}
@@ -514,7 +514,7 @@ export default function TicketFloatingHelp() {
       <button
         onClick={toggleHelp}
         onMouseEnter={() => setOpen(true)}
-        className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-105"
+        className="bg-green-600 hover:bg-green-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-105"
       >
         <MessageCircle className="w-6 h-6" />
       </button>
@@ -535,7 +535,7 @@ export default function TicketFloatingHelp() {
                 Having an issue with your ticket? Visit our{" "}
                 <Link
                   href="/support"
-                  className="text-blue-600 font-semibold hover:underline"
+                  className="text-green-600 font-semibold hover:underline"
                 >
                   support page
                 </Link>{" "}
@@ -549,7 +549,7 @@ export default function TicketFloatingHelp() {
             <div className="mt-3 text-right">
               <Link
                 href="/support"
-                className="inline-block bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                className="inline-block bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
               >
                 Go to Support
               </Link>

@@ -42,7 +42,7 @@ export const SEND_USER_MESSAGE = gql`
 `
 export const GET_TICKET_MESSAGES = gql`
   query Ticket($id: ID!, $first: Int!) {
-    ticket(_id: $id, first: $first) {
+    ticket(_id: $id, first: $first, viewer: USER) {
       _id
       email
       name

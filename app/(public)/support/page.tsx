@@ -185,9 +185,7 @@ export default function SupportPage() {
         const formattedDate = date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
 
         const sender: "support" | "user" = msg.sender === "SUPPORT" ? "support" : "user"
-        const senderName = sender === "support"
-          ? (msg.agent?.name || "Agent")
-          : name
+        const senderName = sender === "support" ? "Agent" : name
 
         return {
           sender,
@@ -403,7 +401,7 @@ export default function SupportPage() {
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${block.sender === "user" ? "bg-green-500" : "bg-blue-500"}`} />
                         <span className="text-xs font-medium text-gray-700">
-                          {block.sender === "user" ? "You" : "Support"}
+                          {block.sender === "user" ? "You" : "Agent"}
                         </span>
                       </div>
 
@@ -421,7 +419,7 @@ export default function SupportPage() {
                         <div className="flex items-center justify-between gap-4">
                           <span className="text-xs text-gray-500">Sent by:</span>
                           <span className={`text-xs font-medium ${block.sender === "user" ? "text-green-600" : "text-blue-600"}`}>
-                            {block.sender === "user" ? name : (msg.senderName || "Agent")}
+                            {block.sender === "user" ? name : "Agent"}
                           </span>
                         </div>
                       </div>
@@ -624,15 +622,7 @@ export default function SupportPage() {
     const formattedDate = date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
 
     const sender = msg.sender === "SUPPORT" ? "support" : "user"
-
-    let senderName = "Agent"
-    if (sender === "support") {
-      if (msg.agent?.name) {
-        senderName = msg.agent.name
-      }
-    } else {
-      senderName = name
-    }
+    const senderName = sender === "support" ? "Agent" : name
 
     setMessages((prev) => [
       ...prev,
@@ -797,6 +787,7 @@ export default function SupportPage() {
           date: formattedDate,
           timestamp: now.getTime(),
           status: "unread",
+          senderName: "Agent",
         },
       ])
     }
@@ -807,7 +798,7 @@ export default function SupportPage() {
     const chatText = messages
       .map(
         (msg) =>
-          `[${msg.date} ${msg.time}] ${msg.sender === "user" ? "You" : "Support"}: ${msg.text}`
+          `[${msg.date} ${msg.time}] ${msg.sender === "user" ? "You" : "Agent"}: ${msg.text}`
       )
       .join("\n")
     const blob = new Blob([chatText], { type: "text/plain" })
@@ -973,7 +964,7 @@ export default function SupportPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#eef3ff] to-[#e2e8ff] relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-[#eef3ff] to-[#e2e8ff] relative overflow-hidden">
       <Header />
 
       <AnimatePresence mode="wait">
