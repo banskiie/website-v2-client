@@ -19,15 +19,16 @@ import {
   useSubscription,
 } from "@apollo/client/react"
 import { format } from "date-fns"
-import { SendHorizonal } from "lucide-react"
+import { ArrowLeft, SendHorizonal } from "lucide-react"
 import { useEffect, useRef, useState, useTransition } from "react"
 import { use } from "react"
 import { differenceInMinutes } from "date-fns"
 import { Spinner } from "@/components/ui/spinner"
+import { useRouter } from "next/navigation"
 
-const TICKET = gql`
+const SUPPORT_TICKER = gql`
   query Ticket($_id: ID!, $first: Int!) {
-    ticket(_id: $_id, first: $first) {
+    ticket(_id: $_id, first: $first, viewer: SUPPORT) {
       _id
       email
       name
@@ -76,21 +77,21 @@ const SEND_MESSAGE = gql`
 `
 
 const Page = ({ params }: { params: Promise<{ id: string }> }) => {
+  const router = useRouter()
   const { id: _id } = use(params)
   const [isPending, startTransition] = useTransition()
   const [first, setFirst] = useState(15)
   const user = useAuthStore((state) => state.user)
   const convoRef = useRef<HTMLDivElement>(null)
-  const { data: ticketData, loading }: any = useQuery(TICKET, {
+  const { data: ticketData, loading }: any = useQuery(SUPPORT_TICKER, {
     variables: { _id, first },
-    fetchPolicy: "cache-and-network",
+    fetchPolicy: "network-only",
   })
   const [conversation, setConversation] = useState<any[]>([])
   useSubscription(NEW_MESSAGE_SUBSCRIPTION, {
     variables: { _id },
     onData: ({ data: subscriptionData }) => {
       const newMessage = (subscriptionData as any).data.newMessage
-      // scrollTo("bottom")
       if (newMessage.ticketId === ticketData?.ticket?._id)
         setConversation((prev) => [newMessage.latestMessage, ...prev])
     },
@@ -142,6 +143,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
 
   useEffect(() => {
     if (ticketData?.ticket?.conversation) {
+      scrollTo("top")
       setConversation((prev) => {
         const existing = new Set(prev.map((msg: any) => msg.timestamp))
         const newMessages = ticketData.ticket.conversation.filter(
@@ -149,7 +151,6 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
         )
         return [...prev, ...newMessages]
       })
-      scrollTo("top")
     }
   }, [ticketData?.ticket?.conversation])
 
@@ -169,26 +170,35 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="bg-white rounded-md py-1.5">
-        {!ticket ? (
-          <>
-            <Skeleton className="w-full my-1 h-6" />
-            <Skeleton className="w-full my-1 h-4" />
-            <Skeleton className="w-full my-1 h-4" />
-          </>
-        ) : (
-          <>
-            <span className="text-2xl block">{ticket?.name}</span>
-            <span className="block text-sm text-muted-foreground">
-              {ticket?.email}
-            </span>
-            <span className="block text-sm text-muted-foreground">
-              Assigned to: {ticket?.assignedTo?.name || "Unassigned"}
-            </span>
-          </>
-        )}
+      <div className="bg-white rounded-md py-1.5 flex gap-1.5 items-center px-1 border">
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          className="h-16"
+          onClick={() => router.back()}
+        >
+          <ArrowLeft />
+        </Button>
+        <div>
+          {!ticket ? (
+            <>
+              <Skeleton className="w-full my-1 h-6" />
+              <Skeleton className="w-full my-1 h-4" />
+              <Skeleton className="w-full my-1 h-4" />
+            </>
+          ) : (
+            <>
+              <span className="text-2xl block">{ticket?.name}</span>
+              <span className="block text-sm text-muted-foreground">
+                {ticket?.email}
+              </span>
+              <span className="block text-sm text-muted-foreground">
+                Assigned to: {ticket?.assignedTo?.name || "Unassigned"}
+              </span>
+            </>
+          )}
+        </div>
       </div>
-
       <div className="py-2 rounded-md bg-slate-50 border flex flex-col gap-2">
         <div
           className="w-full flex flex-col h-[70vh] px-2 overflow-y-auto"
@@ -306,7 +316,6 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
           </div>
         )}
       </div>
-
       <div className="flex gap-2 h-full items-center">
         <Input
           className="flex-1 rounded-md resize-none bg-white"
