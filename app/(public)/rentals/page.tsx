@@ -24,6 +24,7 @@ import useSmoothScroll from "@/hooks/useSmoothScroll"
 import { InfoCard, Stat, Step } from "@/components/custom/step"
 import { Separator } from "@/components/ui/separator"
 import { features, rentals } from "@/components/custom/data/items"
+import RentalsSection from "@/components/custom/rentals-section"
 
 
 function Page() {
@@ -48,6 +49,10 @@ function Page() {
     return () => clearTimeout(timer)
   }, [])
 
+  const handleScrollToRentals = () => {
+    const element = document.getElementById("rentals")
+    element?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
 
   if (loading) {
     return (
@@ -293,74 +298,8 @@ function Page() {
         </div>
       </div>
 
-      <div className="bg-white py-20 px-6 md:px-16 shadow-black shadow-2xl">
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          viewport={{ once: true }}
-          className="max-w-7xl mx-auto text-center space-y-4"
-        >
-          <div className="inline-flex items-center justify-center bg-yellow-100 text-yellow-700 font-medium px-5 py-2 rounded-full">
-            Our Rents
-          </div>
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-800">
-            Choose the Perfect Vehicle for Your Needs
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            From compact delivery vans to heavy-duty cargo trucks, C-ONE offers a comprehensive fleet maintained to the highest standards to ensure reliability and safety.
-          </p>
-        </motion.div>
-
-        <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {rentals.map((item, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.6,
-                delay: i * 0.1,
-                ease: "easeOut",
-              }}
-              viewport={{ once: true }}
-              className="bg-white rounded-2xl shadow-sm hover:shadow-md transition p-4 border border-gray-200"
-            >
-              <div className="relative rounded-xl overflow-hidden">
-                <img
-                  src={item.img}
-                  alt={item.title}
-                  className="w-60 h-60 mx-auto object-cover"
-                  loading="lazy"
-                />
-                <div className="absolute top-3 left-3 bg-yellow-400 text-black text-xs font-medium px-3 py-1 rounded-full">
-                  {item.label}
-                </div>
-                <div className="absolute bottom-3 left-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full flex items-center gap-2">
-                  <span>{item.emoji}</span> {item.capacity}
-                </div>
-              </div>
-
-              <div className="p-5 space-y-3 text-left">
-                <h3 className="text-lg font-semibold text-gray-800">{item.title}</h3>
-                <p className="text-gray-600 text-sm">{item.desc}</p>
-                <div className="flex flex-wrap gap-2">
-                  {item.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-yellow-700 bg-yellow-100 text-xs font-medium px-3 py-1 rounded-full"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <button className="text-yellow-600 hover:text-yellow-700 font-medium text-sm">
-                  Inquire About This Vehicle →
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+      <div id="rentals">
+        <RentalsSection />
       </div>
 
       <div className="relative bg-black/90 py-24 px-6 md:px-16 text-center overflow-hidden">
@@ -613,6 +552,7 @@ function Page() {
         />
 
         <motion.div
+          id="visit-us"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -806,6 +746,7 @@ function Page() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
+                  onClick={handleScrollToRentals}
                   className="border border-gray-500 text-gray-300 px-5 py-2.5 rounded-md hover:border-yellow-400 hover:text-yellow-400 transition"
                 >
                   View Rentals

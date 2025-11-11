@@ -14,6 +14,7 @@ import {
   CheckCircle2Icon,
   LucideIcon,
   Inbox,
+  ArrowDown,
 } from "lucide-react"
 import Header from "@/components/custom/header-white"
 import { Button } from "@/components/ui/button"
@@ -53,6 +54,33 @@ interface PulsingIconProps {
   pulseColor?: string
 }
 
+interface TicketResponse {
+  ticket: {
+    conversation: Array<{
+      message: string
+      sender: "USER" | "SUPPORT"
+      timestamp: string
+      agent?: {
+        name: string
+      }
+    }>
+    total: number
+  }
+}
+
+interface NewMessagePayload {
+  newMessage: {
+    latestMessage: {
+      message: string
+      sender: "USER" | "SUPPORT"
+      timestamp: string
+      agent?: {
+        name: string
+      }
+    }
+  }
+}
+
 export default function SupportPage() {
   const [introDone, setIntroDone] = useState(false)
   const [step, setStep] = useState<
@@ -77,6 +105,11 @@ export default function SupportPage() {
   const autoResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [first, setFirst] = useState(15)
   const [userJustSentMessage, setUserJustSentMessage] = useState(false)
+
+  const [hasNewMessages, setHasNewMessages] = useState(false)
+  const [lastSeenMessageIndex, setLastSeenMessageIndex] = useState(-1)
+  const [isUserAtBottom, setIsUserAtBottom] = useState(true)
+
   const { data: ticketData, loading: ticketLoading } = useQuery<TicketResponse>(GET_TICKET_MESSAGES, {
     variables: {
       id: ticketId,
@@ -84,8 +117,54 @@ export default function SupportPage() {
     },
     skip: !ticketId,
     fetchPolicy: "network-only",
-
   })
+
+  useEffect(() => {
+    const chatContainer = chatContainerRef.current
+    if (!chatContainer) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainer
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
+      setIsUserAtBottom(isAtBottom)
+
+      if (isAtBottom && hasNewMessages) {
+        setHasNewMessages(false)
+        setLastSeenMessageIndex(messages.length - 1)
+      }
+    }
+
+    chatContainer.addEventListener('scroll', handleScroll)
+    return () => chatContainer.removeEventListener('scroll', handleScroll)
+  }, [messages, hasNewMessages])
+
+  useEffect(() => {
+    if (messages.length === 0) return
+
+    const lastMessage = messages[messages.length - 1]
+    const isNewSupportMessage = lastMessage.sender === "support" &&
+      messages.length - 1 > lastSeenMessageIndex
+
+    if (isNewSupportMessage && !isUserAtBottom) {
+      setHasNewMessages(true)
+    } else if (isUserAtBottom) {
+      setLastSeenMessageIndex(messages.length - 1)
+      setHasNewMessages(false)
+    }
+  }, [messages, isUserAtBottom, lastSeenMessageIndex])
+
+  // Scroll to bottom function
+  const scrollToBottom = () => {
+    const chatContainer = chatContainerRef.current
+    if (chatContainer) {
+      chatContainer.scrollTo({
+        top: chatContainer.scrollHeight,
+        behavior: 'smooth'
+      })
+      setHasNewMessages(false)
+      setLastSeenMessageIndex(messages.length - 1)
+    }
+  }
 
   useEffect(() => {
     if (ticketData?.ticket?.total) {
@@ -153,7 +232,6 @@ export default function SupportPage() {
   useEffect(() => {
     const chat = chatContainerRef.current
     if (chat) {
-
       const isAtBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 100
 
       if (userJustSentMessage ||
@@ -161,6 +239,7 @@ export default function SupportPage() {
         (step === "chat" && messages.length <= 1)) {
         chat.scrollTop = chat.scrollHeight
         setUserJustSentMessage(false)
+        setIsUserAtBottom(true)
       }
     }
   }, [messages, isReplying, isLoadingMore, userJustSentMessage, step])
@@ -194,7 +273,6 @@ export default function SupportPage() {
     chatContainer.addEventListener('scroll', handleScroll, { passive: true })
     return () => chatContainer.removeEventListener('scroll', handleScroll)
   }, [hasMore, ticketLoading, isLoadingMore, handleLoadMore])
-
 
   const groupMessageBlocks = (messages: Message[]) => {
     const blocks: {
@@ -247,139 +325,6 @@ export default function SupportPage() {
     blocks.push(currentBlock)
     return blocks
   }
-
-  // Old Design ni siya
-  // const renderMessagesWithTimestamps = (messages: Message[]) => {
-  //   if (messages.length === 0) return null
-
-  //   const groupedBlocks = groupMessageBlocks(messages)
-  //   const elements: JSX.Element[] = []
-
-  //   groupedBlocks.forEach((block, blockIndex) => {
-  //     if (blockIndex > 0) {
-  //       const currentBlockFirstMessage = block.messages[0]
-  //       const previousBlockLastMessage = groupedBlocks[blockIndex - 1].messages[
-  //         groupedBlocks[blockIndex - 1].messages.length - 1
-  //       ]
-
-  //       if (currentBlockFirstMessage.timestamp && previousBlockLastMessage.timestamp) {
-  //         const timeDifference = differenceInMinutes(
-  //           new Date(currentBlockFirstMessage.timestamp),
-  //           new Date(previousBlockLastMessage.timestamp)
-  //         )
-
-  //         if (timeDifference > 5) {
-  //           elements.push(
-  //             <div key={`timestamp-${currentBlockFirstMessage.timestamp}`} className="w-full flex justify-center my-4">
-  //               <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-  //                 {format(new Date(currentBlockFirstMessage.timestamp), "MMM d, yyyy 'at' h:mm a")}
-  //               </span>
-  //             </div>
-  //           )
-  //         }
-  //       }
-  //     }
-
-  //     elements.push(
-  //       <motion.div
-  //         key={blockIndex}
-  //         initial={{ opacity: 0, y: 10 }}
-  //         animate={{ opacity: 1, y: 0 }}
-  //         transition={{ duration: 0.3 }}
-  //         className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
-  //       >
-  //         <div className="max-w-[80%]">
-  //           <div className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"} mb-1`}>
-  //             <div className={`text-[11px] font-semibold mb-1 ${block.sender === "user" ? "text-green-800 text-right" : "text-gray-500 text-left"}`}>
-  //               {block.senderName}
-  //             </div>
-  //           </div>
-
-  //           <div className="space-y-1">
-  //             {block.messages.map((msg, msgIndex) => (
-  //               <HoverCard key={msgIndex} openDelay={200} closeDelay={200}>
-  //                 <HoverCardTrigger asChild>
-  //                   <div
-  //                     className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"} cursor-pointer`}
-  //                   >
-  //                     <div
-  //                       className={`inline-block px-4 py-2 rounded-2xl text-sm wrap-break-words whitespace-pre-wrap max-w-full ${block.sender === "user"
-  //                         ? "bg-green-600 text-white rounded-br-none hover:bg-green-700 transition-colors"
-  //                         : "bg-gray-100 text-gray-800 rounded-bl-none hover:bg-gray-200 transition-colors"
-  //                         }`}
-  //                       style={{
-  //                         wordBreak: 'break-word',
-  //                         overflowWrap: 'break-word'
-  //                       }}
-  //                     >
-  //                       {msg.text}
-  //                     </div>
-  //                   </div>
-  //                 </HoverCardTrigger>
-  //                 <HoverCardContent
-  //                   className="w-64 p-3 text-sm"
-  //                   side={block.sender === "user" ? "left" : "right"}
-  //                   align="center"
-  //                 >
-  //                   <div className="space-y-2">
-  //                     <div className="flex justify-between items-center">
-  //                       <span className="font-medium text-gray-500">Date:</span>
-  //                       <span className="text-gray-800">{msg.date}</span>
-  //                     </div>
-  //                     <div className="flex justify-between items-center">
-  //                       <span className="font-medium text-gray-500">Time:</span>
-  //                       <span className="text-gray-800">{msg.time}</span>
-  //                     </div>
-  //                     <div className="flex justify-between items-center">
-  //                       <span className="font-medium text-gray-500">Sent by:</span>
-  //                       <span className={`font-medium ${block.sender === "user" ? "text-green-600" : "text-blue-600"}`}>
-  //                         {msg.senderName || (block.sender === "user" ? name : "Agent")}
-  //                       </span>
-  //                     </div>
-  //                     {/* {msg.timestamp && (
-  //                       <div className="pt-2 border-t border-gray-200">
-  //                         <div className="flex justify-between items-center text-xs">
-  //                           <span className="text-gray-500">Full timestamp:</span>
-  //                           <span className="text-gray-600">
-  //                             {format(new Date(msg.timestamp), "MMM d, yyyy 'at' h:mm:ss a")}
-  //                           </span>
-  //                         </div>
-  //                       </div>
-  //                     )} */}
-  //                   </div>
-  //                 </HoverCardContent>
-  //               </HoverCard>
-  //             ))}
-  //           </div>
-
-  //           <div
-  //             className={`text-[11px] mt-1 flex items-center gap-2 ${block.sender === "user"
-  //               ? "justify-end text-gray-300"
-  //               : "justify-start text-gray-400"
-  //               } ${block.sender === "user" ? "flex-row" : "flex-row-reverse"}`}
-  //           >
-  //             <div
-  //               className={`${block.sender === "user"
-  //                 ? block.status === "seen"
-  //                   ? "text-green-500"
-  //                   : "text-gray-400"
-  //                 : block.status === "seen"
-  //                   ? "text-blue-500"
-  //                   : "text-gray-500"
-  //                 }`}
-  //             >
-  //               {block.status === "seen" ? "Seen" : "Delivered"}
-  //             </div>
-
-  //             <div>{block.time}</div>
-  //           </div>
-  //         </div>
-  //       </motion.div>
-  //     )
-  //   })
-
-  //   return elements
-  // }
 
   const renderMessagesWithTimestamps = (messages: Message[]) => {
     if (messages.length === 0) return null
@@ -501,7 +446,7 @@ export default function SupportPage() {
               className={`text-[11px] mt-1 flex items-center gap-2 ${block.sender === "user"
                 ? "justify-end text-gray-300"
                 : "justify-start text-gray-400"
-                } ${block.sender === "user" ? "flex-row" : "flex-row-reverse"}`}
+                } ${block.sender === "user" ? "flex-row" : "flex-row"}`}
             >
               <div
                 className={`${block.sender === "user"
@@ -654,6 +599,9 @@ export default function SupportPage() {
     setStep("start")
     setLastUserMessageTime(null)
     setAutoResponseShown(false)
+    setHasNewMessages(false)
+    setLastSeenMessageIndex(-1)
+    setIsUserAtBottom(true)
 
     if (autoResponseTimeoutRef.current) {
       clearTimeout(autoResponseTimeoutRef.current)
@@ -1023,9 +971,6 @@ export default function SupportPage() {
       </div>
     )
   }
-
-
-
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#eef3ff] to-[#e2e8ff] relative overflow-hidden">
@@ -1407,13 +1352,6 @@ export default function SupportPage() {
                     <ArrowLeft className="w-4 h-4" />
                   </button>
 
-                  {/* <button
-                    onClick={handleDownloadChat}
-                    className="text-white/80 hover:text-white flex items-center gap-1 text-sm bg-white/20 hover:bg-white/30 p-2 rounded-md cursor-pointer backdrop-blur-sm transition-all"
-                  >
-                    Download
-                  </button> */}
-
                   <button
                     onClick={handleClearChat}
                     className="text-white hover:text-white flex items-center gap-1 text-sm bg-white/20 hover:bg-white/30 p-2 rounded-md cursor-pointer backdrop-blur-sm transition-all"
@@ -1424,13 +1362,51 @@ export default function SupportPage() {
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden relative">
+              {/* New Message Indicator */}
+              <AnimatePresence>
+                {hasNewMessages && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10"
+                  >
+                    <div className="bg-red-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs font-medium">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      New Message
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {!isUserAtBottom && (
+                  <motion.button
+                    animate={{
+                      y: [0, -25, 0],
+                      transition: {
+                        duration: 1.8,
+                        repeat: Infinity,
+                        repeatType: "loop",
+                        ease: "easeInOut",
+                      },
+                    }}
+                    onClick={scrollToBottom}
+                    className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10 bg-green-600 hover:bg-green-500 text-white p-3 rounded-full shadow-lg transition-all duration-200 cursor-pointer"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <ArrowDown className="w-5 h-5" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+
               <div
                 ref={chatContainerRef}
                 id="chat-container"
                 className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-300"
               >
-
                 {showLoadMoreText && hasMore && !isLoadingMore && (
                   <div className="flex justify-center py-2">
                     <div className="flex items-center gap-2 text-green-600 text-sm">
@@ -1451,60 +1427,6 @@ export default function SupportPage() {
                     </div>
                   </div>
                 )}
-
-                {/* {groupMessageBlocks(messages).map((block, blockIndex) => (
-                  <motion.div
-                    key={blockIndex}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div className="max-w-[80%]">
-                      <div className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"} mb-1`}>
-                        <div className={`text-[11px] font-semibold mb-1 ${block.sender === "user" ? "text-green-800 text-right" : "text-gray-500 text-left"}`}>
-                          {block.senderName}
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        {block.messages.map((msg, msgIndex) => (
-                          <div
-                            key={msgIndex}
-                            className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
-                          >
-                            <div
-                              className={`inline-block px-4 py-2 rounded-2xl text-sm wrap-break-words whitespace-pre-wrap max-w-full ${block.sender === "user"
-                                ? "bg-green-600 text-white rounded-br-none"
-                                : "bg-gray-100 text-gray-800 rounded-bl-none"
-                                }`}
-                              style={{
-                                wordBreak: 'break-word',
-                                overflowWrap: 'break-word'
-                              }}
-                            >
-                              {msg.text}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div
-                        className={`text-[11px] mt-1 flex items-center gap-2 ${block.sender === "user" ? "justify-end text-gray-300" : "justify-start text-gray-400"
-                          }`}
-                      >
-                        <div>{block.time}</div>
-                        {block.sender === "user" && (
-                          <div
-                            className={`${block.status === "seen" ? "text-green-500" : "text-gray-400"}`}
-                          >
-                            {block.status === "seen" ? "• Seen" : "• Delivered"}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))} */}
 
                 {renderMessagesWithTimestamps(messages)}
 
