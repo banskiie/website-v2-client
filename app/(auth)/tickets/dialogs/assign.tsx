@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import {
@@ -32,6 +32,16 @@ const ASSIGN_TICKET = gql`
   }
 `
 
+const TICKET = gql`
+  query TicketAgent($_id: ID!) {
+    ticketAgent(_id: $_id) {
+      assignedTo {
+        _id
+      }
+    }
+  }
+`
+
 const USER_OPTIONS = gql`
   query Options {
     userOptions {
@@ -52,7 +62,17 @@ const AssignTicketDialog = (props: Props) => {
   const [agent, setAgent] = useState<string>("")
   const [assignTicket] = useMutation(ASSIGN_TICKET)
   const { data }: any = useQuery(USER_OPTIONS)
+  const { data: ticketData }: any = useQuery(TICKET, {
+    variables: { _id: props._id },
+    skip: !props._id,
+  })
   const { userOptions } = data || []
+
+  useEffect(() => {
+    if (ticketData?.ticketAgent?.assignedTo) {
+      setAgent(ticketData.ticketAgent.assignedTo._id)
+    }
+  }, [ticketData])
 
   const onSubmit = async () => {
     try {

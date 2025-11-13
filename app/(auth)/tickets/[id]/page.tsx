@@ -12,23 +12,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth.store"
 import { gql } from "@apollo/client"
-import {
-  useLazyQuery,
-  useMutation,
-  useQuery,
-  useSubscription,
-} from "@apollo/client/react"
+import { useMutation, useQuery, useSubscription } from "@apollo/client/react"
 import { format } from "date-fns"
-import { ArrowLeft, Check, Paperclip, SendHorizonal } from "lucide-react"
+import { ArrowLeft, Paperclip, SendHorizonal } from "lucide-react"
 import { useEffect, useRef, useState, useTransition } from "react"
 import { use } from "react"
 import { differenceInMinutes } from "date-fns"
 import { Spinner } from "@/components/ui/spinner"
 import { useRouter } from "next/navigation"
 import { ButtonGroup } from "@/components/ui/button-group"
-import { Label } from "@/components/ui/label"
 
-const SUPPORT_TICKER = gql`
+const TICKET = gql`
   query Ticket($_id: ID!, $first: Int!) {
     ticket(_id: $_id, first: $first, viewer: SUPPORT) {
       _id
@@ -89,9 +83,9 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
     data: ticketData,
     loading,
     error,
-  }: any = useQuery(SUPPORT_TICKER, {
+  }: any = useQuery(TICKET, {
     variables: { _id, first },
-    fetchPolicy: "cache-and-network",
+    fetchPolicy: "no-cache",
   })
   console.log(error)
   const [conversation, setConversation] = useState<any[]>([])
