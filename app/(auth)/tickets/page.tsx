@@ -29,17 +29,30 @@ import { ITicket } from "@/types/ticket.interface"
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 import { ColumnDef } from "@tanstack/react-table"
-import { Dot, InfoIcon, Trash2Icon, UserCircle } from "lucide-react"
+import {
+  ArrowLeft,
+  ArrowRight,
+  Dot,
+  InfoIcon,
+  Trash2Icon,
+  UserCircle,
+} from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import TicketTable from "@/components/table/ticket-table"
-import { format, formatDistanceToNowStrict } from "date-fns"
+import {
+  format,
+  formatDistanceToNowStrict,
+  isSameDay,
+  isSameYear,
+} from "date-fns"
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 
 const TICKETS = gql`
   query Tickets(
@@ -65,7 +78,9 @@ const TICKETS = gql`
           email
           name
           lastSentAt
-          hasNewMessage
+          hasNewMessages
+          lastMessageSent
+          assignedAgent
         }
       }
       pageInfo {
@@ -85,7 +100,9 @@ const TICKET_UPDATED = gql`
         email
         name
         lastSentAt
-        hasNewMessage
+        hasNewMessages
+        lastMessageSent
+        assignedAgent
       }
     }
   }
@@ -93,7 +110,7 @@ const TICKET_UPDATED = gql`
 
 const Page = () => {
   // Pagination
-  const [rows, setRows] = useState<number>(10)
+  const [rows, setRows] = useState<number>(25)
   const [page, setPage] = useState<{
     current: number
     loaded: number
@@ -118,14 +135,14 @@ const Page = () => {
   // Selected Rows
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   // Table Data Fetching
-  const { data, loading, fetchMore, subscribeToMore }: any = useQuery(TICKETS, {
+  const { data, fetchMore, subscribeToMore }: any = useQuery(TICKETS, {
     variables: {
       first: rows,
       search,
       sort,
       filter,
     },
-    fetchPolicy: "cache-and-network",
+    fetchPolicy: "network-only",
     notifyOnNetworkStatusChange: true,
     pollInterval: 30000,
   })
@@ -134,7 +151,21 @@ const Page = () => {
   useEffect(() => {
     const unsubscribe = subscribeToMore({
       document: TICKET_UPDATED,
-      updateQuery: (prev: any, { subscriptionData }: any) => {
+      updateQuery: (
+        prev: any,
+        {
+          subscriptionData,
+        }: {
+          subscriptionData: {
+            data: {
+              ticketUpdated: {
+                type: string
+                ticket: ITicket
+              }
+            }
+          }
+        }
+      ) => {
         if (!subscriptionData.data) return prev
         const { type, ticket } = subscriptionData.data.ticketUpdated
         // Update the tickets list based on the type of change
@@ -162,9 +193,11 @@ const Page = () => {
             // Update the existing ticket in the list
             const updatedTicket = ticket
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-            toast.success(`Ticket (${updatedTicket?.name}) has been updated.`)
+            toast.success(
+              `New message from ${updatedTicket?.name || updatedTicket?.email}.`
+            )
             // Move the updated ticket to the top of the list
-            const updatedEdges = prev.tickets.edges
+            const updatedEdges = prev?.tickets.edges
               .map((edge: any) =>
                 edge.node._id === updatedTicket._id
                   ? { ...edge, node: updatedTicket }
@@ -178,6 +211,25 @@ const Page = () => {
                   { cursor: updatedTicket._id, node: updatedTicket },
                   ...updatedEdges,
                 ],
+              },
+            })
+          case "ASSIGN":
+            // Update the existing event in the list
+            const assignedTicket = ticket
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `${assignedTicket?.name || ""} has been assigned to ${
+                (assignedTicket as any)?.assignedAgent || "an agent"
+              }.`
+            )
+            return Object.assign({}, prev, {
+              tickets: {
+                ...prev.tickets,
+                edges: prev.tickets.edges.map((edge: any) =>
+                  edge.node._id === assignedTicket._id
+                    ? { ...edge, node: assignedTicket }
+                    : edge
+                ),
               },
             })
           default:
@@ -295,49 +347,61 @@ const Page = () => {
         ),
         cell: ({ row }) => {
           const ticket = row.original as ITicket
+          const lastSentAt = new Date(ticket.lastSentAt as Date)
+          const sameDay = isSameDay(lastSentAt, new Date())
+          const sameYear = isSameYear(lastSentAt, new Date())
           return (
             <div className="flex justify-between">
-              <HoverCard>
-                <HoverCardTrigger>
+              <div className="flex-1 flex flex-col sm:flex-row">
+                <span
+                  className={cn(
+                    "text-clip overflow-hidden block w-32",
+                    ticket.hasNewMessages && "font-medium"
+                  )}
+                >
+                  {ticket.name}
+                  {ticket.hasNewMessages && (
+                    <span className="px-1 text-info">●</span>
+                  )}
+                </span>
+                <div className="flex items-center">
+                  {(ticket as any).assignedAgent ? (
+                    <span
+                      className={cn(
+                        "text-[0.65rem] text-white px-2 py-0.5 rounded-full mr-1 bg-primary",
+                        (ticket as any).assignedAgent == "Ivan Sinohon" &&
+                          "bg-info",
+                        (ticket as any).assignedAgent == "Caryl Lyn" &&
+                          "bg-pink-400",
+                        (ticket as any).assignedAgent == "Prince Nagac" &&
+                          "bg-success"
+                      )}
+                    >
+                      {(ticket as any).assignedAgent}
+                    </span>
+                  ) : null}
                   <span
                     className={cn(
-                      "flex items-center",
-                      ticket.hasNewMessage
-                        ? "font-semibold"
-                        : "text-muted-foreground"
+                      "block text-sm text-muted-foreground truncate w-72 md:w-96",
+                      ticket.hasNewMessages && "font-medium"
                     )}
                   >
-                    {ticket.name}{" "}
-                    <Dot
-                      className={cn(
-                        "size-5 scale-250",
-                        ticket.hasNewMessage ? "text-success" : "hidden"
-                      )}
-                    />
+                    {ticket.lastMessageSent}
                   </span>
-                </HoverCardTrigger>
-                <HoverCardContent
-                  align="center"
-                  side="right"
-                  className="px-1 py-0.5 w-fit rounded-none bg-white/80"
-                >
-                  <span className="block text-xs">{row.original.email}</span>
-                </HoverCardContent>
-              </HoverCard>
+                </div>
+              </div>
               <HoverCard>
                 <HoverCardTrigger>
                   <span
                     className={cn(
                       "block",
-                      ticket.hasNewMessage
-                        ? "font-semibold"
-                        : "text-muted-foreground"
+                      ticket.hasNewMessages ? "font-medium" : ""
                     )}
                   >
-                    {formatDistanceToNowStrict(
-                      new Date(row.original.lastSentAt as Date)
-                    )}{" "}
-                    ago
+                    {format(
+                      lastSentAt,
+                      sameDay ? "p" : sameYear ? "MMM dd" : "MMM dd, yyyy"
+                    )}
                   </span>
                 </HoverCardTrigger>
                 <HoverCardContent
@@ -416,7 +480,7 @@ const Page = () => {
         <Label className="text-2xl">Tickets</Label>
       </div>
       <div className="w-full flex justify-between">
-        <InputGroup className="w-[350px]">
+        <InputGroup className="w-full sm:w-[350px]">
           <InputGroupInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.currentTarget.value)}
@@ -449,129 +513,34 @@ const Page = () => {
             </InputGroupAddon>
           )}
         </InputGroup>
-        <div className="flex items-center gap-2">
-          {sort && (
-            <Button variant="outline-destructive" onClick={() => onSort(null)}>
-              <Trash2Icon className="size-3.5" />
-              Clear Sorting
-            </Button>
-          )}
-          {filter.length > 0 && (
-            <Button variant="outline-destructive" onClick={() => onFilter([])}>
-              <Trash2Icon className="size-3.5" />
-              Clear Filtering
-            </Button>
-          )}
-        </div>
       </div>
-      <div className="w-full flex justify-between">
-        <div className="px-1.5 flex items-center justify-center">
-          {loading ? (
-            <span className="text-sm text-muted-foreground">Loading...</span>
-          ) : total === 0 ? (
-            <span className="text-sm text-muted-foreground">No results.</span>
-          ) : (
-            <div className="space-x-0.5">
-              <span className="text-sm text-muted-foreground">
-                Showing {(page.current - 1) * rows + 1}-
-                {page.current === page.max ? total : page.current * rows} out of{" "}
-                {total} ticket{total === 1 ? "" : "s"}.{" "}
-              </span>
-              {(sort || filter.length > 0 || search) && (
-                <Tooltip>
-                  <TooltipTrigger className="hover:cursor-pointer text-muted-foreground">
-                    <InfoIcon className="size-3.25" />
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" align="center">
-                    <div className="flex flex-col">
-                      {search && (
-                        <div>
-                          <span className="block">
-                            Search term:{" "}
-                            <span className="block"> • "{search}"</span>
-                          </span>
-                        </div>
-                      )}
-                      {sort && (
-                        <div>
-                          <span className="block">
-                            Sorted by:
-                            <span className="block">
-                              • {sort.key} → {sort.order}
-                            </span>
-                          </span>
-                        </div>
-                      )}
-                      {filter.length > 0 && (
-                        <div>
-                          <span className="block">
-                            Filtered by:
-                            {filter.map((f, i) => (
-                              <span className="block" key={i}>
-                                • {f.key} → {f.value}
-                              </span>
-                            ))}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <div className="flex items-center justify-center gap-2">
-            <ButtonGroup>
-              <ButtonGroupText className="font-normal text-muted-foreground">
-                Rows
-              </ButtonGroupText>
-              <Select
-                onValueChange={(value) => setRows(parseInt(value))}
-                value={rows.toString()}
-              >
-                <SelectTrigger size="sm" className="hover:bg-gray-100">
-                  <SelectValue placeholder="Row Count" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Row Count</SelectLabel>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </ButtonGroup>
-          </div>
-          <div className="flex items-center gap-2">
-            <ButtonGroup>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={page.current === 1}
-                onClick={goPrev}
-                className="disabled:bg-muted disabled:border-gray-300"
-              >
-                Prev
-              </Button>
-              <ButtonGroupText className="font-normal text-muted-foreground">
-                Page {page.current} of {page.max}
-              </ButtonGroupText>
-              <Button
-                variant="outline"
-                disabled={page.current === page.max}
-                onClick={goNext}
-                size="sm"
-                className="disabled:bg-muted disabled:border-gray-300"
-              >
-                Next
-              </Button>
-            </ButtonGroup>
-          </div>
-        </div>
+      <div className="flex justify-start items-center gap-2">
+        <ButtonGroup>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={page.current === 1}
+            onClick={goPrev}
+            className="text-black disabled:text-gray-400"
+          >
+            <ArrowLeft />
+          </Button>
+          <Button
+            variant="ghost"
+            disabled={page.current === page.max}
+            onClick={goNext}
+            size="sm"
+            className="text-black disabled:text-gray-400"
+          >
+            <ArrowRight />
+          </Button>
+        </ButtonGroup>
+        {total === 0 ? null : (
+          <span className="text-sm text-muted-foreground">
+            {(page.current - 1) * rows + 1}-
+            {page.current === page.max ? total : page.current * rows} of {total}
+          </span>
+        )}
       </div>
       <TicketTable
         columns={columns}

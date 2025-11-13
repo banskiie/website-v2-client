@@ -19,12 +19,14 @@ import {
   useSubscription,
 } from "@apollo/client/react"
 import { format } from "date-fns"
-import { ArrowLeft, SendHorizonal } from "lucide-react"
+import { ArrowLeft, Check, Paperclip, SendHorizonal } from "lucide-react"
 import { useEffect, useRef, useState, useTransition } from "react"
 import { use } from "react"
 import { differenceInMinutes } from "date-fns"
 import { Spinner } from "@/components/ui/spinner"
 import { useRouter } from "next/navigation"
+import { ButtonGroup } from "@/components/ui/button-group"
+import { Label } from "@/components/ui/label"
 
 const SUPPORT_TICKER = gql`
   query Ticket($_id: ID!, $first: Int!) {
@@ -56,12 +58,12 @@ const NEW_MESSAGE_SUBSCRIPTION = gql`
       ticketId
       latestMessage {
         sender
+        message
+        timestamp
         agent {
           _id
           name
         }
-        message
-        timestamp
       }
     }
   }
@@ -83,10 +85,15 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
   const [first, setFirst] = useState(15)
   const user = useAuthStore((state) => state.user)
   const convoRef = useRef<HTMLDivElement>(null)
-  const { data: ticketData, loading }: any = useQuery(SUPPORT_TICKER, {
+  const {
+    data: ticketData,
+    loading,
+    error,
+  }: any = useQuery(SUPPORT_TICKER, {
     variables: { _id, first },
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-and-network",
   })
+  console.log(error)
   const [conversation, setConversation] = useState<any[]>([])
   useSubscription(NEW_MESSAGE_SUBSCRIPTION, {
     variables: { _id },
@@ -94,6 +101,9 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
       const newMessage = (subscriptionData as any).data.newMessage
       if (newMessage.ticketId === ticketData?.ticket?._id)
         setConversation((prev) => [newMessage.latestMessage, ...prev])
+    },
+    onError: (err) => {
+      console.error("Subscription error:", err)
     },
   })
   const [ticket, setTicket] = useState<any>(null)
@@ -200,125 +210,110 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
         </div>
       </div>
       <div className="py-2 rounded-md bg-slate-50 border flex flex-col gap-2">
+        {loading && (
+          <div className="w-full flex justify-center items-center">
+            <Spinner className="size-5">Loading</Spinner>
+          </div>
+        )}
         <div
-          className="w-full flex flex-col h-[70vh] px-2 overflow-y-auto"
+          className="w-full flex flex-col-reverse h-[70vh] px-2 overflow-y-auto"
           ref={convoRef}
         >
-          {loading && (
-            <div className="w-full flex justify-center items-center">
-              <Spinner className="size-5">Loading</Spinner>
-            </div>
-          )}
-          {[...conversation]
-            .reverse()
-            .map((msg: any, index: number, array: any[]) => {
-              const isUser = msg.sender === "USER"
+          {conversation.map((msg: any, index: number, array: any[]) => {
+            if (!msg.sender && !msg.timestamp) return null
+            const isUser = msg.sender === "USER"
 
-              const currentAgent = msg?.agent?.name
-              const pastAgent = index > 0 ? array[index - 1]?.agent?.name : null
+            const currentAgent = msg?.agent?.name
+            const pastAgent = index > 0 ? array[index - 1]?.agent?.name : null
 
-              const currentSenderType = msg.sender
-              const pastSenderType = index > 0 ? array[index - 1]?.sender : null
+            const currentSenderType = msg.sender
+            const pastSenderType = index > 0 ? array[index - 1]?.sender : null
 
-              const pastTimestamp =
-                index > 0 ? array[index - 1]?.timestamp : null
-              const latestTimestamp = msg?.timestamp
+            const pastTimestamp = index > 0 ? array[index - 1]?.timestamp : null
+            const latestTimestamp = msg?.timestamp
 
-              const showTimestamp =
-                pastTimestamp &&
-                differenceInMinutes(
-                  new Date(Number(latestTimestamp)),
-                  new Date(Number(pastTimestamp))
-                ) > 5
+            const showTimestamp =
+              pastTimestamp &&
+              differenceInMinutes(
+                new Date(Number(latestTimestamp)),
+                new Date(Number(pastTimestamp))
+              ) > 5
 
-              const addSpace =
-                currentSenderType !== pastSenderType ||
-                pastAgent !== currentAgent
-              return (
-                <div key={msg.timestamp + index}>
-                  {showTimestamp && (
-                    <div className="w-full flex justify-center my-2">
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(Number(msg?.timestamp)), "PPp")}
-                      </span>
-                    </div>
+            const addSpace =
+              currentSenderType !== pastSenderType || pastAgent !== currentAgent
+            return (
+              <div key={msg.timestamp + index}>
+                {showTimestamp && (
+                  <div className="w-full flex justify-center my-2">
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(Number(msg?.timestamp)), "PPp")}
+                    </span>
+                  </div>
+                )}
+                <div
+                  key={msg.timestamp}
+                  className={cn(
+                    "flex flex-col",
+                    msg.sender === "USER" ? "items-start" : "items-end",
+                    addSpace ? "mt-3" : undefined
                   )}
-                  <div
-                    key={msg.timestamp}
-                    className={cn(
-                      "flex flex-col",
-                      msg.sender === "USER" ? "items-start" : "items-end",
-                      addSpace ? "mt-3" : undefined
-                    )}
-                  >
-                    <HoverCard>
-                      <HoverCardTrigger asChild>
-                        <div
-                          className={cn(
-                            "flex flex-col my-px",
-                            isUser ? "items-start" : "items-end"
-                          )}
-                        >
-                          {!!(addSpace || showTimestamp) && (
-                            <span
-                              className={cn(
-                                "text-xs text-[0.7rem]",
-                                isUser ? "text-left" : "text-right"
-                              )}
-                            >
-                              {isUser
-                                ? ticketData?.ticket?.name
-                                : msg?.agent?.name}
-                            </span>
-                          )}
-                          <div
+                >
+                  <HoverCard>
+                    <HoverCardTrigger asChild>
+                      <div
+                        className={cn(
+                          "flex flex-col my-px",
+                          isUser ? "items-start" : "items-end"
+                        )}
+                      >
+                        {!!(addSpace || showTimestamp) && (
+                          <span
                             className={cn(
-                              "rounded-md p-1 px-2 my-px shadow wrap-break-word whitespace-pre-line max-w-96",
-                              isUser ? "bg-green-200" : "bg-slate-200"
+                              "text-xs text-[0.7rem]",
+                              isUser ? "text-left" : "text-right"
                             )}
                           >
-                            {msg?.message}
-                          </div>
-                        </div>
-                      </HoverCardTrigger>
-                      <HoverCardContent
-                        className="p-0.75 w-fit"
-                        align={isUser ? "start" : "end"}
-                        side="bottom"
-                      >
-                        <div className="px-1.5">
-                          <span className="block text-xs text-muted-foreground">
-                            {format(new Date(Number(msg?.timestamp)), "PPp")}
-                          </span>
-                          <span className="block text-xs text-muted-foreground">
-                            Sent by:{" "}
                             {isUser
                               ? ticketData?.ticket?.name
                               : msg?.agent?.name}
                           </span>
+                        )}
+                        <div
+                          className={cn(
+                            "rounded-md p-1 px-2 my-px shadow wrap-break-word whitespace-pre-line max-w-96",
+                            isUser ? "bg-green-200" : "bg-slate-200"
+                          )}
+                        >
+                          {msg?.message}
                         </div>
-                      </HoverCardContent>
-                    </HoverCard>
-                  </div>
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent
+                      className="p-0.75 w-fit"
+                      align={isUser ? "start" : "end"}
+                      side="bottom"
+                    >
+                      <div className="px-1.5">
+                        <span className="block text-xs text-muted-foreground">
+                          {format(new Date(Number(msg?.timestamp)), "PPp")}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          Sent by:{" "}
+                          {isUser ? ticketData?.ticket?.name : msg?.agent?.name}
+                        </span>
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
                 </div>
-              )
-            })}
+              </div>
+            )
+          })}
         </div>
-        {showScrollToBottom && (
-          <div className="px-2">
-            <Button
-              className="w-full"
-              variant="link-destructive"
-              onClick={() => scrollTo("bottom")}
-            >
-              Scroll to Bottom
-            </Button>
-          </div>
-        )}
       </div>
       <div className="flex gap-2 h-full items-center">
-        <Input
-          className="flex-1 rounded-md resize-none bg-white"
+        <Textarea
+          className="flex-1 ring-0 rounded-md resize bg-white min-h-8 max-h-24 overflow-y-auto"
+          rows={1}
           placeholder="Type your message..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -329,14 +324,35 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
             }
           }}
         />
-        <Button
-          loading={isPending}
-          disabled={message.trim() === ""}
-          onClick={sendAgentMessage}
-          size="icon"
-        >
-          <SendHorizonal />
-        </Button>
+        <ButtonGroup className="rounded-none">
+          <Input id="upload" type="file" className="sr-only hidden" />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="rounded-none"
+            onClick={() =>
+              (
+                document.getElementById("upload") as HTMLInputElement | null
+              )?.click()
+            }
+            aria-label="Attach file"
+            title="Attach file"
+          >
+            <Paperclip />
+          </Button>
+          <Button
+            loading={isPending}
+            onClick={sendAgentMessage}
+            size="icon"
+            variant="ghost"
+            className="rounded-none"
+            aria-label="Send message"
+            title="Send message"
+          >
+            <SendHorizonal />
+          </Button>
+        </ButtonGroup>
       </div>
     </div>
   )

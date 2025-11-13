@@ -10,6 +10,7 @@ export interface ITicketConversation {
   agent?: IUser | string
   message: string
   timestamp: Date
+  readBy: TicketSender[]
 }
 
 export interface OTP {
@@ -25,8 +26,9 @@ export interface ITicket extends Document {
   otps: OTP[]
   assignedTo?: IUser
   conversation: ITicketConversation[]
-  hasNewMessage?: boolean
   lastSentAt?: Date
+  hasNewMessages?: boolean
+  lastMessageSent?: string
 }
 
 export interface ITicketInput extends Request {

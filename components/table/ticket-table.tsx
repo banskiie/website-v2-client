@@ -23,6 +23,23 @@ import {
 } from "../ui/table"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { ITicket } from "@/types/ticket.interface"
+import {
+  ContextMenu,
+  ContextMenuCheckboxItem,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import AssignTicketDialog from "@/app/(auth)/tickets/dialogs/assign"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -35,69 +52,17 @@ const TicketTable = <TData, TValue>({
   columns,
   data,
   actionsColumn,
-  rowView,
 }: DataTableProps<TData, TValue>) => {
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
   })
-  // For row view dialog
-  const [viewId, setViewId] = useState<string | null>(null)
-  const [openView, setOpenView] = useState(false)
   const router = useRouter()
 
   return (
-    <div className="rounded-md border">
-      {rowView &&
-        cloneElement(rowView as ReactElement<any>, {
-          _id: viewId,
-          rowSettings: {
-            clearId: () => setViewId(null),
-            open: openView,
-            onOpenChange: setOpenView,
-          },
-        })}
+    <div className="border">
       <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                )
-              })}
-            </TableRow>
-          ))}
-          {/* {table.getFooterGroups().map((footerGroup) => (
-            <TableRow key={footerGroup.id}>
-              {footerGroup.headers.map((footer) => {
-                return (
-                  <TableHead
-                    key={footer.id}
-                    style={{
-                      width: `${footer.getSize()}px`,
-                    }}
-                  >
-                    {footer.isPlaceholder
-                      ? null
-                      : flexRender(
-                          footer.column.columnDef.footer,
-                          footer.getContext()
-                        )}
-                  </TableHead>
-                )
-              })}
-            </TableRow>
-          ))} */}
-        </TableHeader>
         <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
@@ -105,9 +70,9 @@ const TicketTable = <TData, TValue>({
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
                 className={cn(
-                  "hover:bg-muted/50",
-                  (row.original as any)?.hasNewMessage &&
-                    "bg-success/10 hover:bg-success/20 cursor-pointer"
+                  "hover:bg-muted",
+                  (row.original as ITicket).hasNewMessages &&
+                    "bg-info/10 hover:bg-info/20"
                 )}
               >
                 {row.getVisibleCells().map((cell) => (
@@ -116,11 +81,29 @@ const TicketTable = <TData, TValue>({
                     className={cn(
                       cell.column.id !== "select" && "cursor-pointer"
                     )}
-                    onClick={() =>
-                      router.push(`/tickets/${(row.original as any)._id}`)
-                    }
+                    onClick={(e) => {
+                      if (
+                        !(e.target as HTMLElement).closest(
+                          "[data-context-menu], [role='alertdialog'], [role='dialog']"
+                        )
+                      ) {
+                        router.push(`/tickets/${(row.original as ITicket)._id}`)
+                      }
+                    }}
                   >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <ContextMenu>
+                      <ContextMenuTrigger>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </ContextMenuTrigger>
+                      <ContextMenuContent data-context-menu>
+                        <AssignTicketDialog
+                          _id={(row.original as ITicket)._id}
+                        />
+                      </ContextMenuContent>
+                    </ContextMenu>
                   </TableCell>
                 ))}
                 {actionsColumn ? (
@@ -138,7 +121,7 @@ const TicketTable = <TData, TValue>({
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center">
-                Fetching data...
+                No data found.
               </TableCell>
             </TableRow>
           )}
