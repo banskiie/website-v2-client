@@ -19,6 +19,7 @@ interface NewMessagePayload {
       message: string
       timestamp: string
       agent?: Agent
+      readBy: string[]
     }
   }
 }
@@ -28,6 +29,7 @@ interface TicketConversation {
   message: string
   timestamp: string
   agent: Agent | null
+  readBy: string[]
 }
 
 interface TicketData {

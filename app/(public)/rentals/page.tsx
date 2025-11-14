@@ -55,6 +55,11 @@ function Page() {
     element?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  const handleScrollToVisitUs = () => {
+    const visitSection = document.getElementById("visit-us")
+    visitSection?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen w-full bg-white">
@@ -195,6 +200,7 @@ function Page() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
+              onClick={handleScrollToRentals}
               className="bg-yellow-500 cursor-pointer hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-lg shadow-lg transition-all"
             >
               View Our Rents →
@@ -204,6 +210,7 @@ function Page() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
               className="bg-transparent border cursor-pointer border-yellow-400 hover:bg-yellow-400 hover:text-black text-yellow-400 font-semibold px-6 py-3 rounded-lg transition-all"
+              onClick={handleScrollToVisitUs}
             >
               Contact Us Now
             </motion.button>
@@ -597,7 +604,7 @@ function Page() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               viewport={{ once: true }}
-              className="bg-gradient-to-b from-[#FEFCE8] to-[#FFFBEB] rounded-xl p-4 shadow-sm flex items-start gap-4"
+              className="bg-linear-to-b from-[#FEFCE8] to-[#FFFBEB] rounded-xl p-4 shadow-sm flex items-start gap-4"
             >
               <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-b from-[#FDB913] to-[#FFA500] shadow-md">
                 <MapPin className="w-6 h-6 text-white" />

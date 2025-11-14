@@ -3,6 +3,7 @@
 import { useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { rentals } from "./data/items"
+import Image from "next/image"
 
 export default function RentalsSection() {
     const [selectedVehicle, setSelectedVehicle] = useState<any>(null)
@@ -59,11 +60,13 @@ export default function RentalsSection() {
                             className="bg-white rounded-2xl shadow-sm hover:shadow-md transition p-4 border border-gray-200"
                         >
                             <div className="relative rounded-xl overflow-hidden">
-                                <img
+                                <Image
                                     src={item.img}
                                     alt={item.title}
-                                    className="w-60 h-60 mx-auto object-cover"
+                                    className="w-100 h-70 mx-auto object-cover"
                                     loading="lazy"
+                                    width={300}
+                                    height={300}
                                 />
                                 <div className="absolute top-3 left-3 bg-yellow-400 text-black text-xs font-medium px-3 py-1 rounded-full">
                                     {item.label}
@@ -74,7 +77,7 @@ export default function RentalsSection() {
                             </div>
 
                             <div className="mt-2 text-center">
-                                <h3 className="text-base font-semibold text-gray-900">{item.title}</h3>
+                                {/* <h3 className="text-base font-semibold text-gray-900">{item.title}</h3> */}
                                 {item.extra && (
                                     <p className="text-sm text-gray-600 font-medium">{item.extra}</p>
                                 )}

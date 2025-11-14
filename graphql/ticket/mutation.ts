@@ -51,6 +51,7 @@ export const GET_TICKET_MESSAGES = gql`
         sender
         message
         timestamp
+        readBy
         agent {
           name
           _id

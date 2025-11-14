@@ -422,7 +422,7 @@ export default function CategoriesPage() {
                 onClose={() => setIsModalOpen(false)}
                 category={selectedCategory}
             />
-
+            {/* Balik ko dari kay dari nako ibutang tong sa scan sa reference number and total sa gcash */}
             {/* <UploadProofMergedModal
                 isOpen={isUploadModalOpen}
                 onClose={() => setIsUploadModalOpen(false)}

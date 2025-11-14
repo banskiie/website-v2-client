@@ -44,6 +44,7 @@ type Message = {
   timestamp?: number
   status?: "seen" | "unread"
   senderName?: string
+  readBy?: string[]
   showSender?: boolean
 }
 
@@ -60,6 +61,7 @@ interface TicketResponse {
       message: string
       sender: "USER" | "SUPPORT"
       timestamp: string
+      readBy: string[]
       agent?: {
         name: string
       }
@@ -77,6 +79,7 @@ interface NewMessagePayload {
       agent?: {
         name: string
       }
+      readBy: string[]
     }
   }
 }
@@ -94,7 +97,12 @@ export default function SupportPage() {
   const [isReplying, setIsReplying] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
-  const [ticketId, setTicketId] = useState<string | null>(null)
+  const [ticketId, setTicketId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem("chat_ticketId")
+    }
+    return null
+  })
   const [pendingOtp, setPendingOtp] = useState<{ email: string; active: boolean } | null>(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
@@ -105,10 +113,60 @@ export default function SupportPage() {
   const autoResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [first, setFirst] = useState(15)
   const [userJustSentMessage, setUserJustSentMessage] = useState(false)
-
   const [hasNewMessages, setHasNewMessages] = useState(false)
   const [lastSeenMessageIndex, setLastSeenMessageIndex] = useState(-1)
   const [isUserAtBottom, setIsUserAtBottom] = useState(true)
+  const [isRecovering, setIsRecovering] = useState(true)
+
+  // Update ticketId function that also persists to localStorage
+  const updateTicketId = (id: string | null) => {
+    setTicketId(id)
+    if (id) {
+      localStorage.setItem("chat_ticketId", id)
+    } else {
+      localStorage.removeItem("chat_ticketId")
+    }
+  }
+
+  // Load all state from localStorage on mount
+  useEffect(() => {
+    const savedMessages = localStorage.getItem("chat_messages")
+    const savedName = localStorage.getItem("chat_name")
+    const savedEmail = localStorage.getItem("chat_email")
+    const savedStep = localStorage.getItem("chat_step")
+    const savedTicketId = localStorage.getItem("chat_ticketId")
+
+    if (savedMessages) setMessages(JSON.parse(savedMessages))
+    if (savedName) setName(savedName)
+    if (savedEmail) setEmail(savedEmail)
+    if (savedStep) setStep(savedStep as typeof step)
+    if (savedTicketId) updateTicketId(savedTicketId)
+
+    setIsRecovering(false)
+  }, [])
+
+  useEffect(() => {
+    if (!isRecovering && ticketId) {
+      const savedName = localStorage.getItem("chat_name")
+      const savedEmail = localStorage.getItem("chat_email")
+
+      if (savedEmail) setEmail(savedEmail)
+
+      if (savedName && savedName.trim() !== "" && step !== "chat") {
+        setName(savedName)
+        setStep("chat")
+      } else if ((!savedName || savedName.trim() === "") && step !== "name" && step !== "chat") {
+        setStep("name")
+      }
+    }
+  }, [ticketId, step, isRecovering])
+
+  useEffect(() => {
+    localStorage.setItem("chat_messages", JSON.stringify(messages))
+    localStorage.setItem("chat_name", name)
+    localStorage.setItem("chat_email", email)
+    localStorage.setItem("chat_step", step)
+  }, [messages, name, email, step])
 
   const { data: ticketData, loading: ticketLoading } = useQuery<TicketResponse>(GET_TICKET_MESSAGES, {
     variables: {
@@ -117,6 +175,7 @@ export default function SupportPage() {
     },
     skip: !ticketId,
     fetchPolicy: "network-only",
+
   })
 
   useEffect(() => {
@@ -138,6 +197,21 @@ export default function SupportPage() {
     return () => chatContainer.removeEventListener('scroll', handleScroll)
   }, [messages, hasNewMessages])
 
+  // useEffect(() => {
+  //   if (messages.length === 0) return
+
+  //   const lastMessage = messages[messages.length - 1]
+  //   const isNewSupportMessage = lastMessage.sender === "support" &&
+  //     messages.length - 1 > lastSeenMessageIndex
+
+  //   if (isNewSupportMessage && !isUserAtBottom) {
+  //     setHasNewMessages(true)
+  //   } else if (isUserAtBottom) {
+  //     setLastSeenMessageIndex(messages.length - 1)
+  //     setHasNewMessages(false)
+  //   }
+  // }, [messages, isUserAtBottom, lastSeenMessageIndex])
+
   useEffect(() => {
     if (messages.length === 0) return
 
@@ -148,21 +222,35 @@ export default function SupportPage() {
     if (isNewSupportMessage && !isUserAtBottom) {
       setHasNewMessages(true)
     } else if (isUserAtBottom) {
+      // User is at bottom, mark all as seen
       setLastSeenMessageIndex(messages.length - 1)
       setHasNewMessages(false)
     }
   }, [messages, isUserAtBottom, lastSeenMessageIndex])
 
   // Scroll to bottom function
-  const scrollToBottom = () => {
+  // const scrollToBottom = () => {
+  //   const chatContainer = chatContainerRef.current
+  //   if (chatContainer) {
+  //     chatContainer.scrollTo({
+  //       top: chatContainer.scrollHeight,
+  //       behavior: 'smooth'
+  //     })
+  //     setHasNewMessages(false)
+  //     setLastSeenMessageIndex(messages.length - 1)
+  //   }
+  // }
+
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     const chatContainer = chatContainerRef.current
     if (chatContainer) {
       chatContainer.scrollTo({
         top: chatContainer.scrollHeight,
-        behavior: 'smooth'
+        behavior: behavior
       })
       setHasNewMessages(false)
       setLastSeenMessageIndex(messages.length - 1)
+      setIsUserAtBottom(true)
     }
   }
 
@@ -186,15 +274,16 @@ export default function SupportPage() {
 
         const sender: "support" | "user" = msg.sender === "SUPPORT" ? "support" : "user"
         const senderName = sender === "support" ? "Agent" : name
-
+        const status: "seen" | "unread" = msg.readBy && msg.readBy.length > 0 ? "seen" : "unread"
         return {
           sender,
           text: msg.message,
           time: formattedTime,
           date: formattedDate,
           timestamp: Number(msg.timestamp),
-          status: "unread" as const,
-          senderName
+          status: status,
+          senderName,
+          readBy: msg.readBy
         }
       })
 
@@ -216,6 +305,12 @@ export default function SupportPage() {
         }, 0)
       } else {
         setMessages(formattedMessages.reverse())
+
+        if (!isLoadingMore && chatContainer) {
+          setTimeout(() => {
+            scrollToBottom('auto')
+          }, 100)
+        }
       }
     }
   }, [ticketData, name, isLoadingMore])
@@ -227,50 +322,108 @@ export default function SupportPage() {
     setFirst(prevFirst => prevFirst + 15)
   }
 
+  // useEffect(() => {
+  //   const chat = chatContainerRef.current
+  //   if (chat) {
+  //     const isAtBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 100
+
+  //     if (userJustSentMessage ||
+  //       (messages.length > 0 && isAtBottom && !isLoadingMore) ||
+  //       (step === "chat" && messages.length <= 1)) {
+  //       chat.scrollTop = chat.scrollHeight
+  //       setUserJustSentMessage(false)
+  //       setIsUserAtBottom(true)
+  //     }
+  //   }
+  // }, [messages, isReplying, isLoadingMore, userJustSentMessage, step])
   useEffect(() => {
     const chat = chatContainerRef.current
-    if (chat) {
-      const isAtBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 100
+    if (!chat) return
 
-      if (userJustSentMessage ||
-        (messages.length > 0 && isAtBottom && !isLoadingMore) ||
-        (step === "chat" && messages.length <= 1)) {
-        chat.scrollTop = chat.scrollHeight
-        setUserJustSentMessage(false)
-        setIsUserAtBottom(true)
-      }
+    const isAtBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 100
+
+    setIsUserAtBottom(isAtBottom)
+
+    const shouldAutoScroll =
+      userJustSentMessage ||
+      (isAtBottom && !isLoadingMore) ||
+      (step === "chat" && messages.length <= 1) ||
+      (isAtBottom && messages.length > 0)
+
+    if (shouldAutoScroll) {
+      setTimeout(() => {
+        if (chat) {
+          chat.scrollTop = chat.scrollHeight
+          setUserJustSentMessage(false)
+          setIsUserAtBottom(true)
+          setHasNewMessages(false)
+          setLastSeenMessageIndex(messages.length - 1)
+        }
+      }, 100)
     }
   }, [messages, isReplying, isLoadingMore, userJustSentMessage, step])
 
+  // useEffect(() => {
+  //   const chatContainer = chatContainerRef.current
+  //   if (!chatContainer || !hasMore || ticketLoading || isLoadingMore) return
+
+  //   let isThrottled = false
+  //   const throttleDelay = 100
+
+  //   const handleScroll = () => {
+  //     if (isThrottled) return
+
+  //     isThrottled = true
+  //     setTimeout(() => {
+  //       isThrottled = false
+  //     }, throttleDelay)
+
+  //     const { scrollTop } = chatContainer
+
+  //     const shouldShowLoadMore = scrollTop < 200 && hasMore && !isLoadingMore
+  //     setShowLoadMoreText(shouldShowLoadMore)
+
+  //     if (scrollTop < 50 && hasMore && !isLoadingMore) {
+  //       console.log('Triggering load more...')
+  //       handleLoadMore()
+  //     }
+  //   }
+
+  //   chatContainer.addEventListener('scroll', handleScroll, { passive: true })
+  //   return () => chatContainer.removeEventListener('scroll', handleScroll)
+  // }, [hasMore, ticketLoading, isLoadingMore, handleLoadMore])
   useEffect(() => {
     const chatContainer = chatContainerRef.current
-    if (!chatContainer || !hasMore || ticketLoading || isLoadingMore) return
-
-    let isThrottled = false
-    const throttleDelay = 100
+    if (!chatContainer) return
 
     const handleScroll = () => {
-      if (isThrottled) return
+      const { scrollTop, scrollHeight, clientHeight } = chatContainer
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
 
-      isThrottled = true
-      setTimeout(() => {
-        isThrottled = false
-      }, throttleDelay)
+      setIsUserAtBottom(isAtBottom)
 
-      const { scrollTop } = chatContainer
+      if (isAtBottom && hasNewMessages) {
+        setHasNewMessages(false)
+        setLastSeenMessageIndex(messages.length - 1)
+      }
 
       const shouldShowLoadMore = scrollTop < 200 && hasMore && !isLoadingMore
       setShowLoadMoreText(shouldShowLoadMore)
 
-      if (scrollTop < 50 && hasMore && !isLoadingMore) {
-        console.log('Triggering load more...')
+      if (scrollTop < 50 && hasMore && !isLoadingMore && !ticketLoading) {
         handleLoadMore()
       }
     }
 
     chatContainer.addEventListener('scroll', handleScroll, { passive: true })
+
+    setTimeout(() => {
+      handleScroll()
+    }, 500)
+
     return () => chatContainer.removeEventListener('scroll', handleScroll)
-  }, [hasMore, ticketLoading, isLoadingMore, handleLoadMore])
+  }, [messages, hasNewMessages, hasMore, isLoadingMore, ticketLoading, handleLoadMore])
+
 
   const groupMessageBlocks = (messages: Message[]) => {
     const blocks: {
@@ -307,7 +460,9 @@ export default function SupportPage() {
       if (shouldContinueBlock) {
         currentBlock.messages.push(currentMessage)
         currentBlock.time = currentMessage.time
-        currentBlock.status = currentMessage.status
+        if (currentBlock.sender === "support" && currentMessage.status === "seen") {
+          currentBlock.status = "seen"
+        }
       } else {
         blocks.push(currentBlock)
         currentBlock = {
@@ -509,26 +664,6 @@ export default function SupportPage() {
     },
   })
 
-  // Load messages and user info from localStorage on mount
-  useEffect(() => {
-    const savedMessages = localStorage.getItem("chat_messages")
-    const savedName = localStorage.getItem("chat_name")
-    const savedEmail = localStorage.getItem("chat_email")
-    const savedStep = localStorage.getItem("chat_step")
-
-    if (savedMessages) setMessages(JSON.parse(savedMessages))
-    if (savedName) setName(savedName)
-    if (savedEmail) setEmail(savedEmail)
-    if (savedStep) setStep(savedStep as typeof step)
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem("chat_messages", JSON.stringify(messages))
-    localStorage.setItem("chat_name", name)
-    localStorage.setItem("chat_email", email)
-    localStorage.setItem("chat_step", step)
-  }, [messages, name, email, step])
-
   useEffect(() => {
     if (autoResponseTimeoutRef.current) {
       clearTimeout(autoResponseTimeoutRef.current)
@@ -591,15 +726,20 @@ export default function SupportPage() {
     localStorage.removeItem("chat_name")
     localStorage.removeItem("chat_email")
     localStorage.removeItem("chat_step")
+    localStorage.removeItem("chat_ticketId")
     setMessages([])
     setName("")
     setEmail("")
+    setOtp("")
     setStep("start")
+    updateTicketId(null)
     setLastUserMessageTime(null)
     setAutoResponseShown(false)
     setHasNewMessages(false)
     setLastSeenMessageIndex(-1)
     setIsUserAtBottom(true)
+    setIsValid(null)
+    setError(null)
 
     if (autoResponseTimeoutRef.current) {
       clearTimeout(autoResponseTimeoutRef.current)
@@ -621,23 +761,41 @@ export default function SupportPage() {
     const formattedTime = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     const formattedDate = date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
 
-    const sender = msg.sender === "SUPPORT" ? "support" : "user"
+    const sender: "support" | "user" = msg.sender === "SUPPORT" ? "support" : "user"
     const senderName = sender === "support" ? "Agent" : name
+    const status = msg.readBy && msg.readBy.length > 0 ? "seen" : "unread"
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        sender,
-        text: msg.message,
-        time: formattedTime,
-        date: formattedDate,
-        timestamp: Number(msg.timestamp),
-        status: "unread",
-        senderName,
-      },
-    ])
+    const newMessage: Message = {
+      sender,
+      text: msg.message,
+      time: formattedTime,
+      date: formattedDate,
+      timestamp: Number(msg.timestamp),
+      status,
+      senderName,
+      readBy: msg.readBy
+    }
 
+    setMessages((prev) => [...prev, newMessage])
+
+    const chatContainer = chatContainerRef.current
+    if (chatContainer) {
+      const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 100
+      if (isAtBottom) {
+        setTimeout(() => {
+          scrollToBottom('smooth')
+        }, 100)
+      }
+    }
   }, [subscriptionData, name])
+
+  useEffect(() => {
+    if (step === "chat" && chatContainerRef.current && !isRecovering) {
+      setTimeout(() => {
+        scrollToBottom('auto')
+      }, 300)
+    }
+  }, [step, isRecovering])
 
   useEffect(() => {
     console.log('=== DEBUG INFO ===');
@@ -648,8 +806,9 @@ export default function SupportPage() {
     console.log('Messages:', messages);
     console.log('Last user message time:', lastUserMessageTime);
     console.log('Auto response shown:', autoResponseShown);
+    console.log('Is recovering:', isRecovering);
     console.log('==================');
-  }, [ticketId, step, subscriptionData, messages, lastUserMessageTime, autoResponseShown])
+  }, [ticketId, step, subscriptionData, messages, lastUserMessageTime, autoResponseShown, isRecovering])
 
   const [verifyOTP, { loading: verifying }] = useMutation(VERIFY_OTP, {
     onCompleted: (data: any) => {
@@ -667,26 +826,23 @@ export default function SupportPage() {
         console.log('Ticket email:', ticket?.email);
 
         if (ticket?._id) {
-          setTicketId(ticket._id);
-          console.log('Ticket ID set to state:', ticket._id)
+          updateTicketId(ticket._id)
+          console.log('Ticket ID set to state and localStorage:', ticket._id)
         } else {
           console.log('No ticket _id found in response')
         }
 
-        // Check if name already exists
         if (ticket?.name && ticket.name.trim() !== "") {
-          console.log('Name exists, going directly to chat');
+          console.log('Name exists, going directly to chat')
           setName(ticket.name)
-          setStep("otp-success")
-          setTimeout(() => setStep("chat"), 2000)
+          setStep("chat")
         } else {
-          console.log('No name found, going to name input step');
-          setStep("otp-success");
-          setTimeout(() => setStep("name"), 2000)
+          console.log('No name found, going to name input step')
+          setStep("name")
         }
       } else {
         console.log('OTP verification failed');
-        setError(data.verifyOTP.message)
+        setError(data.verifyOTP.message);
       }
       console.log('========================');
     },
@@ -853,11 +1009,21 @@ export default function SupportPage() {
   }, [step, isValid, otp, name])
 
   const handleBack = () => {
-    if (step === "email") setStep("start")
+    if (step === "email") {
+      setStep("start")
+      setEmail("")
+      setIsValid(null)
+    }
     else if (step === "sending-otp") setStep("email")
-    else if (step === "otp") setStep("email")
-    else if (step === "otp-success") setStep("otp")
-    else if (step === "name") setStep("otp-success")
+    else if (step === "otp") {
+      setStep("email")
+      setOtp("")
+    }
+    else if (step === "otp-success") {
+      setStep("otp")
+      setOtp("")
+    }
+    else if (step === "name") setStep("otp") // not sure if iapil ba ni
     else if (step === "chat") setStep("name")
   }
 
@@ -903,6 +1069,18 @@ export default function SupportPage() {
       </div>
     </div>
   )
+
+  // Show loading while recovering state
+  if (isRecovering) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#eef3ff] to-[#e2e8ff] relative overflow-hidden px-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Restoring your chat session...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!introDone) {
     return (
@@ -1383,7 +1561,7 @@ export default function SupportPage() {
                         ease: "easeInOut",
                       },
                     }}
-                    onClick={scrollToBottom}
+                    onClick={() => scrollToBottom('smooth')}
                     className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10 bg-green-600 hover:bg-green-500 text-white p-3 rounded-full shadow-lg transition-all duration-200 cursor-pointer"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
