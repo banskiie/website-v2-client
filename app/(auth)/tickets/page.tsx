@@ -545,12 +545,6 @@ const Page = () => {
       <TicketTable
         columns={columns}
         data={nodes.slice((page.current - 1) * rows, page.current * rows)}
-        // actionsColumn={<ActionsColumn />}
-        // rowView={
-        //   <a href="#" className="sr-only">
-        //     View Details
-        //   </a>
-        // }
       />
     </div>
   )

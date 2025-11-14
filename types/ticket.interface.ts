@@ -5,10 +5,22 @@ export enum TicketSender {
   USER = "USER",
 }
 
+export enum AttachmentType {
+  IMAGE = "IMAGE",
+  VIDEO = "VIDEO",
+  FILE = "FILE",
+}
+
+export interface IAttachment {
+  type?: AttachmentType
+  url?: string
+}
+
 export interface ITicketConversation {
   sender: TicketSender
   agent?: IUser | string
   message: string
+  attachment?: IAttachment
   timestamp: Date
   readBy: TicketSender[]
 }
