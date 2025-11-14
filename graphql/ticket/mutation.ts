@@ -56,6 +56,10 @@ export const GET_TICKET_MESSAGES = gql`
           name
           _id
         }
+        attachment {
+          type
+          url
+        }
       }
     }
   }
@@ -69,6 +73,10 @@ export const NEW_MESSAGE_SUBSCRIPTION = gql`
         sender
         message
         timestamp
+        attachment {
+          type
+          url
+        }
         agent {
           name
         }

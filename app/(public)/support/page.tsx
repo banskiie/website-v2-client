@@ -35,6 +35,8 @@ import { useMutation, useQuery, useSubscription } from "@apollo/client/react"
 import { ADD_TICKET_NAME, GET_TICKET_MESSAGES, NEW_MESSAGE_SUBSCRIPTION, SEND_OTP, SEND_USER_MESSAGE, VERIFY_OTP } from "@/graphql/ticket/mutation"
 import { differenceInMinutes, format } from "date-fns"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import Image from "next/image"
+import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 type Message = {
   sender: "user" | "support"
@@ -46,6 +48,10 @@ type Message = {
   senderName?: string
   readBy?: string[]
   showSender?: boolean
+  attachment?: {
+    type: string
+    url: string | null
+  }
 }
 
 interface PulsingIconProps {
@@ -65,6 +71,10 @@ interface TicketResponse {
       agent?: {
         name: string
       }
+      attachment?: {
+        type: string
+        url: string | null
+      }
     }>
     total: number
   }
@@ -78,6 +88,10 @@ interface NewMessagePayload {
       timestamp: string
       agent?: {
         name: string
+      }
+      attachment?: {
+        type: string
+        url: string | null
       }
       readBy: string[]
     }
@@ -97,6 +111,7 @@ export default function SupportPage() {
   const [isReplying, setIsReplying] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [ticketId, setTicketId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem("chat_ticketId")
@@ -283,7 +298,8 @@ export default function SupportPage() {
           timestamp: Number(msg.timestamp),
           status: status,
           senderName,
-          readBy: msg.readBy
+          readBy: msg.readBy,
+          attachment: msg.attachment
         }
       })
 
@@ -479,6 +495,436 @@ export default function SupportPage() {
     return blocks
   }
 
+  // const renderMessagesWithTimestamps = (messages: Message[]) => {
+  //   if (messages.length === 0) return null
+
+  //   const groupedBlocks = groupMessageBlocks(messages)
+  //   const elements: JSX.Element[] = []
+
+  //   groupedBlocks.forEach((block, blockIndex) => {
+  //     if (blockIndex > 0) {
+  //       const currentBlockFirstMessage = block.messages[0]
+  //       const previousBlockLastMessage = groupedBlocks[blockIndex - 1].messages[
+  //         groupedBlocks[blockIndex - 1].messages.length - 1
+  //       ]
+
+  //       if (currentBlockFirstMessage.timestamp && previousBlockLastMessage.timestamp) {
+  //         const timeDifference = differenceInMinutes(
+  //           new Date(currentBlockFirstMessage.timestamp),
+  //           new Date(previousBlockLastMessage.timestamp)
+  //         )
+
+  //         if (timeDifference > 5) {
+  //           elements.push(
+  //             <div key={`timestamp-${currentBlockFirstMessage.timestamp}`} className="w-full flex justify-center my-4">
+  //               <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+  //                 {format(new Date(currentBlockFirstMessage.timestamp), "MMM d, yyyy 'at' h:mm a")}
+  //               </span>
+  //             </div>
+  //           )
+  //         }
+  //       }
+  //     }
+
+  //     elements.push(
+  //       <motion.div
+  //         key={blockIndex}
+  //         initial={{ opacity: 0, y: 10 }}
+  //         animate={{ opacity: 1, y: 0 }}
+  //         transition={{ duration: 0.3 }}
+  //         className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
+  //       >
+  //         <div className="max-w-[80%]">
+  //           <div className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"} mb-1`}>
+  //             <div className={`text-[11px] font-semibold mb-1 ${block.sender === "user" ? "text-green-800 text-right" : "text-gray-500 text-left"}`}>
+  //               {block.senderName}
+  //             </div>
+  //           </div>
+
+  //           <div className="space-y-1">
+  //             {block.messages.map((msg, msgIndex) => (
+  //               <HoverCard key={msgIndex}>
+  //                 <HoverCardTrigger asChild>
+  //                   <div
+  //                     className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
+  //                   >
+  //                     <div
+  //                       className={`inline-block px-4 py-2 rounded-2xl text-sm wrap-break-words whitespace-pre-wrap max-w-full ${block.sender === "user"
+  //                         ? "bg-green-600 text-white rounded-br-none"
+  //                         : "bg-gray-100 text-gray-800 rounded-bl-none"
+  //                         }`}
+  //                       style={{
+  //                         wordBreak: 'break-word',
+  //                         overflowWrap: 'break-word'
+  //                       }}
+  //                     >
+
+  //                       {msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
+  //                         <div className="mb-2">
+  //                           <img
+  //                             src={msg.attachment.url}
+  //                             alt="Attachment"
+  //                             className="max-w-full max-h-64 rounded-lg object-contain cursor-pointer hover:opacity-90 transition-opacity"
+  //                             onClick={() => msg.attachment?.url && window.open(msg.attachment.url, '_blank')}
+  //                           />
+  //                         </div>
+  //                       )}
+
+  //                       {msg.text && (
+  //                         <div>{msg.text}</div>
+  //                       )}
+
+  //                       {!msg.text && msg.attachment && msg.attachment.url && (
+  //                         <div className="text-xs opacity-70 italic">
+  //                           [Image]
+  //                         </div>
+  //                       )}
+  //                     </div>
+  //                   </div>
+  //                 </HoverCardTrigger>
+  //                 <HoverCardContent
+  //                   className="w-auto p-3 bg-white/95 backdrop-blur-sm border shadow-lg"
+  //                   align={block.sender === "user" ? "end" : "start"}
+  //                   side="bottom"
+  //                   sideOffset={5}
+  //                 >
+  //                   <div className="space-y-2 min-w-[180px]">
+  //                     <div className="flex items-center gap-2">
+  //                       <div className={`w-2 h-2 rounded-full ${block.sender === "user" ? "bg-green-500" : "bg-blue-500"}`} />
+  //                       <span className="text-xs font-medium text-gray-700">
+  //                         {block.sender === "user" ? "You" : "Agent"}
+  //                       </span>
+  //                     </div>
+
+  //                     <div className="space-y-1">
+  //                       <div className="flex items-center justify-between gap-4">
+  //                         <span className="text-xs text-gray-500">Date & Time:</span>
+  //                         <span className="text-xs font-medium text-gray-800">
+  //                           {msg.timestamp
+  //                             ? format(new Date(msg.timestamp), "MMM dd, h:mm a")
+  //                             : `${msg.date}, ${msg.time}`
+  //                           }
+  //                         </span>
+  //                       </div>
+
+  //                       <div className="flex items-center justify-between gap-4">
+  //                         <span className="text-xs text-gray-500">Sent by:</span>
+  //                         <span className={`text-xs font-medium ${block.sender === "user" ? "text-green-600" : "text-blue-600"}`}>
+  //                           {block.sender === "user" ? name : "Agent"}
+  //                         </span>
+  //                       </div>
+  //                     </div>
+
+  //                     {msg.timestamp && (
+  //                       <div className="pt-1 border-t border-gray-200">
+  //                         <div className="flex items-center justify-between">
+  //                           <span className="text-[10px] text-gray-400">Full:</span>
+  //                           <span className="text-[10px] text-gray-500">
+  //                             {format(new Date(msg.timestamp), "MMM dd, yyyy 'at' h:mm:ss a")}
+  //                           </span>
+  //                         </div>
+  //                       </div>
+  //                     )}
+  //                   </div>
+  //                 </HoverCardContent>
+  //               </HoverCard>
+  //             ))}
+  //           </div>
+
+  //           <div
+  //             className={`text-[11px] mt-1 flex items-center gap-2 ${block.sender === "user"
+  //               ? "justify-end text-gray-300"
+  //               : "justify-start text-gray-400"
+  //               } ${block.sender === "user" ? "flex-row" : "flex-row"}`}
+  //           >
+  //             <div
+  //               className={`${block.sender === "user"
+  //                 ? block.status === "seen"
+  //                   ? "text-green-500"
+  //                   : "text-gray-400"
+  //                 : block.status === "seen"
+  //                   ? "text-blue-500"
+  //                   : "text-gray-500"
+  //                 }`}
+  //             >
+  //               {block.status === "seen" ? "Seen" : "Delivered"}
+  //             </div>
+
+  //             <div>{block.time}</div>
+  //           </div>
+  //         </div>
+  //       </motion.div>
+  //     )
+  //   })
+
+  //   return elements
+  // }
+
+  // kagahapon na chat na naay duha ka image bubbles
+  // const renderMessagesWithTimestamps = (messages: Message[]) => {
+  //   if (messages.length === 0) return null
+
+  //   const groupedBlocks = groupMessageBlocks(messages)
+  //   const elements: JSX.Element[] = []
+
+  //   groupedBlocks.forEach((block, blockIndex) => {
+  //     if (blockIndex > 0) {
+  //       const currentBlockFirstMessage = block.messages[0]
+  //       const previousBlockLastMessage = groupedBlocks[blockIndex - 1].messages[
+  //         groupedBlocks[blockIndex - 1].messages.length - 1
+  //       ]
+
+  //       if (currentBlockFirstMessage.timestamp && previousBlockLastMessage.timestamp) {
+  //         const timeDifference = differenceInMinutes(
+  //           new Date(currentBlockFirstMessage.timestamp),
+  //           new Date(previousBlockLastMessage.timestamp)
+  //         )
+
+  //         if (timeDifference > 5) {
+  //           elements.push(
+  //             <div key={`timestamp-${currentBlockFirstMessage.timestamp}`} className="w-full flex justify-center my-4">
+  //               <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+  //                 {format(new Date(currentBlockFirstMessage.timestamp), "MMM d, yyyy 'at' h:mm a")}
+  //               </span>
+  //             </div>
+  //           )
+  //         }
+  //       }
+  //     }
+
+  //     elements.push(
+  //       <motion.div
+  //         key={blockIndex}
+  //         initial={{ opacity: 0, y: 10 }}
+  //         animate={{ opacity: 1, y: 0 }}
+  //         transition={{ duration: 0.3 }}
+  //         className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
+  //       >
+  //         <div className="max-w-[80%]">
+  //           <div className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"} mb-1`}>
+  //             <div className={`text-[11px] font-semibold mb-1 ${block.sender === "user" ? "text-green-800 text-right" : "text-gray-500 text-left"}`}>
+  //               {block.senderName}
+  //             </div>
+  //           </div>
+
+  //           <div className="space-y-1">
+  //             {block.messages.map((msg, msgIndex) => (
+  //               <div key={msgIndex}>
+  //                 {msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
+  //                   <div className={`mb-2 ${msg.text ? 'mb-3' : ''}`}>
+  //                     <Dialog>
+  //                       <DialogTrigger asChild>
+  //                         <div className={`
+  //                           relative overflow-hidden cursor-pointer group
+  //                           rounded-2xl
+  //                           ${block.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}
+  //                           border border-gray-200
+  //                           shadow-sm
+  //                           hover:shadow-md transition-all duration-200
+  //                           bg-transparent
+  //                         `}>
+  //                           <div className="relative overflow-hidden rounded-2xl">
+  //                             <Image
+  //                               src={msg.attachment.url}
+  //                               alt="Attachment"
+  //                               width={500}
+  //                               height={500}
+  //                               className={`
+  //                                 object-cover w-full
+  //                                 max-w-[280px] max-h-[280px]
+  //                                 transition-transform duration-200
+  //                                 group-hover:scale-105
+  //                                 rounded-2xl
+  //                               `}
+  //                               onError={(e) => {
+  //                                 console.error('Image failed to load:', msg.attachment?.url);
+  //                               }}
+  //                             />
+
+  //                             <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity duration-200 rounded-2xl pointer-events-none" />
+  //                           </div>
+
+  //                           {msg.text && (
+  //                             <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-black/10 to-transparent rounded-b-2xl pointer-events-none" />
+  //                           )}
+  //                         </div>
+  //                       </DialogTrigger>
+
+  //                       <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-black/90 border-0">
+  //                         <DialogTitle className="sr-only">
+  //                           Image attachment from {block.senderName}
+  //                         </DialogTitle>
+
+  //                         <div className="relative w-full h-full flex items-center justify-center p-4">
+  //                           <DialogClose asChild>
+  //                             <Button
+  //                               className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors cursor-pointer border-none"
+  //                               onClick={(e) => e.stopPropagation()}
+  //                             >
+  //                               <XCircle className="w-6 h-6" />
+  //                             </Button>
+  //                           </DialogClose>
+
+  //                           <div className="relative max-w-full max-h-full flex items-center justify-center">
+  //                             <Image
+  //                               src={msg.attachment.url}
+  //                               alt="Attachment preview"
+  //                               width={1200}
+  //                               height={1200}
+  //                               className="max-w-full max-h-[80vh] object-contain rounded-lg"
+  //                               onError={(e) => {
+  //                                 console.error('Image failed to load in modal:', msg.attachment?.url);
+  //                               }}
+  //                             />
+
+  //                             {/* <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-2 rounded-lg text-sm">
+  //                               <div>Sent by: {block.senderName}</div>
+  //                               <div className="text-xs opacity-75">
+  //                                 {msg.timestamp ? format(new Date(msg.timestamp), "MMM d, yyyy 'at' h:mm a") : `${msg.date}, ${msg.time}`}
+  //                               </div>
+  //                             </div> */}
+
+  //                           </div>
+  //                         </div>
+  //                       </DialogContent>
+  //                     </Dialog>
+
+  //                     <div className={`
+  //                       flex items-center justify-between mt-1 px-1
+  //                       ${block.sender === "user" ? "text-green-700" : "text-gray-500"}
+  //                       text-xs
+  //                     `}>
+  //                       <span> Photo</span>
+  //                       <span className="opacity-70">{msg.time}</span>
+  //                     </div>
+  //                   </div>
+  //                 )}
+
+  //                 {/* Text content with HoverCard - Separate from image */}
+  //                 <HoverCard>
+  //                   <HoverCardTrigger asChild>
+  //                     <div
+  //                       className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
+  //                     >
+  //                       <div
+  //                         className={`inline-block px-4 py-2 rounded-2xl text-sm wrap-break-words whitespace-pre-wrap max-w-full ${block.sender === "user"
+  //                           ? "bg-green-600 text-white rounded-br-none"
+  //                           : "bg-gray-100 text-gray-800 rounded-bl-none"
+  //                           }`}
+  //                         style={{
+  //                           wordBreak: 'break-word',
+  //                           overflowWrap: 'break-word'
+  //                         }}
+  //                       >
+  //                         {msg.text && msg.text.trim() && (
+  //                           <div className={`
+  //                             ${msg.attachment && msg.attachment.url ? "mt-2" : ""}
+  //                             ${block.sender === "user" ? "text-white" : "text-gray-800"}
+  //                           `}>
+  //                             {msg.text}
+  //                           </div>
+  //                         )}
+
+  //                         {(!msg.text || !msg.text.trim()) && msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
+  //                           <div className={`
+  //                             text-xs italic mt-1
+  //                             ${block.sender === "user" ? "text-green-200" : "text-gray-500"}
+  //                           `}>
+  //                             [Image]
+  //                           </div>
+  //                         )}
+  //                       </div>
+  //                     </div>
+  //                   </HoverCardTrigger>
+
+  //                   <HoverCardContent
+  //                     className="w-auto p-3 bg-white/95 backdrop-blur-sm border shadow-lg"
+  //                     align={block.sender === "user" ? "end" : "start"}
+  //                     side="bottom"
+  //                     sideOffset={5}
+  //                   >
+  //                     <div className="space-y-2 min-w-[180px]">
+  //                       <div className="flex items-center gap-2">
+  //                         <div className={`w-2 h-2 rounded-full ${block.sender === "user" ? "bg-green-500" : "bg-blue-500"}`} />
+  //                         <span className="text-xs font-medium text-gray-700">
+  //                           {block.sender === "user" ? "You" : "Agent"}
+  //                         </span>
+  //                       </div>
+
+  //                       <div className="space-y-1">
+  //                         <div className="flex items-center justify-between gap-4">
+  //                           <span className="text-xs text-gray-500">Date & Time:</span>
+  //                           <span className="text-xs font-medium text-gray-800">
+  //                             {msg.timestamp
+  //                               ? format(new Date(msg.timestamp), "MMM dd, h:mm a")
+  //                               : `${msg.date}, ${msg.time}`
+  //                             }
+  //                           </span>
+  //                         </div>
+
+  //                         <div className="flex items-center justify-between gap-4">
+  //                           <span className="text-xs text-gray-500">Sent by:</span>
+  //                           <span className={`text-xs font-medium ${block.sender === "user" ? "text-green-600" : "text-blue-600"}`}>
+  //                             {block.sender === "user" ? name : "Agent"}
+  //                           </span>
+  //                         </div>
+
+  //                         {msg.attachment && (
+  //                           <div className="flex items-center justify-between gap-4">
+  //                             <span className="text-xs text-gray-500">Attachment:</span>
+  //                             <span className="text-xs font-medium text-gray-800">
+  //                               {msg.attachment.type}
+  //                             </span>
+  //                           </div>
+  //                         )}
+  //                       </div>
+
+  //                       {msg.timestamp && (
+  //                         <div className="pt-1 border-t border-gray-200">
+  //                           <div className="flex items-center justify-between">
+  //                             <span className="text-[10px] text-gray-400">Full:</span>
+  //                             <span className="text-[10px] text-gray-500">
+  //                               {format(new Date(msg.timestamp), "MMM dd, yyyy 'at' h:mm:ss a")}
+  //                             </span>
+  //                           </div>
+  //                         </div>
+  //                       )}
+  //                     </div>
+  //                   </HoverCardContent>
+  //                 </HoverCard>
+  //               </div>
+  //             ))}
+  //           </div>
+
+  //           <div
+  //             className={`text-[11px] mt-1 flex items-center gap-2 ${block.sender === "user"
+  //               ? "justify-end text-gray-300"
+  //               : "justify-start text-gray-400"
+  //               } ${block.sender === "user" ? "flex-row" : "flex-row"}`}
+  //           >
+  //             <div
+  //               className={`${block.sender === "user"
+  //                 ? block.status === "seen"
+  //                   ? "text-green-500"
+  //                   : "text-gray-400"
+  //                 : block.status === "seen"
+  //                   ? "text-blue-500"
+  //                   : "text-gray-500"
+  //                 }`}
+  //             >
+  //               {block.status === "seen" ? "Seen" : "Delivered"}
+  //             </div>
+
+  //             <div>{block.time}</div>
+  //           </div>
+  //         </div>
+  //       </motion.div>
+  //     )
+  //   })
+
+  //   return elements
+  // }
+
   const renderMessagesWithTimestamps = (messages: Message[]) => {
     if (messages.length === 0) return null
 
@@ -542,10 +988,112 @@ export default function SupportPage() {
                           overflowWrap: 'break-word'
                         }}
                       >
-                        {msg.text}
+                        {/* Image Dialog - Inside the same message bubble */}
+                        {msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
+                          <div className={`mb-2 ${msg.text ? 'mb-3' : ''}`}>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <div className={`
+                                relative overflow-hidden cursor-pointer group
+                                rounded-2xl
+                                ${block.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}
+                                border border-gray-200
+                                shadow-sm
+                                hover:shadow-md transition-all duration-200
+                                bg-transparent
+                              `}>
+                                  <div className="relative overflow-hidden rounded-2xl">
+                                    <Image
+                                      src={msg.attachment.url}
+                                      alt="Attachment"
+                                      width={500}
+                                      height={500}
+                                      className={`
+                                      object-cover w-full
+                                      max-w-[280px] max-h-[280px]
+                                      transition-transform duration-200
+                                      group-hover:scale-105
+                                      rounded-2xl
+                                    `}
+                                      onError={(e) => {
+                                        console.error('Image failed to load:', msg.attachment?.url);
+                                      }}
+                                    />
+
+                                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity duration-200 rounded-2xl pointer-events-none" />
+                                  </div>
+
+                                  {msg.text && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-black/10 to-transparent rounded-b-2xl pointer-events-none" />
+                                  )}
+                                </div>
+                              </DialogTrigger>
+
+                              <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-black/90 border-0">
+                                <DialogTitle className="sr-only">
+                                  Image attachment from {block.senderName}
+                                </DialogTitle>
+
+                                <div className="relative w-full h-full flex items-center justify-center p-4">
+                                  <DialogClose asChild>
+                                    <Button
+                                      className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors cursor-pointer border-none"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <XCircle className="w-6 h-6" />
+                                    </Button>
+                                  </DialogClose>
+
+                                  <div className="relative max-w-full max-h-full flex items-center justify-center">
+                                    <Image
+                                      src={msg.attachment.url}
+                                      alt="Attachment preview"
+                                      width={1200}
+                                      height={1200}
+                                      className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                                      onError={(e) => {
+                                        console.error('Image failed to load in modal:', msg.attachment?.url);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+
+                            <div className={`
+                            flex items-center justify-between mt-1 px-1
+                            ${block.sender === "user" ? "text-green-700" : "text-gray-500"}
+                            text-xs
+                          `}>
+                              <span>📷 Photo</span>
+                              <span className="opacity-70">{msg.time}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Text content */}
+                        {msg.text && msg.text.trim() && (
+                          <div className={`
+                          ${msg.attachment && msg.attachment.url ? "mt-2" : ""}
+                          ${block.sender === "user" ? "text-white" : "text-gray-800"}
+                        `}>
+                            {msg.text}
+                          </div>
+                        )}
+
+                        {/* Show [Image] only when there's no text */}
+                        {(!msg.text || !msg.text.trim()) && msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
+                          <div className={`
+                          text-xs italic mt-1
+                          ${block.sender === "user" ? "text-green-200" : "text-gray-500"}
+                        `}>
+                            [Image]
+                          </div>
+                        )}
                       </div>
                     </div>
                   </HoverCardTrigger>
+
                   <HoverCardContent
                     className="w-auto p-3 bg-white/95 backdrop-blur-sm border shadow-lg"
                     align={block.sender === "user" ? "end" : "start"}
@@ -577,6 +1125,15 @@ export default function SupportPage() {
                             {block.sender === "user" ? name : "Agent"}
                           </span>
                         </div>
+
+                        {msg.attachment && (
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-xs text-gray-500">Attachment:</span>
+                            <span className="text-xs font-medium text-gray-800">
+                              {msg.attachment.type}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {msg.timestamp && (
@@ -623,7 +1180,7 @@ export default function SupportPage() {
 
     return elements
   }
-
+  
   const [sendUserMessageMutation, { loading: sendingMessage }] = useMutation(SEND_USER_MESSAGE, {
     onCompleted: (data: any) => {
       if (!data.sendUserMessage.ok) {
@@ -773,7 +1330,8 @@ export default function SupportPage() {
       timestamp: Number(msg.timestamp),
       status,
       senderName,
-      readBy: msg.readBy
+      readBy: msg.readBy,
+      attachment: msg.attachment
     }
 
     setMessages((prev) => [...prev, newMessage])
