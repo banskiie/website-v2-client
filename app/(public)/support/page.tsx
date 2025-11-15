@@ -36,7 +36,7 @@ import { ADD_TICKET_NAME, GET_TICKET_MESSAGES, NEW_MESSAGE_SUBSCRIPTION, SEND_OT
 import { differenceInMinutes, format } from "date-fns"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import Image from "next/image"
-import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogClose, DialogContent, DialogOverlay, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 type Message = {
   sender: "user" | "support"
@@ -132,6 +132,7 @@ export default function SupportPage() {
   const [lastSeenMessageIndex, setLastSeenMessageIndex] = useState(-1)
   const [isUserAtBottom, setIsUserAtBottom] = useState(true)
   const [isRecovering, setIsRecovering] = useState(true)
+  const [openDialogs, setOpenDialogs] = useState<Record<string, boolean>>({})
 
   // Update ticketId function that also persists to localStorage
   const updateTicketId = (id: string | null) => {
@@ -972,133 +973,116 @@ export default function SupportPage() {
             </div>
 
             <div className="space-y-1">
-              {block.messages.map((msg, msgIndex) => (
-                <HoverCard key={msgIndex}>
-                  <HoverCardTrigger asChild>
-                    <div
-                      className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
+              {block.messages.map((msg, msgIndex) => {
+                const dialogKey = `${blockIndex}-${msgIndex}`;
+                const isDialogOpen = openDialogs[dialogKey] || false;
+
+                // Create the image content that will be wrapped conditionally
+                const imageContent = (
+                  <div>
+                    <Dialog
+                      open={isDialogOpen}
+                      onOpenChange={(open) => setOpenDialogs(prev => ({
+                        ...prev,
+                        [dialogKey]: open
+                      }))}
                     >
-                      <div
-                        className={`inline-block px-4 py-2 rounded-2xl text-sm wrap-break-words whitespace-pre-wrap max-w-full ${block.sender === "user"
-                          ? "bg-green-600 text-white rounded-br-none"
-                          : "bg-gray-100 text-gray-800 rounded-bl-none"
-                          }`}
-                        style={{
-                          wordBreak: 'break-word',
-                          overflowWrap: 'break-word'
-                        }}
+                      <DialogTrigger asChild>
+                        <div className={`
+                        relative overflow-hidden cursor-pointer group
+                        rounded-2xl
+                        ${block.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}
+                        border border-gray-200
+                        shadow-sm
+                        hover:shadow-md transition-all duration-200
+                        bg-transparent
+                      `}>
+                          <div className="relative overflow-hidden rounded-2xl">
+                            <Image
+                              src={msg.attachment?.url || ''}
+                              alt="Attachment"
+                              width={500}
+                              height={500}
+                              className={`
+                              object-cover w-full
+                              max-w-[280px] max-h-[280px]
+                              transition-transform duration-200
+                              group-hover:scale-105
+                              rounded-2xl
+                            `}
+                              onError={(e) => {
+                                console.error('Image failed to load:', msg.attachment?.url);
+                              }}
+                            />
+
+                            <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity duration-200 rounded-2xl pointer-events-none" />
+                          </div>
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent
+                        className="
+                        max-w-4xl max-h-[90vh] p-0 border-none
+                        bg-black/0
+                        pointer-events-auto
+                        [&>button]:hidden
+                      "
                       >
-                        {/* Image Dialog - Inside the same message bubble */}
-                        {msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
-                          <div className={`mb-2 ${msg.text ? 'mb-3' : ''}`}>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <div className={`
-                                relative overflow-hidden cursor-pointer group
-                                rounded-2xl
-                                ${block.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}
-                                border border-gray-200
-                                shadow-sm
-                                hover:shadow-md transition-all duration-200
-                                bg-transparent
-                              `}>
-                                  <div className="relative overflow-hidden rounded-2xl">
-                                    <Image
-                                      src={msg.attachment.url}
-                                      alt="Attachment"
-                                      width={500}
-                                      height={500}
-                                      className={`
-                                      object-cover w-full
-                                      max-w-[280px] max-h-[280px]
-                                      transition-transform duration-200
-                                      group-hover:scale-105
-                                      rounded-2xl
-                                    `}
-                                      onError={(e) => {
-                                        console.error('Image failed to load:', msg.attachment?.url);
-                                      }}
-                                    />
+                        <DialogTitle className="sr-only">
+                          Image attachment from {block.senderName}
+                        </DialogTitle>
 
-                                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity duration-200 rounded-2xl pointer-events-none" />
-                                  </div>
+                        <div className="relative w-full h-full flex items-center justify-center p-4">
+                          <DialogClose asChild>
+                            <Button
+                              className="absolute -top-7 right-0 z-50 bg-transparent hover:bg-transparent hover:text-black text-white rounded-full p-2 transition-colors cursor-pointer border-none"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <XCircle className="w-9! h-9!" />
+                            </Button>
+                          </DialogClose>
 
-                                  {msg.text && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-black/10 to-transparent rounded-b-2xl pointer-events-none" />
-                                  )}
-                                </div>
-                              </DialogTrigger>
-
-                              <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-black/90 border-0">
-                                <DialogTitle className="sr-only">
-                                  Image attachment from {block.senderName}
-                                </DialogTitle>
-
-                                <div className="relative w-full h-full flex items-center justify-center p-4">
-                                  <DialogClose asChild>
-                                    <Button
-                                      className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors cursor-pointer border-none"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <XCircle className="w-6 h-6" />
-                                    </Button>
-                                  </DialogClose>
-
-                                  <div className="relative max-w-full max-h-full flex items-center justify-center">
-                                    <Image
-                                      src={msg.attachment.url}
-                                      alt="Attachment preview"
-                                      width={1200}
-                                      height={1200}
-                                      className="max-w-full max-h-[80vh] object-contain rounded-lg"
-                                      onError={(e) => {
-                                        console.error('Image failed to load in modal:', msg.attachment?.url);
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-
-                            <div className={`
-                            flex items-center justify-between mt-1 px-1
-                            ${block.sender === "user" ? "text-green-700" : "text-gray-500"}
-                            text-xs
-                          `}>
-                              <span>📷 Photo</span>
-                              <span className="opacity-70">{msg.time}</span>
-                            </div>
+                          <div className="relative max-w-full max-h-full flex items-center justify-center">
+                            <Image
+                              src={msg.attachment?.url || ''}
+                              alt="Attachment preview"
+                              width={1200}
+                              height={1200}
+                              className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                              onError={(e) => {
+                                console.error('Image failed to load in modal:', msg.attachment?.url);
+                              }}
+                            />
                           </div>
-                        )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
 
-                        {/* Text content */}
-                        {msg.text && msg.text.trim() && (
-                          <div className={`
-                          ${msg.attachment && msg.attachment.url ? "mt-2" : ""}
-                          ${block.sender === "user" ? "text-white" : "text-gray-800"}
-                        `}>
-                            {msg.text}
-                          </div>
-                        )}
-
-                        {/* Show [Image] only when there's no text */}
-                        {(!msg.text || !msg.text.trim()) && msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
-                          <div className={`
-                          text-xs italic mt-1
-                          ${block.sender === "user" ? "text-green-200" : "text-gray-500"}
-                        `}>
-                            [Image]
-                          </div>
-                        )}
+                    {/* Text content below the image */}
+                    {(msg.text && msg.text.trim()) && (
+                      <div className="mt-2">
+                        <div
+                          className={`inline-block px-4 py-2 rounded-2xl text-sm wrap-break-words whitespace-pre-wrap max-w-full ${block.sender === "user"
+                            ? "bg-green-600 text-white rounded-br-none"
+                            : "bg-gray-100 text-gray-800 rounded-bl-none"
+                            }`}
+                          style={{
+                            wordBreak: 'break-word',
+                            overflowWrap: 'break-word'
+                          }}
+                        >
+                          {msg.text}
+                        </div>
                       </div>
-                    </div>
-                  </HoverCardTrigger>
+                    )}
+                  </div>
+                );
 
+                const hoverCardContent = (
                   <HoverCardContent
                     className="w-auto p-3 bg-white/95 backdrop-blur-sm border shadow-lg"
                     align={block.sender === "user" ? "end" : "start"}
                     side="bottom"
-                    sideOffset={5}
+                    sideOffset={2}
                   >
                     <div className="space-y-2 min-w-[180px]">
                       <div className="flex items-center gap-2">
@@ -1148,12 +1132,98 @@ export default function SupportPage() {
                       )}
                     </div>
                   </HoverCardContent>
-                </HoverCard>
-              ))}
+                );
+
+                return (
+                  <div
+                    key={msgIndex}
+                    className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    {/* Image with conditional HoverCard wrapper */}
+                    {msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
+                      isDialogOpen ? (
+                        <div>{imageContent}</div>
+                      ) : (
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <div className="inline-block">{imageContent}</div>
+                          </HoverCardTrigger>
+                          {hoverCardContent}
+                        </HoverCard>
+                      )
+                    )}
+
+                    {(msg.text && msg.text.trim()) && !(msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE") && (
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <div
+                            className={`inline-block px-4 py-2 rounded-2xl text-sm wrap-break-words whitespace-pre-wrap max-w-full ${block.sender === "user"
+                              ? "bg-green-600 text-white rounded-br-none"
+                              : "bg-gray-100 text-gray-800 rounded-bl-none"
+                              }`}
+                            style={{
+                              wordBreak: 'break-word',
+                              overflowWrap: 'break-word'
+                            }}
+                          >
+                            {msg.text}
+                          </div>
+                        </HoverCardTrigger>
+
+                        <HoverCardContent
+                          className="w-auto p-3 bg-white/95 backdrop-blur-sm border shadow-lg"
+                          align={block.sender === "user" ? "end" : "start"}
+                          side="bottom"
+                          sideOffset={2}
+                        >
+                          <div className="space-y-2 min-w-[180px]">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${block.sender === "user" ? "bg-green-500" : "bg-blue-500"}`} />
+                              <span className="text-xs font-medium text-gray-700">
+                                {block.sender === "user" ? "You" : "Agent"}
+                              </span>
+                            </div>
+
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between gap-4">
+                                <span className="text-xs text-gray-500">Date & Time:</span>
+                                <span className="text-xs font-medium text-gray-800">
+                                  {msg.timestamp
+                                    ? format(new Date(msg.timestamp), "MMM dd, h:mm a")
+                                    : `${msg.date}, ${msg.time}`
+                                  }
+                                </span>
+                              </div>
+
+                              <div className="flex items-center justify-between gap-4">
+                                <span className="text-xs text-gray-500">Sent by:</span>
+                                <span className={`text-xs font-medium ${block.sender === "user" ? "text-green-600" : "text-blue-600"}`}>
+                                  {block.sender === "user" ? name : "Agent"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {msg.timestamp && (
+                              <div className="pt-1 border-t border-gray-200">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] text-gray-400">Full:</span>
+                                  <span className="text-[10px] text-gray-500">
+                                    {format(new Date(msg.timestamp), "MMM dd, yyyy 'at' h:mm:ss a")}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div
-              className={`text-[11px] mt-1 flex items-center gap-2 ${block.sender === "user"
+              className={`text-[11px] flex mt-1 items-center gap-2 ${block.sender === "user"
                 ? "justify-end text-gray-300"
                 : "justify-start text-gray-400"
                 } ${block.sender === "user" ? "flex-row" : "flex-row"}`}
@@ -1180,7 +1250,7 @@ export default function SupportPage() {
 
     return elements
   }
-  
+
   const [sendUserMessageMutation, { loading: sendingMessage }] = useMutation(SEND_USER_MESSAGE, {
     onCompleted: (data: any) => {
       if (!data.sendUserMessage.ok) {
