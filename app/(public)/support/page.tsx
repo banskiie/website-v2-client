@@ -15,6 +15,9 @@ import {
   LucideIcon,
   Inbox,
   ArrowDown,
+  Paperclip,
+  ImageIcon,
+  File,
 } from "lucide-react"
 import Header from "@/components/custom/header-white"
 import { Button } from "@/components/ui/button"
@@ -134,7 +137,10 @@ export default function SupportPage() {
   const [isRecovering, setIsRecovering] = useState(true)
   const [openDialogs, setOpenDialogs] = useState<Record<string, boolean>>({})
 
-  // Update ticketId function that also persists to localStorage
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null)
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
+  const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false)
+
   const updateTicketId = (id: string | null) => {
     setTicketId(id)
     if (id) {
@@ -144,7 +150,33 @@ export default function SupportPage() {
     }
   }
 
-  // Load all state from localStorage on mount
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setAttachmentPreview(e.target?.result as string)
+          setAttachmentFile(file)
+          setIsAttachmentMenuOpen(false)
+        }
+        reader.readAsDataURL(file)
+      } else {
+        setAttachmentFile(file)
+        setIsAttachmentMenuOpen(false)
+      }
+    }
+  }
+
+  const handleRemoveAttachment = () => {
+    setAttachmentPreview(null)
+    setAttachmentFile(null)
+    const fileInput = document.getElementById('file-input') as HTMLInputElement
+    if (fileInput) {
+      fileInput.value = ''
+    }
+  }
+
   useEffect(() => {
     const savedMessages = localStorage.getItem("chat_messages")
     const savedName = localStorage.getItem("chat_name")
@@ -213,21 +245,6 @@ export default function SupportPage() {
     return () => chatContainer.removeEventListener('scroll', handleScroll)
   }, [messages, hasNewMessages])
 
-  // useEffect(() => {
-  //   if (messages.length === 0) return
-
-  //   const lastMessage = messages[messages.length - 1]
-  //   const isNewSupportMessage = lastMessage.sender === "support" &&
-  //     messages.length - 1 > lastSeenMessageIndex
-
-  //   if (isNewSupportMessage && !isUserAtBottom) {
-  //     setHasNewMessages(true)
-  //   } else if (isUserAtBottom) {
-  //     setLastSeenMessageIndex(messages.length - 1)
-  //     setHasNewMessages(false)
-  //   }
-  // }, [messages, isUserAtBottom, lastSeenMessageIndex])
-
   useEffect(() => {
     if (messages.length === 0) return
 
@@ -238,24 +255,10 @@ export default function SupportPage() {
     if (isNewSupportMessage && !isUserAtBottom) {
       setHasNewMessages(true)
     } else if (isUserAtBottom) {
-      // User is at bottom, mark all as seen
       setLastSeenMessageIndex(messages.length - 1)
       setHasNewMessages(false)
     }
   }, [messages, isUserAtBottom, lastSeenMessageIndex])
-
-  // Scroll to bottom function
-  // const scrollToBottom = () => {
-  //   const chatContainer = chatContainerRef.current
-  //   if (chatContainer) {
-  //     chatContainer.scrollTo({
-  //       top: chatContainer.scrollHeight,
-  //       behavior: 'smooth'
-  //     })
-  //     setHasNewMessages(false)
-  //     setLastSeenMessageIndex(messages.length - 1)
-  //   }
-  // }
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     const chatContainer = chatContainerRef.current
@@ -269,6 +272,25 @@ export default function SupportPage() {
       setIsUserAtBottom(true)
     }
   }
+
+  // const showWelcomeMessage = () => {
+  //   const now = new Date()
+  //   const formattedTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  //   const formattedDate = now.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
+
+  //   setMessages((prev) => [
+  //     ...prev,
+  //     {
+  //       sender: "support",
+  //       text: "Welcome to C-ONE Chat Live Support! Send your messages here regarding your concerns in the Current Tournament. We will reply to you as soon as possible. Thank you.",
+  //       time: formattedTime,
+  //       date: formattedDate,
+  //       timestamp: now.getTime(),
+  //       status: "unread",
+  //       senderName: "Agent",
+  //     },
+  //   ])
+  // }
 
   useEffect(() => {
     if (ticketData?.ticket?.total) {
@@ -339,20 +361,6 @@ export default function SupportPage() {
     setFirst(prevFirst => prevFirst + 15)
   }
 
-  // useEffect(() => {
-  //   const chat = chatContainerRef.current
-  //   if (chat) {
-  //     const isAtBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 100
-
-  //     if (userJustSentMessage ||
-  //       (messages.length > 0 && isAtBottom && !isLoadingMore) ||
-  //       (step === "chat" && messages.length <= 1)) {
-  //       chat.scrollTop = chat.scrollHeight
-  //       setUserJustSentMessage(false)
-  //       setIsUserAtBottom(true)
-  //     }
-  //   }
-  // }, [messages, isReplying, isLoadingMore, userJustSentMessage, step])
   useEffect(() => {
     const chat = chatContainerRef.current
     if (!chat) return
@@ -380,35 +388,6 @@ export default function SupportPage() {
     }
   }, [messages, isReplying, isLoadingMore, userJustSentMessage, step])
 
-  // useEffect(() => {
-  //   const chatContainer = chatContainerRef.current
-  //   if (!chatContainer || !hasMore || ticketLoading || isLoadingMore) return
-
-  //   let isThrottled = false
-  //   const throttleDelay = 100
-
-  //   const handleScroll = () => {
-  //     if (isThrottled) return
-
-  //     isThrottled = true
-  //     setTimeout(() => {
-  //       isThrottled = false
-  //     }, throttleDelay)
-
-  //     const { scrollTop } = chatContainer
-
-  //     const shouldShowLoadMore = scrollTop < 200 && hasMore && !isLoadingMore
-  //     setShowLoadMoreText(shouldShowLoadMore)
-
-  //     if (scrollTop < 50 && hasMore && !isLoadingMore) {
-  //       console.log('Triggering load more...')
-  //       handleLoadMore()
-  //     }
-  //   }
-
-  //   chatContainer.addEventListener('scroll', handleScroll, { passive: true })
-  //   return () => chatContainer.removeEventListener('scroll', handleScroll)
-  // }, [hasMore, ticketLoading, isLoadingMore, handleLoadMore])
   useEffect(() => {
     const chatContainer = chatContainerRef.current
     if (!chatContainer) return
@@ -440,7 +419,6 @@ export default function SupportPage() {
 
     return () => chatContainer.removeEventListener('scroll', handleScroll)
   }, [messages, hasNewMessages, hasMore, isLoadingMore, ticketLoading, handleLoadMore])
-
 
   const groupMessageBlocks = (messages: Message[]) => {
     const blocks: {
@@ -496,436 +474,6 @@ export default function SupportPage() {
     return blocks
   }
 
-  // const renderMessagesWithTimestamps = (messages: Message[]) => {
-  //   if (messages.length === 0) return null
-
-  //   const groupedBlocks = groupMessageBlocks(messages)
-  //   const elements: JSX.Element[] = []
-
-  //   groupedBlocks.forEach((block, blockIndex) => {
-  //     if (blockIndex > 0) {
-  //       const currentBlockFirstMessage = block.messages[0]
-  //       const previousBlockLastMessage = groupedBlocks[blockIndex - 1].messages[
-  //         groupedBlocks[blockIndex - 1].messages.length - 1
-  //       ]
-
-  //       if (currentBlockFirstMessage.timestamp && previousBlockLastMessage.timestamp) {
-  //         const timeDifference = differenceInMinutes(
-  //           new Date(currentBlockFirstMessage.timestamp),
-  //           new Date(previousBlockLastMessage.timestamp)
-  //         )
-
-  //         if (timeDifference > 5) {
-  //           elements.push(
-  //             <div key={`timestamp-${currentBlockFirstMessage.timestamp}`} className="w-full flex justify-center my-4">
-  //               <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-  //                 {format(new Date(currentBlockFirstMessage.timestamp), "MMM d, yyyy 'at' h:mm a")}
-  //               </span>
-  //             </div>
-  //           )
-  //         }
-  //       }
-  //     }
-
-  //     elements.push(
-  //       <motion.div
-  //         key={blockIndex}
-  //         initial={{ opacity: 0, y: 10 }}
-  //         animate={{ opacity: 1, y: 0 }}
-  //         transition={{ duration: 0.3 }}
-  //         className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
-  //       >
-  //         <div className="max-w-[80%]">
-  //           <div className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"} mb-1`}>
-  //             <div className={`text-[11px] font-semibold mb-1 ${block.sender === "user" ? "text-green-800 text-right" : "text-gray-500 text-left"}`}>
-  //               {block.senderName}
-  //             </div>
-  //           </div>
-
-  //           <div className="space-y-1">
-  //             {block.messages.map((msg, msgIndex) => (
-  //               <HoverCard key={msgIndex}>
-  //                 <HoverCardTrigger asChild>
-  //                   <div
-  //                     className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
-  //                   >
-  //                     <div
-  //                       className={`inline-block px-4 py-2 rounded-2xl text-sm wrap-break-words whitespace-pre-wrap max-w-full ${block.sender === "user"
-  //                         ? "bg-green-600 text-white rounded-br-none"
-  //                         : "bg-gray-100 text-gray-800 rounded-bl-none"
-  //                         }`}
-  //                       style={{
-  //                         wordBreak: 'break-word',
-  //                         overflowWrap: 'break-word'
-  //                       }}
-  //                     >
-
-  //                       {msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
-  //                         <div className="mb-2">
-  //                           <img
-  //                             src={msg.attachment.url}
-  //                             alt="Attachment"
-  //                             className="max-w-full max-h-64 rounded-lg object-contain cursor-pointer hover:opacity-90 transition-opacity"
-  //                             onClick={() => msg.attachment?.url && window.open(msg.attachment.url, '_blank')}
-  //                           />
-  //                         </div>
-  //                       )}
-
-  //                       {msg.text && (
-  //                         <div>{msg.text}</div>
-  //                       )}
-
-  //                       {!msg.text && msg.attachment && msg.attachment.url && (
-  //                         <div className="text-xs opacity-70 italic">
-  //                           [Image]
-  //                         </div>
-  //                       )}
-  //                     </div>
-  //                   </div>
-  //                 </HoverCardTrigger>
-  //                 <HoverCardContent
-  //                   className="w-auto p-3 bg-white/95 backdrop-blur-sm border shadow-lg"
-  //                   align={block.sender === "user" ? "end" : "start"}
-  //                   side="bottom"
-  //                   sideOffset={5}
-  //                 >
-  //                   <div className="space-y-2 min-w-[180px]">
-  //                     <div className="flex items-center gap-2">
-  //                       <div className={`w-2 h-2 rounded-full ${block.sender === "user" ? "bg-green-500" : "bg-blue-500"}`} />
-  //                       <span className="text-xs font-medium text-gray-700">
-  //                         {block.sender === "user" ? "You" : "Agent"}
-  //                       </span>
-  //                     </div>
-
-  //                     <div className="space-y-1">
-  //                       <div className="flex items-center justify-between gap-4">
-  //                         <span className="text-xs text-gray-500">Date & Time:</span>
-  //                         <span className="text-xs font-medium text-gray-800">
-  //                           {msg.timestamp
-  //                             ? format(new Date(msg.timestamp), "MMM dd, h:mm a")
-  //                             : `${msg.date}, ${msg.time}`
-  //                           }
-  //                         </span>
-  //                       </div>
-
-  //                       <div className="flex items-center justify-between gap-4">
-  //                         <span className="text-xs text-gray-500">Sent by:</span>
-  //                         <span className={`text-xs font-medium ${block.sender === "user" ? "text-green-600" : "text-blue-600"}`}>
-  //                           {block.sender === "user" ? name : "Agent"}
-  //                         </span>
-  //                       </div>
-  //                     </div>
-
-  //                     {msg.timestamp && (
-  //                       <div className="pt-1 border-t border-gray-200">
-  //                         <div className="flex items-center justify-between">
-  //                           <span className="text-[10px] text-gray-400">Full:</span>
-  //                           <span className="text-[10px] text-gray-500">
-  //                             {format(new Date(msg.timestamp), "MMM dd, yyyy 'at' h:mm:ss a")}
-  //                           </span>
-  //                         </div>
-  //                       </div>
-  //                     )}
-  //                   </div>
-  //                 </HoverCardContent>
-  //               </HoverCard>
-  //             ))}
-  //           </div>
-
-  //           <div
-  //             className={`text-[11px] mt-1 flex items-center gap-2 ${block.sender === "user"
-  //               ? "justify-end text-gray-300"
-  //               : "justify-start text-gray-400"
-  //               } ${block.sender === "user" ? "flex-row" : "flex-row"}`}
-  //           >
-  //             <div
-  //               className={`${block.sender === "user"
-  //                 ? block.status === "seen"
-  //                   ? "text-green-500"
-  //                   : "text-gray-400"
-  //                 : block.status === "seen"
-  //                   ? "text-blue-500"
-  //                   : "text-gray-500"
-  //                 }`}
-  //             >
-  //               {block.status === "seen" ? "Seen" : "Delivered"}
-  //             </div>
-
-  //             <div>{block.time}</div>
-  //           </div>
-  //         </div>
-  //       </motion.div>
-  //     )
-  //   })
-
-  //   return elements
-  // }
-
-  // kagahapon na chat na naay duha ka image bubbles
-  // const renderMessagesWithTimestamps = (messages: Message[]) => {
-  //   if (messages.length === 0) return null
-
-  //   const groupedBlocks = groupMessageBlocks(messages)
-  //   const elements: JSX.Element[] = []
-
-  //   groupedBlocks.forEach((block, blockIndex) => {
-  //     if (blockIndex > 0) {
-  //       const currentBlockFirstMessage = block.messages[0]
-  //       const previousBlockLastMessage = groupedBlocks[blockIndex - 1].messages[
-  //         groupedBlocks[blockIndex - 1].messages.length - 1
-  //       ]
-
-  //       if (currentBlockFirstMessage.timestamp && previousBlockLastMessage.timestamp) {
-  //         const timeDifference = differenceInMinutes(
-  //           new Date(currentBlockFirstMessage.timestamp),
-  //           new Date(previousBlockLastMessage.timestamp)
-  //         )
-
-  //         if (timeDifference > 5) {
-  //           elements.push(
-  //             <div key={`timestamp-${currentBlockFirstMessage.timestamp}`} className="w-full flex justify-center my-4">
-  //               <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-  //                 {format(new Date(currentBlockFirstMessage.timestamp), "MMM d, yyyy 'at' h:mm a")}
-  //               </span>
-  //             </div>
-  //           )
-  //         }
-  //       }
-  //     }
-
-  //     elements.push(
-  //       <motion.div
-  //         key={blockIndex}
-  //         initial={{ opacity: 0, y: 10 }}
-  //         animate={{ opacity: 1, y: 0 }}
-  //         transition={{ duration: 0.3 }}
-  //         className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
-  //       >
-  //         <div className="max-w-[80%]">
-  //           <div className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"} mb-1`}>
-  //             <div className={`text-[11px] font-semibold mb-1 ${block.sender === "user" ? "text-green-800 text-right" : "text-gray-500 text-left"}`}>
-  //               {block.senderName}
-  //             </div>
-  //           </div>
-
-  //           <div className="space-y-1">
-  //             {block.messages.map((msg, msgIndex) => (
-  //               <div key={msgIndex}>
-  //                 {msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
-  //                   <div className={`mb-2 ${msg.text ? 'mb-3' : ''}`}>
-  //                     <Dialog>
-  //                       <DialogTrigger asChild>
-  //                         <div className={`
-  //                           relative overflow-hidden cursor-pointer group
-  //                           rounded-2xl
-  //                           ${block.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}
-  //                           border border-gray-200
-  //                           shadow-sm
-  //                           hover:shadow-md transition-all duration-200
-  //                           bg-transparent
-  //                         `}>
-  //                           <div className="relative overflow-hidden rounded-2xl">
-  //                             <Image
-  //                               src={msg.attachment.url}
-  //                               alt="Attachment"
-  //                               width={500}
-  //                               height={500}
-  //                               className={`
-  //                                 object-cover w-full
-  //                                 max-w-[280px] max-h-[280px]
-  //                                 transition-transform duration-200
-  //                                 group-hover:scale-105
-  //                                 rounded-2xl
-  //                               `}
-  //                               onError={(e) => {
-  //                                 console.error('Image failed to load:', msg.attachment?.url);
-  //                               }}
-  //                             />
-
-  //                             <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity duration-200 rounded-2xl pointer-events-none" />
-  //                           </div>
-
-  //                           {msg.text && (
-  //                             <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-black/10 to-transparent rounded-b-2xl pointer-events-none" />
-  //                           )}
-  //                         </div>
-  //                       </DialogTrigger>
-
-  //                       <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-black/90 border-0">
-  //                         <DialogTitle className="sr-only">
-  //                           Image attachment from {block.senderName}
-  //                         </DialogTitle>
-
-  //                         <div className="relative w-full h-full flex items-center justify-center p-4">
-  //                           <DialogClose asChild>
-  //                             <Button
-  //                               className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors cursor-pointer border-none"
-  //                               onClick={(e) => e.stopPropagation()}
-  //                             >
-  //                               <XCircle className="w-6 h-6" />
-  //                             </Button>
-  //                           </DialogClose>
-
-  //                           <div className="relative max-w-full max-h-full flex items-center justify-center">
-  //                             <Image
-  //                               src={msg.attachment.url}
-  //                               alt="Attachment preview"
-  //                               width={1200}
-  //                               height={1200}
-  //                               className="max-w-full max-h-[80vh] object-contain rounded-lg"
-  //                               onError={(e) => {
-  //                                 console.error('Image failed to load in modal:', msg.attachment?.url);
-  //                               }}
-  //                             />
-
-  //                             {/* <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-2 rounded-lg text-sm">
-  //                               <div>Sent by: {block.senderName}</div>
-  //                               <div className="text-xs opacity-75">
-  //                                 {msg.timestamp ? format(new Date(msg.timestamp), "MMM d, yyyy 'at' h:mm a") : `${msg.date}, ${msg.time}`}
-  //                               </div>
-  //                             </div> */}
-
-  //                           </div>
-  //                         </div>
-  //                       </DialogContent>
-  //                     </Dialog>
-
-  //                     <div className={`
-  //                       flex items-center justify-between mt-1 px-1
-  //                       ${block.sender === "user" ? "text-green-700" : "text-gray-500"}
-  //                       text-xs
-  //                     `}>
-  //                       <span> Photo</span>
-  //                       <span className="opacity-70">{msg.time}</span>
-  //                     </div>
-  //                   </div>
-  //                 )}
-
-  //                 {/* Text content with HoverCard - Separate from image */}
-  //                 <HoverCard>
-  //                   <HoverCardTrigger asChild>
-  //                     <div
-  //                       className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
-  //                     >
-  //                       <div
-  //                         className={`inline-block px-4 py-2 rounded-2xl text-sm wrap-break-words whitespace-pre-wrap max-w-full ${block.sender === "user"
-  //                           ? "bg-green-600 text-white rounded-br-none"
-  //                           : "bg-gray-100 text-gray-800 rounded-bl-none"
-  //                           }`}
-  //                         style={{
-  //                           wordBreak: 'break-word',
-  //                           overflowWrap: 'break-word'
-  //                         }}
-  //                       >
-  //                         {msg.text && msg.text.trim() && (
-  //                           <div className={`
-  //                             ${msg.attachment && msg.attachment.url ? "mt-2" : ""}
-  //                             ${block.sender === "user" ? "text-white" : "text-gray-800"}
-  //                           `}>
-  //                             {msg.text}
-  //                           </div>
-  //                         )}
-
-  //                         {(!msg.text || !msg.text.trim()) && msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
-  //                           <div className={`
-  //                             text-xs italic mt-1
-  //                             ${block.sender === "user" ? "text-green-200" : "text-gray-500"}
-  //                           `}>
-  //                             [Image]
-  //                           </div>
-  //                         )}
-  //                       </div>
-  //                     </div>
-  //                   </HoverCardTrigger>
-
-  //                   <HoverCardContent
-  //                     className="w-auto p-3 bg-white/95 backdrop-blur-sm border shadow-lg"
-  //                     align={block.sender === "user" ? "end" : "start"}
-  //                     side="bottom"
-  //                     sideOffset={5}
-  //                   >
-  //                     <div className="space-y-2 min-w-[180px]">
-  //                       <div className="flex items-center gap-2">
-  //                         <div className={`w-2 h-2 rounded-full ${block.sender === "user" ? "bg-green-500" : "bg-blue-500"}`} />
-  //                         <span className="text-xs font-medium text-gray-700">
-  //                           {block.sender === "user" ? "You" : "Agent"}
-  //                         </span>
-  //                       </div>
-
-  //                       <div className="space-y-1">
-  //                         <div className="flex items-center justify-between gap-4">
-  //                           <span className="text-xs text-gray-500">Date & Time:</span>
-  //                           <span className="text-xs font-medium text-gray-800">
-  //                             {msg.timestamp
-  //                               ? format(new Date(msg.timestamp), "MMM dd, h:mm a")
-  //                               : `${msg.date}, ${msg.time}`
-  //                             }
-  //                           </span>
-  //                         </div>
-
-  //                         <div className="flex items-center justify-between gap-4">
-  //                           <span className="text-xs text-gray-500">Sent by:</span>
-  //                           <span className={`text-xs font-medium ${block.sender === "user" ? "text-green-600" : "text-blue-600"}`}>
-  //                             {block.sender === "user" ? name : "Agent"}
-  //                           </span>
-  //                         </div>
-
-  //                         {msg.attachment && (
-  //                           <div className="flex items-center justify-between gap-4">
-  //                             <span className="text-xs text-gray-500">Attachment:</span>
-  //                             <span className="text-xs font-medium text-gray-800">
-  //                               {msg.attachment.type}
-  //                             </span>
-  //                           </div>
-  //                         )}
-  //                       </div>
-
-  //                       {msg.timestamp && (
-  //                         <div className="pt-1 border-t border-gray-200">
-  //                           <div className="flex items-center justify-between">
-  //                             <span className="text-[10px] text-gray-400">Full:</span>
-  //                             <span className="text-[10px] text-gray-500">
-  //                               {format(new Date(msg.timestamp), "MMM dd, yyyy 'at' h:mm:ss a")}
-  //                             </span>
-  //                           </div>
-  //                         </div>
-  //                       )}
-  //                     </div>
-  //                   </HoverCardContent>
-  //                 </HoverCard>
-  //               </div>
-  //             ))}
-  //           </div>
-
-  //           <div
-  //             className={`text-[11px] mt-1 flex items-center gap-2 ${block.sender === "user"
-  //               ? "justify-end text-gray-300"
-  //               : "justify-start text-gray-400"
-  //               } ${block.sender === "user" ? "flex-row" : "flex-row"}`}
-  //           >
-  //             <div
-  //               className={`${block.sender === "user"
-  //                 ? block.status === "seen"
-  //                   ? "text-green-500"
-  //                   : "text-gray-400"
-  //                 : block.status === "seen"
-  //                   ? "text-blue-500"
-  //                   : "text-gray-500"
-  //                 }`}
-  //             >
-  //               {block.status === "seen" ? "Seen" : "Delivered"}
-  //             </div>
-
-  //             <div>{block.time}</div>
-  //           </div>
-  //         </div>
-  //       </motion.div>
-  //     )
-  //   })
-
-  //   return elements
-  // }
-
   const renderMessagesWithTimestamps = (messages: Message[]) => {
     if (messages.length === 0) return null
 
@@ -977,7 +525,6 @@ export default function SupportPage() {
                 const dialogKey = `${blockIndex}-${msgIndex}`;
                 const isDialogOpen = openDialogs[dialogKey] || false;
 
-                // Create the image content that will be wrapped conditionally
                 const imageContent = (
                   <div>
                     <Dialog
@@ -1057,7 +604,6 @@ export default function SupportPage() {
                       </DialogContent>
                     </Dialog>
 
-                    {/* Text content below the image */}
                     {(msg.text && msg.text.trim()) && (
                       <div className="mt-2">
                         <div
@@ -1139,7 +685,6 @@ export default function SupportPage() {
                     key={msgIndex}
                     className={`flex ${block.sender === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    {/* Image with conditional HoverCard wrapper */}
                     {msg.attachment && msg.attachment.url && msg.attachment.type === "IMAGE" && (
                       isDialogOpen ? (
                         <div>{imageContent}</div>
@@ -1159,7 +704,7 @@ export default function SupportPage() {
                           <div
                             className={`inline-block px-4 py-2 rounded-2xl text-sm wrap-break-words whitespace-pre-wrap max-w-full ${block.sender === "user"
                               ? "bg-green-600 text-white rounded-br-none"
-                              : "bg-gray-100 text-gray-800 rounded-bl-none"
+                              : "bg-white border border-black/20 text-gray-800 rounded-bl-none"
                               }`}
                             style={{
                               wordBreak: 'break-word',
@@ -1266,7 +811,6 @@ export default function SupportPage() {
     onCompleted: (data: any) => {
       if (data.sendOTP.ok) {
         setPendingOtp({ email: "", active: false })
-        // Show sending animation for 2 seconds before showing OTP
         setTimeout(() => setStep("otp"), 2000)
         setError(null)
       } else {
@@ -1274,8 +818,6 @@ export default function SupportPage() {
       }
     },
     onError: (err: any) => {
-      console.log("sendOTP error:", err)
-
       const pendingOtpError = err.graphQLErrors?.find(
         (e: any) => e.extensions?.code === "PENDING_OTP"
       )
@@ -1318,7 +860,6 @@ export default function SupportPage() {
       setLastUserMessageTime(null)
       setAutoResponseShown(false)
 
-      // Clear the timeout since agent responded
       if (autoResponseTimeoutRef.current) {
         clearTimeout(autoResponseTimeoutRef.current)
       }
@@ -1382,7 +923,6 @@ export default function SupportPage() {
     if (!subscriptionData?.newMessage?.latestMessage) return
 
     const msg = subscriptionData.newMessage.latestMessage
-    console.log('New message received from subscription:', msg)
 
     const date = new Date(Number(msg.timestamp))
     const formattedTime = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -1425,61 +965,28 @@ export default function SupportPage() {
     }
   }, [step, isRecovering])
 
-  useEffect(() => {
-    console.log('=== DEBUG INFO ===');
-    console.log('Current ticketId:', ticketId);
-    console.log('Current step:', step);
-    console.log('Subscription data:', subscriptionData);
-    console.log('Messages count:', messages.length);
-    console.log('Messages:', messages);
-    console.log('Last user message time:', lastUserMessageTime);
-    console.log('Auto response shown:', autoResponseShown);
-    console.log('Is recovering:', isRecovering);
-    console.log('==================');
-  }, [ticketId, step, subscriptionData, messages, lastUserMessageTime, autoResponseShown, isRecovering])
 
   const [verifyOTP, { loading: verifying }] = useMutation(VERIFY_OTP, {
     onCompleted: (data: any) => {
-      console.log('=== VERIFY OTP RESPONSE ===');
-      console.log('Full response data:', data);
-      console.log('verifyOTP.ok:', data.verifyOTP.ok);
-      console.log('verifyOTP.message:', data.verifyOTP.message);
-      console.log('verifyOTP.ticket:', data.verifyOTP.ticket);
-
+     
       if (data.verifyOTP.ok) {
         const { ticket } = data.verifyOTP;
-        console.log('Ticket object:', ticket);
-        console.log('Ticket _id:', ticket?._id);
-        console.log('Ticket name:', ticket?.name);
-        console.log('Ticket email:', ticket?.email);
 
         if (ticket?._id) {
           updateTicketId(ticket._id)
-          console.log('Ticket ID set to state and localStorage:', ticket._id)
-        } else {
-          console.log('No ticket _id found in response')
-        }
+        } 
 
         if (ticket?.name && ticket.name.trim() !== "") {
-          console.log('Name exists, going directly to chat')
           setName(ticket.name)
           setStep("chat")
         } else {
-          console.log('No name found, going to name input step')
           setStep("name")
         }
       } else {
-        console.log('OTP verification failed');
         setError(data.verifyOTP.message);
       }
-      console.log('========================');
     },
     onError: (err: any) => {
-      console.log('=== VERIFY OTP ERROR ===');
-      console.log('Error:', err);
-      console.log('GraphQL Errors:', err.graphQLErrors);
-      console.log('Network Error:', err.networkError);
-      console.log('========================');
       setError(err.message)
     },
   })
@@ -1506,7 +1013,6 @@ export default function SupportPage() {
 
   const handleContinue = () => {
     if (!isValid) return
-    console.log("Sending OTP to:", email)
     setStep("sending-otp")
     sendOTP({ variables: { email } })
   }
@@ -1521,12 +1027,43 @@ export default function SupportPage() {
     if (!inputMessage.trim()) return
 
     const messageText = inputMessage.trim()
+
+    if (!messageText && !attachmentFile) return
+
     setInputMessage("")
 
     setUserJustSentMessage(true)
 
     setLastUserMessageTime(Date.now());
     setAutoResponseShown(false);
+
+    if (attachmentPreview || attachmentFile) {
+      const now = new Date()
+      const formattedTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      const formattedDate = now.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
+
+      const tempMessage: Message = {
+        sender: "user",
+        text: messageText,
+        time: formattedTime,
+        date: formattedDate,
+        timestamp: now.getTime(),
+        status: "unread",
+        senderName: name,
+        attachment: attachmentPreview ? {
+          type: "IMAGE",
+          url: attachmentPreview
+        } : attachmentFile ? {
+          type: "FILE",
+          url: null
+        } : undefined
+      }
+
+      setMessages(prev => [...prev, tempMessage])
+
+      setAttachmentPreview(null)
+      setAttachmentFile(null)
+    }
 
     try {
       await sendUserMessageMutation({
@@ -1651,7 +1188,7 @@ export default function SupportPage() {
       setStep("otp")
       setOtp("")
     }
-    else if (step === "name") setStep("otp") // not sure if iapil ba ni
+    else if (step === "name") setStep("otp")
     else if (step === "chat") setStep("name")
   }
 
@@ -1698,7 +1235,6 @@ export default function SupportPage() {
     </div>
   )
 
-  // Show loading while recovering state
   if (isRecovering) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#eef3ff] to-[#e2e8ff] relative overflow-hidden px-4">
@@ -1712,7 +1248,8 @@ export default function SupportPage() {
 
   if (!introDone) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#eef3ff] to-[#e2e8ff] relative overflow-hidden px-4">
+      // bg-linear-to-b from-[#eef3ff] to-[#e2e8ff] 
+      <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-[#eef3ff] to-[#e2e8ff] relative overflow-hidden px-4">
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: [0, 1.2, 1], opacity: [0, 1, 1] }}
@@ -2128,162 +1665,298 @@ export default function SupportPage() {
           <motion.div
             key="chat"
             {...fadeTransition}
-            className="bg-white md:rounded-2xl lg:rounded-2xl shadow-lg max-w-full md:max-w-2xl lg:max-w-2xl w-full flex flex-col h-[94vh] mt-15 md:h-[700px] lg:h-[700px] overflow-x-hidden"
+            className="w-full h-screen flex pt-16"
           >
-            <div className="bg-linear-to-r from-green-600 to-green-500 p-6 text-white shrink-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm">
-                    <Headphones className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold">Live Support</h2>
-                    <p className="text-sm text-white/80">{name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleBack}
-                    className="text-white/80 hover:text-white flex items-center gap-1 text-sm bg-white/20 hover:bg-white/30 p-2 rounded-md cursor-pointer backdrop-blur-sm transition-all"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
+            {/* Sidebar Balik rako */}
+            <div className="w-64 bg-linear-to-b from-green-50 to-emerald-50 border-r border-green-100 shrink-0 p-6 space-y-6">
+              <div>
+                <h3 className="text-green-900 font-semibold mb-2">C-ONE Chat Support</h3>
+                <p className="text-xs text-green-700">Your support conversation</p>
+              </div>
 
-                  <button
-                    onClick={handleClearChat}
-                    className="text-white hover:text-white flex items-center gap-1 text-sm bg-white/20 hover:bg-white/30 p-2 rounded-md cursor-pointer backdrop-blur-sm transition-all"
-                  >
-                    New Chat
-                  </button>
+              <div className="h-px bg-green-200"></div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-xs text-green-600">Email</p>
+                  <p className="text-sm text-green-900 font-medium">{email}</p>
                 </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs text-green-600">Name</p>
+                  <p className="text-sm text-green-900 font-medium">{name}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs text-green-600">Last Activity</p>
+                  <p className="text-sm text-green-900">
+                    {messages.length > 0
+                      ? `${new Date(messages[messages.length - 1].timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                      : 'Just now'
+                    }
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs text-green-600">Status</p>
+                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
+                    Active
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-px bg-green-200"></div>
+
+              <div className="space-y-3">
+                <p className="text-xs text-green-600">Quick Actions</p>
+                <Button
+                  onClick={handleClearChat}
+                  className="w-full justify-start bg-green-600 hover:bg-green-700 text-white text-sm"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  New Chat
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-green-700 border-green-300 hover:bg-green-100 text-sm"
+                  onClick={handleDownloadChat}
+                >
+                  <File className="w-4 h-4 mr-2" />
+                  Download Chat
+                </Button>
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col overflow-hidden relative">
-              {/* New Message Indicator */}
-              <AnimatePresence>
-                {hasNewMessages && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10"
-                  >
-                    <div className="bg-red-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs font-medium">
-                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                      New Message
+            {/* bg-linear-to-r from-green-600 to-green-500 */}
+            <div className="flex-1 flex flex-col bg-white shadow-lg overflow-hidden">
+              <div className="bg-white p-3 text-black shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-linear-to-r from-green-600 to-green-500 text-white p-3 rounded-full backdrop-blur-sm">
+                      <Headphones className="w-4 h-4 text-white" />
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence>
-                {!isUserAtBottom && (
-                  <motion.button
-                    animate={{
-                      y: [0, -25, 0],
-                      transition: {
-                        duration: 1.8,
-                        repeat: Infinity,
-                        repeatType: "loop",
-                        ease: "easeInOut",
-                      },
-                    }}
-                    onClick={() => scrollToBottom('smooth')}
-                    className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10 bg-green-600 hover:bg-green-500 text-white p-3 rounded-full shadow-lg transition-all duration-200 cursor-pointer"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <ArrowDown className="w-5 h-5" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-
-              <div
-                ref={chatContainerRef}
-                id="chat-container"
-                className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-300"
-              >
-                {showLoadMoreText && hasMore && !isLoadingMore && (
-                  <div className="flex justify-center py-2">
-                    <div className="flex items-center gap-2 text-green-600 text-sm">
-                      <motion.div
-                        className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      />
-                      Loading older messages...
+                    <div>
+                      <h2 className="text-base text-gray-900 font-semibold">Live Support</h2>
+                      <p className="text-sm text-black/80">{name}</p>
                     </div>
                   </div>
-                )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleBack}
+                      className="flex items-center gap-1 text-sm bg-green-600 hover:bg-green-700 text-white p-2 rounded-md cursor-pointer backdrop-blur-sm transition-all"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
 
-                {!hasMore && messages.length > 0 && (
-                  <div className="flex justify-center py-2">
-                    <div className="text-gray-400 text-sm">
-                      No more messages to load
-                    </div>
+                    {/* <button
+                      onClick={handleClearChat}
+                      className="flex items-center gap-1 text-sm bg-green-600 hover:bg-green-700 text-white p-2 rounded-md cursor-pointer backdrop-blur-sm transition-all"
+                    >
+                      New Chat
+                    </button> */}
                   </div>
-                )}
-
-                {renderMessagesWithTimestamps(messages)}
-
-                {isReplying && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex justify-start"
-                  >
-                    <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-2xl rounded-bl-none max-w-xs sm:max-w-sm text-sm flex gap-1 items-center">
-                      <motion.span
-                        className="w-2 h-2 bg-gray-400 rounded-full"
-                        animate={{ opacity: [0.4, 1, 0.4] }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-                      />
-                      <motion.span
-                        className="w-2 h-2 bg-gray-400 rounded-full"
-                        animate={{ opacity: [0.4, 1, 0.4] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: 0.2, ease: "easeInOut" }}
-                      />
-                      <motion.span
-                        className="w-2 h-2 bg-gray-400 rounded-full"
-                        animate={{ opacity: [0.4, 1, 0.4] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: 0.4, ease: "easeInOut" }}
-                      />
-                    </div>
-                  </motion.div>
-                )}
+                </div>
               </div>
 
-              <form onSubmit={handleSendMessage} className="flex items-center gap-2 border-t p-4">
-                <InputGroup className="flex-1">
-                  <InputGroupTextarea
-                    placeholder="Type your message..."
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault()
-                        handleSendMessage(e as unknown as FormEvent)
-                      }
-                    }}
-                    className="px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 max-h-32 overflow-y-auto resize-none"
-                    rows={1}
-                    style={{
-                      wordBreak: 'break-word',
-                      overflowWrap: 'break-word'
-                    }}
-                  />
-                </InputGroup>
+              <div className="flex-1 flex flex-col overflow-hidden bg-gray-100 relative">
+                <AnimatePresence>
+                  {hasNewMessages && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10"
+                    >
+                      <div className="bg-red-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs font-medium">
+                        <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                        New Message
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-                <Button
-                  type="submit"
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-md"
+                <AnimatePresence>
+                  {!isUserAtBottom && (
+                    <motion.button
+                      animate={{
+                        y: [0, -25, 0],
+                        transition: {
+                          duration: 1.8,
+                          repeat: Infinity,
+                          repeatType: "loop",
+                          ease: "easeInOut",
+                        },
+                      }}
+                      onClick={() => scrollToBottom('smooth')}
+                      className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10 bg-green-600 hover:bg-green-500 text-white p-3 rounded-full shadow-lg transition-all duration-200 cursor-pointer"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <ArrowDown className="w-5 h-5" />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+
+                <div
+                  ref={chatContainerRef}
+                  id="chat-container"
+                  className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-300"
                 >
-                  <Send className="w-4 h-4" />
-                  Send
-                </Button>
-              </form>
+                  {showLoadMoreText && hasMore && !isLoadingMore && (
+                    <div className="flex justify-center py-2">
+                      <div className="flex items-center gap-2 text-green-600 text-sm">
+                        <motion.div
+                          className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        />
+                        Loading older messages...
+                      </div>
+                    </div>
+                  )}
+
+                  {!hasMore && messages.length > 0 && (
+                    <div className="flex justify-center py-2">
+                      <div className="text-gray-400 text-sm">
+                        No more messages to load
+                      </div>
+                    </div>
+                  )}
+
+                  {renderMessagesWithTimestamps(messages)}
+
+                  {isReplying && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex justify-start"
+                    >
+                      <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-2xl rounded-bl-none max-w-xs sm:max-w-sm text-sm flex gap-1 items-center">
+                        <motion.span
+                          className="w-2 h-2 bg-gray-400 rounded-full"
+                          animate={{ opacity: [0.4, 1, 0.4] }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                        />
+                        <motion.span
+                          className="w-2 h-2 bg-gray-400 rounded-full"
+                          animate={{ opacity: [0.4, 1, 0.4] }}
+                          transition={{ duration: 1, repeat: Infinity, delay: 0.2, ease: "easeInOut" }}
+                        />
+                        <motion.span
+                          className="w-2 h-2 bg-gray-400 rounded-full"
+                          animate={{ opacity: [0.4, 1, 0.4] }}
+                          transition={{ duration: 1, repeat: Infinity, delay: 0.4, ease: "easeInOut" }}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 border-t p-4 bg-white relative">
+                  <AnimatePresence>
+                    {isAttachmentMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                        className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border p-2 z-10"
+                      >
+                        <div className="flex gap-2">
+                          <label className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer transition-colors">
+                            <ImageIcon className="w-4 h-4 text-blue-500" />
+                            <span className="text-sm">Photo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFileSelect}
+                              className="hidden"
+                              id="image-input"
+                            />
+                          </label>
+
+                          <label className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer transition-colors">
+                            <File className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm">File</span>
+                            <input
+                              type="file"
+                              onChange={handleFileSelect}
+                              className="hidden"
+                              id="file-input"
+                            />
+                          </label>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {attachmentPreview && (
+                    <div className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-white border rounded-lg mx-4">
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src={attachmentPreview}
+                          alt="Attachment preview"
+                          width={48}
+                          height={48}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium truncate">
+                            {attachmentFile?.name || 'Image'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {(attachmentFile?.size || 0) / 1024} KB
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={handleRemoveAttachment}
+                          className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setIsAttachmentMenuOpen(!isAttachmentMenuOpen)}
+                    className="flex items-center justify-center w-10 h-10 text-gray-500 hover:text-green-600 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+
+                  <InputGroup className="flex-1">
+                    <InputGroupTextarea
+                      placeholder="Type your message..."
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault()
+                          handleSendMessage(e as unknown as FormEvent)
+                        }
+                      }}
+                      className="px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 min-h-10! max-h-32 overflow-y-auto resize-none"
+                      rows={1}
+                      style={{
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word'
+                      }}
+                    />
+                  </InputGroup>
+
+                  <Button
+                    type="submit"
+                    disabled={!inputMessage.trim() && !attachmentFile}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-5 rounded-md"
+                  >
+                    <Send className="w-4 h-4" />
+                    Send
+                  </Button>
+                </form>
+              </div>
             </div>
           </motion.div>
         )}

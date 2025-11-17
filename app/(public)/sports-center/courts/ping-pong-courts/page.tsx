@@ -8,6 +8,7 @@ import { motion, useMotionValue, useScroll, useSpring, useTransform } from "fram
 import Footer from '@/components/custom/footer'
 import ScrollIndicator from '@/components/custom/scroll-indicator'
 import FloatingChatWidget from '@/components/custom/ticket'
+import useSmoothScroll from '@/hooks/useSmoothScroll'
 
 const table_tennis_courts = [
     "DSC_0034.png",
@@ -20,6 +21,7 @@ const table_tennis_courts = [
     "DSC_0062.png",
 ]
 function page() {
+    useSmoothScroll()
     const { scrollYProgress } = useScroll();
     const y = useTransform(scrollYProgress, [0, 1], [0, -80]);
 

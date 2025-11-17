@@ -5,6 +5,7 @@ import Header from '@/components/custom/header'
 import ScrollIndicator from '@/components/custom/scroll-indicator'
 import FloatingChatWidget from '@/components/custom/ticket'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
+import useSmoothScroll from '@/hooks/useSmoothScroll'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Badge, Clock, Map, MapPin, MouseIcon, Phone } from 'lucide-react'
 import Image from 'next/image'
@@ -27,9 +28,18 @@ const locations = [
         name: "Uptown Court",
         img: "/assets/img/sports-center/court/location/uptown.png",
         hours: "6:00 AM - 10:00 PM",
-        fields: 11,
+        fields: 2,
         phone: "0917-134-4695",
         map: "SM Uptown CDO (2nd Level, Main Maill Beside Cinema 3)"
+    },
+    {
+        name: "Limketkai Mall Court",
+        img: "/assets/img/sports-center/court/location/limketkai.jpg",
+        hours: "6:00 AM - 09:00 PM",
+        fields: 4,
+        phone: "0917-134-4695",
+        map: "Limketkai Mall, Cinema 2"
+        
     },
 ]
 
@@ -83,6 +93,7 @@ const tournamentData = [
 ]
 
 function page() {
+    useSmoothScroll()
     const [selectedCourt, setSelectedCourt] = useState<number | null>(null)
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
     const [showAll, setShowAll] = useState(false)
@@ -416,7 +427,7 @@ function page() {
                                                 >
                                                     Court {index + 1}
                                                 </p>
-                                              
+
                                             </motion.div>
 
                                             <p
@@ -521,7 +532,7 @@ function page() {
                     <span className="text-white">Location</span>
                 </motion.h2>
 
-                <div className="relative grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 lg:gap-16 w-full max-w-5xl z-10">
+                <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12 lg:gap-16 max-w-7xl z-10">
                     {locations.map((loc, index) => (
                         <motion.div
                             key={index}
@@ -554,7 +565,7 @@ function page() {
                             <div className="w-full flex justify-between items-center px-4 md:px-6 py-3 md:py-4 border-t border-gray-200">
                                 <div className="flex flex-col space-y-2 text-sm md:text-base">
                                     <div className="flex items-center text-gray-700">
-                                        <Badge className="w-4 h-4 mr-2" /> {loc.fields} Fields
+                                        <Badge className="w-4 h-4 mr-2" /> {loc.fields} Courts
                                     </div>
                                     <div className="flex items-center text-gray-700">
                                         <Phone className="w-4 h-4 mr-2" /> {loc.phone}
