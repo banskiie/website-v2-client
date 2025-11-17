@@ -1,11 +1,5 @@
 "use client"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,10 +8,16 @@ import { useAuthStore } from "@/store/auth.store"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery, useSubscription } from "@apollo/client/react"
 import { format } from "date-fns"
-import { ArrowLeft, ImageIcon, SendHorizonal, XIcon } from "lucide-react"
+import {
+  ArrowLeft,
+  FileText,
+  Paperclip,
+  SendHorizonal,
+  Video,
+  XIcon,
+} from "lucide-react"
 import { useEffect, useRef, useState, useTransition } from "react"
 import { use } from "react"
-import { Spinner } from "@/components/ui/spinner"
 import { useRouter } from "next/navigation"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { useDropzone } from "react-dropzone"
@@ -32,6 +32,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import Image from "next/image"
+import Link from "next/link"
+import { Separator } from "@/components/ui/separator"
 
 const TICKET = gql`
   query Ticket($_id: ID!, $first: Int!) {
@@ -55,6 +57,8 @@ const TICKET = gql`
         attachment {
           type
           url
+          name
+          size
         }
       }
     }
@@ -72,6 +76,8 @@ const NEW_MESSAGE_SUBSCRIPTION = gql`
         attachment {
           type
           url
+          name
+          size
         }
         agent {
           _id
@@ -105,7 +111,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
   const router = useRouter()
   const { id: _id } = use(params)
   const [isPending, startTransition] = useTransition()
-  const [first, setFirst] = useState(15)
+  const [first, setFirst] = useState(20)
   const user = useAuthStore((state) => state.user)
   const convoRef = useRef<HTMLDivElement>(null)
   const { data: ticketData, loading }: any = useQuery(TICKET, {
@@ -127,20 +133,24 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
   const [ticket, setTicket] = useState<any>(null)
   const [message, setMessage] = useState("")
   const [sendMessage] = useMutation(SEND_MESSAGE)
-  const [scrollPosition, setScrollPosition] = useState(0)
   // Handle Image
   const [files, setFiles] = useState<any[]>([])
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
       "image/png": [],
+      "image/jpg": [],
       "image/jpeg": [],
+      "application/pdf": [],
+      "application/msword": [],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        [],
+      "video/mp4": [],
     },
     multiple: false,
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 25 * 1024 * 1024, // 25MB
     onDrop: (acceptedFiles: any, fileRejections: any) => {
       if (fileRejections.length > 0) {
-        toast.error("File too large. (Max size: 10MB)")
-        // Optionally handle file size errors here
+        toast.error("File too large or unsupported type. (Max size: 25MB)")
         return
       }
       setFiles(
@@ -153,25 +163,12 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
     },
   })
 
-  const showScrollToBottom =
-    convoRef.current &&
-    typeof convoRef.current.scrollHeight === "number" &&
-    scrollPosition < convoRef.current.scrollHeight - 800
-
-  useEffect(() => {
-    const ref = convoRef.current
-    if (!ref) return
-    const handleScroll = () => {
-      setScrollPosition(ref.scrollTop)
-      if (
-        ref.scrollTop === 0 &&
-        ticketData?.ticket?.total > conversation.length
-      )
-        setFirst((f) => f + 15)
+  const loadMore = () => {
+    if (ticketData?.ticket?.total > conversation.length) {
+      setFirst((f) => f + 20)
+      scrollTo("top")
     }
-    ref.addEventListener("scroll", handleScroll)
-    return () => ref.removeEventListener("scroll", handleScroll)
-  }, [ticketData?.ticket?.total, conversation.length])
+  }
 
   useEffect(() => {
     if (!ticket) setTicket(ticketData?.ticket)
@@ -179,9 +176,8 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
 
   // Only scroll to bottom when a new message is added (not on initial load)
   useEffect(() => {
-    if (convoRef.current && conversation.length <= 15) {
+    if (convoRef.current && conversation.length <= 20)
       convoRef.current.scrollTop = convoRef.current.scrollHeight
-    }
   }, [conversation.length])
 
   useEffect(() => {
@@ -209,31 +205,44 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
   const send = () =>
     startTransition(async () => {
       try {
-        let imageUrl: string | null = null
+        let attachment: {
+          type: string
+          url: string
+          name: string
+          size: number
+          ext: string
+        } | null = null
         if (files.length > 0) {
           const formData = new FormData()
+          const file = files[0]
+
           formData.append(
-            "image",
-            files[0],
+            "file",
+            file,
             `${ticketData?.ticket?._id}-${Date.now()}`
           )
 
-          imageUrl = await fetch("/api/upload/conversation/image", {
+          await fetch("/api/upload/attachment", {
             method: "POST",
             body: formData,
+          }).then(async (res) => {
+            const data = await res.json()
+            if (!res.ok) throw new Error("Upload failed")
+            attachment = {
+              type: data.type,
+              url: data.url,
+              name: data.name,
+              size: data.size,
+              ext: data.ext,
+            }
           })
-            .then((res) => res.json())
-            .then((data) => data.url)
         }
         await sendMessage({
           variables: {
             id: ticketData?.ticket?._id,
             agentId: user?._id,
             message: message || "",
-            attachment: {
-              type: "IMAGE",
-              url: imageUrl,
-            },
+            attachment,
           },
         })
         scrollTo("bottom")
@@ -279,7 +288,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
 
       <div
         className={cn(
-          files.length > 0 ? "h-[calc(100vh-19rem)]" : "h-[calc(100vh-14rem)]",
+          files.length > 0 ? "h-[calc(100vh-21rem)]" : "h-[calc(100vh-14rem)]",
           "flex flex-col-reverse overflow-y-auto p-2 rounded-md bg-slate-50 border relative"
         )}
         ref={convoRef}
@@ -324,100 +333,229 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                   addSpace ? "mt-3" : undefined
                 )}
               >
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <div
+                <div
+                  className={cn(
+                    "flex flex-col my-0.75 gap-1 max-w-full",
+                    isUser ? "items-start" : "items-end"
+                  )}
+                >
+                  {!!(addSpace || showTimestamp) && (
+                    <span
                       className={cn(
-                        "flex flex-col my-px gap-1a",
-                        isUser ? "items-start" : "items-end"
+                        "text-xs text-[0.7rem]",
+                        isUser ? "text-left" : "text-right"
                       )}
                     >
-                      {!!(addSpace || showTimestamp) && (
-                        <span
-                          className={cn(
-                            "text-xs text-[0.7rem]",
-                            isUser ? "text-left" : "text-right"
-                          )}
-                        >
-                          {isUser ? ticketData?.ticket?.name : msg?.agent?.name}
-                        </span>
+                      {isUser ? ticketData?.ticket?.name : msg?.agent?.name}
+                    </span>
+                  )}
+                  {msg?.attachment?.url &&
+                    (() => {
+                      switch (msg.attachment.type) {
+                        case "image/png":
+                        case "image/jpg":
+                        case "image/jpeg":
+                          return (
+                            <Sheet>
+                              <SheetTrigger className="cursor-pointer">
+                                {msg?.attachment?.url ? (
+                                  <Image
+                                    src={msg?.attachment?.url}
+                                    alt="Uploaded Image"
+                                    width={500}
+                                    height={500}
+                                    className="rounded-md h-fit w-96"
+                                    title={`Sent by ${
+                                      isUser
+                                        ? ticketData?.ticket?.name
+                                        : msg?.agent?.name
+                                    } on ${format(
+                                      new Date(Number(msg?.timestamp)),
+                                      "PPp"
+                                    )}`}
+                                  />
+                                ) : (
+                                  <div className="flex items-center justify-center">
+                                    <Paperclip className="w-6 h-6 text-muted-foreground absolute z-10" />
+                                    <Skeleton className="w-32 h-32 rounded-md bg-slate-200" />
+                                  </div>
+                                )}
+                              </SheetTrigger>
+                              <SheetContent
+                                className="h-screen p-[2%]"
+                                side="bottom"
+                              >
+                                <SheetHeader hidden>
+                                  <SheetTitle>Preview</SheetTitle>
+                                  <SheetDescription>
+                                    Description
+                                  </SheetDescription>
+                                </SheetHeader>
+                                <Image
+                                  src={msg?.attachment?.url || ""}
+                                  alt="Uploaded Image"
+                                  width={500}
+                                  height={500}
+                                  className="object-contain h-full w-full"
+                                />
+                              </SheetContent>
+                            </Sheet>
+                          )
+                        case "application/pdf":
+                          return (
+                            <Link
+                              href={msg?.attachment?.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center"
+                              title={`
+                              Sent by ${
+                                isUser
+                                  ? ticketData?.ticket?.name
+                                  : msg?.agent?.name
+                              } on ${format(
+                                new Date(Number(msg?.timestamp)),
+                                "PPp"
+                              )}`}
+                            >
+                              <FileText className="size-12 text-muted-foreground" />
+                              <span className="text-xs text-center text-muted-foreground w-20 truncate block">
+                                PDF File
+                              </span>
+                              <span className="text-xs text-center text-muted-foreground w-20 truncate block">
+                                {msg?.attachment?.size >= 1024 * 1024
+                                  ? `${(
+                                      msg?.attachment?.size /
+                                      (1024 * 1024)
+                                    ).toFixed(2)} MB`
+                                  : `${(msg?.attachment?.size / 1024).toFixed(
+                                      2
+                                    )} KB`}
+                              </span>
+                            </Link>
+                          )
+                        case "application/msword":
+                        case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                          return (
+                            <Link
+                              href={msg?.attachment?.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center"
+                              title={`
+                              Sent by ${
+                                isUser
+                                  ? ticketData?.ticket?.name
+                                  : msg?.agent?.name
+                              } on ${format(
+                                new Date(Number(msg?.timestamp)),
+                                "PPp"
+                              )}`}
+                            >
+                              <FileText className="size-12 text-muted-foreground" />
+                              <span className="text-xs text-center text-muted-foreground w-20 truncate block">
+                                Document
+                              </span>
+                              <span className="text-xs text-center text-muted-foreground w-20 truncate block">
+                                {msg?.attachment?.size >= 1024 * 1024
+                                  ? `${(
+                                      msg?.attachment?.size /
+                                      (1024 * 1024)
+                                    ).toFixed(2)} MB`
+                                  : `${(msg?.attachment?.size / 1024).toFixed(
+                                      2
+                                    )} KB`}
+                              </span>
+                            </Link>
+                          )
+                        case "video/mp4":
+                          return (
+                            <Link
+                              href={msg?.attachment?.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center"
+                              title={`
+                              Sent by ${
+                                isUser
+                                  ? ticketData?.ticket?.name
+                                  : msg?.agent?.name
+                              } on ${format(
+                                new Date(Number(msg?.timestamp)),
+                                "PPp"
+                              )}`}
+                            >
+                              <Video className="size-12 text-muted-foreground" />
+
+                              <span className="text-xs text-center text-muted-foreground w-20 truncate block">
+                                Video
+                              </span>
+                              <span className="text-xs text-center text-muted-foreground w-20 truncate block">
+                                {msg?.attachment?.size >= 1024 * 1024
+                                  ? `${(
+                                      msg?.attachment?.size /
+                                      (1024 * 1024)
+                                    ).toFixed(2)} MB`
+                                  : `${(msg?.attachment?.size / 1024).toFixed(
+                                      2
+                                    )} KB`}
+                              </span>
+                            </Link>
+                          )
+                      }
+                    })()}
+                  {msg?.message && (
+                    <div
+                      className={cn(
+                        "rounded-md p-1 px-2 my-px wrap-break-word whitespace-pre-line max-w-96",
+                        isUser ? "bg-green-200" : "bg-slate-200"
                       )}
-                      {!!(
-                        msg?.attachment?.type === "IMAGE" &&
-                        msg?.attachment?.url
-                      ) ? (
-                        <Sheet>
-                          <SheetTrigger className="cursor-pointer">
-                            <Image
-                              src={msg?.attachment?.url || ""}
-                              alt="Uploaded Image"
-                              width={500}
-                              height={500}
-                              className="rounded-md"
-                            />
-                          </SheetTrigger>
-                          <SheetContent
-                            className="h-screen p-[2%]"
-                            side="bottom"
-                          >
-                            <SheetHeader hidden>
-                              <SheetTitle>Preview</SheetTitle>
-                              <SheetDescription>Description</SheetDescription>
-                            </SheetHeader>
-                            <Image
-                              src={msg?.attachment?.url || ""}
-                              alt="Uploaded Image"
-                              width={500}
-                              height={500}
-                              className="object-contain h-full w-full"
-                            />
-                          </SheetContent>
-                        </Sheet>
-                      ) : null}
-                      {msg?.message && (
-                        <div
-                          className={cn(
-                            "rounded-md p-1 px-2 my-px shadow wrap-break-word whitespace-pre-line max-w-96",
-                            isUser ? "bg-green-200" : "bg-slate-200"
-                          )}
-                        >
-                          {msg?.message}
-                        </div>
-                      )}
+                      title={`
+                            Sent by ${
+                              isUser
+                                ? ticketData?.ticket?.name
+                                : msg?.agent?.name
+                            } on ${format(
+                        new Date(Number(msg?.timestamp)),
+                        "PPp"
+                      )}`}
+                    >
+                      {msg?.message}
                     </div>
-                  </HoverCardTrigger>
-                  <HoverCardContent
-                    className="p-0.75 w-fit"
-                    align={isUser ? "start" : "end"}
-                    side="bottom"
-                  >
-                    <div className="px-1.5">
-                      <span className="block text-xs text-muted-foreground">
-                        {format(new Date(Number(msg?.timestamp)), "PPp")}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        Sent by:{" "}
-                        {isUser ? ticketData?.ticket?.name : msg?.agent?.name}
-                      </span>
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
+                  )}
+                </div>
               </div>
             </div>
           )
         })}
+        {ticketData?.ticket?.total <= conversation.length ? (
+          <>
+            <span className="text-center text-xs text-muted-foreground">
+              {format(+conversation[conversation.length - 1]?.timestamp, "PPp")}
+            </span>
+            <div className="flex w-full items-center justify-center">
+              <Separator className="absolute" />
+              <span className="text-center text-xs text-muted-foreground px-1 bg-slate-100 z-10">
+                Start of Conversation ☕
+              </span>
+            </div>
+          </>
+        ) : (
+          <Button loading={loading} variant="link" onClick={loadMore}>
+            Load more
+          </Button>
+        )}
       </div>
-
       <div
         className={cn(
-          "flex gap-2 items-end",
-          files.length > 0 ? "h-32" : "h-12"
+          "flex gap-2 items-end justify-center",
+          files.length > 0 ? "h-40" : "h-12"
         )}
       >
         <div {...getRootProps({ className: "dropzone" })}>
           <Input {...getInputProps()} />
-          <Button variant="ghost" size="icon">
-            <ImageIcon />
+          <Button variant="ghost" size="icon" title="Attach image/document">
+            <Paperclip />
           </Button>
         </div>
         <InputGroup>
@@ -427,13 +565,55 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                 <div key={file.name} className="flex items-start justify-end">
                   <Sheet>
                     <SheetTrigger>
-                      <img
-                        className="object-contain w-16 h-16 bg-gray-200 cursor-pointer"
-                        src={file.preview}
-                        title={`${file.name}: ${(file.size / 1024).toFixed(
-                          2
-                        )} KB`}
-                      />
+                      {(() => {
+                        const ext = file.name.split(".").pop()
+                        switch (ext) {
+                          case "png":
+                          case "jpg":
+                          case "jpeg":
+                            return (
+                              <Image
+                                height={96}
+                                width={96}
+                                className="object-contain w-24 h-24 bg-gray-200 cursor-pointer rounded"
+                                src={file.preview}
+                                title={`${file.name}: ${(
+                                  file.size / 1024
+                                ).toFixed(2)} KB`}
+                                alt="Preview"
+                              />
+                            )
+                          case "mp4":
+                            return (
+                              <div className="w-24 h-24 bg-gray-200 flex flex-col items-center justify-center cursor-pointer rounded">
+                                <Video />
+                                <span className="truncate w-16 text-xs">
+                                  {file.name}
+                                </span>
+                              </div>
+                            )
+                          case "pdf":
+                          case "doc":
+                          case "docx":
+                            return (
+                              <div className="w-24 h-24 bg-gray-200 flex flex-col items-center justify-center cursor-pointer rounded">
+                                <Paperclip />
+                                <div className="truncate w-16 text-xs">
+                                  {file.name}
+                                </div>
+                              </div>
+                            )
+                          default:
+                            return (
+                              <div className="w-24 h-24 bg-gray-200 flex flex-col items-center justify-center cursor-pointer rounded">
+                                <Paperclip />
+                                <div className="truncate w-16 text-xs">
+                                  {file.name}
+                                </div>
+                              </div>
+                            )
+                        }
+                      })()}
                     </SheetTrigger>
                     <SheetContent className="h-screen p-[2%]" side="bottom">
                       <SheetHeader hidden>

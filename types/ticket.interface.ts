@@ -5,15 +5,11 @@ export enum TicketSender {
   USER = "USER",
 }
 
-export enum AttachmentType {
-  IMAGE = "IMAGE",
-  VIDEO = "VIDEO",
-  FILE = "FILE",
-}
-
 export interface IAttachment {
-  type?: AttachmentType
+  type?: string
   url?: string
+  name?: string
+  size?: number
 }
 
 export interface ITicketConversation {

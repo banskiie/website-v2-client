@@ -80,6 +80,7 @@ const TICKETS = gql`
           lastSentAt
           hasNewMessages
           lastMessageSent
+          lastMessageSentIsAttachment
           assignedAgent
         }
       }
@@ -135,7 +136,7 @@ const Page = () => {
   // Selected Rows
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   // Table Data Fetching
-  const { data, fetchMore, subscribeToMore }: any = useQuery(TICKETS, {
+  const { data, fetchMore, subscribeToMore, error }: any = useQuery(TICKETS, {
     variables: {
       first: rows,
       search,
@@ -146,6 +147,8 @@ const Page = () => {
     notifyOnNetworkStatusChange: true,
     pollInterval: 30000,
   })
+
+  console.log(error)
 
   // Subscription to Ticket Changes
   useEffect(() => {
@@ -379,14 +382,20 @@ const Page = () => {
                     >
                       {(ticket as any).assignedAgent}
                     </span>
-                  ) : null}
+                  ) : (
+                    <span className="text-[0.65rem] text-white px-2 py-0.5 rounded-full mr-1 bg-muted-foreground">
+                      Unassigned
+                    </span>
+                  )}
                   <span
                     className={cn(
                       "block text-sm text-muted-foreground truncate w-72 md:w-96",
                       ticket.hasNewMessages && "font-medium"
                     )}
                   >
-                    {ticket.lastMessageSent}
+                    {(ticket as any).lastMessageSentIsAttachment
+                      ? "[Attachment]"
+                      : ticket.lastMessageSent || "No messages yet"}
                   </span>
                 </div>
               </div>
@@ -427,9 +436,7 @@ const Page = () => {
 
   // Next Page
   const goNext = async () => {
-    // Next Page only works when page
     if (page.current === page.max) return
-    // Fetch More only when the current page is the same as loaded page
     if (page.current === page.loaded) {
       await fetchMore({
         variables: {
