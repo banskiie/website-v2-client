@@ -145,12 +145,13 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         [],
       "video/mp4": [],
+      "video/quicktime": [],
     },
     multiple: false,
-    maxSize: 25 * 1024 * 1024, // 25MB
+    maxSize: 30 * 1024 * 1024, // 30MB
     onDrop: (acceptedFiles: any, fileRejections: any) => {
       if (fileRejections.length > 0) {
-        toast.error("File too large or unsupported type. (Max size: 25MB)")
+        toast.error("File too large or unsupported type. (Max size: 30MB)")
         return
       }
       setFiles(
@@ -468,13 +469,17 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               </span>
                             </Link>
                           )
+                        case "video/quicktime":
                         case "video/mp4":
                           return (
                             <Link
-                              href={msg?.attachment?.url}
+                              href={msg?.attachment?.url.replace(
+                                "/preview",
+                                "/view"
+                              )}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center"
+                              className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center hover:bg-slate-300"
                               title={`
                               Sent by ${
                                 isUser
@@ -486,7 +491,6 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               )}`}
                             >
                               <Video className="size-12 text-muted-foreground" />
-
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
                                 Video
                               </span>
@@ -529,17 +533,17 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
           )
         })}
         {ticketData?.ticket?.total <= conversation.length ? (
-          <>
-            <span className="text-center text-xs text-muted-foreground">
-              {format(+conversation[conversation.length - 1]?.timestamp, "PPp")}
-            </span>
+          <div className=" flex flex-col items-center justify-center w-full">
             <div className="flex w-full items-center justify-center">
               <Separator className="absolute" />
-              <span className="text-center text-xs text-muted-foreground px-1 bg-slate-100 z-10">
+              <span className="text-center text-xs text-muted-foreground px-1 bg-slate-50  z-10">
                 Start of Conversation ☕
               </span>
             </div>
-          </>
+            <span className="text-center text-xs text-muted-foreground">
+              {format(+conversation[conversation.length - 1]?.timestamp, "PPp")}
+            </span>
+          </div>
         ) : (
           <Button loading={loading} variant="link" onClick={loadMore}>
             Load more
