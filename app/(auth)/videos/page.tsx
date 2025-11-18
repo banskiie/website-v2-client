@@ -1,104 +1,187 @@
 "use client"
-import { useState, useTransition } from "react"
-import LiteYouTubeEmbed from "react-lite-youtube-embed"
-import "react-lite-youtube-embed/dist/LiteYouTubeEmbed.css"
-import { useDropzone } from "react-dropzone"
-import { toast } from "sonner"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Paperclip, Video } from "lucide-react"
+import UploadDialog from "./dialogs/upload"
+import { gql } from "@apollo/client"
+import { useQuery } from "@apollo/client/react"
+import { useMemo, useState } from "react"
+import { formatDistanceToNowStrict, differenceInWeeks, format } from "date-fns"
+import Image from "next/image"
+import { useRouter } from "next/navigation"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+import { User2, UserCircle } from "lucide-react"
 
-const Page = () => {
-  const [isPending, startTransition] = useTransition()
-  const [files, setFiles] = useState<any>([])
-  const { getRootProps, getInputProps } = useDropzone({
-    accept: {
-      "video/mp4": [],
-      "video/quicktime": [],
-    },
-    multiple: false,
-    maxSize: 30 * 1024 * 1024, // 30MB
-    onDrop: (acceptedFiles: any, fileRejections: any) => {
-      if (fileRejections.length > 0) {
-        toast.error("File too large or unsupported type. (Max size: 30MB)")
-        return
-      }
-      setFiles(
-        acceptedFiles.map((file: any) =>
-          Object.assign(file, {
-            preview: URL.createObjectURL(file),
-          })
-        )
-      )
-    },
-  })
-
-  const send = () =>
-    startTransition(async () => {
-      try {
-        if (files.length > 0) {
-          const formData = new FormData()
-          const file = files[0]
-
-          formData.append("file", file, "test")
-
-          const response = await fetch("/api/youtube/upload", {
-            method: "POST",
-            body: formData,
-          })
-          const data = await response.json()
-          if (response.ok) {
-            console.log(data)
-            toast.success("Video uploaded successfully!")
-            console.log("Uploaded video URL:", data.url)
-          } else {
-            toast.error(`Upload failed: ${data.error}`)
+const VIDEOS = gql`
+  query Videos($first: Int, $after: String, $search: String) {
+    videos(first: $first, after: $after, search: $search) {
+      total
+      pages
+      edges {
+        cursor
+        node {
+          _id
+          title
+          dateUploaded
+          youtubeId
+          players {
+            _id
+            firstName
+            lastName
           }
         }
-      } catch (error) {
-        console.error("Error sending message:", error)
-      } finally {
-        setFiles([])
       }
-    })
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`
+
+const Page = () => {
+  const router = useRouter()
+  // Pagination
+  const [rows, setRows] = useState<number>(10)
+  const [page, setPage] = useState<{
+    current: number
+    loaded: number
+    max: number
+  }>({
+    current: 1,
+    loaded: 1,
+    max: 1,
+  })
+  // Global Search
+  const [search, setSearch] = useState<string>("")
+  const [searchTerm, setSearchTerm] = useState("")
+  const { data }: any = useQuery(VIDEOS, {
+    variables: { first: rows, search },
+    fetchPolicy: "network-only",
+    notifyOnNetworkStatusChange: true,
+  })
+
+  const { total, nodes, pageInfo } = useMemo(() => {
+    const nodes = data?.videos.edges.map((edge: any) => edge.node) || []
+    const pageInfo = data?.videos.pageInfo
+
+    setPage((prev) => ({
+      ...prev,
+      max: data?.videos.pages || 1,
+    }))
+
+    return {
+      total: data?.videos.total || 0,
+      nodes,
+      pageInfo,
+    }
+  }, [data])
+
+  // Reset to First Page
+  const resetPage = () => setPage({ current: 1, loaded: 1, max: 1 })
+
+  // On Search
+  const onSearch = (value: string) => {
+    setSearch(value)
+    resetPage()
+  }
+
+  const formatVideoDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInWeeks = differenceInWeeks(now, date)
+    if (diffInWeeks > 2) {
+      return format(date, "MMM dd, yyyy")
+    }
+    return formatDistanceToNowStrict(date, { addSuffix: true })
+  }
 
   return (
-    <div className="flex flex-col">
-      <div {...getRootProps({ className: "dropzone" })}>
-        <Input {...getInputProps()} />
-        <Button variant="ghost" size="icon" title="Attach image/document">
-          <Paperclip />
-        </Button>
+    <div className="flex flex-col -m-2">
+      <div className="h-12 w-full flex items-between justify-between gap-2 p-2 sticky top-0 bg-background z-10">
+        <InputGroup className="flex-1 max-w-[580px]">
+          <InputGroupInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.currentTarget.value)}
+            placeholder="Type to search..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onSearch(searchTerm)
+              if (e.key === "Escape") {
+                setSearchTerm("")
+                onSearch("")
+              }
+            }}
+          />
+          <InputGroupAddon align="inline-end" className="-mr-1.5">
+            <InputGroupButton onClick={() => onSearch(searchTerm)}>
+              Search
+            </InputGroupButton>
+          </InputGroupAddon>
+          {searchTerm && (
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                onClick={() => {
+                  onSearch("")
+                  setSearchTerm("")
+                }}
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive hover:border-destructive"
+                variant="outline"
+              >
+                Clear
+              </InputGroupButton>
+            </InputGroupAddon>
+          )}
+        </InputGroup>
+        <UploadDialog />
       </div>
-      {files.length > 0 ? (
-        <div>
-          {files.map((file: any, idx: number) => (
-            <div
-              key={idx}
-              className="w-24 h-24 bg-gray-200 flex flex-col items-center justify-center cursor-pointer rounded"
-            >
-              <Video />
-              <span className="truncate w-16 text-xs">{file.name}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      <Button onClick={send} loading={isPending}>
-        Upload
-      </Button>
-      <LiteYouTubeEmbed
-        id="PQwBJWpckwE"
-        title="Video Title"
-        enableJsApi
-        params="rel=0"
-        lazyLoad
-        aspectWidth={16}
-        aspectHeight={9}
-        style={{
-          height: 360,
-          width: 640,
-        }}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+        {nodes.map((video: any) => (
+          <div
+            className="h-full w-full flex flex-col rounded-none items-start gap-px p-2 hover:bg-accent/50 cursor-pointer"
+            key={video._id}
+            onClick={() => router.push(`/videos/${video._id}`)}
+          >
+            <Image
+              width={300}
+              height={300}
+              src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
+              alt={video.title}
+              className="object-cover w-full h-full aspect-video rounded"
+            />
+            <span className="text-lg font-medium truncate block pb-1 -mb-px">
+              {video.title}
+            </span>
+            {video?.players?.length > 0 ? (
+              <div className="flex items-center gap-1 pb-1 -mb-1.5">
+                <UserCircle className="size-3.5" />
+                <span className="truncate blcok">
+                  {video?.players.length > 2
+                    ? `${video.players[0].firstName} ${
+                        video.players[0].lastName
+                      }, ${video.players[1].firstName} ${
+                        video.players[1].lastName
+                      } and ${video.players.length - 2} more`
+                    : video?.players
+                        .map(
+                          (player: any) =>
+                            `${player.firstName} ${player.lastName}`
+                        )
+                        .join(", ")}
+                </span>
+              </div>
+            ) : (
+              <span className="truncate block pb-1 -mb-px text-muted-foreground">
+                No players
+              </span>
+            )}
+            <span className="truncate block pb-1 -mb-px">
+              {formatVideoDate(video.dateUploaded)}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

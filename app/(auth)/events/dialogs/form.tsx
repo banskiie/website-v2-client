@@ -200,11 +200,7 @@ const FormDialog = (props: Props) => {
         }
       },
     },
-    listeners: {
-      onChange: ({ formApi, fieldApi }) => {
-        // console.log(fieldApi.name, fieldApi.state.value)
-      },
-    }, // this is just for demo purposes
+
     onSubmit: ({ value, formApi }) =>
       startTransition(async () => {
         try {
