@@ -13,11 +13,11 @@ import {
   ArrowLeft,
   CheckCircle2Icon,
   LucideIcon,
-  Inbox,
   ArrowDown,
   Paperclip,
   ImageIcon,
   File,
+  ChevronUp,
 } from "lucide-react"
 import Header from "@/components/custom/header-white"
 import { Button } from "@/components/ui/button"
@@ -39,7 +39,7 @@ import { ADD_TICKET_NAME, GET_TICKET_MESSAGES, NEW_MESSAGE_SUBSCRIPTION, SEND_OT
 import { differenceInMinutes, format } from "date-fns"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import Image from "next/image"
-import { Dialog, DialogClose, DialogContent, DialogOverlay, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 type Message = {
   sender: "user" | "support"
@@ -136,10 +136,10 @@ export default function SupportPage() {
   const [isUserAtBottom, setIsUserAtBottom] = useState(true)
   const [isRecovering, setIsRecovering] = useState(true)
   const [openDialogs, setOpenDialogs] = useState<Record<string, boolean>>({})
-
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null)
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false)
+  const [showLoadMoreButton, setShowLoadMoreButton] = useState(false)
 
   const updateTicketId = (id: string | null) => {
     setTicketId(id)
@@ -223,7 +223,6 @@ export default function SupportPage() {
     },
     skip: !ticketId,
     fetchPolicy: "network-only",
-
   })
 
   useEffect(() => {
@@ -239,11 +238,14 @@ export default function SupportPage() {
         setHasNewMessages(false)
         setLastSeenMessageIndex(messages.length - 1)
       }
+
+      const shouldShowLoadMoreButton = scrollTop < 200 && hasMore && !isLoadingMore
+      setShowLoadMoreButton(shouldShowLoadMoreButton)
     }
 
     chatContainer.addEventListener('scroll', handleScroll)
     return () => chatContainer.removeEventListener('scroll', handleScroll)
-  }, [messages, hasNewMessages])
+  }, [messages, hasNewMessages, hasMore, isLoadingMore])
 
   useEffect(() => {
     if (messages.length === 0) return
@@ -273,25 +275,6 @@ export default function SupportPage() {
     }
   }
 
-  // const showWelcomeMessage = () => {
-  //   const now = new Date()
-  //   const formattedTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-  //   const formattedDate = now.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
-
-  //   setMessages((prev) => [
-  //     ...prev,
-  //     {
-  //       sender: "support",
-  //       text: "Welcome to C-ONE Chat Live Support! Send your messages here regarding your concerns in the Current Tournament. We will reply to you as soon as possible. Thank you.",
-  //       time: formattedTime,
-  //       date: formattedDate,
-  //       timestamp: now.getTime(),
-  //       status: "unread",
-  //       senderName: "Agent",
-  //     },
-  //   ])
-  // }
-
   useEffect(() => {
     if (ticketData?.ticket?.total) {
       setIsLoadingMore(false)
@@ -305,7 +288,11 @@ export default function SupportPage() {
 
   useEffect(() => {
     if (ticketData?.ticket?.conversation) {
-      const formattedMessages = ticketData.ticket.conversation.map((msg) => {
+      const validMessages = ticketData.ticket.conversation.filter(msg =>
+        msg.message !== null && msg.message !== undefined && msg.message.trim() !== ""
+      );
+
+      const formattedMessages = validMessages.map((msg) => {
         const date = new Date(Number(msg.timestamp))
         const formattedTime = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         const formattedDate = date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
@@ -346,9 +333,12 @@ export default function SupportPage() {
         setMessages(formattedMessages.reverse())
 
         if (!isLoadingMore && chatContainer) {
-          setTimeout(() => {
-            scrollToBottom('auto')
-          }, 100)
+          const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 100
+          if (isAtBottom || messages.length === 0) {
+            setTimeout(() => {
+              scrollToBottom('auto')
+            }, 100)
+          }
         }
       }
     }
@@ -388,6 +378,7 @@ export default function SupportPage() {
     }
   }, [messages, isReplying, isLoadingMore, userJustSentMessage, step])
 
+  // Remove the auto-load on scroll effect and replace with button-based loading
   useEffect(() => {
     const chatContainer = chatContainerRef.current
     if (!chatContainer) return
@@ -403,12 +394,9 @@ export default function SupportPage() {
         setLastSeenMessageIndex(messages.length - 1)
       }
 
-      const shouldShowLoadMore = scrollTop < 200 && hasMore && !isLoadingMore
-      setShowLoadMoreText(shouldShowLoadMore)
-
-      if (scrollTop < 50 && hasMore && !isLoadingMore && !ticketLoading) {
-        handleLoadMore()
-      }
+      // Show load more button when scrolled near the top and there are more messages
+      const shouldShowLoadMoreButton = scrollTop < 200 && hasMore && !isLoadingMore
+      setShowLoadMoreButton(shouldShowLoadMoreButton)
     }
 
     chatContainer.addEventListener('scroll', handleScroll, { passive: true })
@@ -418,7 +406,7 @@ export default function SupportPage() {
     }, 500)
 
     return () => chatContainer.removeEventListener('scroll', handleScroll)
-  }, [messages, hasNewMessages, hasMore, isLoadingMore, ticketLoading, handleLoadMore])
+  }, [messages, hasNewMessages, hasMore, isLoadingMore])
 
   const groupMessageBlocks = (messages: Message[]) => {
     const blocks: {
@@ -475,7 +463,15 @@ export default function SupportPage() {
   }
 
   const renderMessagesWithTimestamps = (messages: Message[]) => {
-    if (messages.length === 0) return null
+    if (messages.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+          <MessageCircle className="w-12 h-12 mb-4 text-gray-300" />
+          <p className="text-lg font-medium">No messages yet</p>
+          <p className="text-sm mt-2">Start a conversation by sending a message</p>
+        </div>
+      )
+    }
 
     const groupedBlocks = groupMessageBlocks(messages)
     const elements: JSX.Element[] = []
@@ -577,6 +573,10 @@ export default function SupportPage() {
                         <DialogTitle className="sr-only">
                           Image attachment from {block.senderName}
                         </DialogTitle>
+
+                        <DialogDescription className="sr-only">
+                          Enlarged image preview modal
+                        </DialogDescription>
 
                         <div className="relative w-full h-full flex items-center justify-center p-4">
                           <DialogClose asChild>
@@ -968,13 +968,13 @@ export default function SupportPage() {
 
   const [verifyOTP, { loading: verifying }] = useMutation(VERIFY_OTP, {
     onCompleted: (data: any) => {
-     
+
       if (data.verifyOTP.ok) {
         const { ticket } = data.verifyOTP;
 
         if (ticket?._id) {
           updateTicketId(ticket._id)
-        } 
+        }
 
         if (ticket?.name && ticket.name.trim() !== "") {
           setName(ticket.name)
@@ -1017,14 +1017,9 @@ export default function SupportPage() {
     sendOTP({ variables: { email } })
   }
 
-  const handleGoToVerifyOtp = () => {
-    setStep("otp");
-    setError(null);
-  }
-
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault()
-    if (!inputMessage.trim()) return
+    if (!inputMessage.trim() && !attachmentFile) return
 
     const messageText = inputMessage.trim()
 
@@ -1086,33 +1081,6 @@ export default function SupportPage() {
       setStep("chat")
     }
   }
-
-  useEffect(() => {
-    if (step === "chat" && messages.length === 0) {
-      const now = new Date()
-      const formattedTime = now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-      const formattedDate = now.toLocaleDateString([], {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-
-      setMessages([
-        {
-          sender: "support",
-          text: `Hello ${name}! How can we assist you today?`,
-          time: formattedTime,
-          date: formattedDate,
-          timestamp: now.getTime(),
-          status: "unread",
-          senderName: "Agent",
-        },
-      ])
-    }
-  }, [step, name])
 
   const handleDownloadChat = () => {
     if (messages.length === 0) return
@@ -1248,7 +1216,6 @@ export default function SupportPage() {
 
   if (!introDone) {
     return (
-      // bg-linear-to-b from-[#eef3ff] to-[#e2e8ff] 
       <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-[#eef3ff] to-[#e2e8ff] relative overflow-hidden px-4">
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
@@ -1667,7 +1634,7 @@ export default function SupportPage() {
             {...fadeTransition}
             className="w-full h-screen flex pt-16"
           >
-            {/* Sidebar Balik rako */}
+            {/* Sidebar */}
             <div className="w-64 bg-linear-to-b from-green-50 to-emerald-50 border-r border-green-100 shrink-0 p-6 space-y-6">
               <div>
                 <h3 className="text-green-900 font-semibold mb-2">C-ONE Chat Support</h3>
@@ -1727,7 +1694,7 @@ export default function SupportPage() {
               </div>
             </div>
 
-            {/* bg-linear-to-r from-green-600 to-green-500 */}
+            {/* Main Chat Area */}
             <div className="flex-1 flex flex-col bg-white shadow-lg overflow-hidden">
               <div className="bg-white p-3 text-black shrink-0">
                 <div className="flex items-center justify-between">
@@ -1747,13 +1714,6 @@ export default function SupportPage() {
                     >
                       <ArrowLeft className="w-4 h-4" />
                     </button>
-
-                    {/* <button
-                      onClick={handleClearChat}
-                      className="flex items-center gap-1 text-sm bg-green-600 hover:bg-green-700 text-white p-2 rounded-md cursor-pointer backdrop-blur-sm transition-all"
-                    >
-                      New Chat
-                    </button> */}
                   </div>
                 </div>
               </div>
@@ -1802,7 +1762,20 @@ export default function SupportPage() {
                   id="chat-container"
                   className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-300"
                 >
-                  {showLoadMoreText && hasMore && !isLoadingMore && (
+                  {showLoadMoreButton && hasMore && !isLoadingMore && messages.length > 15 && (
+                    <div className="flex justify-center py-4">
+                      <Button
+                        onClick={handleLoadMore}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full shadow-lg transition-all duration-200"
+                        variant="default"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                        See more messages
+                      </Button>
+                    </div>
+                  )}
+
+                  {isLoadingMore && (
                     <div className="flex justify-center py-2">
                       <div className="flex items-center gap-2 text-green-600 text-sm">
                         <motion.div
@@ -1919,13 +1892,13 @@ export default function SupportPage() {
                     </div>
                   )}
 
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setIsAttachmentMenuOpen(!isAttachmentMenuOpen)}
-                    className="flex items-center justify-center w-10 h-10 text-gray-500 hover:text-green-600 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+                    className="flex bg-transparent! items-center justify-center w-10 h-10 text-gray-500 hover:text-green-600 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
                   >
                     <Paperclip className="w-5 h-5" />
-                  </button>
+                  </Button>
 
                   <InputGroup className="flex-1">
                     <InputGroupTextarea

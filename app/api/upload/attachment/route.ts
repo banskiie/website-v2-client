@@ -6,24 +6,23 @@ import sharp from "sharp"
 export async function POST(request: Request) {
   try {
     const formData = await request.formData()
-    const file = formData.get("image") as File
+    const file = formData.get("file") as File
 
-    if (!file) {
+    console.log(file)
+
+    if (!file)
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
-    }
 
-    // Read input file as buffer
     const buffer = Buffer.from(await file.arrayBuffer())
-
-    // ⭐ COMPRESS IMAGE USING SHARP ⭐
-    const compressedBuffer = await sharp(buffer)
-      .resize({ width: 1080 }) // optional resize
-      .jpeg({ quality: 70 }) // compress to ~70% quality
-      .png({ quality: 70 })
-      .toBuffer()
-
-    // Convert compressed buffer to stream
-    const stream = Readable.from(compressedBuffer)
+    // If image, compress it before uploading
+    const stream = Readable.from(
+      file?.type.startsWith("image/") //
+        ? await sharp(buffer) // Compress images
+            .resize({ width: 1080 })
+            .jpeg({ quality: 70 })
+            .toBuffer()
+        : buffer
+    )
 
     // Google Drive auth
     const auth = new google.auth.JWT({
@@ -37,20 +36,26 @@ export async function POST(request: Request) {
     const response = await drive.files.create({
       requestBody: {
         name: file.name,
-        parents: [process.env.NEXT_PUBLIC_GOOGLE_DRIVE_IMAGE_FOLDER!],
+        parents: [process.env.NEXT_PUBLIC_GOOGLE_DRIVE_ATTACHMENT_FOLDER!],
       },
       media: {
-        mimeType: "image/jpeg",
+        mimeType: file?.type,
         body: stream,
       },
       fields: "id",
       supportsAllDrives: true,
     })
 
+    // Generate Google Drive view link for images/documents, and preview link for videos
+    const fileId = response.data.id
     return NextResponse.json(
       {
-        message: "Image uploaded & compressed successfully!",
-        url: `https://drive.google.com/uc?export=view&id=${response.data.id}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: file?.type.startsWith("video/")
+          ? `https://drive.google.com/file/d/${fileId}/preview`
+          : `https://drive.google.com/uc?id=${fileId}`,
       },
       { status: 200 }
     )
