@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import Header from "@/components/custom/header-white"
 import { Button } from "@/components/ui/button"
-import { z } from "zod"
+import { string, z } from "zod"
 import {
   InputGroup,
   InputGroupInput,
@@ -40,6 +40,8 @@ import { differenceInMinutes, format } from "date-fns"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import Image from "next/image"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useDropzone } from "react-dropzone"
+import { toast } from "sonner"
 
 type Message = {
   sender: "user" | "support"
@@ -126,7 +128,6 @@ export default function SupportPage() {
   const [hasMore, setHasMore] = useState(true)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const [lastUserMessageTime, setLastUserMessageTime] = useState<number | null>(null)
-  const [showLoadMoreText, setShowLoadMoreText] = useState(false)
   const [autoResponseShown, setAutoResponseShown] = useState(false)
   const autoResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [first, setFirst] = useState(15)
@@ -140,6 +141,91 @@ export default function SupportPage() {
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false)
   const [showLoadMoreButton, setShowLoadMoreButton] = useState(false)
+  const [files, setFiles] = useState<File[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+
+
+  // Dropzone configuration
+  const { getRootProps, getInputProps } = useDropzone({
+    accept: {
+      "image/png": [],
+      "image/jpg": [],
+      "image/jpeg": [],
+      "application/pdf": [],
+      "application/msword": [],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [],
+      "video/mp4": [],
+      "video/quicktime": [],
+    },
+    multiple: false,
+    maxSize: 30 * 1024 * 1024, // 30 MB
+    onDrop: (acceptedFiles: File[], fileRejections: any) => {
+      if (fileRejections.length > 0) {
+        toast.error("File type not accepted or file too large. (Max Size: 30MB)")
+        return
+      }
+
+      if (acceptedFiles.length > 0) {
+        const file = acceptedFiles[0]
+        setFiles([file])
+
+        // if image create a preview
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            setAttachmentPreview(e.target?.result as string)
+          }
+          reader.readAsDataURL(file)
+        }
+
+        setAttachmentFile(file)
+        setIsAttachmentMenuOpen(false)
+      }
+    },
+  })
+
+  const handleRemoveFile = () => {
+    setFiles([])
+    setAttachmentPreview(null)
+    setAttachmentFile(null)
+  }
+
+  // Upl;oad file to your api
+  const uploadFile = async (file: File): Promise<{
+    type: string
+    url: string
+    name: string
+    size: number
+  } | null> => {
+    try {
+      setIsUploading(true)
+      const formData = new FormData()
+      formData.append("file", file, `${ticketId}-${Date.now()}`)
+
+      const response = await fetch("/api/upload/attachment", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Upload Failed")
+      }
+
+      const data = await response.json()
+      return {
+        type: data.type,
+        url: data.url,
+        name: data.name,
+        size: data.size,
+      }
+    } catch (error) {
+      console.error("Error Uploading file:", error)
+      toast.error(":Error uploading file. Please try again.")
+      return null
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   const updateTicketId = (id: string | null) => {
     setTicketId(id)
@@ -1032,33 +1118,54 @@ export default function SupportPage() {
     setLastUserMessageTime(Date.now());
     setAutoResponseShown(false);
 
-    if (attachmentPreview || attachmentFile) {
-      const now = new Date()
-      const formattedTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      const formattedDate = now.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
+    let attachmentData: {
+      type: string
+      url: string | null
+      name?: string
+      size?: number
+    } | undefined
 
-      const tempMessage: Message = {
-        sender: "user",
-        text: messageText,
-        time: formattedTime,
-        date: formattedDate,
-        timestamp: now.getTime(),
-        status: "unread",
-        senderName: name,
-        attachment: attachmentPreview ? {
-          type: "IMAGE",
-          url: attachmentPreview
-        } : attachmentFile ? {
-          type: "FILE",
-          url: null
-        } : undefined
+
+    if (attachmentFile) {
+      const uploadedFile = await uploadFile(attachmentFile)
+      if (uploadedFile) {
+        attachmentData = {
+          type: uploadedFile.type,
+          url: uploadedFile.url,
+          name: uploadedFile.name,
+          size: uploadedFile.size
+        }
       }
-
-      setMessages(prev => [...prev, tempMessage])
-
-      setAttachmentPreview(null)
-      setAttachmentFile(null)
     }
+
+    // if (attachmentPreview || attachmentFile) {
+    const now = new Date()
+    const formattedTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    const formattedDate = now.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
+
+    const tempMessage: Message = {
+      sender: "user",
+      text: messageText,
+      time: formattedTime,
+      date: formattedDate,
+      timestamp: now.getTime(),
+      status: "unread",
+      senderName: name,
+      attachment: attachmentData || (attachmentPreview ? {
+        type: "IMAGE",
+        url: attachmentPreview
+      } : attachmentFile ? {
+        type: "FILE",
+        url: null
+      } : undefined)
+    }
+
+    setMessages(prev => [...prev, tempMessage])
+
+    setFiles([])
+    setAttachmentPreview(null)
+    setAttachmentFile(null)
+    // }
 
     try {
       await sendUserMessageMutation({
@@ -1836,34 +1943,19 @@ export default function SupportPage() {
                         className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border p-2 z-10"
                       >
                         <div className="flex gap-2">
-                          <label className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer transition-colors">
-                            <ImageIcon className="w-4 h-4 text-blue-500" />
-                            <span className="text-sm">Photo</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleFileSelect}
-                              className="hidden"
-                              id="image-input"
-                            />
-                          </label>
-
-                          <label className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer transition-colors">
-                            <File className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm">File</span>
-                            <input
-                              type="file"
-                              onChange={handleFileSelect}
-                              className="hidden"
-                              id="file-input"
-                            />
-                          </label>
+                          <div {...getRootProps({ className: "dropzone" })}>
+                            <input {...getInputProps()} />
+                            <div className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer transition-colors">
+                              <Paperclip className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm">Attach File</span>
+                            </div>
+                          </div>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {attachmentPreview && (
+                  {/* {attachmentPreview && (
                     <div className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-white border rounded-lg mx-4">
                       <div className="flex items-center gap-2">
                         <Image
@@ -1889,6 +1981,50 @@ export default function SupportPage() {
                           <XCircle className="w-4 h-4" />
                         </Button>
                       </div>
+                    </div>
+                  )} */}
+
+                  {files.length > 0 && (
+                    <div className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-white border rounded-lg mx-4">
+                      <div className="flex items-center gap-2">
+                        {files[0].type.startsWith('image/') ? (
+                          <Image
+                            src={URL.createObjectURL(files[0])}
+                            alt="Attachment preview"
+                            width={48}
+                            height={48}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                            <File className="w-6 h-6 text-gray-500" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium truncate">
+                            {files[0].name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {(files[0].size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={handleRemoveFile}
+                          disabled={isUploading}
+                          className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {isUploading && (
+                        <div className="mt-2">
+                          <div className="w-full bg-gray-200 rounded-full h-1">
+                            <div className="bg-green-600 h-1 rounded-full animate-pulse"></div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">Uploading...</p>
+                        </div>
+                      )}
                     </div>
                   )}
 

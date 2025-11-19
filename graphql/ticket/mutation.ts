@@ -32,14 +32,32 @@ export const ADD_TICKET_NAME = gql`
 `
 
 
+// export const SEND_USER_MESSAGE = gql`
+//    mutation SendUserMessage($email: String!, $message: String!) {
+//     sendUserMessage(email: $email, message: $message) {
+//       ok
+//       message
+//     }
+//   }
+// `
+
 export const SEND_USER_MESSAGE = gql`
-   mutation SendUserMessage($email: String!, $message: String!) {
-    sendUserMessage(email: $email, message: $message) {
+  mutation SendUserMessage(
+    $email: String
+    $message: String
+    $attachment: AttachmentInput
+  ) {
+    sendUserMessage(
+      email: $email
+      message: $message
+      attachment: $attachment
+    ) {
       ok
       message
     }
   }
 `
+
 export const GET_TICKET_MESSAGES = gql`
   query Ticket($id: ID!, $first: Int!) {
     ticket(_id: $id, first: $first, viewer: USER) {
