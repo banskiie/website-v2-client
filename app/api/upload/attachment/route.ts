@@ -46,7 +46,6 @@ export async function POST(request: Request) {
       supportsAllDrives: true,
     })
 
-    // Generate Google Drive view link for images/documents, and preview link for videos
     const fileId = response.data.id
     return NextResponse.json(
       {

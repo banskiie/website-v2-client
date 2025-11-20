@@ -43,8 +43,8 @@ export const ADD_TICKET_NAME = gql`
 
 export const SEND_USER_MESSAGE = gql`
   mutation SendUserMessage(
-    $email: String
-    $message: String
+    $email: String!
+    $message: String!
     $attachment: AttachmentInput
   ) {
     sendUserMessage(
@@ -75,8 +75,10 @@ export const GET_TICKET_MESSAGES = gql`
           _id
         }
         attachment {
-          type
-          url
+           type
+           url
+           name
+           size
         }
       }
     }
@@ -94,6 +96,8 @@ export const NEW_MESSAGE_SUBSCRIPTION = gql`
         attachment {
           type
           url
+         name
+          size
         }
         agent {
           name
