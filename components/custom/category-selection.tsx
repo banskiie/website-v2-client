@@ -27,12 +27,14 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { DataReconciliationModal } from "./data-reconciliation"
 import ScrollIndicator from "./scroll-indicator"
-import { useLazyQuery, useQuery } from "@apollo/client/react"
+import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react"
 import { ENTRY_EVENT_AMOUNT_DETAILS, PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
 import { ENTRY_STATUS_HISTORY } from "@/graphql/entries/queries"
 import { ITournament } from "@/app/(public)/types/tournament.interface"
-import { CheckEntryData, EntryAmountDetailsData, EntryStatusHistoryData, IEntryStatus } from "@/app/(public)/types/entry.interface"
+import { CheckEntryData, EntryAmountDetailsData, EntryStatusHistoryData, IEntryAmountDetails, IEntryStatus } from "@/app/(public)/types/entry.interface"
 import Tesseract from "tesseract.js"
+import { CreatePaymentInput, createPaymentResponse } from "@/app/(public)/types/payment.interface"
+import { CREATE_PAYMENT } from "@/graphql/payments/mutation"
 // const tournament = tournaments.find(t => t.isActive)
 
 export type PublicTournamentsData = {
@@ -388,6 +390,7 @@ export function UploadProofMergedModal({
   const [entryAmounts, setEntryAmounts] = useState<Record<number, number | null>>({})
   const [entryLoadingStates, setEntryLoadingStates] = useState<Record<number, boolean>>({})
   const [entryErrors, setEntryErrors] = useState<Record<number, string>>({})
+  const [entryDetails, setEntryDetails] = useState<Record<number, IEntryAmountDetails | null>>({})
 
   const [loading, setLoading] = useState(false)
   const [scannedTotal, setScannedTotal] = useState<string | null>(null)
@@ -399,10 +402,42 @@ export function UploadProofMergedModal({
   const [referenceLabel, setReferenceLabel] = useState("Reference No.")
 
   const { data: tournamentsData, loading: tournamentsLoading, error: tournamentsError } = useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
+  const [createPayment, { loading: createPaymentLoading, error: createPaymentError }] = useMutation<createPaymentResponse, { input: CreatePaymentInput }>(CREATE_PAYMENT)
 
   const [fetchEntryAmount, { data: entryAmountData, loading: entryAmountLoading, error: entryAmountError }] = useLazyQuery<EntryAmountDetailsData>(ENTRY_EVENT_AMOUNT_DETAILS)
 
   const sensors = useSensors(useSensor(PointerSensor))
+
+  // Helper function to get payer names
+  const getPayerNames = (): string => {
+    const payerNames: string[] = []
+
+    entriesState.forEach((_, index) => {
+      const details = entryDetails[index]
+      if (details) {
+        if (details.eventType === 'SINGLES' && details.player1Entry) {
+          const name = `${details.player1Entry.firstName} ${details.player1Entry.lastName}`
+          if (!payerNames.includes(name)) {
+            payerNames.push(name)
+          }
+        } else if (details.eventType === 'DOUBLES') {
+          const players: string[] = []
+          if (details.player1Entry) {
+            players.push(`${details.player1Entry.firstName} ${details.player1Entry.lastName}`)
+          }
+          if (details.player2Entry) {
+            players.push(`${details.player2Entry.firstName} ${details.player2Entry.lastName}`)
+          }
+          const teamName = players.join(' & ')
+          if (!payerNames.includes(teamName)) {
+            payerNames.push(teamName)
+          }
+        }
+      }
+    })
+
+    return payerNames.join(', ')
+  }
 
   const getEntryAmountDetails = async (entryNumber: string, entryKey: string, index: number) => {
     const referenceNumber = `${entryNumber}_${entryKey}`
@@ -693,6 +728,7 @@ export function UploadProofMergedModal({
   useEffect(() => {
     const fetchAllEntryAmounts = async () => {
       const newAmounts: Record<number, number | null> = {}
+      const newDetails: Record<number, IEntryAmountDetails | null> = {}
       const newLoadingStates: Record<number, boolean> = {}
       const newErrors: Record<number, string> = {}
 
@@ -704,16 +740,19 @@ export function UploadProofMergedModal({
 
           const result = await getEntryAmountDetails(entry.entryNumber, entry.entryKey, i)
           newAmounts[i] = result.data ? result.data.amount : null
+          newDetails[i] = result.data || null
           newErrors[i] = result.error || ""
           newLoadingStates[i] = false
         } else {
           newAmounts[i] = null
+          newDetails[i] = null
           newLoadingStates[i] = false
           newErrors[i] = ""
         }
       }
 
       setEntryAmounts(newAmounts)
+      setEntryDetails(newDetails)
       setEntryLoadingStates(newLoadingStates)
       setEntryErrors(newErrors)
     }
@@ -747,7 +786,7 @@ export function UploadProofMergedModal({
     calculateTotal()
   }, [entryAmounts, amount])
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const hasEntryErrors = Object.values(entryErrors).some(error => error !== "")
     if (hasEntryErrors) {
       setError("Please fix the entry errors before submitting.")
@@ -760,8 +799,45 @@ export function UploadProofMergedModal({
       return
     }
 
-    setError("")
-    setSuccess(true)
+    try {
+      const entryList = entriesState.map((entry, index) => {
+        const entryAmount = entryAmounts[index] || 0
+        const isFullyPaid = parseFloat(amount) >= entryAmount
+
+        return {
+          entry: `${entry.entryNumber}_${entry.entryKey}`,
+          isFullyPaid
+        }
+      })
+
+      const payerName = getPayerNames() || "User"
+
+      const input: CreatePaymentInput = {
+        referenceNumber: reference || confirmationNumber || `ref_${Date.now()}`,
+        amount: parseFloat(amount),
+        paymentDate: new Date().toISOString(),
+        proofOfPaymentURL: preview,
+        payerName: payerName,
+        entryList
+      }
+
+      console.log('Submitting payment:', input)
+
+      const result = await createPayment({
+        variables: { input }
+      })
+
+      if (result.data?.createPayment.ok) {
+        setError("")
+        setSuccess(true)
+        console.log('Payment created successfully:', result.data.createPayment.message)
+      } else {
+        setError("Failed to create payment. Please try again.")
+      }
+    } catch (err: any) {
+      console.error('Error creating payment:', err)
+      setError(`Error creating payment: ${err.message}`)
+    }
   }
 
   const handleAddEntry = () => {
@@ -775,6 +851,7 @@ export function UploadProofMergedModal({
       setEntryAmounts({ 0: entryAmounts[0] || null })
       setEntryLoadingStates({ 0: entryLoadingStates[0] || false })
       setEntryErrors({ 0: entryErrors[0] || "" })
+      setEntryDetails({ 0: entryDetails[0] || null })
     }
   }
 
@@ -790,16 +867,19 @@ export function UploadProofMergedModal({
       const reorderedAmounts: Record<number, number | null> = {}
       const reorderedLoadingStates: Record<number, boolean> = {}
       const reorderedErrors: Record<number, string> = {}
+      const reorderedDetails: Record<number, IEntryAmountDetails | null> = {}
 
       reorderedEntries.forEach((_, newIdx) => {
         reorderedAmounts[newIdx] = entryAmounts[oldIndex === newIdx ? newIndex : (newIdx === newIndex ? oldIndex : newIdx)] || null
         reorderedLoadingStates[newIdx] = entryLoadingStates[oldIndex === newIdx ? newIndex : (newIdx === newIndex ? oldIndex : newIdx)] || false
         reorderedErrors[newIdx] = entryErrors[oldIndex === newIdx ? newIndex : (newIdx === newIndex ? oldIndex : newIdx)] || ""
+        reorderedDetails[newIdx] = entryDetails[oldIndex === newIdx ? newIndex : (newIdx === newIndex ? oldIndex : newIdx)] || null
       })
 
       setEntryAmounts(reorderedAmounts)
       setEntryLoadingStates(reorderedLoadingStates)
       setEntryErrors(reorderedErrors)
+      setEntryDetails(reorderedDetails)
     }
   }
 
@@ -912,40 +992,95 @@ export function UploadProofMergedModal({
                 </div>
               )}
 
+              {createPaymentError && (
+                <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
+                  <p className="text-red-700 text-sm font-medium">
+                    Payment Error: {createPaymentError.message}
+                  </p>
+                </div>
+              )}
+
               <div className="w-full">
-                <div className="px-14 pb-2 space-y-2">
+                {/* Header Section with Amount & Reference Side by Side */}
+                <div className="px-14 pb-2 space-y-3">
                   {Object.values(entryErrors).some(error => error !== "") && (
                     <div className="text-sm font-medium text-red-600 bg-red-50 p-2 rounded-lg border border-red-200">
                       Please fix the entry errors below before proceeding.
                     </div>
                   )}
 
-                  {Object.values(entryAmounts).some(amount => amount !== null) ? (
-                    <div className="text-sm font-medium text-blue-600">
-                      Total Amount: {entriesState.map((entry, index) => {
-                        const entryAmount = entryAmounts[index]
-                      }).filter(Boolean).join(' + ')}
-                      {totalRequired > 0 && (
-                        <span className="text-red-600">
-                          <span className="font-medium mr-px">₱</span>{totalRequired.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          })}
-                        </span>
-                      )}
-                    </div>
-                  ) : amount ? (
-                    <div className="text-sm font-medium text-green-600">
-                      Payment Amount: ₱{parseFloat(amount).toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-sm font-medium text-gray-600">
-                      💡 Enter an amount to check if this entry is covered.
+                  {/* Payer Names Display */}
+                  {Object.values(entryDetails).some(details => details !== null) && (
+                    <div className="text-sm font-medium text-purple-600 bg-purple-50 p-2 rounded-lg border border-purple-200">
+                      <strong>Payer:</strong> {getPayerNames()}
                     </div>
                   )}
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      {Object.values(entryAmounts).some(amount => amount !== null) ? (
+                        <div className="text-sm font-medium text-blue-600">
+                          <div className="font-semibold mb-1">Total Amount Required</div>
+                          {totalRequired > 0 && (
+                            <div className="text-red-600 text-lg">
+                              <span className="font-medium">₱</span>
+                              {totalRequired.toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ) : amount ? (
+                        <div className="text-sm font-medium text-green-600">
+                          <div className="font-semibold mb-1">Payment Amount</div>
+                          <div className="text-lg">
+                            ₱{parseFloat(amount).toLocaleString('en-US', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm font-medium text-gray-600">
+                          Enter an amount to check coverage
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reference Number Column */}
+                    <div>
+                      {(reference || confirmationNumber) && (
+                        <div className="text-sm font-medium text-blue-600">
+                          <div className="font-semibold mb-1">{referenceLabel}</div>
+                          <div className="text-lg font-mono bg-blue-50 p-2 rounded border">
+                            {reference && reference !== "Not found" ? reference : confirmationNumber}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Individual Entry Details */}
+                  {entriesState.map((entry, index) => {
+                    const details = entryDetails[index]
+                    if (!details) return null
+
+                    return (
+                      <div key={index} className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                        <strong>Entry {index + 1}:</strong> {
+                          details.eventType === 'SINGLES' && details.player1Entry
+                            ? `${details.player1Entry.firstName} ${details.player1Entry.lastName}`
+                            : details.eventType === 'DOUBLES'
+                              ? `${details.player1Entry?.firstName || ''} ${details.player1Entry?.lastName || ''} & ${details.player2Entry?.firstName || ''} ${details.player2Entry?.lastName || ''}`
+                              : 'Unknown player'
+                        } - ₱{entryAmounts[index]?.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}
+                      </div>
+                    )
+                  })}
                 </div>
 
                 <div className="grid grid-cols-2 gap-14 px-14">
@@ -956,7 +1091,7 @@ export function UploadProofMergedModal({
                     Entry Key <span className="text-red-500">*</span>
                   </label>
                 </div>
-  
+
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext
                     items={entriesState.map((_, i) => i.toString())}
@@ -967,15 +1102,24 @@ export function UploadProofMergedModal({
                         const entryAmount = entryAmounts[index]
                         const entryError = entryErrors[index]
                         const entryLoading = entryLoadingStates[index]
+                        const details = entryDetails[index]
 
                         return (
                           <div key={index} className="mt-2 -mb-2">
-                            {entry.entryNumber && entry.entryKey && !entryError && entryAmount && (
-                              <div className="text-sm font-medium px-14 text-blue-600">
-                                Entry {index + 1} Amount: ₱{entryAmount.toLocaleString('en-US', {
+                            {entry.entryNumber && entry.entryKey && !entryError && entryAmount && details && (
+                              <div className="text-sm font-medium px-14 text-blue-600 bg-blue-50 p-2 rounded-lg border border-blue-200 mb-2">
+                                <div><strong>Entry {index + 1}:</strong> ₱{entryAmount.toLocaleString('en-US', {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 2
-                                })}
+                                })}</div>
+                                <div className="text-gray-600 text-xs mt-1">
+                                  {details.eventType === 'SINGLES' && details.player1Entry
+                                    ? `Player: ${details.player1Entry.firstName} ${details.player1Entry.lastName}`
+                                    : details.eventType === 'DOUBLES'
+                                      ? `Team: ${details.player1Entry?.firstName || ''} ${details.player1Entry?.lastName || ''} & ${details.player2Entry?.firstName || ''} ${details.player2Entry?.lastName || ''}`
+                                      : 'Event details'
+                                  }
+                                </div>
                               </div>
                             )}
 
@@ -1017,6 +1161,11 @@ export function UploadProofMergedModal({
                                   const newErrors = { ...prev }
                                   delete newErrors[i]
                                   return newErrors
+                                })
+                                setEntryDetails(prev => {
+                                  const newDetails = { ...prev }
+                                  delete newDetails[i]
+                                  return newDetails
                                 })
                               }}
                             />
@@ -1175,8 +1324,9 @@ export function UploadProofMergedModal({
               <Button
                 className="w-full bg-green-600 text-white cursor-pointer hover:bg-green-700"
                 onClick={handleSubmit}
+                disabled={createPaymentLoading}
               >
-                Submit
+                {createPaymentLoading ? "Submitting..." : "Submit"}
               </Button>
             </div>
 
