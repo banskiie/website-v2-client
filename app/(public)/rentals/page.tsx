@@ -25,7 +25,6 @@ import { InfoCard, Stat, Step } from "@/components/custom/step"
 import { Separator } from "@/components/ui/separator"
 import { features, rentals } from "@/components/custom/data/items"
 import RentalsSection from "@/components/custom/rentals-section"
-import GCashScanner from "@/components/custom/test"
 
 
 function Page() {
@@ -308,10 +307,6 @@ function Page() {
 
       <div id="rentals">
         <RentalsSection />
-      </div>
-
-      <div>
-        <GCashScanner />
       </div>
 
       <div className="relative bg-black/90 py-24 px-6 md:px-16 text-center overflow-hidden">

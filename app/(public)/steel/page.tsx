@@ -19,12 +19,12 @@ import useSmoothScroll from "@/hooks/useSmoothScroll"
 import VisitUsSection from "@/components/custom/visit-us-main"
 
 const locations = [
-  "Zone 1 Kauswagan, Cagayan De Oro City",
-  "Zone 1 Taytay El Salvador City, Misamis Oriental",
-  "Zone 1 Kauswagan, Cagayan De Oro City",
-  "Zone 1 Taytay El Salvador City, Misamis Oriental",
-  "Zone 1 Kauswagan, Cagayan De Oro City",
-  "Zone 1 Taytay El Salvador City, Misamis Oriental",
+  {
+    text: "Zone 1 Kauswagan, Cagayan De Oro City",
+  },
+  {
+    text: "Zone 1 Taytay El Salvador City, Misamis Oriental",
+  },
 ]
 
 const ads = [
@@ -88,6 +88,7 @@ const categoryRoutes: Record<string, string> = {
   "Metal Roofing": "/steel/products/metalRoofing",
 }
 
+const infinteLocations = [...locations, ...locations, ...locations, ...locations]
 export default function Page() {
   useSmoothScroll()
   // const currentYear = new Date().getFullYear()
@@ -202,11 +203,20 @@ export default function Page() {
 
       <div className="w-full h-[77px] overflow-hidden bg-white flex items-center">
         <div className="animate-marquee whitespace-nowrap flex">
-          {[...locations, ...locations].map((loc, idx) => (
-            <span key={idx} className="mx-12 text-black text-lg font-medium">
-              {loc}
-            </span>
-          ))}
+          <motion.div
+            className="flex items-center gap-16 w-max"
+            animate={{ x: ["0%", "-24%"] }}
+            transition={{
+              duration: 20,
+              ease: "linear",
+              repeat: Infinity,
+            }}
+          >
+            {infinteLocations.map((loc, idx) => (
+              <span key={idx} className="mx-12 text-black text-lg font-medium">
+                {loc.text}
+              </span>
+            ))}</motion.div>
         </div>
       </div>
 

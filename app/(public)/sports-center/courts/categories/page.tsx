@@ -8,7 +8,7 @@ import { Trophy, ExternalLink, Users, User, Search, UploadIcon } from "lucide-re
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { useQuery } from "@apollo/client/react"
-import { CategoryModal, CheckEntryModal, PublicTournamentsData } from "@/components/custom/category-selection"
+import { CategoryModal, CheckEntryModal, PublicTournamentsData, UploadProofMergedModal } from "@/components/custom/category-selection"
 import { DataReconciliationModal } from "@/components/custom/data-reconciliation"
 import { format, isSameMonth, isSameYear } from "date-fns"
 import Header from "@/components/custom/header-white"
@@ -422,12 +422,12 @@ export default function CategoriesPage() {
                 onClose={() => setIsModalOpen(false)}
                 category={selectedCategory}
             />
-            {/* Balik ko dari kay dari nako ibutang tong sa scan sa reference number and total sa gcash */}
-            {/* <UploadProofMergedModal
+
+            <UploadProofMergedModal
                 isOpen={isUploadModalOpen}
                 onClose={() => setIsUploadModalOpen(false)}
-            /> */}
-
+            />
+            
             <CheckEntryModal
                 isOpen={isCheckEntryModalOpen}
                 onClose={() => setIsCheckEntryModalOpen(false)}

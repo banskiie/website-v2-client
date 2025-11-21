@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Trophy, ExternalLink, Users, User, X, Search, UploadIcon, Clock, CheckCircle, Mail, Wallet2Icon, AlertTriangle, Trash, GripVertical } from "lucide-react"
+import { Trophy, ExternalLink, Users, User, X, Search, UploadIcon, Clock, CheckCircle, Mail, Wallet2Icon, AlertTriangle, Trash, GripVertical, Loader2 } from "lucide-react"
 import { categories, Gender } from "./data/items"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -28,10 +28,11 @@ import { CSS } from "@dnd-kit/utilities"
 import { DataReconciliationModal } from "./data-reconciliation"
 import ScrollIndicator from "./scroll-indicator"
 import { useLazyQuery, useQuery } from "@apollo/client/react"
-import { PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
+import { ENTRY_EVENT_AMOUNT_DETAILS, PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
 import { ENTRY_STATUS_HISTORY } from "@/graphql/entries/queries"
 import { ITournament } from "@/app/(public)/types/tournament.interface"
-import { CheckEntryData, EntryStatusHistoryData, IEntryStatus } from "@/app/(public)/types/entry.interface"
+import { CheckEntryData, EntryAmountDetailsData, EntryStatusHistoryData, IEntryStatus } from "@/app/(public)/types/entry.interface"
+import Tesseract from "tesseract.js"
 // const tournament = tournaments.find(t => t.isActive)
 
 export type PublicTournamentsData = {
@@ -367,409 +368,848 @@ function SubmissionSuccessModal({ isOpen, onClose }: {
   )
 }
 
-// export function UploadProofMergedModal({
-//   isOpen,
-//   onClose,
-// }: {
-//   isOpen: boolean
-//   onClose: () => void
-// }) {
-//   const [entriesState, setEntriesState] = useState([{ entryNumber: "", entryKey: "" }])
-//   const [amount, setAmount] = useState("")
-//   const [isJointPayment, setIsJointPayment] = useState(false)
-//   const [preview, setPreview] = useState<string | null>(null)
-//   const [fileType, setFileType] = useState<string | null>(null)
-//   const [error, setError] = useState("")
-//   const [success, setSuccess] = useState(false)
-//   const [priceReminder, setPriceReminder] = useState<string | null>(null)
-//   const [totalRequired, setTotalRequired] = useState(0)
+export function UploadProofMergedModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean
+  onClose: () => void
+}) {
+  const [entriesState, setEntriesState] = useState([{ entryNumber: "", entryKey: "" }])
+  const [amount, setAmount] = useState("")
+  const [isJointPayment, setIsJointPayment] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [fileType, setFileType] = useState<string | null>(null)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+  const [priceReminder, setPriceReminder] = useState<string | null>(null)
+  const [totalRequired, setTotalRequired] = useState(0)
 
-//   const sensors = useSensors(useSensor(PointerSensor))
+  const [entryAmounts, setEntryAmounts] = useState<Record<number, number | null>>({})
+  const [entryLoadingStates, setEntryLoadingStates] = useState<Record<number, boolean>>({})
+  const [entryErrors, setEntryErrors] = useState<Record<number, string>>({})
 
-//   useEffect(() => {
-//     let total = 0
-//     const now = new Date()
+  const [loading, setLoading] = useState(false)
+  const [scannedTotal, setScannedTotal] = useState<string | null>(null)
+  const [reference, setReference] = useState<string | null>(null)
+  const [scannedText, setScannedText] = useState<string>("")
+  const [showConfirmationInput, setShowConfirmationInput] = useState(false)
+  const [confirmationNumber, setConfirmationNumber] = useState<string>("")
+  const [amountLabel, setAmountLabel] = useState("Total")
+  const [referenceLabel, setReferenceLabel] = useState("Reference No.")
 
-//     entriesState.forEach((entryItem) => {
-//       if (!entryItem.entryNumber || !entryItem.entryKey) return
+  const { data: tournamentsData, loading: tournamentsLoading, error: tournamentsError } = useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
 
-//       const matchedEntry = entries.find(
-//         (e) => e.entryKey === entryItem.entryKey && e.entryNumber === entryItem.entryNumber
-//       )
-//       if (!matchedEntry) return
+  const [fetchEntryAmount, { data: entryAmountData, loading: entryAmountLoading, error: entryAmountError }] = useLazyQuery<EntryAmountDetailsData>(ENTRY_EVENT_AMOUNT_DETAILS)
 
-//       const eventInfo = events.find((ev) => ev._id === matchedEntry.event.event_id)
-//       const tournamentInfo = tournaments.find((t) => t._id === eventInfo?.tournamentID)
-//       if (!eventInfo || !tournamentInfo) return
+  const sensors = useSensors(useSensor(PointerSensor))
 
-//       const earlyBirdEnd = new Date(tournamentInfo.dates.earlyBirdPaymentEnd)
-//       const isEarlyBird = now <= earlyBirdEnd && tournamentInfo.settings.hasEB
-//       const pricePerPlayer = isEarlyBird
-//         ? eventInfo.earlyBirdPricePerPlayer
-//         : eventInfo.pricePerPlayer
+  const getEntryAmountDetails = async (entryNumber: string, entryKey: string, index: number) => {
+    const referenceNumber = `${entryNumber}_${entryKey}`
+    console.log('Fetching amount details for reference:', referenceNumber)
 
-//       const isDoubles = eventInfo.type === "DOUBLES"
-//       const playerCount = isDoubles ? 2 : 1
+    try {
+      const result = await fetchEntryAmount({
+        variables: { referenceNumber }
+      })
 
-//       total += pricePerPlayer * playerCount
-//     })
+      if (result.error) {
+        console.log('GraphQL errors:', result.error)
+        const errorMessage = result.error.message || ''
 
-//     setTotalRequired(total)
+        if (errorMessage.toLowerCase().includes('not found') ||
+          errorMessage.toLowerCase().includes('no entry') ||
+          errorMessage.toLowerCase().includes('invalid')) {
+          return {
+            data: null,
+            error: "Entry not found. Please check your Entry Number and Entry Key."
+          }
+        } else {
+          return {
+            data: null,
+            error: "Error fetching entry details. Please try again."
+          }
+        }
+      }
 
-//     const numAmount = parseFloat(amount) || 0
-//     if (numAmount === 0 || total === 0) {
-//       setPriceReminder(null)
-//     } else if (numAmount >= total) {
-//       setPriceReminder(`✅ Amount is enough and matches the total price of ₱${total}.`)
-//     } else {
-//       const diff = total - numAmount
-//       setPriceReminder(`⚠️ Amount is not enough. Missing ₱${diff.toFixed(2)} from ₱${total}.`)
-//     }
-//   }, [entriesState, amount])
+      if (result.data?.entryEventAmountDetails) {
+        return {
+          data: result.data.entryEventAmountDetails,
+          error: null
+        }
+      } else {
+        return {
+          data: null,
+          error: "Entry not found. Please check your Entry Number and Entry Key."
+        }
+      }
+    } catch (error: any) {
+      console.error('Network/other error:', error)
 
-//   const handleSubmit = () => {
-//     const incomplete = entriesState.some((e) => !e.entryNumber || !e.entryKey)
-//     if (incomplete || !preview || !amount) {
-//       setError("Please complete all required fields.")
-//       return
-//     }
+      const errorMessage = error.message?.toLowerCase() || ''
 
-//     setError("")
-//     setSuccess(true)
-//   }
+      if (errorMessage.includes('not found') ||
+        errorMessage.includes('404') ||
+        errorMessage.includes('no entry') ||
+        errorMessage.includes('invalid')) {
+        return {
+          data: null,
+          error: "Entry not found. Please check your Entry Number and Entry Key."
+        }
+      }
 
-//   const handleAddEntry = () => {
-//     setEntriesState([...entriesState, { entryNumber: "", entryKey: "" }])
-//   }
+      return {
+        data: null,
+        error: "Error fetching entry details. Please try again."
+      }
+    }
+  }
 
-//   const handleJointPaymentChange = (checked: boolean) => {
-//     setIsJointPayment(checked)
-//     if (!checked) {
-//       setEntriesState([{ entryNumber: entriesState[0].entryNumber, entryKey: entriesState[0].entryKey }])
-//     }
-//   }
+  const preprocessImage = (imageData: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new window.Image()
+      img.src = imageData
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        const ctx = canvas.getContext("2d")!
+        canvas.width = img.width * 2
+        canvas.height = img.height * 2
 
-//   const handleDragEnd = (event: any) => {
-//     const { active, over } = event
-//     if (active.id !== over?.id) {
-//       const oldIndex = entriesState.findIndex((_, i) => i.toString() === active.id)
-//       const newIndex = entriesState.findIndex((_, i) => i.toString() === over?.id)
-//       setEntriesState((items) => arrayMove(items, oldIndex, newIndex))
-//     }
-//   }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
-//   if (!isOpen) return null
+        ctx.fillStyle = "white"
+        ctx.fillRect(canvas.width * 0.8, canvas.height * 0.7, 50, 50)
 
-//   return (
-//     <AnimatePresence>
-//       {isOpen && (
-//         <motion.div
-//           className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
-//           onClick={(e) => e.stopPropagation()}
-//           initial={{ opacity: 0 }}
-//           animate={{ opacity: 1 }}
-//           exit={{ opacity: 0 }}
-//         >
-//           <motion.div
-//             className="bg-white rounded-xl shadow-xl w-full max-w-2xl relative flex flex-col max-h-[83vh] mt-14"
-//             onClick={(e) => e.stopPropagation()}
-//             initial={{ y: 50, opacity: 0 }}
-//             animate={{ y: 0, opacity: 1 }}
-//             exit={{ y: 50, opacity: 0 }}
-//             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-//           >
-//             <div className="relative p-6 border-b">
-//               <h2 className="text-lg font-bold text-gray-800 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-//                 Upload Proof of Payment
-//               </h2>
-//               <button
-//                 type="button"
-//                 onClick={(e) => {
-//                   e.stopPropagation()
-//                   onClose()
-//                 }}
-//                 className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
-//               >
-//                 <X className="w-5 h-5" />
-//               </button>
-//             </div>
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        for (let i = 0; i < imgData.data.length; i += 4) {
+          const avg = (imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2]) / 3
+          imgData.data[i] = avg
+          imgData.data[i + 1] = avg
+          imgData.data[i + 2] = avg
+        }
+        ctx.putImageData(imgData, 0, 0)
 
-//             <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1">
+        resolve(canvas.toDataURL("image/png"))
+      }
+    })
+  }
 
-//               <div className="w-full">
-//                 {/* 💡 Move reminder above the Entry Number / Entry Key labels */}
-//                 {!amount && (
-//                   <div className="text-sm font-medium text-gray-600 px-14 pb-2">
-//                     💡 Enter an amount to check if this entry is covered.
-//                   </div>
-//                 )}
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
 
-//                 <div className="grid grid-cols-2 gap-14 px-14">
-//                   <label className="block text-sm font-medium text-gray-700 text-start">
-//                     Entry Number <span className="text-red-500">*</span>
-//                   </label>
-//                   <label className="block text-sm font-medium text-gray-700 text-start">
-//                     Entry Key <span className="text-red-500">*</span>
-//                   </label>
-//                 </div>
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const imageData = reader.result as string
+      setPreview(imageData)
+      setFileType("image")
+      setLoading(true)
+      setScannedTotal(null)
+      setReference(null)
+      setConfirmationNumber("")
+      setScannedText("")
 
-//                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-//                   <SortableContext
-//                     items={entriesState.map((_, i) => i.toString())}
-//                     strategy={verticalListSortingStrategy}
-//                   >
-//                     <div className="flex flex-col gap-2">
-//                       {entriesState.map((entry, index) => {
-//                         const matchedEntry = entries.find(
-//                           (e) => e.entryKey === entry.entryKey && e.entryNumber === entry.entryNumber
-//                         )
+      try {
+        const preprocessedData = await preprocessImage(imageData)
 
-//                         let entryTotal = 0
-//                         if (matchedEntry) {
-//                           const eventInfo = events.find((ev) => ev._id === matchedEntry.event.event_id)
-//                           const tournamentInfo = tournaments.find(
-//                             (t) => t._id === eventInfo?.tournamentID
-//                           )
-//                           if (eventInfo && tournamentInfo) {
-//                             const now = new Date()
-//                             const earlyBirdEnd = new Date(tournamentInfo.dates.earlyBirdPaymentEnd)
-//                             const isEarlyBird = now <= earlyBirdEnd && tournamentInfo.settings.hasEB
-//                             const pricePerPlayer = isEarlyBird
-//                               ? eventInfo.earlyBirdPricePerPlayer
-//                               : eventInfo.pricePerPlayer
-//                             const isDoubles = eventInfo.type === "DOUBLES"
-//                             const playerCount = isDoubles ? 2 : 1
-//                             entryTotal = pricePerPlayer * playerCount
-//                           }
-//                         }
+        const result = await Tesseract.recognize(preprocessedData, "eng", {
+          logger: (m) => console.log(m),
+        })
 
-//                         // Kani ang ga based sa reminder na verification sa amount
-//                         let cumulativeBefore = 0
-//                         for (let i = 0; i < index; i++) {
-//                           const prevEntry = entriesState[i]
-//                           const prevMatched = entries.find(
-//                             (e) => e.entryKey === prevEntry.entryKey && e.entryNumber === prevEntry.entryNumber
-//                           )
-//                           if (!prevMatched) continue
-//                           const prevEvent = events.find((ev) => ev._id === prevMatched.event.event_id)
-//                           const prevTournament = tournaments.find((t) => t._id === prevEvent?.tournamentID)
-//                           if (!prevEvent || !prevTournament) continue
-//                           const now = new Date()
-//                           const prevEarlyBirdEnd = new Date(prevTournament.dates.earlyBirdPaymentEnd)
-//                           const prevIsEB = now <= prevEarlyBirdEnd && prevTournament.settings.hasEB
-//                           const prevPrice = prevIsEB ? prevEvent.earlyBirdPricePerPlayer : prevEvent.pricePerPlayer
-//                           const prevCount = prevEvent.type === "DOUBLES" ? 2 : 1
-//                           cumulativeBefore += prevPrice * prevCount
-//                         }
+        const text = result.data.text
+        console.log("🧾 Extracted text:", text)
+        setScannedText(text)
 
-//                         const numAmount = Number(amount || 0)
-//                         let reminderText = ""
+        const confirmationMatch = text.match(/confirmation[\s#:=-]*no\.?\s*([A-Z0-9-]{5,})/i)
+        if (confirmationMatch) {
+          setShowConfirmationInput(true)
+          setConfirmationNumber(confirmationMatch[1])
+        } else {
+          setShowConfirmationInput(false)
+          setConfirmationNumber("")
+        }
 
-//                         if (!amount) {
-//                           reminderText = "" // remove per-entry reminders when no amount
-//                         } else if (entryTotal === 0) {
-//                           reminderText = ""
-//                         } else {
-//                           const cumulativeAfter = cumulativeBefore + entryTotal
+        const traceMatch = text.match(/Trace no\.\s*([A-Z0-9-]+)/i)
+        if (traceMatch) {
+          setShowConfirmationInput(true)
+          setConfirmationNumber(traceMatch[1])
+        }
 
-//                           if (cumulativeAfter <= numAmount) {
-//                             reminderText = `✅ Amount is enough and matches the total price of ₱${entryTotal}.`
-//                           } else {
-//                             const diff = cumulativeAfter - numAmount
-//                             reminderText = `⚠️ Amount is not enough. Missing ₱${diff.toFixed(2)} from ₱${numAmount}.`
-//                           }
-//                         }
+        const landBankTransactionRefMatch = text.match(/Transaction Reference Number\s*([A-Z0-9\/]+)/i)
+        if (landBankTransactionRefMatch) {
+          setShowConfirmationInput(true)
+          setConfirmationNumber(landBankTransactionRefMatch[1])
+        }
 
-//                         return (
-//                           <div key={index} className="space-y-2">
-//                             {reminderText && (
-//                               <div
-//                                 className={`text-sm font-medium px-14 ${reminderText.startsWith("✅")
-//                                   ? "text-green-600"
-//                                   : reminderText.startsWith("⚠️")
-//                                     ? "text-red-600"
-//                                     : "text-gray-600"
-//                                   }`}
-//                               >
-//                                 {reminderText}
-//                               </div>
-//                             )}
+        const currencyPattern = "(?:₱|PHP|F|P|£)"
 
-//                             <SortableEntry
-//                               id={index.toString()}
-//                               index={index}
-//                               entry={entry}
-//                               isJointPayment={isJointPayment}
-//                               onChange={(i, field, value) => {
-//                                 const updated = [...entriesState]
-//                                 updated[i] = { ...updated[i], [field]: value }
-//                                 setEntriesState(updated)
-//                               }}
-//                               onDelete={(i) =>
-//                                 setEntriesState(entriesState.filter((_, idx) => idx !== i))
-//                               }
-//                             />
-//                           </div>
-//                         )
-//                       })}
-//                     </div>
-//                   </SortableContext>
-//                 </DndContext>
-//               </div>
+        const bdoAmountMatch = text.match(/PHP\s*([\d,]+\.[\d]{2})/i)
 
-//               {isJointPayment && (
-//                 <Button
-//                   type="button"
-//                   onClick={handleAddEntry}
-//                   className="w-full bg-green-600 text-white cursor-pointer hover:bg-green-500"
-//                 >
-//                   Add Entry/Entries
-//                 </Button>
-//               )}
+        const paidMatch = text.match(
+          new RegExp(`paid\\s*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i")
+        )
+        const transferMatch = text.match(
+          new RegExp(`transfer\\s*amount[\\s\\S]*?${currencyPattern}\\s?([\\d,]+\\.\\d{2})`, "i")
+        )
 
-//               <div className="border-2 border-dashed border-green-300 rounded-xl p-4 bg-green-50 flex flex-col items-center">
-//                 <div className="w-full text-left mb-3">
-//                   <div className="text-green-800 font-bold text-sm mb-1">
-//                     Upload Proof of Payment <span className="text-red-500">*</span>
-//                   </div>
-//                   <p className="text-gray-600 text-xs">
-//                     Make sure the uploaded image or file is clear and readable.
-//                   </p>
-//                 </div>
+        const totalMatch =
+          text.match(new RegExp(`total[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i")) ||
+          text.match(new RegExp(`amount[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i")) ||
+          text.match(new RegExp(`total\\s*amount\\s*sent[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i"))
 
-//                 <div className="w-full flex justify-center mb-4">
-//                   {preview ? (
-//                     fileType === "image" ? (
-//                       <Image
-//                         src={preview}
-//                         alt="Uploaded Preview"
-//                         width={400}
-//                         height={250}
-//                         className="w-full max-w-[300px] rounded-lg border shadow"
-//                       />
-//                     ) : (
-//                       <embed
-//                         src={preview}
-//                         type="application/pdf"
-//                         className="w-full h-[300px] rounded-lg border shadow"
-//                       />
-//                     )
-//                   ) : (
-//                     <Image
-//                       src="/id.png"
-//                       alt="Sample Proof Placeholder"
-//                       width={400}
-//                       height={250}
-//                       className="w-full max-w-[300px] rounded-lg border shadow"
-//                     />
-//                   )}
-//                 </div>
+        let detectedAmount = null
+        if (bdoAmountMatch) {
+          setAmountLabel("Paid Amount")
+          detectedAmount = bdoAmountMatch[1]
+        } else if (paidMatch) {
+          setAmountLabel("Paid Amount")
+          detectedAmount = paidMatch[1]
+        } else if (transferMatch) {
+          setAmountLabel("Transfer Amount")
+          detectedAmount = transferMatch[1]
+        } else if (totalMatch) {
+          setAmountLabel("Total")
+          detectedAmount = totalMatch[1]
+        } else {
+          setAmountLabel("Total")
+          detectedAmount = null
+        }
 
-//                 <label
-//                   htmlFor="proofUpload"
-//                   className="cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed border-green-400 rounded-xl bg-white hover:bg-green-100 transition"
-//                 >
-//                   <UploadIcon className="w-6 h-6 text-green-600 mb-2" />
-//                   <span className="text-green-700 font-medium text-sm">
-//                     Drag & Drop your files or <span className="underline">Browse</span>
-//                   </span>
-//                   <input
-//                     id="proofUpload"
-//                     type="file"
-//                     accept="image/*,.pdf"
-//                     className="hidden"
-//                     onChange={(e) => {
-//                       const file = e.target.files?.[0]
-//                       if (!file) return
-//                       if (file.type.startsWith("image/")) {
-//                         const reader = new FileReader()
-//                         reader.onloadend = () => {
-//                           setPreview(reader.result as string)
-//                           setFileType("image")
-//                         }
-//                         reader.readAsDataURL(file)
-//                       } else if (file.type === "application/pdf") {
-//                         const pdfUrl = URL.createObjectURL(file)
-//                         setPreview(pdfUrl)
-//                         setFileType("pdf")
-//                       } else {
-//                         setPreview(null)
-//                         setFileType(null)
-//                       }
-//                     }}
-//                   />
-//                 </label>
-//               </div>
+        if (detectedAmount) {
+          setScannedTotal(`₱${detectedAmount}`)
+          setAmount(detectedAmount.replace(/,/g, ''))
+        } else {
+          setScannedTotal("Not found")
+        }
 
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 text-start">
-//                   Amount <span className="text-red-500">*</span>
-//                 </label>
-//                 <input
-//                   type="number"
-//                   value={amount}
-//                   onChange={(e) => setAmount(e.target.value)}
-//                   placeholder="Enter amount: ₱1000.00"
-//                   className="w-full mt-1 px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 border-gray-300"
-//                 />
-//               </div>
-//             </div>
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
 
-//             <div className="p-3 border-t bg-white">
-//               <div className="flex items-center gap-2 mb-4">
-//                 <input
-//                   id="jointPayment"
-//                   type="checkbox"
-//                   checked={isJointPayment}
-//                   onChange={(e) => handleJointPaymentChange(e.target.checked)}
-//                   className="w-4 h-4 text-green-600 border-gray-300 rounded"
-//                 />
-//                 <label
-//                   htmlFor="jointPayment"
-//                   className="text-sm text-red-500 font-medium cursor-pointer"
-//                 >
-//                   Payment for Multiple Entries
-//                 </label>
-//               </div>
+        let refNumber = "Not found"
+        let refLabel = "Reference No."
+        let foundTransactionRef = false
 
-//               <Button
-//                 className="w-full bg-green-600 text-white cursor-pointer hover:bg-green-700"
-//                 onClick={handleSubmit}
-//               >
-//                 Submit
-//               </Button>
-//             </div>
+        const bdoRefMatch = text.match(/Reference no\.\s*([A-Z0-9-]+)/i)
+        if (bdoRefMatch) {
+          refNumber = bdoRefMatch[1]
+        }
 
-//             <AnimatePresence>
-//               {success && (
-//                 <motion.div
-//                   className="absolute inset-0 bg-white/95 flex flex-col items-center justify-center rounded-xl"
-//                   initial={{ opacity: 0 }}
-//                   animate={{ opacity: 1 }}
-//                   exit={{ opacity: 0 }}
-//                 >
-//                   <p className="text-green-600 font-bold text-lg mb-2">Submitted!</p>
-//                   <p className="text-gray-600 text-sm mb-4 text-center">
-//                     Your proof of payment was submitted successfully.
-//                   </p>
-//                   <Button
-//                     onClick={() => {
-//                       setSuccess(false)
-//                       onClose()
-//                     }}
-//                     className="bg-green-600 text-white hover:bg-green-700"
-//                   >
-//                     Close
-//                   </Button>
-//                 </motion.div>
-//               )}
-//             </AnimatePresence>
-//           </motion.div>
-//         </motion.div>
-//       )}
-//     </AnimatePresence>
-//   )
-// }
+        if (refNumber === "Not found") {
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].toLowerCase()
+
+            if (line.includes("transaction reference no") || line.includes("transaction ref")) {
+              refLabel = "Transaction Reference No."
+              foundTransactionRef = true
+            }
+
+            if (
+              line.includes("reference no") ||
+              line.includes("ref no") ||
+              line.includes("ref. no.") ||
+              line.includes("transaction reference no") ||
+              line.includes("transaction ref no")
+            ) {
+              const inlineMatch = lines[i].match(
+                /(?:ref(?:\.|erence)?(?: no\.?)?[:\s]*)\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i
+              )
+
+              if (inlineMatch) {
+                refNumber = inlineMatch[1]
+                  .replace(/\s+/g, ' ')
+                  .trim()
+                break
+              }
+
+              for (let j = i + 1; j < Math.min(i + 3, lines.length); j++) {
+                const candidate = lines[j].trim()
+                if (/^[A-Z0-9\s-]{8,}$/i.test(candidate)) {
+                  refNumber = candidate
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                  break
+                }
+              }
+
+              if (refNumber !== "Not found") break
+            }
+          }
+        }
+
+        if (refNumber === "Not found") {
+          const refPatterns = [
+            /Reference no\.\s*([A-Z0-9-]+)/i,
+            /Ref No\.\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
+            /Reference No\.\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
+            /Ref No[\s:]*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
+            /Transaction Ref\. No\.\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
+            /Transaction Reference No\.\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
+            /Ref\. No\.\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i
+          ]
+
+          for (const pattern of refPatterns) {
+            const match = text.match(pattern)
+            if (match) {
+              refNumber = match[1]
+                .replace(/\s+/g, ' ')
+                .trim()
+              break
+            }
+          }
+        }
+
+        if (refNumber !== "Not found") {
+          refNumber = refNumber.replace(/\s.$/, '')
+          refNumber = refNumber.replace(/(\s.)+$/, '')
+          refNumber = refNumber.trim()
+
+          if (!refNumber.includes('-')) {
+            refNumber = refNumber.replace(/[^\d\s-]/g, '')
+          }
+
+          refNumber = refNumber.replace(/\s+/g, ' ').trim()
+
+          if (refNumber.replace(/[\s-]/g, '').length < 4) {
+            refNumber = "Not found"
+          }
+        }
+
+        if (foundTransactionRef) {
+          refLabel = "Transaction Reference No."
+        }
+
+        setReference(refNumber)
+        setReferenceLabel(refLabel)
+
+      } catch (err) {
+        setScannedText("Error: Could not read text.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    reader.readAsDataURL(file)
+  }
+
+  useEffect(() => {
+    const fetchAllEntryAmounts = async () => {
+      const newAmounts: Record<number, number | null> = {}
+      const newLoadingStates: Record<number, boolean> = {}
+      const newErrors: Record<number, string> = {}
+
+      for (let i = 0; i < entriesState.length; i++) {
+        const entry = entriesState[i]
+        if (entry.entryNumber && entry.entryKey) {
+          newLoadingStates[i] = true
+          setEntryLoadingStates(prev => ({ ...prev, [i]: true }))
+
+          const result = await getEntryAmountDetails(entry.entryNumber, entry.entryKey, i)
+          newAmounts[i] = result.data ? result.data.amount : null
+          newErrors[i] = result.error || ""
+          newLoadingStates[i] = false
+        } else {
+          newAmounts[i] = null
+          newLoadingStates[i] = false
+          newErrors[i] = ""
+        }
+      }
+
+      setEntryAmounts(newAmounts)
+      setEntryLoadingStates(newLoadingStates)
+      setEntryErrors(newErrors)
+    }
+
+    fetchAllEntryAmounts()
+  }, [entriesState])
+
+  useEffect(() => {
+    const calculateTotal = async () => {
+      let total = 0
+
+      Object.values(entryAmounts).forEach(amount => {
+        if (amount) {
+          total += amount
+        }
+      })
+
+      setTotalRequired(total)
+
+      const numAmount = parseFloat(amount) || 0
+      if (numAmount === 0 || total === 0) {
+        setPriceReminder(null)
+      } else if (numAmount >= total) {
+        setPriceReminder(`✅ Amount is enough and matches the total price of ₱${total}.`)
+      } else {
+        const diff = total - numAmount
+        setPriceReminder(`⚠️ Amount is not enough. Missing ₱${diff.toFixed(2)} from ₱${total}.`)
+      }
+    }
+
+    calculateTotal()
+  }, [entryAmounts, amount])
+
+  const handleSubmit = () => {
+    const hasEntryErrors = Object.values(entryErrors).some(error => error !== "")
+    if (hasEntryErrors) {
+      setError("Please fix the entry errors before submitting.")
+      return
+    }
+
+    const incomplete = entriesState.some((e) => !e.entryNumber || !e.entryKey)
+    if (incomplete || !preview || !amount) {
+      setError("Please complete all required fields.")
+      return
+    }
+
+    setError("")
+    setSuccess(true)
+  }
+
+  const handleAddEntry = () => {
+    setEntriesState([...entriesState, { entryNumber: "", entryKey: "" }])
+  }
+
+  const handleJointPaymentChange = (checked: boolean) => {
+    setIsJointPayment(checked)
+    if (!checked) {
+      setEntriesState([{ entryNumber: entriesState[0].entryNumber, entryKey: entriesState[0].entryKey }])
+      setEntryAmounts({ 0: entryAmounts[0] || null })
+      setEntryLoadingStates({ 0: entryLoadingStates[0] || false })
+      setEntryErrors({ 0: entryErrors[0] || "" })
+    }
+  }
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event
+    if (active.id !== over?.id) {
+      const oldIndex = entriesState.findIndex((_, i) => i.toString() === active.id)
+      const newIndex = entriesState.findIndex((_, i) => i.toString() === over?.id)
+
+      const reorderedEntries = arrayMove(entriesState, oldIndex, newIndex)
+      setEntriesState(reorderedEntries)
+
+      const reorderedAmounts: Record<number, number | null> = {}
+      const reorderedLoadingStates: Record<number, boolean> = {}
+      const reorderedErrors: Record<number, string> = {}
+
+      reorderedEntries.forEach((_, newIdx) => {
+        reorderedAmounts[newIdx] = entryAmounts[oldIndex === newIdx ? newIndex : (newIdx === newIndex ? oldIndex : newIdx)] || null
+        reorderedLoadingStates[newIdx] = entryLoadingStates[oldIndex === newIdx ? newIndex : (newIdx === newIndex ? oldIndex : newIdx)] || false
+        reorderedErrors[newIdx] = entryErrors[oldIndex === newIdx ? newIndex : (newIdx === newIndex ? oldIndex : newIdx)] || ""
+      })
+
+      setEntryAmounts(reorderedAmounts)
+      setEntryLoadingStates(reorderedLoadingStates)
+      setEntryErrors(reorderedErrors)
+    }
+  }
+
+  const calculateCumulativeAmounts = () => {
+    const cumulative: Record<number, number> = {}
+    let runningTotal = 0
+
+    entriesState.forEach((_, index) => {
+      cumulative[index] = runningTotal
+      const currentAmount = entryAmounts[index] || 0
+      runningTotal += currentAmount
+    })
+
+    return cumulative
+  }
+
+  const cumulativeAmounts = calculateCumulativeAmounts()
+
+  if (tournamentsLoading) {
+    return (
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 relative flex flex-col items-center justify-center"
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+            >
+              <div className="text-gray-500">Loading data...</div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    )
+  }
+
+  if (tournamentsError) {
+    return (
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 relative flex flex-col items-center justify-center"
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+            >
+              <div className="text-red-500">Error loading data. Please try again.</div>
+              <Button onClick={onClose} className="mt-4">
+                Close
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    )
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
+          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-white rounded-xl shadow-xl w-full max-w-2xl relative flex flex-col max-h-[83vh] mt-14"
+            onClick={(e) => e.stopPropagation()}
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 50, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          >
+            <div className="relative p-6 border-b">
+              <h2 className="text-lg font-bold text-gray-800 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                Upload Proof of Payment
+              </h2>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClose()
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1">
+              {error && (
+                <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
+                  <p className="text-red-700 text-sm font-medium">{error}</p>
+                </div>
+              )}
+
+              <div className="w-full">
+                <div className="px-14 pb-2 space-y-2">
+                  {Object.values(entryErrors).some(error => error !== "") && (
+                    <div className="text-sm font-medium text-red-600 bg-red-50 p-2 rounded-lg border border-red-200">
+                      Please fix the entry errors below before proceeding.
+                    </div>
+                  )}
+
+                  {Object.values(entryAmounts).some(amount => amount !== null) ? (
+                    <div className="text-sm font-medium text-blue-600">
+                      Total Amount: {entriesState.map((entry, index) => {
+                        const entryAmount = entryAmounts[index]
+                      }).filter(Boolean).join(' + ')}
+                      {totalRequired > 0 && (
+                        <span className="text-red-600">
+                          <span className="font-medium mr-px">₱</span>{totalRequired.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  ) : amount ? (
+                    <div className="text-sm font-medium text-green-600">
+                      Payment Amount: ₱{parseFloat(amount).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-sm font-medium text-gray-600">
+                      💡 Enter an amount to check if this entry is covered.
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-14 px-14">
+                  <label className="block text-sm font-medium text-gray-700 text-start">
+                    Entry Number <span className="text-red-500">*</span>
+                  </label>
+                  <label className="block text-sm font-medium text-gray-700 text-start">
+                    Entry Key <span className="text-red-500">*</span>
+                  </label>
+                </div>
+  
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext
+                    items={entriesState.map((_, i) => i.toString())}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="flex flex-col gap-2">
+                      {entriesState.map((entry, index) => {
+                        const entryAmount = entryAmounts[index]
+                        const entryError = entryErrors[index]
+                        const entryLoading = entryLoadingStates[index]
+
+                        return (
+                          <div key={index} className="mt-2 -mb-2">
+                            {entry.entryNumber && entry.entryKey && !entryError && entryAmount && (
+                              <div className="text-sm font-medium px-14 text-blue-600">
+                                Entry {index + 1} Amount: ₱{entryAmount.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2
+                                })}
+                              </div>
+                            )}
+
+                            {entryLoading && (
+                              <div className="text-sm font-medium px-14 text-gray-600">
+                                Loading entry {index + 1} details...
+                              </div>
+                            )}
+
+                            {entryError && (
+                              <div className="text-sm font-medium px-14 text-red-600 bg-red-50 p-2 rounded-lg border border-red-200">
+                                {entryError}
+                              </div>
+                            )}
+
+                            <SortableEntry
+                              id={index.toString()}
+                              index={index}
+                              entry={entry}
+                              isJointPayment={isJointPayment}
+                              onChange={(i, field, value) => {
+                                const updated = [...entriesState]
+                                updated[i] = { ...updated[i], [field]: value }
+                                setEntriesState(updated)
+                              }}
+                              onDelete={(i) => {
+                                setEntriesState(entriesState.filter((_, idx) => idx !== i))
+                                setEntryAmounts(prev => {
+                                  const newAmounts = { ...prev }
+                                  delete newAmounts[i]
+                                  return newAmounts
+                                })
+                                setEntryLoadingStates(prev => {
+                                  const newLoadingStates = { ...prev }
+                                  delete newLoadingStates[i]
+                                  return newLoadingStates
+                                })
+                                setEntryErrors(prev => {
+                                  const newErrors = { ...prev }
+                                  delete newErrors[i]
+                                  return newErrors
+                                })
+                              }}
+                            />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
+
+              {isJointPayment && (
+                <Button
+                  type="button"
+                  onClick={handleAddEntry}
+                  className="w-full bg-green-600 text-white cursor-pointer hover:bg-green-500"
+                >
+                  Add Entry/Entries
+                </Button>
+              )}
+
+              <div className="border-2 border-dashed border-green-300 rounded-xl p-4 bg-green-50 flex flex-col items-center">
+                <div className="w-full text-left mb-3">
+                  <div className="text-green-800 font-bold text-sm mb-1">
+                    Upload Proof of Payment <span className="text-red-500">*</span>
+                  </div>
+                  <p className="text-gray-600 text-xs">
+                    Upload your GCash, Maya, or bank receipt to automatically scan the amount and reference number.
+                  </p>
+                </div>
+
+                <div className="w-full flex justify-center mb-4">
+                  {preview ? (
+                    <img
+                      src={preview}
+                      alt="Uploaded receipt"
+                      className="w-full max-w-[300px] rounded-lg border shadow"
+                    />
+                  ) : (
+                    <Image
+                      src="/id.png"
+                      alt="Sample Proof Placeholder"
+                      width={400}
+                      height={250}
+                      className="w-full max-w-[300px] rounded-lg border shadow"
+                    />
+                  )}
+                </div>
+
+                <label
+                  htmlFor="proofUpload"
+                  className="cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed border-green-400 rounded-xl bg-white hover:bg-green-100 transition"
+                >
+                  {loading ? (
+                    <Loader2 className="w-6 h-6 text-green-600 mb-2 animate-spin" />
+                  ) : (
+                    <UploadIcon className="w-6 h-6 text-green-600 mb-2" />
+                  )}
+                  <span className="text-green-700 font-medium text-sm">
+                    {loading ? "Scanning..." : "Drag & Drop your receipt or Browse"}
+                  </span>
+                  <input
+                    id="proofUpload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </label>
+
+                {(scannedTotal || reference || confirmationNumber) && (
+                  <div className="w-full mt-4 space-y-3">
+                    {scannedTotal && scannedTotal !== "Not found" && (
+                      <div className="p-3 bg-green-100 rounded-xl">
+                        <p className="text-sm text-gray-500">{amountLabel} (Scanned)</p>
+                        <p className="text-lg font-bold text-green-700">{scannedTotal}</p>
+                      </div>
+                    )}
+
+                    {reference && reference !== "Not found" && (
+                      <div className="p-3 bg-blue-100 rounded-xl">
+                        <p className="text-sm text-gray-500">{referenceLabel}</p>
+                        <p className="text-lg font-bold text-blue-700">{reference}</p>
+                      </div>
+                    )}
+
+                    {showConfirmationInput && confirmationNumber && (
+                      <div className="p-3 bg-yellow-100 rounded-xl">
+                        <p className="text-sm text-gray-500">
+                          {confirmationNumber && (confirmationNumber.includes("MB") || confirmationNumber.includes("/"))
+                            ? "Transaction Reference No."
+                            : confirmationNumber && confirmationNumber.length <= 10
+                              ? "Trace No."
+                              : "Confirmation No."
+                          }
+                        </p>
+                        <p className="text-lg font-bold text-yellow-700">{confirmationNumber}</p>
+                      </div>
+                    )}
+
+                    {preview && (
+                      <Button
+                        onClick={() => {
+                          setPreview(null)
+                          setScannedTotal(null)
+                          setReference(null)
+                          setScannedText("")
+                          setConfirmationNumber("")
+                        }}
+                        className="w-full bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      >
+                        Upload Another Receipt
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {priceReminder && (
+                <div className={`text-sm font-medium ${priceReminder.startsWith("✅") ? "text-green-600" : "text-red-600"}`}>
+                  {priceReminder}
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 border-t bg-white border-gray-200">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 text-start mb-2">
+                  Amount <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Enter amount: ₱1000.00"
+                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 border-gray-300"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  id="jointPayment"
+                  type="checkbox"
+                  checked={isJointPayment}
+                  onChange={(e) => handleJointPaymentChange(e.target.checked)}
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="jointPayment"
+                  className="text-sm text-red-500 font-medium cursor-pointer"
+                >
+                  Payment for Multiple Entries
+                </label>
+              </div>
+
+              <Button
+                className="w-full bg-green-600 text-white cursor-pointer hover:bg-green-700"
+                onClick={handleSubmit}
+              >
+                Submit
+              </Button>
+            </div>
+
+            <AnimatePresence>
+              {success && (
+                <motion.div
+                  className="absolute inset-0 bg-white/95 flex flex-col items-center justify-center rounded-xl"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <p className="text-green-600 font-bold text-lg mb-2">Submitted!</p>
+                  <p className="text-gray-600 text-sm mb-4 text-center">
+                    Your proof of payment was submitted successfully.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setSuccess(false)
+                      onClose()
+                    }}
+                    className="bg-green-600 text-white hover:bg-green-700"
+                  >
+                    Close
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
 
 export function CheckEntryModal({
   isOpen,
@@ -895,11 +1335,10 @@ export function CheckEntryModal({
                       setEntryValue(e.target.value)
                       setError("")
                     }}
-                    className={`w-full pl-10 pr-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition ${
-                      error
-                        ? "border-red-500 focus:ring-red-300"
-                        : "border-gray-300 focus:ring-green-400"
-                    }`}
+                    className={`w-full pl-10 pr-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition ${error
+                      ? "border-red-500 focus:ring-red-300"
+                      : "border-gray-300 focus:ring-green-400"
+                      }`}
                   />
                 </div>
                 {(error || queryError) && (
@@ -958,9 +1397,9 @@ export function CheckEntryModal({
                   Entry Status History
                 </h2>
 
-               <div className="mt-3 inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-sm font-medium px-4 py-2 rounded-full shadow-sm border border-amber-100">
+                <div className="mt-3 inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-sm font-medium px-4 py-2 rounded-full shadow-sm border border-amber-100">
                   Reference Number:&nbsp;
-                   <span className="font-semibold text-amber-800">{entryValue}</span>
+                  <span className="font-semibold text-amber-800">{entryValue}</span>
                 </div>
 
                 <p className="text-sm text-gray-500 mt-3">

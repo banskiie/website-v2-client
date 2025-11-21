@@ -88,3 +88,13 @@ export interface RegisterEntryVariables {
     }
   }
 }
+
+export interface IEntryAmountDetails {
+  amount: number,
+  deadline: string,
+  isEarlyBird: boolean
+}
+
+export interface EntryAmountDetailsData {
+  entryEventAmountDetails: IEntryAmountDetails
+}

@@ -9,26 +9,42 @@ import LocationSection from '@/components/custom/sports-center-loc'
 import SportsFacts from '@/components/custom/sports-facts'
 import FloatingChatWidget from '@/components/custom/ticket'
 import useSmoothScroll from '@/hooks/useSmoothScroll'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, m, motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 
-const images = [
-    "/assets/img/sports-center/shuttlebrew/sb_icon.png",
-    "/assets/img/sports-center/court/LOGO-NEW-SPORTSCENTER_BLACK.png",
-    "/assets/img/sports-center/suite/courtsidelogo_transparent_black.png",
-    "/assets/c-one-logo2.png",
-    "/assets/img/sports-center/shuttlebrew/sb_icon.png",
-    "/assets/img/sports-center/court/LOGO-NEW-SPORTSCENTER_BLACK.png",
-    "/assets/img/sports-center/suite/courtsidelogo_transparent_black.png",
-    "/assets/c-one-logo2.png",
-    "/assets/img/sports-center/court/LOGO-NEW-SPORTSCENTER_BLACK.png",
-    "/assets/img/sports-center/suite/courtsidelogo_transparent_black.png",
+// const images = [
+
+//     "/assets/c-one-logo2.png",
+//     "/assets/img/sports-center/shuttlebrew/sb_icon.png",
+//     "/assets/img/sports-center/court/LOGO-NEW-SPORTSCENTER_BLACK.png",
+//     "/assets/img/sports-center/suite/courtsidelogo_transparent_black.png",
+//     "/assets/c-one-logo2.png",
+//     "/assets/img/sports-center/court/LOGO-NEW-SPORTSCENTER_BLACK.png",
+//     "/assets/img/sports-center/suite/courtsidelogo_transparent_black.png",
+// ]
+
+const scrollImages = [
+    {
+        src: "/assets/img/sports-center/shuttlebrew/sb_icon.png",
+        alt: "Shuttle Brew Logo"
+    },
+    {
+        src: "/assets/img/sports-center/court/LOGO-NEW-SPORTSCENTER_BLACK.png",
+        alt: "C-One Sports Center Logo"
+    },
+    {
+        src: "/assets/img/sports-center/suite/courtsidelogo_transparent_black.png",
+        alt: "Courtside Logo"
+    },
+    {
+        src: "/assets/c-one-logo2.png",
+        alt: "C-One Logo"
+    }
 ]
 
-
-
+const infiniteImages = [...scrollImages, ...scrollImages, ...scrollImages, ...scrollImages]
 // const gradeOptions = ["G", "F", "Advanced", "Open", "Legend", "E"]
 function page() {
     useSmoothScroll()
@@ -243,48 +259,41 @@ function page() {
                 </div>
             </section>
 
-
-
             <div id='badminton-tournament' className="w-full bg-gradient-to-r from-gray-100 via-white to-gray-100 py-2 relative flex overflow-x-hidden shadow-lg">
-                <div className="animate-marquee flex gap-12 flex-shrink-0">
-                    {images.map((src, idx) => (
-                        <span key={`A${idx}`} className="px-8 flex items-center">
+                <div className="absolute right-0 top-0 h-full w-40 bg-gradient-to-l from-[#F4F3EE] via-[#F4F3EE]/80 to-transparent z-10 backdrop-blur-md" />
+                <motion.div
+                    className="flex items-center gap-16 w-max"
+                    animate={{ x: ["0%", "-24%"] }}
+                    transition={{
+                        duration: 20,
+                        ease: "linear",
+                        repeat: Infinity,
+                    }}
+                >
+                    {infiniteImages.map((img, index) => (
+                        <div key={index} className="flex-shrink-0 h-20 w-40 flex items-center justify-center">
                             <Image
-                                src={src}
-                                alt={`Ad ${idx + 1}`}
-                                width={90}
-                                height={90}
-                                className="object-cover"
+                                src={img.src}
+                                alt={img.alt}
+                                width={80}
+                                height={80}
+                                className="object-contain"
                             />
-                        </span>
+                        </div>
                     ))}
-                </div>
+                </motion.div>
+            </div >
 
-                <div className="animate-marquee flex gap-12 flex-shrink-0">
-                    {images.map((src, idx) => (
-                        <span key={`B${idx}`} className="px-8 flex items-center">
-                            <Image
-                                src={src}
-                                alt={`Ad duplicate ${idx + 1}`}
-                                width={90}
-                                height={90}
-                                className="object-cover"
-                            />
-                        </span>
-                    ))}
-                </div>
-            </div>
-
-            <div className="w-full bg-linear-to-b from-green-80 to-gray-250 py-45 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10 bg-[url('/assets/img/sports-center/court/bg-badminton.jpg')] bg-center bg-cover bg-no-repeat"></div>
+            <div className="w-full bg-linear-to-b from-green-80 to-gray-250 py-70 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-20 bg-[url('/assets/img/sports-center/court/bg-badminton2.jpg')] bg-center bg-cover bg-no-repeat"></div>
 
                 <div className="relative z-10 max-w-3xl mx-auto text-center px-6">
-                    <h2 className="text-4xl md:text-5xl font-extrabold text-green-700 drop-shadow-sm">
+                    <h2 className="text-4xl md:text-5xl font-extrabold text-green-800 drop-shadow-sm">
                         Badminton Tournament {new Date().getFullYear()}
                     </h2>
 
-                    <p className="mt-4 text-lg md:text-xl text-gray-700">
-                        Join the <span className="font-semibold text-green-600">C-ONE Sports Center </span>
+                    <p className="mt-4 text-lg md:text-xl text-gray-800">
+                        Join the <span className="font-semibold text-green-700">C-ONE Sports Center </span>
                         for exciting competitions and a chance to prove your skills on the court.
                     </p>
 
@@ -293,7 +302,7 @@ function page() {
                     </div>
 
                     <p className="text-base md:text-lg text-gray-600 mb-6">
-                        <span className="font-medium text-green-700">Smash your Way to Victory! </span>
+                        <span className="font-bold text-green-800">Smash your Way to Victory! </span>
                         Register now and secure your spot in the upcoming tournament.
                     </p>
 
