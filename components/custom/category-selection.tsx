@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Trophy, ExternalLink, Users, User, X, Search, UploadIcon, Clock, CheckCircle, Mail, Wallet2Icon, AlertTriangle, Trash, GripVertical, Loader2 } from "lucide-react"
+import { Trophy, ExternalLink, Users, User, X, Search, UploadIcon, Clock, CheckCircle, Mail, Wallet2Icon, AlertTriangle, Trash, GripVertical, Loader2, Paperclip, XCircle } from "lucide-react"
 import { categories, Gender } from "./data/items"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -17,6 +17,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragEndEvent
 } from "@dnd-kit/core"
 import {
   arrayMove,
@@ -35,6 +36,8 @@ import { CheckEntryData, EntryAmountDetailsData, EntryStatusHistoryData, IEntryA
 import Tesseract from "tesseract.js"
 import { CreatePaymentInput, createPaymentResponse } from "@/app/(public)/types/payment.interface"
 import { CREATE_PAYMENT } from "@/graphql/payments/mutation"
+import { toast } from "sonner"
+import { Input } from "../ui/input"
 // const tournament = tournaments.find(t => t.isActive)
 
 export type PublicTournamentsData = {
@@ -386,6 +389,10 @@ export function UploadProofMergedModal({
   const [success, setSuccess] = useState(false)
   const [priceReminder, setPriceReminder] = useState<string | null>(null)
   const [totalRequired, setTotalRequired] = useState(0)
+  const [payerName, setPayerName] = useState("")
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
 
   const [entryAmounts, setEntryAmounts] = useState<Record<number, number | null>>({})
   const [entryLoadingStates, setEntryLoadingStates] = useState<Record<number, boolean>>({})
@@ -408,35 +415,50 @@ export function UploadProofMergedModal({
 
   const sensors = useSensors(useSensor(PointerSensor))
 
-  // Helper function to get payer names
-  const getPayerNames = (): string => {
-    const payerNames: string[] = []
+  const uploadFile = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploading(true)
+      const formData = new FormData()
+      const fileExt = file.name.split('.').pop() || ''
 
-    entriesState.forEach((_, index) => {
-      const details = entryDetails[index]
-      if (details) {
-        if (details.eventType === 'SINGLES' && details.player1Entry) {
-          const name = `${details.player1Entry.firstName} ${details.player1Entry.lastName}`
-          if (!payerNames.includes(name)) {
-            payerNames.push(name)
-          }
-        } else if (details.eventType === 'DOUBLES') {
-          const players: string[] = []
-          if (details.player1Entry) {
-            players.push(`${details.player1Entry.firstName} ${details.player1Entry.lastName}`)
-          }
-          if (details.player2Entry) {
-            players.push(`${details.player2Entry.firstName} ${details.player2Entry.lastName}`)
-          }
-          const teamName = players.join(' & ')
-          if (!payerNames.includes(teamName)) {
-            payerNames.push(teamName)
-          }
-        }
+      const fileName = `payment-${Date.now()}.${fileExt}`
+      formData.append("file", file, fileName)
+
+      console.log('Uploading file:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        fileName: fileName
+      })
+      // /api/upload/payments
+      const response = await fetch("/api/upload/attachment", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Upload Failed")
       }
-    })
 
-    return payerNames.join(', ')
+      const data = await response.json()
+      console.log('Upload API response:', data)
+
+      return data.url
+    } catch (error) {
+      console.error("Error Uploading file:", error)
+      toast.error("Error uploading file. Please try again.")
+      return null
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const getPayerNames = (): string => {
+    if (payerName.trim()) {
+      return payerName.trim()
+    }
+
+    return "User"
   }
 
   const getEntryAmountDetails = async (entryNumber: string, entryKey: string, index: number) => {
@@ -500,6 +522,39 @@ export function UploadProofMergedModal({
     }
   }
 
+  const resetForm = () => {
+    setEntriesState([{ entryNumber: "", entryKey: "" }])
+    setAmount("")
+    setIsJointPayment(false)
+    setPreview(null)
+    setFileType(null)
+    setError("")
+    setSuccess(false)
+    setPriceReminder(null)
+    setTotalRequired(0)
+    setPayerName("")
+    setIsUploading(false)
+    setUploadedFileUrl(null)
+    setFile(null)
+    setEntryAmounts({})
+    setEntryLoadingStates({})
+    setEntryErrors({})
+    setEntryDetails({})
+    setLoading(false)
+    setScannedTotal(null)
+    setReference(null)
+    setScannedText("")
+    setShowConfirmationInput(false)
+    setConfirmationNumber("")
+    setAmountLabel("Total")
+    setReferenceLabel("Reference No.")
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
   const preprocessImage = (imageData: string): Promise<string> => {
     return new Promise((resolve) => {
       const img = new window.Image()
@@ -530,8 +585,10 @@ export function UploadProofMergedModal({
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const uploadedFile = event.target.files?.[0]
+    if (!uploadedFile) return
+
+    setFile(uploadedFile)
 
     const reader = new FileReader()
     reader.onload = async () => {
@@ -722,7 +779,13 @@ export function UploadProofMergedModal({
       }
     }
 
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(uploadedFile)
+  }
+
+  const handleRemoveFile = () => {
+    setFile(null)
+    setPreview(null)
+    setUploadedFileUrl(null)
   }
 
   useEffect(() => {
@@ -794,30 +857,71 @@ export function UploadProofMergedModal({
     }
 
     const incomplete = entriesState.some((e) => !e.entryNumber || !e.entryKey)
-    if (incomplete || !preview || !amount) {
+    if (incomplete || !file || !amount) {
       setError("Please complete all required fields.")
       return
     }
 
+    // Check if all entries have valid entryIds
+    const invalidEntries = entriesState.map((_, index) => {
+      const details = entryDetails[index]
+      if (!details?.entryId) {
+        return `Entry ${index + 1}`
+      }
+      return null
+    }).filter(Boolean)
+
+    if (invalidEntries.length > 0) {
+      setError(`Could not find entry data for: ${invalidEntries.join(', ')}. Please check your entry details.`)
+      return
+    }
+
     try {
+      setIsUploading(true)
+
+      // Upload file first
+      const imageUrl = await uploadFile(file)
+
+      if (!imageUrl) {
+        setError("Failed to upload receipt image. Please try again.")
+        setIsUploading(false)
+        return
+      }
+
+      setUploadedFileUrl(imageUrl)
+
+      const totalAmount = parseFloat(amount) || 0
+
+      // Create entry list with proper entryIds and isFullyPaid calculation
       const entryList = entriesState.map((entry, index) => {
         const entryAmount = entryAmounts[index] || 0
-        const isFullyPaid = parseFloat(amount) >= entryAmount
+        const entryDetailsData = entryDetails[index]
+
+        if (!entryDetailsData?.entryId) {
+          throw new Error(`No entryId found for entry ${index + 1}`)
+        }
+
+        // Simple isFullyPaid logic - amount must be >= entry amount
+        const isFullyPaid = totalAmount >= entryAmount
 
         return {
-          entry: `${entry.entryNumber}_${entry.entryKey}`,
+          entry: entryDetailsData.entryId, // Use the entryId from backend
           isFullyPaid
         }
       })
 
-      const payerName = getPayerNames() || "User"
+      // Use the manually entered payer name
+      const finalPayerName = payerName.trim() || "User"
+
+      // Use the reference number displayed in the upper part (from scanned receipt)
+      const finalReferenceNumber = reference && reference !== "Not found" ? reference : confirmationNumber || `ref_${Date.now()}`
 
       const input: CreatePaymentInput = {
-        referenceNumber: reference || confirmationNumber || `ref_${Date.now()}`,
-        amount: parseFloat(amount),
+        referenceNumber: finalReferenceNumber,
+        amount: totalAmount,
         paymentDate: new Date().toISOString(),
-        proofOfPaymentURL: preview,
-        payerName: payerName,
+        proofOfPaymentURL: imageUrl,
+        payerName: finalPayerName,
         entryList
       }
 
@@ -837,6 +941,8 @@ export function UploadProofMergedModal({
     } catch (err: any) {
       console.error('Error creating payment:', err)
       setError(`Error creating payment: ${err.message}`)
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -855,7 +961,7 @@ export function UploadProofMergedModal({
     }
   }
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (active.id !== over?.id) {
       const oldIndex = entriesState.findIndex((_, i) => i.toString() === active.id)
@@ -895,6 +1001,31 @@ export function UploadProofMergedModal({
 
     return cumulative
   }
+
+  const SuccessModal = () => (
+    <motion.div
+      className="absolute inset-0 bg-white/95 flex flex-col items-center justify-center rounded-xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <p className="text-green-600 font-bold text-lg mb-2">Submitted!</p>
+      <p className="text-gray-600 text-sm mb-4 text-center">
+        Your proof of payment was submitted successfully.
+      </p>
+      <Button
+        onClick={() => {
+          setSuccess(false)
+          resetForm()
+          onClose()
+        }}
+        className="bg-green-600 text-white hover:bg-green-700"
+      >
+        Close
+      </Button>
+    </motion.div>
+  )
+
 
   const cumulativeAmounts = calculateCumulativeAmounts()
 
@@ -977,7 +1108,7 @@ export function UploadProofMergedModal({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation()
-                  onClose()
+                  handleClose()
                 }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
               >
@@ -1003,18 +1134,11 @@ export function UploadProofMergedModal({
               <div className="w-full">
                 {/* Header Section with Amount & Reference Side by Side */}
                 <div className="px-14 pb-2 space-y-3">
-                  {Object.values(entryErrors).some(error => error !== "") && (
+                  {/* {Object.values(entryErrors).some(error => error !== "") && (
                     <div className="text-sm font-medium text-red-600 bg-red-50 p-2 rounded-lg border border-red-200">
                       Please fix the entry errors below before proceeding.
                     </div>
-                  )}
-
-                  {/* Payer Names Display */}
-                  {Object.values(entryDetails).some(details => details !== null) && (
-                    <div className="text-sm font-medium text-purple-600 bg-purple-50 p-2 rounded-lg border border-purple-200">
-                      <strong>Payer:</strong> {getPayerNames()}
-                    </div>
-                  )}
+                  )} */}
 
                   <div className="grid grid-cols-2 gap-6">
                     <div>
@@ -1046,6 +1170,8 @@ export function UploadProofMergedModal({
                           Enter an amount to check coverage
                         </div>
                       )}
+
+
                     </div>
 
                     {/* Reference Number Column */}
@@ -1060,29 +1186,8 @@ export function UploadProofMergedModal({
                       )}
                     </div>
                   </div>
-
-                  {/* Individual Entry Details */}
-                  {entriesState.map((entry, index) => {
-                    const details = entryDetails[index]
-                    if (!details) return null
-
-                    return (
-                      <div key={index} className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
-                        <strong>Entry {index + 1}:</strong> {
-                          details.eventType === 'SINGLES' && details.player1Entry
-                            ? `${details.player1Entry.firstName} ${details.player1Entry.lastName}`
-                            : details.eventType === 'DOUBLES'
-                              ? `${details.player1Entry?.firstName || ''} ${details.player1Entry?.lastName || ''} & ${details.player2Entry?.firstName || ''} ${details.player2Entry?.lastName || ''}`
-                              : 'Unknown player'
-                        } - ₱{entryAmounts[index]?.toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}
-                      </div>
-                    )
-                  })}
                 </div>
-
+                <Separator className="mx-2 mb-2" />
                 <div className="grid grid-cols-2 gap-14 px-14">
                   <label className="block text-sm font-medium text-gray-700 text-start">
                     Entry Number <span className="text-red-500">*</span>
@@ -1107,18 +1212,21 @@ export function UploadProofMergedModal({
                         return (
                           <div key={index} className="mt-2 -mb-2">
                             {entry.entryNumber && entry.entryKey && !entryError && entryAmount && details && (
-                              <div className="text-sm font-medium px-14 text-blue-600 bg-blue-50 p-2 rounded-lg border border-blue-200 mb-2">
-                                <div><strong>Entry {index + 1}:</strong> ₱{entryAmount.toLocaleString('en-US', {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2
-                                })}</div>
-                                <div className="text-gray-600 text-xs mt-1">
-                                  {details.eventType === 'SINGLES' && details.player1Entry
-                                    ? `Player: ${details.player1Entry.firstName} ${details.player1Entry.lastName}`
-                                    : details.eventType === 'DOUBLES'
-                                      ? `Team: ${details.player1Entry?.firstName || ''} ${details.player1Entry?.lastName || ''} & ${details.player2Entry?.firstName || ''} ${details.player2Entry?.lastName || ''}`
-                                      : 'Event details'
-                                  }
+                              <div className="px-14">
+                                <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border w-full">
+                                  <div className="flex justify-between items-center">
+                                    <div>
+                                      <strong>Entry {index + 1}:</strong> {details.eventType} Event - ₱
+                                      {entryAmounts[index]?.toLocaleString("en-US", {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      })}
+                                    </div>
+
+                                    <div className="text-gray-600 text-xs">
+                                      {details.eventType} Event
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -1187,6 +1295,25 @@ export function UploadProofMergedModal({
                 </Button>
               )}
 
+              <div className="mb-4 mt-6">
+                <label className="block text-sm font-medium text-gray-700 text-start mb-2">
+                  Payer Name 
+                </label>
+                <input
+                  type="text"
+                  value={payerName}
+                  onChange={(e) => setPayerName(e.target.value)}
+                  placeholder="Enter payer name"
+                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 border-gray-300"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {payerName
+                    ? "Using manually entered payer name"
+                    : "Will use 'Player' as default if left blank"
+                  }
+                </p>
+              </div>
+
               <div className="border-2 border-dashed border-green-300 rounded-xl p-4 bg-green-50 flex flex-col items-center">
                 <div className="w-full text-left mb-3">
                   <div className="text-green-800 font-bold text-sm mb-1">
@@ -1196,6 +1323,38 @@ export function UploadProofMergedModal({
                     Upload your GCash, Maya, or bank receipt to automatically scan the amount and reference number.
                   </p>
                 </div>
+
+                {file && (
+                  <div className="w-full mb-4 p-3 bg-white border rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Paperclip className="w-4 h-4 text-gray-500" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium truncate">
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {(file.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        disabled={isUploading}
+                        className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {isUploading && (
+                      <div className="mt-2">
+                        <div className="w-full bg-gray-200 rounded-full h-1">
+                          <div className="bg-green-600 h-1 rounded-full animate-pulse"></div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Uploading...</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="w-full flex justify-center mb-4">
                   {preview ? (
@@ -1274,6 +1433,8 @@ export function UploadProofMergedModal({
                           setReference(null)
                           setScannedText("")
                           setConfirmationNumber("")
+                          setFile(null)
+                          setUploadedFileUrl(null)
                         }}
                         className="w-full bg-gray-200 text-gray-800 hover:bg-gray-300"
                       >
@@ -1296,11 +1457,12 @@ export function UploadProofMergedModal({
                 <label className="block text-sm font-medium text-gray-700 text-start mb-2">
                   Amount <span className="text-red-500">*</span>
                 </label>
-                <input
+                <Input
                   type="number"
+                  disabled
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Enter amount: ₱1000.00"
+                  placeholder="Amount: ₱1000.00"
                   className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 border-gray-300"
                 />
               </div>
@@ -1324,35 +1486,14 @@ export function UploadProofMergedModal({
               <Button
                 className="w-full bg-green-600 text-white cursor-pointer hover:bg-green-700"
                 onClick={handleSubmit}
-                disabled={createPaymentLoading}
+                disabled={createPaymentLoading || isUploading || !file}
               >
-                {createPaymentLoading ? "Submitting..." : "Submit"}
+                {isUploading ? "Uploading..." : createPaymentLoading ? "Submitting..." : "Submit"}
               </Button>
             </div>
 
             <AnimatePresence>
-              {success && (
-                <motion.div
-                  className="absolute inset-0 bg-white/95 flex flex-col items-center justify-center rounded-xl"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <p className="text-green-600 font-bold text-lg mb-2">Submitted!</p>
-                  <p className="text-gray-600 text-sm mb-4 text-center">
-                    Your proof of payment was submitted successfully.
-                  </p>
-                  <Button
-                    onClick={() => {
-                      setSuccess(false)
-                      onClose()
-                    }}
-                    className="bg-green-600 text-white hover:bg-green-700"
-                  >
-                    Close
-                  </Button>
-                </motion.div>
-              )}
+              {success && <SuccessModal />}
             </AnimatePresence>
           </motion.div>
         </motion.div>

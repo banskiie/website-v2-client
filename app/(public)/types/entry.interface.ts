@@ -93,14 +93,7 @@ export interface IEntryAmountDetails {
   amount: number
   deadline: string
   isEarlyBird: boolean
-  player1Entry?: {
-    firstName: string
-    lastName: string
-  }
-  player2Entry?: {
-    firstName: string
-    lastName: string
-  }
+  entryId: string
   eventType: 'SINGLES' | 'DOUBLES'
 }
 
