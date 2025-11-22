@@ -609,7 +609,6 @@ export function UploadProofMergedModal({
         })
 
         const text = result.data.text
-        console.log("🧾 Extracted text:", text)
         setScannedText(text)
 
         const confirmationMatch = text.match(/confirmation[\s#:=-]*no\.?\s*([A-Z0-9-]{5,})/i)
@@ -879,7 +878,6 @@ export function UploadProofMergedModal({
     try {
       setIsUploading(true)
 
-      // Upload file first
       const imageUrl = await uploadFile(file)
 
       if (!imageUrl) {
@@ -901,19 +899,16 @@ export function UploadProofMergedModal({
           throw new Error(`No entryId found for entry ${index + 1}`)
         }
 
-        // Simple isFullyPaid logic - amount must be >= entry amount
         const isFullyPaid = totalAmount >= entryAmount
 
         return {
-          entry: entryDetailsData.entryId, // Use the entryId from backend
+          entry: entryDetailsData.entryId,
           isFullyPaid
         }
       })
 
-      // Use the manually entered payer name
-      const finalPayerName = payerName.trim() || "User"
+      const finalPayerName = payerName.trim() || "Player"
 
-      // Use the reference number displayed in the upper part (from scanned receipt)
       const finalReferenceNumber = reference && reference !== "Not found" ? reference : confirmationNumber || `ref_${Date.now()}`
 
       const input: CreatePaymentInput = {
@@ -1132,7 +1127,6 @@ export function UploadProofMergedModal({
               )}
 
               <div className="w-full">
-                {/* Header Section with Amount & Reference Side by Side */}
                 <div className="px-14 pb-2 space-y-3">
                   {/* {Object.values(entryErrors).some(error => error !== "") && (
                     <div className="text-sm font-medium text-red-600 bg-red-50 p-2 rounded-lg border border-red-200">
@@ -1174,7 +1168,6 @@ export function UploadProofMergedModal({
 
                     </div>
 
-                    {/* Reference Number Column */}
                     <div>
                       {(reference || confirmationNumber) && (
                         <div className="text-sm font-medium text-blue-600">
