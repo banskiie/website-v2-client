@@ -6,6 +6,8 @@ import {
   Logs,
   Notebook,
   Settings,
+  Shirt,
+  Ticket,
   Trophy,
   User2,
   VideoIcon,
@@ -42,16 +44,16 @@ const MENU_ITEMS = [
     allowedRoles: [Role.ADMIN, Role.LEVELLER, Role.ORGANIZER, Role.SUPPORT],
   },
   {
+    title: "Jerseys",
+    url: "/jerseys",
+    icon: Shirt,
+    allowedRoles: [Role.ADMIN, Role.ORGANIZER, Role.ACCOUNTING, Role.SUPPORT],
+  },
+  {
     title: "Events",
     url: "/events",
     icon: Flag,
     allowedRoles: [Role.ADMIN, Role.ORGANIZER, Role.SUPPORT],
-  },
-  {
-    title: "Jerseys",
-    url: "/jerseys",
-    icon: Flag,
-    allowedRoles: [Role.ADMIN, Role.ORGANIZER, Role.ACCOUNTING, Role.SUPPORT],
   },
   {
     title: "Tournaments",
@@ -88,6 +90,12 @@ const MENU_ITEMS = [
     url: "/logs",
     icon: Logs,
     allowedRoles: [Role.ADMIN, Role.SUPPORT],
+  },
+  {
+    title: "Tickets",
+    url: "/tickets",
+    icon: Ticket,
+    allowedRoles: [Role.ADMIN, Role.ORGANIZER, Role.SUPPORT],
   },
 ]
 

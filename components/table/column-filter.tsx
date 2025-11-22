@@ -263,9 +263,13 @@ const ColumnFilter = ({
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Status</SelectLabel>
-                <SelectItem value="true">Active</SelectItem>
-                <SelectItem value="false">Inactive</SelectItem>
+                <SelectLabel>{label}</SelectLabel>
+                <SelectItem value="true">
+                  {filterKey == "isActive" ? "Active" : "Yes"}
+                </SelectItem>
+                <SelectItem value="false">
+                  {filterKey == "isActive" ? "Inactive" : "No"}
+                </SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>

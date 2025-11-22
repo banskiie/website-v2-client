@@ -86,13 +86,15 @@ const FormDialog = (props: Props) => {
   // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
   // Combined loading state
-  const isLoading = isPending || fetchLoading
+  const isLoading = isUpdate ? isPending || fetchLoading : false
   // Role Options
   const [openRoles, setOpenRoles] = useState(false)
   const Roles = Object.values(Role).map((role) => ({
     label: role.toLocaleLowerCase().replaceAll("_", " "),
     value: role,
   }))
+  // Combined loading state
+  const loading = isPending || fetchLoading
 
   const form = useForm({
     defaultValues: {
@@ -103,7 +105,21 @@ const FormDialog = (props: Props) => {
       role: Role.SUPPORT,
     },
     validators: {
-      onSubmit: UserSchema,
+      onSubmit: ({ formApi, value }) => {
+        try {
+          UserSchema.parse(value)
+        } catch (error: any) {
+          const formErrors = JSON.parse(error)
+          formErrors.map(
+            ({ path, message }: { path: string; message: string }) =>
+              formApi.fieldInfo[
+                path as keyof typeof formApi.fieldInfo
+              ].instance?.setErrorMap({
+                onSubmit: { message },
+              })
+          )
+        }
+      },
     },
     listeners: {
       onChange: ({ formApi, fieldApi }) => {
@@ -203,7 +219,7 @@ const FormDialog = (props: Props) => {
                       <InputGroup className="-my-1">
                         <InputGroupInput
                           placeholder="Name"
-                          disabled={isPending}
+                          disabled={loading}
                           id={field.name}
                           name={field.name}
                           value={field.state.value}
@@ -229,7 +245,7 @@ const FormDialog = (props: Props) => {
                       <FieldLabel htmlFor={field.name}>Username</FieldLabel>
                       <InputGroup className="-my-1.5">
                         <InputGroupInput
-                          disabled={isPending}
+                          disabled={loading}
                           id={field.name}
                           name={field.name}
                           value={field.state.value}
@@ -256,7 +272,7 @@ const FormDialog = (props: Props) => {
                       <FieldLabel htmlFor={field.name}>Contact No.</FieldLabel>
                       <InputGroup className="-my-1.5">
                         <InputGroupInput
-                          disabled={isPending}
+                          disabled={loading}
                           id={field.name}
                           name={field.name}
                           value={field.state.value}
@@ -285,7 +301,7 @@ const FormDialog = (props: Props) => {
                       </FieldLabel>
                       <InputGroup className="-my-1.5">
                         <InputGroupInput
-                          disabled={isPending}
+                          disabled={loading}
                           id={field.name}
                           name={field.name}
                           value={field.state.value}
@@ -316,7 +332,7 @@ const FormDialog = (props: Props) => {
                           <Button
                             id={field.name}
                             name={field.name}
-                            disabled={isPending}
+                            disabled={loading}
                             aria-expanded={openRoles}
                             onBlur={field.handleBlur}
                             variant="outline"

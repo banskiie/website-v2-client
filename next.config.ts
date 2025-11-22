@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
 
 const nextConfig = {
   images: {
@@ -9,10 +9,14 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com",
+        hostname: "img.youtube.com",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com", // used for thumbnail links
       },
     ],
   },
 }
 
-export default nextConfig;
+export default nextConfig

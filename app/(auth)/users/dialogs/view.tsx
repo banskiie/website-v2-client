@@ -15,6 +15,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import RoleBadge from "@/components/badges/role-badge"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const USER = gql`
   query User($_id: ID!) {
@@ -52,8 +54,7 @@ const ViewDialog = (props: Props) => {
       setOpen(value)
     }
   }
-  // Fetch existing date if updating
-  const { data }: any = useQuery(USER, {
+  const { data, loading }: any = useQuery(USER, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
   })
@@ -83,35 +84,53 @@ const ViewDialog = (props: Props) => {
           showCloseButton={false}
         >
           <DialogHeader>
-            <DialogTitle>View User: {data?.user?.name}</DialogTitle>
+            <DialogTitle>View User</DialogTitle>
             <DialogDescription>
               View the details of this user below.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-2 -mt-2">
+          <div className="flex flex-col gap-2 -mt-2 max-h-[36vh] overflow-y-auto">
             <div>
-              <span className="block text-sm text-muted-foreground">Name</span>
-              <span className="block text-sm">{data?.user?.name}</span>
+              <Label>Name</Label>
+              {loading ? (
+                <Skeleton className="w-full my-1 h-3" />
+              ) : (
+                <span className="block text-sm">{data?.user?.name}</span>
+              )}
             </div>
             <div>
-              <span className="block text-sm text-muted-foreground">Email</span>
-              <span className="block text-sm">{data?.user?.email}</span>
+              <Label>Email</Label>
+              {loading ? (
+                <Skeleton className="w-full my-1 h-3" />
+              ) : (
+                <span className="block text-sm">{data?.user?.email}</span>
+              )}
             </div>
             <div>
-              <span className="block text-sm text-muted-foreground">
-                Contact Number
-              </span>
-              <span className="block text-sm">{data?.user?.contactNumber}</span>
+              <Label>Contact Number</Label>
+              {loading ? (
+                <Skeleton className="w-full my-1 h-3" />
+              ) : (
+                <span className="block text-sm">
+                  {data?.user?.contactNumber}
+                </span>
+              )}
             </div>
             <div>
-              <span className="block text-sm text-muted-foreground">
-                Username
-              </span>
-              <span className="block text-sm">{data?.user?.username}</span>
+              <Label>Username</Label>
+              {loading ? (
+                <Skeleton className="w-full my-1 h-3" />
+              ) : (
+                <span className="block text-sm">{data?.user?.username}</span>
+              )}
             </div>
             <div>
-              <span className="block text-sm text-muted-foreground">Role</span>
-              <RoleBadge role={data?.user?.role} />
+              <Label>Role</Label>
+              {loading ? (
+                <Skeleton className="my-1 w-20 h-4.25" />
+              ) : (
+                <RoleBadge role={data?.user?.role} />
+              )}
             </div>
           </div>
           <DialogFooter>

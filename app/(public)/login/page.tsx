@@ -22,7 +22,6 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { toast } from "sonner"
 
 const Login = () => {
   const [isPending, startTransition] = React.useTransition()
