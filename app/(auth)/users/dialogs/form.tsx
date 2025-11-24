@@ -72,28 +72,21 @@ type Props = {
 }
 
 const FormDialog = (props: Props) => {
-  // Dialog open state
   const [open, setOpen] = useState(false)
-  // Determine if it's an update or create operation
   const isUpdate = Boolean(props._id)
   const [isPending, startTransition] = useTransition()
-  // Fetch existing date if updating
   const { data, loading: fetchLoading }: any = useQuery(USER, {
     variables: { _id: props._id },
     skip: !open || !isUpdate,
     fetchPolicy: "no-cache",
   })
-  // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
-  // Combined loading state
   const isLoading = isUpdate ? isPending || fetchLoading : false
-  // Role Options
   const [openRoles, setOpenRoles] = useState(false)
   const Roles = Object.values(Role).map((role) => ({
     label: role.toLocaleLowerCase().replaceAll("_", " "),
     value: role,
   }))
-  // Combined loading state
   const loading = isPending || fetchLoading
 
   const form = useForm({
@@ -123,9 +116,8 @@ const FormDialog = (props: Props) => {
     },
     listeners: {
       onChange: ({ formApi, fieldApi }) => {
-        // console.log(fieldApi.name, fieldApi.state.value)
       },
-    }, // this is just for demo purposes
+    },
     onSubmit: ({ value, formApi }) =>
       startTransition(async () => {
         try {

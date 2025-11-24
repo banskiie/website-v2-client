@@ -1161,7 +1161,7 @@ export function UploadProofMergedModal({
                         </div>
                       ) : (
                         <div className="text-sm font-medium text-gray-600">
-                          Enter an amount to check coverage
+                          No Amount Displayed yet.
                         </div>
                       )}
 
@@ -1535,13 +1535,10 @@ export function CheckEntryModal({
         variables: { referenceNumber: entryValue },
       })
 
-      if (data?.entryStatusHistory?.length) {
-        setStatuses(data.entryStatusHistory)
-        setShowResult(true)
-        setError("")
-      } else {
-        setError("No status history found for this entry.")
-      }
+      // Always show the result modal, even if data is empty
+      setStatuses(data?.entryStatusHistory || [])
+      setShowResult(true)
+      setError("")
     } catch (err) {
       console.error(err)
       setError("Something went wrong while checking. Please try again.")
@@ -1568,12 +1565,10 @@ export function CheckEntryModal({
 
   return (
     <>
-      {/* 🟢 Input Modal */}
       <AnimatePresence>
         {isOpen && !showResult && (
           <motion.div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4"
-            // onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1644,15 +1639,11 @@ export function CheckEntryModal({
         )}
       </AnimatePresence>
 
-      {/* ✳️ Result Modal */}
+      {/* ✳️ Result Modal - Now shows even when statuses is empty */}
       <AnimatePresence>
-        {showResult && statuses.length > 0 && (
+        {showResult && (
           <motion.div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4"
-            // onClick={() => {
-            //   setShowResult(false)
-            //   onClose()
-            // }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1687,43 +1678,57 @@ export function CheckEntryModal({
                 </div>
 
                 <p className="text-sm text-gray-500 mt-3">
-                  Here’s the detailed status history for your entry.
+                  {statuses.length > 0 
+                    ? "Here's the detailed status history for your entry."
+                    : "No status history found for this entry."
+                  }
                 </p>
               </div>
 
-              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                {statuses.map((statusItem, idx) => (
-                  <motion.div
-                    key={idx}
-                    className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                  >
-                    {getStatusIcon(statusItem.status)}
-                    <div>
-                      <p
-                        className={`${getStatusColor(
-                          statusItem.status
-                        )} font-medium text-sm`}
-                      >
-                        {new Date(statusItem.date).toLocaleString()} →{" "}
-                        {statusItem.status.replaceAll("_", " ")}
-                      </p>
-                      {statusItem.reason && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          Reason: {statusItem.reason}
+              {statuses.length > 0 ? (
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                  {statuses.map((statusItem, idx) => (
+                    <motion.div
+                      key={idx}
+                      className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                    >
+                      {getStatusIcon(statusItem.status)}
+                      <div>
+                        <p
+                          className={`${getStatusColor(
+                            statusItem.status
+                          )} font-medium text-sm`}
+                        >
+                          {new Date(statusItem.date).toLocaleString()} →{" "}
+                          {statusItem.status.replaceAll("_", " ")}
                         </p>
-                      )}
-                      {statusItem.by && (
-                        <p className="text-xs text-gray-400 italic">
-                          by {statusItem.by.name} ({statusItem.by.role})
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                        {statusItem.reason && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            Reason: {statusItem.reason}
+                          </p>
+                        )}
+                        {statusItem.by && (
+                          <p className="text-xs text-gray-400 italic">
+                            by {statusItem.by.name} ({statusItem.by.role})
+                          </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="flex justify-center mb-3">
+                    <Search className="w-12 h-12 text-gray-300" />
+                  </div>
+                  <p className="text-gray-500 text-sm">
+                    No status history records found for this entry reference number.
+                  </p>
+                </div>
+              )}
 
               <div className="mt-8 flex justify-end">
                 <Button

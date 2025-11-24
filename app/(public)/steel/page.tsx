@@ -17,6 +17,7 @@ import Header from "@/components/custom/header"
 import FloatingTicketing from "@/components/custom/ticket"
 import useSmoothScroll from "@/hooks/useSmoothScroll"
 import VisitUsSection from "@/components/custom/visit-us-main"
+import { Button } from "@/components/ui/button"
 
 const locations = [
   {
@@ -325,9 +326,9 @@ export default function Page() {
               categories[activeCategory].title
             )}`}
           >
-            <button className="px-6 py-2 md:px-8 md:py-3 rounded-[25px] border border-white bg-black text-white text-sm md:text-base font-medium hover:bg-[#111]/90 transition cursor-pointer">
-              Check <ArrowRight className="inline-block ml-2 w-4 h-4 md:w-5 md:h-5" />
-            </button>
+            <Button className="px-6! py-6! md:px-8 md:py-3 rounded-[25px] border border-white bg-black text-white text-sm md:text-base font-medium hover:bg-[#111]/90 transition cursor-pointer">
+              Check <ArrowRight className="inline-block w-4 h-4 md:w-5 md:h-5" />
+            </Button>
           </Link>
         </motion.div>
       </div>

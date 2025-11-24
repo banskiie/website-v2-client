@@ -18,7 +18,6 @@ import {
     FieldLabel,
 } from "@/components/ui/field"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { startTransition, use, useEffect, useState } from "react"
@@ -42,7 +41,7 @@ import { PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
 import { REGISTRY_ENTRY } from "@/graphql/registration/resolver"
 import { PublicTournamentsData } from "@/components/custom/category-selection"
 import { RegisterEntryResponse, RegisterEntryVariables } from "@/app/(public)/types/entry.interface"
-
+import FloatingTicketing from "@/components/custom/ticket"
 
 interface RegistrationPageProps {
     params: Promise<{ slug: string[] }>
@@ -58,12 +57,10 @@ const SuccessModal = ({ isOpen, onClose, message }: {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="animate-in fade-in-90 zoom-in-90 duration-300 mx-4 w-full max-w-md">
                 <div className="bg-white rounded-2xl shadow-2xl p-8 text-center transform transition-all duration-300 scale-100">
-                    {/* Animated Check Circle */}
                     <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500 animate-in zoom-in-50 duration-500">
                         <Check className="h-10 w-10 text-white animate-in fade-in-50 duration-700 delay-300" />
                     </div>
 
-                    {/* Success Message */}
                     <h3 className="text-2xl font-bold text-gray-900 mb-3 animate-in fade-in-50 duration-500 delay-200">
                         Successfully Registered!
                     </h3>
@@ -72,7 +69,6 @@ const SuccessModal = ({ isOpen, onClose, message }: {
                         {message}
                     </p>
 
-                    {/* OK Button */}
                     <Button
                         onClick={onClose}
                         className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 animate-in fade-in-50 duration-500 delay-400"
@@ -82,8 +78,8 @@ const SuccessModal = ({ isOpen, onClose, message }: {
                 </div>
             </div>
         </div>
-    );
-};
+    )
+}
 
 export default function Page({ params }: RegistrationPageProps) {
     const paramData = use(params)
@@ -1040,6 +1036,7 @@ export default function Page({ params }: RegistrationPageProps) {
                         </Button>
                     </Field>
                 </CardFooter>
+                <FloatingTicketing />
             </Card>
         </div>
     )

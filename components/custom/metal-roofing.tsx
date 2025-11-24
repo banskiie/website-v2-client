@@ -166,7 +166,7 @@ function MetalRoofingContent() {
             <div
                 className={`fixed top-0 left-0 right-0 z-20 transition-all duration-200 bg-white shadow-md`}
             >
-                <div className="max-w-screen-xl mx-auto flex justify-between items-center h-16 px-8 relative">
+                <div className="max-w-7xl mx-auto flex justify-between items-center h-16 px-4 lg:px-8 relative">
                     <div>
                         <Link href="/">
                             <Image
@@ -194,7 +194,7 @@ function MetalRoofingContent() {
                     </button>
 
                     {isOpen && (
-                        <div className="md:hidden border-t flex flex-col px-8 py-4 space-y-4 bg-white text-black">
+                        <div className="absolute top-16 left-0 right-0 md:hidden border-t flex flex-col px-8 py-4 space-y-4 bg-white text-black shadow-lg">
                             <a href="/steel" className="hover:text-green-600">Steel</a>
                             <a href="/trucks-equipment" className="hover:text-green-600">Trucks & Equipment</a>
                             <a href="/sports-center" className="hover:text-green-600">Sports Center</a>
@@ -205,7 +205,7 @@ function MetalRoofingContent() {
             </div>
 
             <div className="flex flex-col min-h-screen">
-                <div className="flex flex-col items-start mt-20 ml-20">
+                <div className="flex flex-col items-start mt-20 ml-4 lg:ml-20 px-4 lg:px-0">
                     <motion.div
                         initial={{ opacity: 0, y: -50 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -230,12 +230,12 @@ function MetalRoofingContent() {
                     </motion.div>
                 </div>
 
-                <div className="flex gap-10 my-10 ml-20">
+                <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 my-6 lg:my-10 mx-4 lg:ml-20 lg:mr-10">
                     <motion.div
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
-                        className="relative w-[1100px] h-[800px] bg-white rounded-xl border shadow-inner flex items-center justify-center overflow-hidden"
+                        className="relative w-full lg:w-[1100px] h-[400px] lg:h-[800px] bg-white rounded-xl border shadow-inner flex items-center justify-center overflow-hidden"
                     >
                         <motion.div
                             animate={{
@@ -253,11 +253,11 @@ function MetalRoofingContent() {
                                 alt={activeTab}
                                 width={1000}
                                 height={600}
-                                className="object-contain max-h-[1000px] mt-25"
+                                className="object-contain max-h-[300px] lg:max-h-[1000px] mt-10 lg:mt-25"
                             />
 
                         </motion.div>
-                        <div className="absolute bottom-22 left-1/2 -translate-x-1/2 w-[810px] h-6 bg-black/30 rounded-full blur-lg" />
+                        <div className="absolute bottom-8 lg:bottom-22 left-1/2 -translate-x-1/2 w-[90%] lg:w-[810px] h-4 lg:h-6 bg-black/30 rounded-full blur-lg" />
                         {zoomed && (
                             <div className="absolute inset-0 bg-[#B1B1B1]/70 z-10" />
                         )}
@@ -281,22 +281,22 @@ function MetalRoofingContent() {
                                 <Image
                                     src={zoomImages[activeTab]}
                                     alt={activeTab + " Zoom"}
-                                    width={1000}
-                                    height={600}
-                                    className="object-contain"
+                                    width={800}
+                                    height={500}
+                                    className="object-contain max-h-[300px] lg:max-h-full"
                                 />
                             </motion.div>
                         )}
                     </motion.div>
 
                     <div className="flex flex-col flex-1">
-                        <h2 className="text-2xl text-center font-bold mb-6">
+                        <h2 className="text-xl lg:text-2xl text-center font-bold mb-4 lg:mb-6">
                             {activeTab.toUpperCase()} ({selectedColor ? colorNames[selectedColor] : "Gray"})
                         </h2>
 
                         <div
                             ref={containerRef}
-                            className="relative flex bg-[#E6E6E6] rounded-lg overflow-hidden w-[558px] mx-auto"
+                            className="relative flex bg-[#E6E6E6] rounded-lg overflow-hidden w-full lg:w-[558px] mx-auto"
                         >
                             {tabs.map((tab) => (
                                 <button
@@ -320,11 +320,11 @@ function MetalRoofingContent() {
                         </div>
 
 
-                        <div className="mt-10 grid grid-cols-2 gap-8 px-6">
+                        <div className="mt-6 lg:mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 px-4 lg:px-6">
                             <div className="flex flex-col">
                                 <h3 className="text-lg text-center font-semibold mb-4">Thickness</h3>
-                                <div className="w-[85%] h-40 bg-white rounded-lg border shadow-inner flex flex-col items-center justify-center mx-auto px-4 py-6 overflow-y-auto">
-                                    <ul className="text-sm text-gray-700 space-y-3 flex flex-col items-center">
+                                <div className="w-full lg:w-[85%] h-32 lg:h-40 bg-white rounded-lg border shadow-inner flex flex-col items-center justify-center mx-auto px-4 py-4 lg:py-6 overflow-y-auto">
+                                    <ul className="text-sm text-gray-700 space-y-2 lg:space-y-3 flex flex-col items-center">
                                         {thicknessOptions[activeTab].map((item, i) => (
                                             <li
                                                 key={i}
@@ -340,11 +340,11 @@ function MetalRoofingContent() {
 
                             <div className="flex flex-col">
                                 <h3 className="text-lg text-center font-semibold mb-4">Properties</h3>
-                                <div className="w-[85%] h-60 bg-white rounded-lg border shadow-inner flex flex-col items-start justify-start mx-auto px-4 py-6 overflow-y-auto">
+                                <div className="w-full lg:w-[85%] h-40 lg:h-60 bg-white rounded-lg border shadow-inner flex flex-col items-start justify-start mx-auto px-4 py-4 lg:py-6 overflow-y-auto">
                                     <p className="text-sm text-[#A3A3A3] mb-2">
                                         (Length may vary upon request)
                                     </p>
-                                    <ul className="text-sm text-gray-700 space-y-3 flex flex-col items-start">
+                                    <ul className="text-sm text-gray-700 space-y-2 lg:space-y-3 flex flex-col items-start">
                                         {["Paint: Nippon Paint | AKZO Nobel Paint", "Front: Primer – 5 Microns", "Front: Coat Color – 13 Microns", "Back: 5–7 Microns"].map((item, i) => (
                                             <li key={i} className="relative pl-5 before:content-['•'] before:absolute before:left-0
                                         before:top-1/2 before:-translate-y-1/2 before:text-green-500 before:text-lg">
@@ -357,7 +357,7 @@ function MetalRoofingContent() {
                         </div>
 
 
-                        <div className="mt-8 px-6 w-[85%] mx-auto text-left">
+                        <div className="mt-6 lg:mt-8 px-4 lg:px-6 w-full lg:w-[85%] mx-auto text-left">
                             <p className="text-sm text-[#505050] leading-relaxed text-justify">
                                 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
                                 tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
@@ -366,42 +366,66 @@ function MetalRoofingContent() {
                             </p>
                         </div>
 
-                        <div className="mt-12 px-6 w-full">
+                        <div className="mt-8 lg:mt-12 px-4 lg:px-6 w-full">
                             <p className="text-lg font-semibold text-center text-[#505050] leading-relaxed">
                                 Color Swatch
                             </p>
 
-                            <div className="flex flex-col items-center mt-6 gap-6">
-                                {[0, 1].map((row) => (
-                                    <div key={row} className="flex flex-row gap-4 justify-center">
-                                        {colors.slice(row * 8, row * 8 + 8).map((color, col) => (
+                            <div className="flex flex-col items-center mt-4 lg:mt-6 gap-4 lg:gap-6">
+                                <div className="grid grid-cols-4 gap-3 lg:hidden">
+                                    {colors.map((color, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex flex-col items-center gap-1"
+                                        >
                                             <div
-                                                key={col}
-                                                className="flex flex-col items-center gap-1"
-                                                style={{ width: "72px" }}
-                                            >
+                                                onClick={() => setSelectedColor(color)}
+                                                className="w-12 h-12 border border-black rounded-xl transition-transform duration-200 cursor-pointer hover:scale-110"
+                                                style={
+                                                    color.startsWith("#")
+                                                        ? { backgroundColor: color }
+                                                        : {
+                                                            backgroundImage: `url(${color})`,
+                                                            backgroundSize: "cover",
+                                                            backgroundPosition: "center",
+                                                        }
+                                                }
+                                            />
+                                            <span className="text-xs text-center break-words px-1">{colorNames[color]}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="hidden lg:flex flex-col gap-6">
+                                    {[0, 1].map((row) => (
+                                        <div key={row} className="flex flex-row gap-4 justify-center">
+                                            {colors.slice(row * 8, row * 8 + 8).map((color, col) => (
                                                 <div
-                                                    onClick={() => setSelectedColor(color)}
-                                                    className="w-12 h-12 border border-black rounded-xl transition-transform duration-200 cursor-pointer hover:scale-110"
-                                                    style={
-                                                        color.startsWith("#")
-                                                            ? { backgroundColor: color }
-                                                            : {
-                                                                backgroundImage: `url(${color})`,
-                                                                backgroundSize: "cover",
-                                                                backgroundPosition: "center",
-                                                            }
-                                                    }
-                                                />
-                                                <span className="text-xs text-center break-words">{colorNames[color]}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
+                                                    key={col}
+                                                    className="flex flex-col items-center gap-1"
+                                                    style={{ width: "72px" }}
+                                                >
+                                                    <div
+                                                        onClick={() => setSelectedColor(color)}
+                                                        className="w-12 h-12 border border-black rounded-xl transition-transform duration-200 cursor-pointer hover:scale-110"
+                                                        style={
+                                                            color.startsWith("#")
+                                                                ? { backgroundColor: color }
+                                                                : {
+                                                                    backgroundImage: `url(${color})`,
+                                                                    backgroundSize: "cover",
+                                                                    backgroundPosition: "center",
+                                                                }
+                                                        }
+                                                    />
+                                                    <span className="text-xs text-center break-words">{colorNames[color]}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-
                         </div>
-
                     </div>
                 </div>
             </div>

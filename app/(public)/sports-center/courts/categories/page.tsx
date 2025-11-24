@@ -13,6 +13,8 @@ import { DataReconciliationModal } from "@/components/custom/data-reconciliation
 import { format, isSameMonth, isSameYear } from "date-fns"
 import Header from "@/components/custom/header-white"
 import { PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
+import FloatingTicketing from "@/components/custom/ticket"
+
 function CategoryCard({
     name,
     type,
@@ -416,7 +418,8 @@ export default function CategoriesPage() {
                     </div>
                 </div>
             </div>
-
+            
+            <FloatingTicketing />
             <CategoryModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -427,7 +430,7 @@ export default function CategoriesPage() {
                 isOpen={isUploadModalOpen}
                 onClose={() => setIsUploadModalOpen(false)}
             />
-            
+
             <CheckEntryModal
                 isOpen={isCheckEntryModalOpen}
                 onClose={() => setIsCheckEntryModalOpen(false)}

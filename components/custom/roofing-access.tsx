@@ -60,7 +60,7 @@ function RoofingAccess() {
       <div
         className={`fixed top-0 left-0 right-0 z-20 transition-all duration-200 bg-white shadow-md`}
       >
-        <div className="max-w-screen-xl mx-auto flex justify-between items-center h-16 px-8 relative">
+        <div className="max-w-screen-xl mx-auto flex justify-between items-center h-16 px-4 lg:px-8 relative">
           <div>
             <Link href="/">
               <Image
@@ -88,7 +88,7 @@ function RoofingAccess() {
           </button>
 
           {isOpen && (
-            <div className="md:hidden border-t flex flex-col px-8 py-4 space-y-4 bg-white text-black">
+            <div className="absolute top-16 left-0 right-0 md:hidden border-t flex flex-col px-8 py-4 space-y-4 bg-white text-black shadow-lg">
               <a href="/steel" className="hover:text-green-600">Steel</a>
               <a href="/trucks-equipment" className="hover:text-green-600">Trucks & Equipment</a>
               <a href="/sports-center" className="hover:text-green-600">Sports Center</a>
@@ -99,7 +99,7 @@ function RoofingAccess() {
       </div>
 
       <div className="flex flex-col min-h-screen">
-        <div className="flex flex-col items-start mt-20 ml-20">
+        <div className="flex flex-col items-start mt-20 ml-4 lg:ml-20 px-4 lg:px-0">
           <motion.div
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
@@ -125,12 +125,12 @@ function RoofingAccess() {
           </motion.div>
         </div>
 
-        <div className="flex gap-10 my-10 ml-20">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 my-6 lg:my-10 mx-4 lg:ml-20 lg:mr-10">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
-            className="relative w-[1100px] h-[800px] bg-white rounded-xl border shadow-inner flex items-center justify-center overflow-hidden"
+            className="relative w-full lg:w-[1100px] h-[400px] lg:h-[800px] bg-white rounded-xl border shadow-inner flex items-center justify-center overflow-hidden"
           >
             <motion.div
               animate={{
@@ -145,11 +145,11 @@ function RoofingAccess() {
                 alt={activeTab}
                 width={750}
                 height={600}
-                className="object-contain max-h-[1000px] mt-1"
+                className="object-contain max-h-[300px] lg:max-h-[1000px] mt-1"
               />
             </motion.div>
 
-            <div className="absolute bottom-15 left-1/2 -translate-x-1/2 w-[760px] h-6 bg-black/30 rounded-full blur-lg" />
+            <div className="absolute bottom-4 lg:bottom-15 left-1/2 -translate-x-1/2 w-[90%] lg:w-[760px] h-4 lg:h-6 bg-black/30 rounded-full blur-lg" />
             {zoomed && (
               <div className="absolute inset-0 z-10" />
             )}
@@ -174,21 +174,21 @@ function RoofingAccess() {
             )}
           </motion.div>
 
-          <div className="flex flex-col flex-1 mt-20">
-            <h2 className="text-2xl text-center font-bold">
+          <div className="flex flex-col flex-1 mt-4 lg:mt-20">
+            <h2 className="text-xl lg:text-2xl text-center font-bold">
               {activeTab.toUpperCase()}
             </h2>
 
-            <p className="text-gray-600 text-base mt-2">
+            <p className="text-gray-600 text-base mt-2 text-center lg:text-left">
               Products
             </p>
 
-            <div className="mt-2 flex mr-10 gap-2 items-center w-full justify-center">
+            <div className="mt-4 lg:mt-2 flex flex-wrap justify-center lg:justify-center lg:mr-10 gap-2 items-center w-full">
               {Object.entries(roofingImagesMap).map(([name, img]) => (
                 <div
                   key={name}
                   onClick={() => setActiveTab(name)}
-                  className={`w-28 h-28 rounded shadow border 
+                  className={`w-20 h-20 lg:w-28 lg:h-28 rounded shadow border 
         ${activeTab === name ? "border-green-500" : "border-gray-200"}
         bg-white flex items-center justify-center cursor-pointer 
         hover:scale-105 transition`}
@@ -197,23 +197,19 @@ function RoofingAccess() {
                   <Image
                     src={img}
                     alt={name}
-                    width={120}
-                    height={120}
-                    className="object-contain"
+                    width={80}
+                    height={80}
+                    className="object-contain w-16 h-16 lg:w-24 lg:h-24"
                   />
                 </div>
-
               ))}
-
             </div>
 
-            <div className="flex items-center justify-center w-[95%] text-left mt-5 mx-auto">
-              <p className="text-base text-gray-400">
+            <div className="flex items-center justify-center w-full lg:w-[95%] text-left mt-5 mx-auto px-4 lg:px-0">
+              <p className="text-sm lg:text-base text-gray-400 text-center lg:text-left">
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
               </p>
             </div>
-
-
           </div>
         </div>
       </div>
@@ -221,8 +217,7 @@ function RoofingAccess() {
       <div className="flex flex-col">
         <Footer />
       </div>
-
-    </div >
+    </div>
   )
 }
 

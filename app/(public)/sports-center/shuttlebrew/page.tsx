@@ -18,6 +18,7 @@ import useSmoothScroll from "@/hooks/useSmoothScroll"
 import { Coffee } from "lucide-react"
 import HighlightsSection from "@/components/custom/highlights"
 import localFont from "next/font/local";
+import { Button } from "@/components/ui/button"
 
 const Pacific = localFont({
   src: "../../../../public/assets/fonts/Pacifico.ttf",
@@ -394,15 +395,16 @@ const [heroLoaded, setHeroLoaded] = useState(false)
           </div>
 
           <div className={`flex flex-wrap ${Pacific.className} gap-10 mt-4 justify-center`}>
-            <button
+            <Button
               onClick={scrollToMenu}
-              className="bg-[#20140c] text-lg text-[#FFF2E6] font-medium px-6 py-5 rounded-md hover:bg-[#3a2519] transition cursor-pointer"
+              className="bg-[#20140c] text-lg text-[#FFF2E6] font-medium px-8! py-7! rounded-md hover:bg-[#3a2519] transition cursor-pointer"
+              variant="default"
             >
               See the Menu
-            </button>
-            <button className="bg-transparent  text-lg border border-[#20140c] text-[#20140c] font-medium px-6 py-5 rounded-md hover:bg-[#20140c] hover:text-[#FFF2E6] transition cursor-pointer">
+            </Button>
+            <Button className="bg-transparent  text-lg border border-[#20140c] text-[#20140c] font-medium px-8! py-7! rounded-md hover:bg-[#20140c] hover:text-[#FFF2E6] transition cursor-pointer" variant="default">
               Explore More
-            </button>
+            </Button>
           </div>
         </motion.div>
       </div>
