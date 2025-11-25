@@ -26,12 +26,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {
-  Gender,
   PlayerLevel,
   ValidDocumentType,
   IPlayer,
   IPlayerInput,
 } from "@/types/player.interface"
+import { Gender } from "@/types/shared.interface"
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 import { ColumnDef } from "@tanstack/react-table"

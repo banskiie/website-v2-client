@@ -1,9 +1,6 @@
 import { z } from "zod"
-import {
-  Gender,
-  PlayerLevel,
-  ValidDocumentType,
-} from "../types/player.interface"
+import { PlayerLevel, ValidDocumentType } from "../types/player.interface"
+import { Gender } from "@/types/shared.interface"
 
 export const PlayerSchema = z.object({
   firstName: z

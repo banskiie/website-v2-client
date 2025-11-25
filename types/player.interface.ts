@@ -1,7 +1,4 @@
-export enum Gender {
-  MALE = "MALE",
-  FEMALE = "FEMALE",
-}
+import { Gender } from "./shared.interface"
 
 export enum PlayerLevel {
   BEGINNER = "BEGINNER",
