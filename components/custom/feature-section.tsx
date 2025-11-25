@@ -262,6 +262,8 @@ type FeatureSectionProps = {
   setActiveIndex: (index: number) => void;
 };
 
+const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
+
 export default function FeatureSection({
   items,
   activeIndex,

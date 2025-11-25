@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { motion } from "framer-motion"
+import { CLOUD } from "./main-faq"
 
 export default function QualitySection() {
   return (
@@ -16,12 +17,12 @@ export default function QualitySection() {
           transition={{ duration: 1 }}
         >
           <Image
-            src="/assets/c_one_background.jpg"
+            src={`${CLOUD}/v1764038557/c_one_background_hjai7k.jpg`}
             alt="C-ONE Background"
             fill
             className="object-cover transition-opacity duration-700 ease-out"
             loading="lazy"
-            blurDataURL="/assets/c_one_background_blur.jpg"
+            blurDataURL={`${CLOUD}/v1764038557/c_one_background_hjai7k.jpg`}
           />
           <div className="absolute inset-0 bg-black/50"></div>
         </motion.div>

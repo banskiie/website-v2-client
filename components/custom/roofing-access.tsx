@@ -7,14 +7,15 @@ import React, { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
 import Footer from '@/components/custom/footer'
+import { CLOUD } from './main-faq'
 
 const roofingImagesMap: Record<string, string> = {
-  "Box Gutter": "/assets/img/steel/accessories/bended/Box_Gutter.png",
-  "Fascia Moulding": "/assets/img/steel/accessories/bended/Fascia_Moulding.png",
-  "Ridgeroll": "/assets/img/steel/accessories/bended/ridgeroll.png",
-  "Spanish Gutter (G3)": "/assets/img/steel/accessories/bended/Spanish_Gutter-G3.png",
-  "Spanish Gutter (G4)": "/assets/img/steel/accessories/bended/Spanish_Gutter-G4.png",
-  "Spanish Gutter (G5)": "/assets/img/steel/accessories/bended/Spanish_Gutter-G5.png",
+  "Box Gutter": `${CLOUD}/v1764057268/Box_Gutter_iefsqp.png`,
+  "Fascia Moulding": `${CLOUD}/v1764057259/Fascia_Moulding_wfdf14.png`,
+  "Ridgeroll": `${CLOUD}/v1764057263/ridgeroll_pfxfia.png`,
+  "Spanish Gutter (G3)": `${CLOUD}/v1764057273/Spanish_Gutter-G3_fucxkh.png`,
+  "Spanish Gutter (G4)": `${CLOUD}/v1764057278/Spanish_Gutter-G4_tkgc1h.png`,
+  "Spanish Gutter (G5)": `${CLOUD}/v1764057284/Spanish_Gutter-G5_c3yvvs.png`,
 }
 
 function RoofingAccess() {
@@ -64,7 +65,7 @@ function RoofingAccess() {
           <div>
             <Link href="/">
               <Image
-                src="/assets/c-one-logo2.png"
+                src={`${CLOUD}/v1764038540/c-one-logo2_y4elbf.png`}
                 alt="C-One Steel Logo"
                 width={120}
                 height={40}

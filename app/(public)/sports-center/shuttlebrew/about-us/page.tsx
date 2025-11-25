@@ -7,15 +7,16 @@ import { AnimatePresence, motion } from 'framer-motion'
 import Image from 'next/image'
 import ShimmerSkeleton from '@/components/custom/shimmer-skeleton'
 
+const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
 const galleryImages = [
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP6549-51.jpg", alt: "Cafe 1", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP6551-52.jpg", alt: "Cafe 2", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP6556-53.jpg", alt: "Cafe 3", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9018.jpg", alt: "Cafe 4", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9021.jpg", alt: "Cafe 5", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9044.jpg", alt: "Cafe 6", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9054.jpg", alt: "Cafe 7", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9068.jpg", alt: "Cafe 8", caption: "Spacious Cafe Vibe" },
+  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP6549-51.png`, alt: "Cafe 1", caption: "Spacious Cafe Vibe" },
+  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP6551-52.jpg`, alt: "Cafe 2", caption: "Spacious Cafe Vibe" },
+  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP6556-53.jpg`, alt: "Cafe 3", caption: "Spacious Cafe Vibe" },
+  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP9018.jpg`, alt: "Cafe 4", caption: "Spacious Cafe Vibe" },
+  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP9021.jpg`, alt: "Cafe 5", caption: "Spacious Cafe Vibe" },
+  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP9044.jpg`, alt: "Cafe 6", caption: "Spacious Cafe Vibe" },
+  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP9054.jpg`, alt: "Cafe 7", caption: "Spacious Cafe Vibe" },
+  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP9068.jpg`, alt: "Cafe 8", caption: "Spacious Cafe Vibe" },
 
   { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP2056.jpg", alt: "Cafe 9", caption: "Spacious Cafe Vibe" },
   { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP2060.jpg", alt: "Cafe 10", caption: "Spacious Cafe Vibe" },

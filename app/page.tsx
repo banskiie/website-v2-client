@@ -12,31 +12,33 @@ import Header from "@/components/custom/header";
 import { useInView } from "react-intersection-observer";
 import FloatingTicketing from "@/components/custom/ticket";
 import { fa } from "zod/v4/locales";
-import FAQSection from "@/components/custom/main-faq";
+import FAQSection, { CLOUD } from "@/components/custom/main-faq";
 import QualitySection from "@/components/custom/quality-section";
 import VisitUsSection from "@/components/custom/visit-us-main";
 import { useIsMobile } from "@/hooks/use-mobile";
 import useSmoothScroll from "@/hooks/useSmoothScroll";
 
+const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
+
 const scrollImages = [
   {
-    src: "/assets/img/sports-center/shuttlebrew/sb_icon.png",
+    src: `${CLOUD}/v1764048136/sb_icon_ftg2zo.png`,
     alt: "Shuttlebrew",
   },
   {
-    src: "/assets/img/sports-center/court/LOGO-NEW-SPORTSCENTER_BLACK.png",
+    src: `${CLOUD}/v1764048167/LOGO-NEW-SPORTSCENTER_BLACK_wewxmw.png`,
     alt: "SportsCenter",
   },
   {
-    src: "/assets/img/sports-center/suite/courtsidelogo_transparent_black.png",
+    src: `${CLOUD}/v1764048195/courtsidelogo_transparent_black_lkpssv.png`,
     alt: "Courtside",
   },
   {
-    src: "/assets/c-one-logo2.png",
+    src: `${CLOUD}/v1764038540/c-one-logo2_y4elbf.png`,
     alt: "C-One Logo",
   },
   {
-    src: "/assets/c-one-steel.png",
+    src: `${CLOUD}/v1764038546/c-one-steel_ksla1g.png`,
     alt: "C-One Steel",
   },
 ]
@@ -207,7 +209,6 @@ const Home = () => {
         </div>
       </div >
 
-      {/* This section balik */}
       <div className="w-full bg-[#F4F3EE] py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-8 mt-10 md:mt-15 relative">
         <div className="absolute -top-10 -left-40 sm:-left-60 md:-left-80 w-[400px] sm:w-[600px] md:w-[800px] lg:w-[950px] h-[400px] sm:h-[600px] md:h-[800px] lg:h-[950px] bg-white/70 rounded-full pointer-events-none"></div>
         <div className="absolute -bottom-10 -right-40 sm:-right-60 md:-right-80 w-[400px] sm:w-[600px] md:w-[800px] lg:w-[950px] h-[400px] sm:h-[600px] md:h-[800px] lg:h-[950px] bg-white/70 rounded-full pointer-events-none"></div>
@@ -221,7 +222,7 @@ const Home = () => {
             transition={{ duration: 1 }}
           >
             <Image
-              src="/assets/img/rentals/rentals-bg.png"
+              src={`${CLOUD}/v1764047597/rentals-bg_cblsrb.png`}
               alt="Rentals Background"
               fill
               className="object-cover"
@@ -239,7 +240,7 @@ const Home = () => {
             >
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl h-[250px] sm:h-[400px] md:h-[550px] lg:h-[700px]">
                 <Image
-                  src="/assets/img/steel/category/category2.png"
+                  src={`${CLOUD}/v1764047676/category2_fje9dh.png`}
                   alt="Steel Category"
                   width={1200}
                   height={1600}
@@ -305,7 +306,7 @@ const Home = () => {
       <div className="w-full relative bg-white overflow-hidden">
         <div className="absolute top-0 left-0 w-full overflow-hidden -translate-y-22">
           <Image
-            src="/assets/img/rentals/wave.png"
+            src={`${CLOUD}/v1764047593/wave_ikexbn.png`}
             alt="Wave"
             width={1917}
             height={347}
@@ -315,7 +316,7 @@ const Home = () => {
 
         <div className="absolute bottom-0 left-0 w-full overflow-hidden rotate-180 translate-y-22">
           <Image
-            src="/assets/img/rentals/wave.png"
+            src={`${CLOUD}/v1764047593/wave_ikexbn.png`}
             alt="Bottom Wave"
             width={1917}
             height={347}
@@ -353,7 +354,7 @@ const Home = () => {
               transition={{ duration: 0.8 }}
             >
               <Image
-                src="/assets/IMG_6922.jpg"
+                src={`${DRIVE}/IMG_6922.jpg`}
                 alt="Consultation to Installation"
                 fill
                 className="object-cover"
@@ -362,7 +363,7 @@ const Home = () => {
                 <div className="relative flex justify-between items-center h-full p-4">
                   <div className="flex-1 flex flex-col justify-start">
                     <div className="flex items-center gap-2 mb-1">
-                      <Image src="/assets/c-one-logo.png" alt="C-ONE Logo" width={24} height={24} />
+                      <Image src={`${DRIVE}/c-one-logo.png`} alt="C-ONE Logo" width={24} height={24} />
                       <span className="text-white font-bold text-base">C-ONE</span>
                     </div>
                     <p className="text-white text-xs leading-relaxed text-left mr-2">
@@ -372,7 +373,7 @@ const Home = () => {
                   </div>
                   <div className="w-40 h-24 flex-shrink-0 relative hidden sm:block">
                     <Image
-                      src="/assets/img/contents/swiper1.png"
+                      src={`${DRIVE}/img/contents/swiper1.png`}
                       alt="Swiper Image"
                       width={160}
                       height={96}

@@ -90,13 +90,15 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel"
+import { CLOUD } from "./main-faq"
+
+const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
 
 const images = [
-  { src: "/assets/img/contents/swiper1.png", alt: "Featured Product 1" },
+  { src: `${CLOUD}/v1764039904/swiper1_rhirnr.png`, alt: "Featured Product 1" },
   // { src: "/assets/img/contents/swiper2.png", alt: "Featured Product 2" },
   // { src: "/assets/img/contents/swiper4.png", alt: "Featured Product 3" },
 ]
-
 export default function HeroCarousel() {
   const autoplay = React.useRef(
     Autoplay({ delay: 4000, stopOnInteraction: false, stopOnMouseEnter: true })

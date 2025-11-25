@@ -8,6 +8,7 @@ import {
     AccordionContent,
 } from "@/components/ui/accordion";
 
+export const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_BASE_URL
 export default function FAQSection() {
     return (
         <section className="relative w-full bg-white py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-12 overflow-hidden">
@@ -18,7 +19,7 @@ export default function FAQSection() {
                 {/* Left Image */}
                 <div className="flex justify-center md:justify-start">
                     <Image
-                        src="/FAQ.png"
+                        src={`${CLOUD}/v1764038392/FAQ_dgh0kw.png`}
                         alt="FAQ Illustration"
                         width={450}
                         height={450}

@@ -1,5 +1,7 @@
 import { Award, Clock, Headset, PhilippinePeso, Shield, WrenchIcon } from "lucide-react"
 
+const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
+
 // components/custom/data/items.ts
 export const items = [
   {
@@ -7,7 +9,7 @@ export const items = [
     title: "Steel",
     description:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    img: "/assets/img/steel/category/category3.png",
+    img: `${DRIVE}/img/steel/category/category3.png`,
     badgeColor: "#FEBA00",
     badgeNum: "01",
     activeColor: "#FEBA00",
@@ -18,7 +20,7 @@ export const items = [
     title: "Trucks & Equipment",
     description:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    img: "/assets/img/trucks_new/Wheel Loader/XIASHENG XM935-4.jpg",
+    img: `${DRIVE}/img/trucks_new/Wheel Loader/XIASHENG XM935-4.jpg`,
     badgeColor: "#FF3300",
     badgeNum: "02",
     activeColor: "#FF3300",
@@ -29,7 +31,7 @@ export const items = [
     title: "Sports Center",
     description:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    img: "/assets/img/courts/Background-Badminton.png",
+    img: `${DRIVE}/img/courts/Background-Badminton.png`,
     badgeColor: "#2AFE00",
     badgeNum: "03",
     activeColor: "#2AFE00",
@@ -40,7 +42,7 @@ export const items = [
     title: "Rentals",
     description:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    img: "/assets/img/rentals/rentals-bg-2.png",
+    img: `${DRIVE}/img/rentals/rentals-bg-2.png`,
     badgeColor: "#00B3EF",
     badgeNum: "04",
     activeColor: "#00B3EF",
@@ -141,7 +143,7 @@ export const features = [
 
 export const rentals = [
   {
-    img: "/assets/img/rentals/items/prime_mover.png",
+    img: `${DRIVE}/img/rentals/items/prime_mover.png`,
     label: "Prime Mover Rentals",
     emoji: "📦",
     capacity: "Up to 1.5 tons",
@@ -150,7 +152,7 @@ export const rentals = [
     tags: ["Fuel Efficient", "Easy to Drive", "City-Friendly"],
   },
   {
-    img: "/assets/img/rentals/items/self_loader.png",
+    img: `${DRIVE}/img/rentals/items/self_loader.png`,
     label: "Self Loader Rentals",
     emoji: "🚛",
     capacity: "3–5 tons",
@@ -159,7 +161,7 @@ export const rentals = [
     tags: ["Spacious Cargo Area", "Loading Ramp", "Weather Protected"],
   },
   {
-    img: "/assets/img/rentals/items/no_img.png",
+    img: `${DRIVE}/img/rentals/items/no_img.png`,
     label: "Truck Rentals",
     emoji: "🚚",
     capacity: "10+ tons",
@@ -168,7 +170,7 @@ export const rentals = [
     tags: ["Heavy Load", "Long Distance", "Durable"],
   },
   {
-    img: "/assets/img/rentals/items/no_img.png",
+    img: `${DRIVE}/img/rentals/items/no_img.png`,
     label: "Forklift Rentals",
     emoji: "🚚",
     capacity: "10+ tons",
@@ -177,7 +179,7 @@ export const rentals = [
     tags: ["Heavy Load", "Long Distance", "Durable"],
   },
   {
-    img: "/assets/img/rentals/items/no_img.png",
+    img: `${DRIVE}/img/rentals/items/no_img.png`,
     label: "Backhoe Rentals",
     emoji: "🚚",
     capacity: "10+ tons",
@@ -186,7 +188,7 @@ export const rentals = [
     tags: ["Heavy Load", "Long Distance", "Durable"],
   },
   {
-    img: "/assets/img/rentals/items/xl_wheel_loader.png",
+    img: `${DRIVE}/img/rentals/items/xl_wheel_loader.png`,
     label: "Wheel Loader Rentals",
     emoji: "🚚",
     capacity: "10+ tons",
@@ -195,7 +197,7 @@ export const rentals = [
     tags: ["Heavy Load", "Long Distance", "Durable"],
   },
   {
-    img: "/assets/img/rentals/items/no_img.png",
+    img: `${DRIVE}/img/rentals/items/no_img.png`,
     label: "Grader Rentals",
     emoji: "🚚",
     capacity: "25 Tons",
@@ -204,7 +206,7 @@ export const rentals = [
     tags: ["Length: 19ft", "Width: 10ft", "Height: 4ft"],
   },
   {
-    img: "/assets/img/rentals/items/no_img.png",
+    img: `${DRIVE}/img/rentals/items/no_img.png`,
     label: "Low Bed Double Axle Rentals",
     emoji: "🚚",
     capacity: "50 Tons",
@@ -213,7 +215,7 @@ export const rentals = [
     tags: ["Length: 37ft", "Width: 9ft", "Height: 5.3ft"],
   },
   {
-    img: "/assets/img/rentals/items/no_img.png",
+    img: `${DRIVE}/img/rentals/items/no_img.png`,
     label: "Low Bed Triple Axle 120103 Rentals",
     emoji: "🚚",
     title: "Low Bed Triple Axle",
@@ -225,7 +227,7 @@ export const rentals = [
     ],
   },
   {
-    img: "/assets/img/rentals/items/f_self_loader.png",
+    img: `${DRIVE}/img/rentals/items/f_self_loader.png`,
     label: "Fighter Self Loader",
     emoji: "🚚",
     capacity: "7 Tons",
@@ -234,7 +236,7 @@ export const rentals = [
     tags: ["Length: 37ft", "Width: 9ft", "Height: 5.3ft"],
   },
   {
-    img: "/assets/img/rentals/items/gen_45.png",
+    img: `${DRIVE}/img/rentals/items/gen_45.png`,
     label: "Generator Rentals",
     emoji: "🏗️",
     capacity: "10 TONS",
@@ -254,7 +256,7 @@ export const rentals = [
     capacity: "25 TONS",
     extra: "5 TONS also available",
     desc: "Reliable cranes available for construction, heavy lifting, and transport operations. Perfect for large-scale industrial projects.",
-    img: "/assets/img/rentals/items/gen_60.png",
+    img: `${DRIVE}/img/rentals/items/gen_60.png`,
     units: [
       { quantity: 1, capacity: "5 TONS", stages: "" },
       { quantity: 1, capacity: "25 TONS", stages: "" },
@@ -268,7 +270,7 @@ export const rentals = [
     capacity: "0.80 CBM",
     extra: "Multiple sizes available",
     desc: "Versatile backhoe units for excavation, digging, and small-scale construction projects.",
-    img: "/assets/img/rentals/items/no_img.png",
+    img: `${DRIVE}/img/rentals/items/no_img.png`,
     units: [
       { quantity: 1, capacity: "0.08 CBM" },
       { quantity: 1, capacity: "0.30 CBM" },
@@ -287,7 +289,7 @@ export const rentals = [
     capacity: "25 TONS",
     extra: "5 TONS also available",
     desc: "Reliable cranes available for construction, heavy lifting, and transport operations. Perfect for large-scale industrial projects.",
-    img: "/assets/img/rentals/items/no_img.png",
+    img: `${DRIVE}/img/rentals/items/no_img.png`,
     units: [
       { quantity: 1, capacity: "5 TONS", stages: "" },
       { quantity: 1, capacity: "25 TONS", stages: "" },
@@ -301,7 +303,7 @@ export const rentals = [
     capacity: "25 TONS",
     extra: "5 TONS also available",
     desc: "Reliable cranes available for construction, heavy lifting, and transport operations. Perfect for large-scale industrial projects.",
-    img: "/assets/img/rentals/items/no_img.png",
+    img: `${DRIVE}/img/rentals/items/no_img.png`,
     units: [
       { quantity: 1, capacity: "5 TONS", stages: "" },
       { quantity: 1, capacity: "25 TONS", stages: "" },
@@ -315,7 +317,7 @@ export const rentals = [
     capacity: "Brand New",
     extra: "5 TONS also available",
     desc: "Reliable cranes available for construction, heavy lifting, and transport operations. Perfect for large-scale industrial projects.",
-    img: "/assets/img/rentals/items/no_img.png",
+    img: `${DRIVE}/img/rentals/items/no_img.png`,
     units: [
       { quantity: 1, capacity: "5 TONS", stages: "" },
       { quantity: 1, capacity: "25 TONS", stages: "" },
@@ -329,7 +331,7 @@ export const rentals = [
     capacity: "Brand New",
     extra: "5 TONS also available",
     desc: "Reliable cranes available for construction, heavy lifting, and transport operations. Perfect for large-scale industrial projects.",
-    img: "/assets/img/rentals/items/Xiniu_Excavator.png",
+    img: `${DRIVE}/img/rentals/items/Xiniu_Excavator.png`,
     units: [
       { quantity: 1, capacity: "5 TONS", stages: "" },
       { quantity: 1, capacity: "25 TONS", stages: "" },

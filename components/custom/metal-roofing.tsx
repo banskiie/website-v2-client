@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
 import Footer from '@/components/custom/footer'
+import { CLOUD } from './main-faq'
 
 const colors = [
     "#F2F3F5",
@@ -23,7 +24,7 @@ const colors = [
     "#FFFF00",
     "#808080",
     "#BAA48A",
-    "/assets/img/steel/color/Oakwood.png",
+    `${CLOUD}/v1764057624/Oakwood_oahhpm.png`,
     "#322320",
 ]
 
@@ -42,76 +43,76 @@ const colorNames: Record<string, string> = {
     "#FFFF00": "Yellow",
     "#808080": "Gray",
     "#BAA48A": "Silver",
-    "/assets/img/steel/color/Oakwood.png": "OakWood",
+    [`${CLOUD}/v1764057624/Oakwood_oahhpm.png`]: "OakWood",
     "#322320": "Brown"
 }
 
 const tabImages: Record<string, string> = {
-    "Rib Type Roof": "/assets/img/steel/roofing/colors/2.png",
-    "Tile Roof": "/assets/img/steel/roofing/colors/TileRoof/1.png",
-    "Box Gutter": "/assets/img/steel/roofing/colors/BoxGutter/1.png",
+    "Rib Type Roof": `${CLOUD}/v1764057830/2_h7t2kg.png`,
+    "Tile Roof": `${CLOUD}/v1764058245/1_xxr7ag.png`,
+    "Box Gutter": `${CLOUD}/v1764058072/1_yck92p.png`,
 }
 const zoomImages: Record<string, string> = {
-    "Rib Type Roof": "/assets/img/steel/roofing/size/RibType.png",
-    "Tile Roof": "/assets/img/steel/roofing/size/TileRoof.png",
-    "Box Gutter": "/assets/img/steel/roofing/size/CorrugatedType.png",
+    "Rib Type Roof": `${CLOUD}/v1764058500/RibType_ca6s8k.png`,
+    "Tile Roof": `${CLOUD}/v1764058505/TileRoof_lo8lok.png`,
+    "Box Gutter": `${CLOUD}/v1764058511/CorrugatedType_hbhebv.png`,
 }
 
 const colorToImageMap: Record<string, string> = {
-    "#F2F3F5": "/assets/img/steel/roofing/colors/2.png",
-    "#F5F5DC": "/assets/img/steel/roofing/colors/1.png",
-    "#F37A48": "/assets/img/steel/roofing/colors/3.png",
-    "#800000": "/assets/img/steel/roofing/colors/4.png",
-    "#93E9BE": "/assets/img/steel/roofing/colors/5.png",
-    "#0000FF": "/assets/img/steel/roofing/colors/6.png",
-    "#E3735E": "/assets/img/steel/roofing/colors/7.png",
-    "#008000": "/assets/img/steel/roofing/colors/8.png",
-    "#FFA500": "/assets/img/steel/roofing/colors/9.png",
-    "#8F00FF": "/assets/img/steel/roofing/colors/10.png",
-    "#FFC0CB": "/assets/img/steel/roofing/colors/11.png",
-    "#FFFF00": "/assets/img/steel/roofing/colors/12.png",
-    "#808080": "/assets/img/steel/roofing/colors/13.png",
-    "#BAA48A": "/assets/img/steel/roofing/colors/14.png",
-    "/assets/img/steel/color/Oakwood.png": "/assets/img/steel/roofing/colors/15.png",
-    "#322320": "/assets/img/steel/roofing/colors/16.png"
+    "#F2F3F5": `${CLOUD}/v1764057830/2_h7t2kg.png`,
+    "#F5F5DC": `${CLOUD}/v1764057823/1_wpj9dz.png`,
+    "#F37A48": `${CLOUD}/v1764057836/3_wrabz5.png`,
+    "#800000": `${CLOUD}/v1764057842/4_mswyff.png`,
+    "#93E9BE": `${CLOUD}/v1764057848/5_e8bdtn.png`,
+    "#0000FF": `${CLOUD}/v1764057855/6_n03djb.png`,
+    "#E3735E": `${CLOUD}/v1764057861/7_whiijr.png`,
+    "#008000": `${CLOUD}/v1764057868/8_gvwj8f.png`,
+    "#FFA500": `${CLOUD}/v1764057784/9_hkdubj.png`,
+    "#8F00FF": `${CLOUD}/v1764057792/10_tuk7up.png`,
+    "#FFC0CB": `${CLOUD}/v1764057776/11_qwv3f9.png`,
+    "#FFFF00": `${CLOUD}/v1764057811/12_u7l31e.png`,
+    "#808080": `${CLOUD}/v1764057768/13_udo0ko.png`,
+    "#BAA48A": `${CLOUD}/v1764057799/14_manbgn.png`,
+    [`${CLOUD}/v1764057624/Oakwood_oahhpm.png`]: `${CLOUD}/v1764057805/15_oqoebv.png`,
+    "#322320": `${CLOUD}/v1764057817/16_sar6pl.png`,
 }
 
 const colorImageMapRoofingTile: Record<string, string> = {
-    "#F2F3F5": "/assets/img/steel/roofing/colors/TileRoof/1.png",
-    "#F5F5DC": "/assets/img/steel/roofing/colors/TileRoof/2.png",
-    "#F37A48": "/assets/img/steel/roofing/colors/TileRoof/3.png",
-    "#800000": "/assets/img/steel/roofing/colors/TileRoof/4.png",
-    "#93E9BE": "/assets/img/steel/roofing/colors/TileRoof/5.png",
-    "#0000FF": "/assets/img/steel/roofing/colors/TileRoof/6.png",
-    "#E3735E": "/assets/img/steel/roofing/colors/TileRoof/7.png",
-    "#008000": "/assets/img/steel/roofing/colors/TileRoof/8.png",
-    "#FFA500": "/assets/img/steel/roofing/colors/TileRoof/9.png",
-    "#8F00FF": "/assets/img/steel/roofing/colors/TileRoof/10.png",
-    "#FFC0CB": "/assets/img/steel/roofing/colors/TileRoof/11.png",
-    "#FFFF00": "/assets/img/steel/roofing/colors/TileRoof/12.png",
-    "#808080": "/assets/img/steel/roofing/colors/TileRoof/13.png",
-    "#BAA48A": "/assets/img/steel/roofing/colors/TileRoof/14.png",
-    "/assets/img/steel/color/Oakwood.png": "/assets/img/steel/roofing/colors/15.png",
-    "#322320": "/assets/img/steel/roofing/colors/TileRoof/16.png"
+    "#F2F3F5": `${CLOUD}/v1764058245/1_xxr7ag.png`,
+    "#F5F5DC": `${CLOUD}/v1764058251/2_ez6ukg.png`,
+    "#F37A48": `${CLOUD}/v1764058257/3_xicj1m.png`,
+    "#800000": `${CLOUD}/v1764058263/4_x45txz.png`,
+    "#93E9BE": `${CLOUD}/v1764058269/5_mk93cg.png`,
+    "#0000FF": `${CLOUD}/v1764058275/6_gowfxd.png`,
+    "#E3735E": `${CLOUD}/v1764058287/7_npgbo0.png`,
+    "#008000": `${CLOUD}/v1764058281/8_jlq7eb.png`,
+    "#FFA500": `${CLOUD}/v1764058293/9_llhxoq.png`,
+    "#8F00FF": `${CLOUD}/v1764058215/10_qciqan.png`,
+    "#FFC0CB": `${CLOUD}/v1764058221/11_jkyhzp.png`,
+    "#FFFF00": `${CLOUD}/v1764058227/12_ntvzol.png`,
+    "#808080": `${CLOUD}/v1764058209/13_iofnen.png`,
+    "#BAA48A": `${CLOUD}/v1764058233/14_ij3tyh.png`,
+    [`${CLOUD}/v1764057624/Oakwood_oahhpm.png`]: `${CLOUD}/v1764057805/15_oqoebv.png`,
+    "#322320": `${CLOUD}/v1764058239/16_izz2aw.png`,
 }
 
 const colorImageMapBoxGutter: Record<string, string> = {
-    "#F2F3F5": "/assets/img/steel/roofing/colors/BoxGutter/1.png",
-    "#F5F5DC": "/assets/img/steel/roofing/colors/BoxGutter/2.png",
-    "#F37A48": "/assets/img/steel/roofing/colors/BoxGutter/3.png",
-    "#800000": "/assets/img/steel/roofing/colors/BoxGutter/4.png",
-    "#93E9BE": "/assets/img/steel/roofing/colors/BoxGutter/5.png",
-    "#0000FF": "/assets/img/steel/roofing/colors/BoxGutter/6.png",
-    "#E3735E": "/assets/img/steel/roofing/colors/BoxGutter/7.png",
-    "#008000": "/assets/img/steel/roofing/colors/BoxGutter/8.png",
-    "#FFA500": "/assets/img/steel/roofing/colors/BoxGutter/9.png",
-    "#8F00FF": "/assets/img/steel/roofing/colors/BoxGutter/10.png",
-    "#FFC0CB": "/assets/img/steel/roofing/colors/BoxGutter/11.png",
-    "#FFFF00": "/assets/img/steel/roofing/colors/BoxGutter/12.png",
-    "#808080": "/assets/img/steel/roofing/colors/BoxGutter/13.png",
-    "#BAA48A": "/assets/img/steel/roofing/colors/BoxGutter/14.png",
-    "/assets/img/steel/color/Oakwood.png": "/assets/img/steel/roofing/colors/15.png",
-    "#322320": "/assets/img/steel/roofing/colors/BoxGutter/16.png"
+    "#F2F3F5": `${CLOUD}/v1764058072/1_yck92p.png`,
+    "#F5F5DC": `${CLOUD}/v1764058163/2_z5uihx.png`,
+    "#F37A48": `${CLOUD}/v1764058169/3_ujqeil.png`,
+    "#800000": `${CLOUD}/v1764058175/4_qzpxpv.png`,
+    "#93E9BE": `${CLOUD}/v1764058182/5_x7muah.png`,
+    "#0000FF": `${CLOUD}/v1764058188/6_yhpiuk.png`,
+    "#E3735E": `${CLOUD}/v1764058195/7_ea8la2.png`,
+    "#008000": `${CLOUD}/v1764058202/8_ol4drw.png`,
+    "#FFA500": `${CLOUD}/v1764058008/9_vntfdq.png`,
+    "#8F00FF": `${CLOUD}/v1764058024/10_njpvjt.png`,
+    "#FFC0CB": `${CLOUD}/v1764058016/11_dzauqv.png`,
+    "#FFFF00": `${CLOUD}/v1764058057/12_fivpsy.png`,
+    "#808080": `${CLOUD}/v1764058001/13_xvoe3e.png`,
+    "#BAA48A": `${CLOUD}/v1764058030/14_siiqln.png`,
+    [`${CLOUD}/v1764057624/Oakwood_oahhpm.png`]: `${CLOUD}/v1764057805/15_oqoebv.png`,
+    "#322320": `${CLOUD}/v1764058063/16_es3sse.png`,
 }
 
 const thicknessOptions: Record<string, string[]> = {
@@ -170,7 +171,7 @@ function MetalRoofingContent() {
                     <div>
                         <Link href="/">
                             <Image
-                                src="/assets/c-one-logo2.png"
+                                src={`${CLOUD}/v1764038540/c-one-logo2_y4elbf.png`}
                                 alt="C-One Steel Logo"
                                 width={120}
                                 height={40}

@@ -12,18 +12,19 @@ import FloatingTicketing from "@/components/custom/ticket"
 import useSmoothScroll from '@/hooks/useSmoothScroll'
 import { CheckCircle2, Clock, Gift, MapPin, Phone, Plus, ShieldCheck } from 'lucide-react'
 import VisitUsSection from '@/components/custom/visit-us-main'
+import { CLOUD } from '@/components/custom/main-faq'
 
 const products = [
   {
     title: "Excavator",
     description: "Reliable and well-maintained truck for your hauling needs.",
     images: [
-      "/assets/img/trucks_new/Excavator/XINIU X80-E-2.jpg",
-      "/assets/img/trucks_new/Excavator/XINIU X80-E-3.jpg",
-      "/assets/img/trucks_new/Excavator/XINIU X80-E-4.jpg",
-      "/assets/img/trucks_new/Excavator/XINIU X80-E-5.jpg",
-      "/assets/img/trucks_new/Excavator/XINIU X80-E-6.jpg",
-      "/assets/img/trucks_new/Excavator/XINIU X80-E.jpg",
+      `${CLOUD}/v1764060411/XINIU_X80-E-2_f1l39j.jpg`,
+      `${CLOUD}/v1764060418/XINIU_X80-E-3_kp0ayw.jpg`,
+      `${CLOUD}/v1764060425/XINIU_X80-E-4_leya8x.jpg`,
+      `${CLOUD}/v1764060432/XINIU_X80-E-5_sev8mh.jpg`,
+      `${CLOUD}/v1764060439/XINIU_X80-E-6_zv5asb.jpg`,
+      `${CLOUD}/v1764060445/XINIU_X80-E_uaodje.jpg`,
     ],
     alt: "Excavator",
   },
@@ -31,12 +32,12 @@ const products = [
     title: "SKW Cargo Truck",
     description: "Heavy-duty equipment ready to power your projects.",
     images: [
-      "/assets/img/trucks_new/SKW Cargo Truck/02.jpg",
-      "/assets/img/trucks_new/SKW Cargo Truck/03.jpg",
-      "/assets/img/trucks_new/SKW Cargo Truck/04.jpg",
-      "/assets/img/trucks_new/SKW Cargo Truck/05.jpg",
-      "/assets/img/trucks_new/SKW Cargo Truck/06.jpg",
-      "/assets/img/trucks_new/SKW Cargo Truck/07.jpg",
+      `${CLOUD}/v1764060453/02_gkfkqd.jpg`,
+      `${CLOUD}/v1764060460/03_zcspth.jpg`,
+      `${CLOUD}/v1764060467/04_zoymse.jpg`,
+      `${CLOUD}/v1764060474/05_cc46p9.jpg`,
+      `${CLOUD}/v1764060481/06_cwg4zq.jpg`,
+      `${CLOUD}/v1764060494/07_zizfnd.jpg`,
     ],
     alt: "SKW Cargo Truck",
   },
@@ -44,11 +45,12 @@ const products = [
     title: "Wheel Loader",
     description: "Top-of-the-line equipment for large-scale projects.",
     images: [
-      "/assets/img/trucks_new/Wheel Loader/XIASHENG XM935-2.jpg",
-      "/assets/img/trucks_new/Wheel Loader/XIASHENG XM935-3.jpg",
-      "/assets/img/trucks_new/Wheel Loader/XIASHENG XM935-4.jpg",
-      "/assets/img/trucks_new/Wheel Loader/XIASHENG XM935-5.jpg",
-      "/assets/img/trucks_new/Wheel Loader/XIASHENG XM935-6.jpg",
+      `${CLOUD}/v1764060531/XIASHENG_XM935_jtoc8o.jpg`,
+      `${CLOUD}/v1764060488/XIASHENG_XM935-2_ppgvjs.jpg`,
+      `${CLOUD}/v1764060503/XIASHENG_XM935-3_zkcccc.jpg`,
+      `${CLOUD}/v1764060510/XIASHENG_XM935-4_qchgoa.jpg`,
+      `${CLOUD}/v1764060516/XIASHENG_XM935-5_x7kwmx.jpg`,
+      `${CLOUD}/v1764060524/XIASHENG_XM935-6_w8s57f.jpg`,
     ],
     alt: "Wheel Loader",
   },
@@ -131,12 +133,12 @@ function page() {
           className="absolute inset-0"
         >
           <Image
-            src="/assets/img/contents/swiper2.png"
+            src={`${CLOUD}/v1764039906/swiper2_fo8hcc.png`}
             alt="Trucks Hero"
             fill
             className="object-cover object-center"
             loading="lazy"
-            blurDataURL="/assets/img/contents/swiper2.png"
+            blurDataURL={`${CLOUD}/v1764039906/swiper2_fo8hcc.png`}
           />
           <div className="absolute inset-0 bg-black/50" />
         </motion.div>
@@ -230,17 +232,17 @@ function page() {
         <div className="relative z-10 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 px-6 mb-20">
           {[
             {
-              img: "/assets/img/trucks/forklift-1-svgrepo-com.svg",
+              img: "/forklift-1-svgrepo-com.svg",
               title: "Brand New Heavy Equipment",
               desc: "Top-quality heavy equipment for construction and industrial projects",
             },
             {
-              img: "/assets/img/trucks/factory-svgrepo-com.svg",
+              img: "/factory-svgrepo-com.svg",
               title: "Industrial Equipment",
               desc: "Comprehensive industrial machinery for all your operational needs",
             },
             {
-              img: "/assets/img/trucks/trucks-moving-svgrepo-com.svg",
+              img: "/trucks-moving-svgrepo-com.svg",
               title: "Japan Reconditioned Trucks",
               desc: "Reliable reconditioned trucks imported from Japan",
             },
@@ -594,7 +596,7 @@ function page() {
             <div className="relative h-full">
               <div className="h-[500px] w-full relative">
                 <Image
-                  src="/assets/img/trucks_new/bg.jpg"
+                  src={`${CLOUD}/v1764061092/bg_byzoel.jpg`}
                   alt="Technician working on vehicle"
                   fill
                   className="rounded-2xl object-cover shadow-xl"

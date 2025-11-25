@@ -18,6 +18,7 @@ import FloatingTicketing from "@/components/custom/ticket"
 import useSmoothScroll from "@/hooks/useSmoothScroll"
 import VisitUsSection from "@/components/custom/visit-us-main"
 import { Button } from "@/components/ui/button"
+import { CLOUD } from "@/components/custom/main-faq"
 
 const locations = [
   {
@@ -29,9 +30,9 @@ const locations = [
 ]
 
 const ads = [
-  "/assets/img/advertisement/ad1.png",
-  "/assets/img/advertisement/ad2.png",
-  "/assets/img/advertisement/ad3.png",
+  `${CLOUD}/v1764039737/ad1_zbepfj.png`,
+  `${CLOUD}/v1764039736/ad2_bznq3q.png`,
+  `${CLOUD}/v1764039737/ad3_d5yk6g.png`,
 ]
 
 const faqs = [
@@ -65,19 +66,19 @@ const faqs = [
 const categories = [
   {
     title: "Steel Products",
-    image: "/assets/img/steel/category/category1.png",
+    image: `${CLOUD}/v1764048783/category1_yoc2vi.png`,
     description:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
   },
   {
     title: "Roofing Access",
-    image: "/assets/img/steel/category/category2.png",
+    image: `${CLOUD}/v1764048786/category2_vqmsvd.png`,
     description:
       "Roofing accessories are essential for durability and style. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
     title: "Metal Roofing",
-    image: "/assets/img/steel/category/category3.png",
+    image: `${CLOUD}/v1764048790/category3_ktqtae.png`,
     description:
       "Metal roofing provides protection and longevity. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
@@ -147,12 +148,12 @@ export default function Page() {
           className="absolute inset-0 w-full h-full"
         >
           <Image
-            src="/assets/img/contents/swiper1.png"
+            src={`${CLOUD}/v1764039904/swiper1_rhirnr.png`}
             alt="C-ONE Steel Hero"
             fill
             loading="lazy"
             className="object-cover object-top"
-            blurDataURL="/assets/img/contents/swiper1.png"
+            blurDataURL={`${CLOUD}/v1764039904/swiper1_rhirnr.png`}
           />
         </motion.div>
 
@@ -381,7 +382,7 @@ export default function Page() {
                   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
                 }}
               >
-                Got Questions? We’ve Got Answers!
+                Got Questions? We have Got Answers!
               </motion.h2>
 
               <motion.p
@@ -441,13 +442,13 @@ export default function Page() {
               {/* Main image wrapper */}
               <div className="w-full max-w-[900px] h-[220px] sm:h-[350px] md:h-[450px] lg:h-[528px] overflow-hidden rounded-xl shadow-md">
                 <Image
-                  src="/assets/img/steel/category/category1.png"
+                  src={`${CLOUD}/v1764048783/category1_yoc2vi.png`}
                   alt="Steel Category"
                   width={900}
                   height={900}
                   className="object-cover w-full h-full"
                   loading="lazy"
-                  blurDataURL="/assets/img/steel/category/category1.png"
+                  blurDataURL={`${CLOUD}/v1764048783/category1_yoc2vi.png`}
                 />
               </div>
 
@@ -478,7 +479,6 @@ export default function Page() {
                   <span className="text-white/40 text-xs lg:text-sm">Steel Produced</span>
                 </motion.div>
 
-                {/* Box 2 */}
                 <motion.div
                   className="w-[100px] h-[120px] sm:w-[110px] sm:h-[130px] md:w-[124px] md:h-[145px] bg-black flex flex-col items-start justify-center shadow-lg rounded-md p-3"
                   variants={{
@@ -553,7 +553,6 @@ export default function Page() {
                 },
               }}
             >
-              {/* Icon */}
               <div className="relative w-12 h-12 lg:w-[90px] lg:h-[90px] mb-2">
                 <div className="absolute bottom-0 right-0 w-6 h-6 lg:w-9 lg:h-9 rounded-full bg-[#2FB44D]/60 z-0"></div>
                 <Image
@@ -565,7 +564,6 @@ export default function Page() {
                 />
               </div>
 
-              {/* Title */}
               <div className="flex items-center justify-center lg:justify-start space-x-1">
                 <span className="text-black font-semibold text-xs sm:text-sm">
                   {item.title}
@@ -646,7 +644,7 @@ export default function Page() {
       >
         <div className="absolute inset-0">
           <Image
-            src="/assets/img/rentals/rentals-bg.png"
+            src={`${CLOUD}/v1764047597/rentals-bg_cblsrb.png`}
             alt="Rentals Background"
             fill
             className="object-cover"
@@ -680,13 +678,13 @@ export default function Page() {
             variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.6, delay: 0.4 } } }}
           >
             <Image
-              src="/assets/img/steel/category/category3.png"
+              src={`${CLOUD}/v1764048790/category3_ktqtae.png`}
               alt="Steel Category"
               width={1112}
               height={520}
               className="object-contain w-[1112px] h-[520px]"
               loading="lazy"
-              blurDataURL="/assets/img/steel/category/category3.png"
+              blurDataURL={`${CLOUD}/v1764048790/category3_ktqtae.png`}
             />
           </motion.div>
         </motion.div>

@@ -2,6 +2,8 @@
 
 const nextConfig = {
   images: {
+    domains: ['res.cloudinary.com'],
+
     remotePatterns: [
       {
         protocol: "https",
@@ -13,8 +15,8 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com", // used for thumbnail links
-      },
+        hostname: "lh3.googleusercontent.com",
+      }
     ],
   },
 }

@@ -8,14 +8,15 @@ import { motion } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
 import Footer from '@/components/custom/footer'
 import ScrollLink from '@/components/custom/scroll-link'
+import { CLOUD } from './main-faq'
 
 const steelProductsMap: Record<string, string> = {
-    "Galvanized C-Purlins": "/assets/img/steel/steelprods/GALVANIZED_C-PURLINS.png",
-    "Metal Studs": "/assets/img/steel/steelprods/METAL_STUDS.png",
-    "Metal Furring": "/assets/img/steel/steelprods/METAL_FURRING.png",
-    "Floor Deck": "/assets/img/steel/steelprods/SteelDeck.jpg",
-    "Metal Cladding": "/assets/img/steel/steelprods/MetalCladding.jpg",
-    "Spandrel": "/assets/img/steel/steelprods/SPANDREL.png",
+    "Galvanized C-Purlins": `${CLOUD}/v1764049645/GALVANIZED_C-PURLINS_czrbbj.png`,
+    "Metal Studs": `${CLOUD}/v1764049619/METAL_STUDS_iabav2.png`,
+    "Metal Furring": `${CLOUD}/v1764049624/METAL_FURRING_h8wyxu.png`,
+    "Floor Deck": `${CLOUD}/v1764049639/SteelDeck_vu5cjr.jpg`,
+    "Metal Cladding": `${CLOUD}/v1764049604/MetalCladding_evmqfe.jpg`,
+    "Spandrel": `${CLOUD}/v1764049634/SPANDREL_m3i1x3.png`,
 }
 
 function SteelProducts() {
@@ -65,7 +66,7 @@ function SteelProducts() {
                     <div>
                         <Link href="/">
                             <Image
-                                src="/assets/c-one-logo2.png"
+                                src={`${CLOUD}/v1764038540/c-one-logo2_y4elbf.png`}
                                 alt="C-One Steel Logo"
                                 width={120}
                                 height={40}
