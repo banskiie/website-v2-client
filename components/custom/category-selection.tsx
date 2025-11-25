@@ -1429,9 +1429,9 @@ export function UploadProofMergedModal({
                           setFile(null)
                           setUploadedFileUrl(null)
                         }}
-                        className="w-full bg-gray-200 text-gray-800 hover:bg-gray-300"
+                        className="w-full bg-red-200 text-gray-800 hover:bg-red-300"
                       >
-                        Upload Another Receipt
+                       Remove
                       </Button>
                     )}
                   </div>
@@ -1472,7 +1472,7 @@ export function UploadProofMergedModal({
                   htmlFor="jointPayment"
                   className="text-sm text-red-500 font-medium cursor-pointer"
                 >
-                  Payment for Multiple Entries
+                  Want to Pay for Multiple Entries?
                 </label>
               </div>
 
