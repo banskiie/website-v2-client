@@ -12,7 +12,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { User2, UserCircle } from "lucide-react"
+import { UserCircle } from "lucide-react"
 
 const VIDEOS = gql`
   query Videos($first: Int, $after: String, $search: String) {
