@@ -394,6 +394,7 @@ const ColumnFilter = ({
             <div>
               <Calendar
                 mode="range"
+                captionLayout="dropdown"
                 defaultMonth={dateRange?.from}
                 selected={dateRange}
                 onSelect={setDateRange}

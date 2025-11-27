@@ -54,6 +54,7 @@ export interface IPlayer extends Document {
   videos?: IVideo[]
   levels: ILevel[]
   validDocuments: IValidDocument[]
+  isActive: boolean
 }
 
 export interface IPlayerInput extends Request {
@@ -68,4 +69,5 @@ export interface IPlayerInput extends Request {
   phoneNumber?: string
   levels: ILevel[]
   validDocuments: IValidDocument[]
+  isActive: boolean
 }

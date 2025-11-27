@@ -47,8 +47,8 @@ import BatchMenu from "./dialogs/batch"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns/format"
-import { formatDateRange } from "little-date"
-import { formatDistanceToNow, formatDistanceToNowStrict } from "date-fns"
+import StatusDialog from "./dialogs/status"
+import ActiveBadge from "@/components/badges/active-badge"
 
 const PLAYERS = gql`
   query Players(
@@ -75,6 +75,7 @@ const PLAYERS = gql`
           currentLevel
           gender
           birthDate
+          isActive
         }
       }
       pageInfo {
@@ -95,6 +96,7 @@ const PLAYER_CHANGED = gql`
         currentLevel
         gender
         birthDate
+        isActive
       }
       players {
         _id
@@ -102,12 +104,13 @@ const PLAYER_CHANGED = gql`
         currentLevel
         gender
         birthDate
+        isActive
       }
     }
   }
 `
 
-const ActionsColumn = ({ data }: { data?: IPlayerInput }) => {
+const ActionsColumn = ({ data }: { data?: IPlayer }) => {
   const player = useMemo(() => data, [data])
   const [menuOpen, setMenuOpen] = useState(false)
   return (
@@ -124,6 +127,11 @@ const ActionsColumn = ({ data }: { data?: IPlayerInput }) => {
           <ViewDialog _id={player?._id} />
           <FormDialog _id={player?._id} onClose={() => setMenuOpen(false)} />
           <DropdownMenuSeparator />
+          <StatusDialog
+            _id={player?._id}
+            onClose={() => setMenuOpen(false)}
+            isActive={player?.isActive}
+          />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -466,6 +474,27 @@ const Page = () => {
             </span>
           )
         },
+      },
+      {
+        accessorKey: "isActive",
+        header: () => (
+          <SortHeader
+            label="Status"
+            sortKey="isActive"
+            sortState={sort}
+            onSortChange={onSort}
+          />
+        ),
+        footer: () => (
+          <ColumnFilter
+            label="Status"
+            filterKey="isActive"
+            filterType="BOOLEAN"
+            filterValue={filter}
+            onFilterChange={onFilter}
+          />
+        ),
+        cell: ({ row }) => <ActiveBadge isActive={row.original.isActive} />,
       },
     ],
     [sort, onSort, filter, onFilter, selectedIds, data?.players]
