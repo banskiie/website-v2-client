@@ -9,14 +9,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Role } from "@/types/user.interface"
-import { UserSchema } from "@/validators/user.validator"
+import { PlayerSchema } from "@/validators/player.validator"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
 import React, { useEffect, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, ChevronsUpDownIcon, CirclePlus, Eraser } from "lucide-react"
+import {
+  CalendarIcon,
+  CheckIcon,
+  ChevronsUpDownIcon,
+  CirclePlus,
+  Eraser,
+} from "lucide-react"
 import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import {
@@ -35,22 +40,28 @@ import {
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { Gender } from "@/types/shared.interface"
+import { format } from "date-fns"
+import { Calendar } from "@/components/ui/calendar"
 
-const USER = gql`
-  query User($_id: ID!) {
-    user(_id: $_id) {
-      name
+const PLAYER = gql`
+  query Player($_id: ID!) {
+    player(_id: $_id) {
+      firstName
+      middleName
+      lastName
+      suffix
       email
-      contactNumber
-      username
-      role
+      phoneNumber
+      birthDate
+      gender
     }
   }
 `
 
 const CREATE = gql`
-  mutation CreateUser($input: CreateUserInput!) {
-    createUser(input: $input) {
+  mutation CreatePlayer($input: CreatePlayerInput!) {
+    createPlayer(input: $input) {
       ok
       message
     }
@@ -58,8 +69,8 @@ const CREATE = gql`
 `
 
 const UPDATE = gql`
-  mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input) {
+  mutation UpdatePlayer($input: UpdatePlayerInput!) {
+    updatePlayer(input: $input) {
       ok
       message
     }
@@ -78,7 +89,7 @@ const FormDialog = (props: Props) => {
   const isUpdate = Boolean(props._id)
   const [isPending, startTransition] = useTransition()
   // Fetch existing date if updating
-  const { data, loading: fetchLoading }: any = useQuery(USER, {
+  const { data, loading: fetchLoading }: any = useQuery(PLAYER, {
     variables: { _id: props._id },
     skip: !open || !isUpdate,
     fetchPolicy: "no-cache",
@@ -88,26 +99,31 @@ const FormDialog = (props: Props) => {
   // Combined loading state
   const isLoading = isUpdate ? isPending || fetchLoading : false
   // Role Options
-  const [openRoles, setOpenRoles] = useState(false)
-  const Roles = Object.values(Role).map((role) => ({
-    label: role.toLocaleLowerCase().replaceAll("_", " "),
-    value: role,
+  const [openGenders, setOpenGenders] = useState(false)
+  const genders = Object.values(Gender).map((gender) => ({
+    label: gender.toLocaleLowerCase().replaceAll("_", " "),
+    value: gender,
   }))
   // Combined loading state
   const loading = isPending || fetchLoading
 
+  console.log(data)
+
   const form = useForm({
     defaultValues: {
-      name: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      suffix: "",
       email: "",
-      contactNumber: "",
-      username: "",
-      role: Role.SUPPORT,
+      phoneNumber: "",
+      birthDate: new Date(),
+      gender: Gender.MALE,
     },
     validators: {
       onSubmit: ({ formApi, value }) => {
         try {
-          UserSchema.parse(value)
+          PlayerSchema.parse(value)
         } catch (error: any) {
           const formErrors = JSON.parse(error)
           formErrors.map(
@@ -155,13 +171,19 @@ const FormDialog = (props: Props) => {
 
   useEffect(() => {
     if (data) {
-      const { name, email, contactNumber, username, role } = data.user
-      form.setFieldValue("name", name)
-      form.setFieldValue("email", email)
-      form.setFieldValue("contactNumber", contactNumber)
-      form.setFieldValue("username", username)
-      form.setFieldValue("role", role)
-      // form.reset({ name, email, contactNumber, username, role })
+      console.log(data)
+      form.reset({
+        firstName: data.player.firstName || "",
+        middleName: data.player.middleName || "",
+        lastName: data.player.lastName || "",
+        suffix: data.player.suffix || "",
+        email: data.player.email || "",
+        phoneNumber: data.player.phoneNumber || "",
+        birthDate: data.player.birthDate
+          ? new Date(data.player.birthDate)
+          : new Date(),
+        gender: data.player.gender || Gender.MALE,
+      })
     }
   }, [isUpdate, data])
 
@@ -181,7 +203,7 @@ const FormDialog = (props: Props) => {
         ) : (
           <Button variant="outline-success">
             <CirclePlus className="size-3.5" />
-            Add User
+            Add Player
           </Button>
         )}
       </DialogTrigger>
@@ -191,33 +213,63 @@ const FormDialog = (props: Props) => {
         showCloseButton={false}
       >
         <DialogHeader>
-          <DialogTitle>{isUpdate ? "Edit User" : "Create User"}</DialogTitle>
+          <DialogTitle>
+            {isUpdate ? "Edit Player" : "Create Player"}
+          </DialogTitle>
           <DialogDescription>
             {isUpdate
-              ? "Update existing user details."
-              : "Create a new user in the system."}
+              ? "Update existing player details."
+              : "Create a new player in the system."}
           </DialogDescription>
         </DialogHeader>
         <form
           className="-mt-2 mb-2"
-          id="user-form"
+          id="player-form"
           onSubmit={(e) => {
             e.preventDefault()
             form.handleSubmit()
           }}
         >
-          <FieldSet>
+          <FieldSet className="grid grid-cols-2 place-content-start gap-3 h-[48vh] overflow-y-auto">
             <form.Field
-              name="name"
+              name="firstName"
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
+                  <Field data-invalid={isInvalid} className="col-span-2">
+                    <FieldLabel htmlFor={field.name}>First Name</FieldLabel>
+                    <InputGroup className="-my-1">
+                      <InputGroupInput
+                        required
+                        placeholder="First Name"
+                        disabled={loading}
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                      />
+                    </InputGroup>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+            <form.Field
+              name="middleName"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid} className="col-span-2">
                     <FieldLabel htmlFor={field.name}>Name</FieldLabel>
                     <InputGroup className="-my-1">
                       <InputGroupInput
-                        placeholder="Name"
+                        placeholder="Middle Name"
                         disabled={loading}
                         id={field.name}
                         name={field.name}
@@ -234,60 +286,64 @@ const FormDialog = (props: Props) => {
                 )
               }}
             />
-            <form.Field
-              name="username"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Username</FieldLabel>
-                    <InputGroup className="-my-1.5">
-                      <InputGroupInput
-                        disabled={loading}
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="Username"
-                      />
-                    </InputGroup>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            />
-            <form.Field
-              name="contactNumber"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Contact No.</FieldLabel>
-                    <InputGroup className="-my-1.5">
-                      <InputGroupInput
-                        disabled={loading}
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="Contact No."
-                      />
-                    </InputGroup>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            />
+            <div className="col-span-2 flex gap-3">
+              <form.Field
+                name="lastName"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Last Name</FieldLabel>
+                      <InputGroup className="-my-1">
+                        <InputGroupInput
+                          required
+                          placeholder="Last Name"
+                          disabled={loading}
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                        />
+                      </InputGroup>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              />
+              <form.Field
+                name="suffix"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field className="w-24" data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Ext.</FieldLabel>
+                      <InputGroup className="-my-1">
+                        <InputGroupInput
+                          placeholder="Ext."
+                          disabled={loading}
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                        />
+                      </InputGroup>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              />
+            </div>
+
             <form.Field
               name="email"
               children={(field) => {
@@ -295,9 +351,10 @@ const FormDialog = (props: Props) => {
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Email Address</FieldLabel>
-                    <InputGroup className="-my-1.5">
+                    <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                    <InputGroup className="-my-1">
                       <InputGroupInput
+                        placeholder="Email"
                         disabled={loading}
                         id={field.name}
                         name={field.name}
@@ -305,7 +362,6 @@ const FormDialog = (props: Props) => {
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
-                        placeholder="Email Address"
                         type="email"
                       />
                     </InputGroup>
@@ -317,29 +373,102 @@ const FormDialog = (props: Props) => {
               }}
             />
             <form.Field
-              name="role"
+              name="phoneNumber"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Phone Number</FieldLabel>
+                    <InputGroup className="-my-1">
+                      <InputGroupInput
+                        placeholder="Phone Number"
+                        disabled={loading}
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                      />
+                    </InputGroup>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+            <form.Field
+              name="birthDate"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel id="birth-date" htmlFor="birth-date">
+                      Birth Date
+                    </FieldLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="birth-date"
+                          name="birth-date"
+                          variant="outline"
+                          data-empty={!field.state.value}
+                          className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -mt-1"
+                          disabled={loading}
+                        >
+                          <CalendarIcon className="size-3.5" />
+                          {field.state.value ? (
+                            format(field.state.value, "PP")
+                          ) : (
+                            <span>Select Birth Date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          captionLayout="dropdown"
+                          required
+                          selected={field.state.value}
+                          onSelect={field.handleChange}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+
+            <form.Field
+              name="gender"
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Role</FieldLabel>
-                    <Popover open={openRoles} onOpenChange={setOpenRoles}>
+                    <Popover open={openGenders} onOpenChange={setOpenGenders}>
                       <PopoverTrigger asChild>
                         <Button
                           id={field.name}
                           name={field.name}
                           disabled={loading}
-                          aria-expanded={openRoles}
+                          aria-expanded={openGenders}
                           onBlur={field.handleBlur}
                           variant="outline"
                           role="combobox"
                           aria-invalid={isInvalid}
-                          className="w-full justify-between font-normal capitalize -mt-2"
+                          className="w-full justify-between font-normal capitalize -mt-1"
                           type="button"
                         >
                           {field.state.value
-                            ? Roles.find((o) => o.value === field.state.value)
+                            ? genders.find((o) => o.value === field.state.value)
                                 ?.label
                             : "Select Role"}
                           <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -354,13 +483,13 @@ const FormDialog = (props: Props) => {
                               <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
                                 Roles
                               </Label>
-                              {Roles?.map((o) => (
+                              {genders?.map((o) => (
                                 <CommandItem
                                   key={o.value}
                                   value={o.value}
-                                  onSelect={(v) => {
-                                    field.handleChange(v as Role)
-                                    setOpenRoles(false)
+                                  onSelect={(val) => {
+                                    field.handleChange(val as Gender)
+                                    setOpenGenders(false)
                                   }}
                                   className="capitalize"
                                 >
@@ -399,7 +528,7 @@ const FormDialog = (props: Props) => {
             className="w-20"
             loading={isLoading}
             type="submit"
-            form="user-form"
+            form="player-form"
           >
             Submit
           </Button>

@@ -14,6 +14,7 @@ import Link from "next/link"
 import React, { use } from "react"
 import LiteYouTubeEmbed from "react-lite-youtube-embed"
 import "react-lite-youtube-embed/dist/LiteYouTubeEmbed.css"
+import ViewDialog from "../../players/dialogs/view"
 
 const VIDEO = gql`
   query Video($_id: ID!) {
@@ -23,14 +24,9 @@ const VIDEO = gql`
       youtubeUrl
       youtubeId
       players {
+        _id
         firstName
         lastName
-      }
-      comments {
-        content
-        by {
-          name
-        }
       }
       dateUploaded
       uploadedBy {
@@ -52,22 +48,22 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <div className="flex gap-3 flex-col xl:flex-row ">
-      <div className="w-full flex flex-col gap-2 xl:flex-1">
-        <div className="rounded-md overflow-hidden aspect-video">
-          <LiteYouTubeEmbed
-            id={data?.video?.youtubeId}
-            title={data?.video?.title}
-            enableJsApi
-            autoplay={true}
-            lazyLoad={true}
-            adNetwork={true}
-            poster="default"
-            style={{
-              height: "100%",
-              width: "100%",
-            }}
-          />
-        </div>
+      <div className="w-full flex flex-col gap-2">
+        <LiteYouTubeEmbed
+          id={data?.video?.youtubeId}
+          title={data?.video?.title}
+          enableJsApi
+          autoplay={true}
+          lazyLoad={true}
+          adNetwork={true}
+          poster="default"
+          style={{
+            maxHeight: "80vh",
+            width: "100%",
+            maxWidth: "100%",
+            aspectRatio: "16/9",
+          }}
+        />
         <div className="w-full flex justify-between items-center gap-2">
           <div className="flex-1">
             <span className="block text-2xl">{data?.video?.title}</span>
@@ -81,13 +77,16 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
               {data?.video?.players?.length > 0 ? (
                 <div>
                   <span className="font-semibold">Players: </span>
-                  {data.video.players.map((player: any, index: number) => (
-                    <Link
-                      key={index}
-                      href="#"
-                      className="hover:underline"
-                    >{`${player.firstName} ${player.lastName}`}</Link>
-                  ))}
+                  <div className="inline-flex gap-2">
+                    {data.video.players.map((player: any) => (
+                      <ViewDialog
+                        fromVideos
+                        _id={player._id}
+                        key={player._id}
+                        title={player.firstName + " " + player.lastName}
+                      />
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <span className="text-muted-foreground">
@@ -100,12 +99,6 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
             <EllipsisVertical />
           </Button>
         </div>
-      </div>
-      <Separator className="block xl:hidden" />
-      <div className="w-full xl:w-96">
-        <span className="text-xl">
-          Comments ({data?.video?.comments?.length || 0})
-        </span>
       </div>
     </div>
   )
