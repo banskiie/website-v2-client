@@ -392,6 +392,7 @@ import {
     CarouselContent,
     CarouselItem,
 } from "@/components/ui/carousel"
+import { CLOUD } from "./main-faq"
 
 export default function StoryCarousel() {
     const [zoomedImage, setZoomedImage] = useState<string | null>(null)
@@ -414,10 +415,10 @@ export default function StoryCarousel() {
     const autoplay = useRef(Autoplay({ delay: 1800, stopOnInteraction: false }))
 
     const images = useMemo(() => [
-        "/assets/img/sports-center/shuttlebrew/image1.jpg",
-        "/assets/img/sports-center/shuttlebrew/iamge.jpg",
-        "/assets/img/sports-center/shuttlebrew/image2.jpg",
-        "/assets/img/sports-center/shuttlebrew/image4.jpg",
+        `${CLOUD}/v1764116759/iamge_l6rrwu.jpg`,
+        `${CLOUD}/v1764116754/image1_ngwjkd.jpg`,
+        `${CLOUD}/v1764116755/image2_oib9lo.jpg`,
+        `${CLOUD}/v1764116756/image4_cldrsz.jpg`,
     ], [])
 
     useEffect(() => {

@@ -19,6 +19,7 @@ import { Coffee } from "lucide-react"
 import HighlightsSection from "@/components/custom/highlights"
 import localFont from "next/font/local";
 import { Button } from "@/components/ui/button"
+import { CLOUD } from "@/components/custom/main-faq"
 
 const Pacific = localFont({
   src: "../../../../public/assets/fonts/Pacifico.ttf",
@@ -131,7 +132,7 @@ const [heroLoaded, setHeroLoaded] = useState(false)
       className="w-32 h-32 mb-6"
     >
       <Image
-        src="/assets/img/sports-center/shuttlebrew/sb_icon.png"
+        src={`${CLOUD}/v1764048136/sb_icon_ftg2zo.png`}
         alt="Loading..."
         width={128}
         height={128}
@@ -171,7 +172,7 @@ const [heroLoaded, setHeroLoaded] = useState(false)
     <Skeleton className="w-full h-full absolute inset-0 rounded-none" />
   )}
   <Image
-    src="/assets/img/sports-center/shuttlebrew/_ALP1992.jpg"
+    src={`${CLOUD}/v1764115964/_ALP1992_mygjrm.jpg`}
     alt="ShuttleBrew"
     fill
     className={`object-cover w-full h-full transition-opacity duration-700 ${heroLoaded ? "opacity-100" : "opacity-0"}`}
@@ -200,7 +201,7 @@ const [heroLoaded, setHeroLoaded] = useState(false)
       transition={{ duration: 1, delay: 0.3 }}
     >
       <Image
-        src="/assets/img/sports-center/shuttlebrew/sb_icon.png"
+        src={`${CLOUD}/v1764048136/sb_icon_ftg2zo.png`}
         alt="ShuttleBrew Icon"
         width={220}
         height={220}
@@ -335,17 +336,16 @@ const [heroLoaded, setHeroLoaded] = useState(false)
       >
         <div className="absolute inset-0 bg-black/40 z-10"></div>
         <Image
-          src="/assets/img/sports-center/shuttlebrew/gallery/_ALP9323.jpg"
+          src={`${CLOUD}/v1764116604/_ALP9323_uewrgm.jpg`}
           alt="ShuttleBrew Gallery"
           width={900}
           height={1100}
           loading="lazy"
           className="object-cover shadow-lg h-[970px]"
-          blurDataURL="/assets/img/sports-center/shuttlebrew/gallery/_ALP9323.jpg"
+          blurDataURL={`${CLOUD}/v1764116604/_ALP9323_uewrgm.jpg`}
         />
       </motion.div>
 
-      {/* Right content */}
       <div className="w-full lg:w-1/2 z-20 flex flex-col items-end text-right ml-auto">
         <motion.h2
           className={`relative text-5xl sm:text-6xl md:text-7xl lg:text-8xl ${Pacific.className}
@@ -417,8 +417,8 @@ const [heroLoaded, setHeroLoaded] = useState(false)
       </div>
 
       <div id="menu">
-        <MenuTabs /> {/* Temporarily disabled- Ipatan.aw sa kay ed if gusto niya ang parallax or kaning normal lang */}
-        {/* <Menu /> */} 
+        <MenuTabs />
+        {/* <Menu /> */}
       </div>
 
 <div>

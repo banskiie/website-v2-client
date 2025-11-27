@@ -1,50 +1,47 @@
 "use client"
 
-import { MapPin, X } from 'lucide-react'
+import { ArrowBigLeft, MapPin, X } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Image from 'next/image'
 import ShimmerSkeleton from '@/components/custom/shimmer-skeleton'
+import { CLOUD } from '@/components/custom/main-faq'
 
 const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
 const galleryImages = [
-  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP6549-51.png`, alt: "Cafe 1", caption: "Spacious Cafe Vibe" },
-  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP6551-52.jpg`, alt: "Cafe 2", caption: "Spacious Cafe Vibe" },
-  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP6556-53.jpg`, alt: "Cafe 3", caption: "Spacious Cafe Vibe" },
-  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP9018.jpg`, alt: "Cafe 4", caption: "Spacious Cafe Vibe" },
-  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP9021.jpg`, alt: "Cafe 5", caption: "Spacious Cafe Vibe" },
-  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP9044.jpg`, alt: "Cafe 6", caption: "Spacious Cafe Vibe" },
-  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP9054.jpg`, alt: "Cafe 7", caption: "Spacious Cafe Vibe" },
-  { src: `${DRIVE}/img/sports-center/shuttlebrew/gallery/_ALP9068.jpg`, alt: "Cafe 8", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116604/_ALP6549-51_dc4yte.png`, alt: "Cafe 1", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116640/_ALP6551-52_wkc7ji.jpg`, alt: "Cafe 2", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116640/_ALP6556-53_c3iwxz.jpg`, alt: "Cafe 3", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116635/_ALP9018_yitpqc.jpg`, alt: "Cafe 4", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116632/_ALP9021_j7h830.jpg`, alt: "Cafe 5", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116633/_ALP9044_wqcddl.jpg`, alt: "Cafe 6", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116634/_ALP9054_bn3fv1.jpg`, alt: "Cafe 7", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116616/_ALP9068_swuobn.jpg`, alt: "Cafe 8", caption: "Spacious Cafe Vibe" },
 
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP2056.jpg", alt: "Cafe 9", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP2060.jpg", alt: "Cafe 10", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9080.jpg", alt: "Cafe 11", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9122.jpg", alt: "Cafe 12", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9131.jpg", alt: "Cafe 13", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9173.jpg", alt: "Cafe 14", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9177.jpg", alt: "Cafe 15", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9200.jpg", alt: "Cafe 16", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9203.jpg", alt: "Cafe 17", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9204.jpg", alt: "Cafe 18", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9272.jpg", alt: "Cafe 19", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9273.jpg", alt: "Cafe 20", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9274.jpg", alt: "Cafe 21", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9286.jpg", alt: "Cafe 22", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9289.jpg", alt: "Cafe 23", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9291.jpg", alt: "Cafe 24", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9301.jpg", alt: "Cafe 25", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9314.jpg", alt: "Cafe 26", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9317.jpg", alt: "Cafe 27", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9321.jpg", alt: "Cafe 28", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9323.jpg", alt: "Cafe 29", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9335.jpg", alt: "Cafe 30", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9340.jpg", alt: "Cafe 31", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9344.jpg", alt: "Cafe 32", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9356.jpg", alt: "Cafe 33", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9359.jpg", alt: "Cafe 34", caption: "Spacious Cafe Vibe" },
-  { src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP9361.jpg", alt: "Cafe 35", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116641/_ALP2056_opmlmm.jpg`, alt: "Cafe 9", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116637/_ALP2060_jdneeg.jpg`, alt: "Cafe 10", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116622/_ALP9080_shzzzd.jpg`, alt: "Cafe 11", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116605/_ALP9122_znuf6j.jpg`, alt: "Cafe 12", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116617/_ALP9131_llkk7o.jpg`, alt: "Cafe 13", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116615/_ALP9173_plj1nw.jpg`, alt: "Cafe 14", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116604/_ALP9177_jbqaq6.jpg`, alt: "Cafe 15", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116618/_ALP9200_ykd9cm.jpg`, alt: "Cafe 16", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116630/_ALP9203_miqh6i.jpg`, alt: "Cafe 17", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116613/_ALP9204_byl8im.jpg`, alt: "Cafe 18", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116606/_ALP9272_uvcy5n.jpg`, alt: "Cafe 19", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116613/_ALP9273_bpst9v.jpg`, alt: "Cafe 20", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116627/_ALP9274_ueagqo.jpg`, alt: "Cafe 21", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116629/_ALP9286_juirj4.jpg`, alt: "Cafe 22", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116624/_ALP9291_uha3xp.jpg`, alt: "Cafe 24", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116619/_ALP9301_kqnbb7.jpg`, alt: "Cafe 25", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116621/_ALP9314_xnq0qf.jpg`, alt: "Cafe 26", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116611/_ALP9317_od0csq.jpg`, alt: "Cafe 27", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116606/_ALP9321_fqkezk.jpg`, alt: "Cafe 28", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116604/_ALP9323_uewrgm.jpg`, alt: "Cafe 29", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116609/_ALP9335_jcjs3a.jpg`, alt: "Cafe 30", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116606/_ALP9344_jfu2ka.jpg`, alt: "Cafe 31", caption: "Spacious Cafe Vibe" },
+  { src: `${CLOUD}/v1764116608/_ALP9359_ljgqz8.jpg`, alt: "Cafe 32", caption: "Spacious Cafe Vibe" },
 ]
 
 
@@ -115,7 +112,7 @@ function Page() {
           className="w-32 h-32 mb-6"
         >
           <Image
-            src="/assets/img/sports-center/shuttlebrew/sb_icon.png"
+            src={`${CLOUD}/v1764048136/sb_icon_ftg2zo.png`}
             alt="Loading..."
             width={128}
             height={128}
@@ -150,11 +147,11 @@ function Page() {
         <div className="absolute top-0 left-0 w-full z-10">
           <div className="flex items-center justify-between px-6 md:px-8 py-4 border-b border-gray-300 min-w-[300px]">
             <Link
-              href="/sports-center/shuttlebrew/#about-us" className="flex items-center gap-2 text-lg font-bold px-4 py-2 bg-white rounded-full shadow hover:bg-gray-100 transition">
-              {"<-"}
+              href="/sports-center/shuttlebrew/#about-us" className="flex items-center gap-2 text-lg font-bold px-2 py-2 bg-white rounded-full shadow hover:bg-gray-100 transition">
+              <ArrowBigLeft/>
             </Link>
             <div className="flex-1 flex justify-center">
-              <Image src="/assets/img/logo/c-one-logo2.png" alt="C-One Logo" width={160} height={100} className="object-contain" />
+              <Image src={`${CLOUD}/v1764038540/c-one-logo2_y4elbf.png`} alt="C-One Logo" width={160} height={100} className="object-contain" />
             </div>
           </div>
         </div>
@@ -165,7 +162,7 @@ function Page() {
           </h2>
 
           <div className="relative w-full h-64 md:h-[30rem] mb-8">
-            <Image src="/assets/img/sports-center/shuttlebrew/gallery/_ALP9301.jpg" alt="About ShuttleBrew" loading='lazy' fill className="object-cover rounded-lg" />
+            <Image src={`${CLOUD}/v1764116619/_ALP9301_kqnbb7.jpg`} alt="About ShuttleBrew" loading='lazy' fill className="object-cover rounded-lg" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start">
@@ -177,7 +174,7 @@ function Page() {
 
             <div className="relative w-full h-48 md:h-64">
               <Image
-                src="/assets/img/sports-center/shuttlebrew/gallery/_ALP9314.jpg"
+                src={`${CLOUD}/v1764116621/_ALP9314_xnq0qf.jpg`}
                 alt="Cozy Cafe"
                 fill
                 className="object-cover rounded-md"
@@ -196,8 +193,8 @@ function Page() {
           C-One ShuttleBrew
         </h2>
 
-        <div className="relative w-full h-48 md:h-72 mb-6 flex-shrink-0 cursor-pointer" onClick={() => setModalImage({ src: "/assets/img/sports-center/shuttlebrew/gallery/_ALP2060.jpg", alt: "Cafe Experience" })}>
-          <Image src="/assets/img/sports-center/shuttlebrew/gallery/_ALP2060.jpg" alt="Cafe Experience" fill className="object-cover rounded-lg" />
+        <div className="relative w-full h-48 md:h-72 mb-6 flex-shrink-0 cursor-pointer" onClick={() => setModalImage({ src: `${CLOUD}/v1764116637/_ALP2060_jdneeg.jpg`, alt: "Cafe Experience" })}>
+          <Image src={`${CLOUD}/v1764116637/_ALP2060_jdneeg.jpg`} alt="Cafe Experience" fill className="object-cover rounded-lg" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -251,9 +248,9 @@ function Page() {
         {viewGallery && (
           <motion.div
             key="gallery-page"
-            initial={{ y: "100%" }}        // start completely offscreen (bottom)
-            animate={{ y: 0 }}             // slide up into view
-            exit={{ y: "100%" }}           // slide back down
+            initial={{ y: "100%" }}       
+            animate={{ y: 0 }}             
+            exit={{ y: "100%" }}           
             transition={{ type: "spring", stiffness: 120, damping: 20 }}
             className="fixed inset-0 z-50 flex justify-center items-end overflow-hidden"
           >
@@ -302,7 +299,7 @@ function Page() {
 
                       <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                         <button className="px-4 py-2 cursor-pointer bg-[#914b1d] text-white rounded shadow hover:bg-[#723d19] transition">
-                          See More
+                          View
                         </button>
                       </div>
                     </motion.div>
@@ -337,7 +334,7 @@ function Page() {
               <div className="md:w-1/2 p-2 md:p-4 flex flex-col h-1/2 md:h-full">
                 <div className="relative flex-1 rounded-lg overflow-hidden p-2 md:p-4">
                   <Image
-                    src="/assets/img/sports-center/shuttlebrew/gallery/_ALP2060.jpg"
+                    src={`${CLOUD}/v1764116637/_ALP2060_jdneeg.jpg`}
                     alt="Learn More Image"
                     fill className="object-cover rounded-lg"
                   />

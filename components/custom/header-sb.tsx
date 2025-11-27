@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import Image from "next/image"
 import { Menu, X, ChevronDown } from "lucide-react"
+import { CLOUD } from "./main-faq"
 
 export default function Header() {
     const [isOpen, setIsOpen] = useState(false)
@@ -41,7 +42,7 @@ export default function Header() {
                 <div className="w-full max-w-screen-xl mx-auto flex justify-between items-center h-16 px-8">
                     <Link href="/">
                         <Image
-                            src={"/assets/c-one-logo-white.png"}
+                            src={`${CLOUD}/v1764038543/c-one-logo-white_ic5zyc.png`}
                             alt="C-One Steel Logo"
                             width={120}
                             height={40}

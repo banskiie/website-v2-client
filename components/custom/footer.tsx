@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { CLOUD } from "./main-faq"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -11,7 +12,7 @@ export default function Footer() {
       <div className="max-w-5xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="flex flex-col items-start">
           <Image
-            src="/assets/c-one-logo2.png"
+            src={`${CLOUD}/v1764038540/c-one-logo2_y4elbf.png`}
             alt="C-One Logo"
             width={100}
             height={100}

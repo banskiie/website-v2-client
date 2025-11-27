@@ -11,22 +11,23 @@ import { motion } from 'framer-motion'
 import { Playfair_Display } from 'next/font/google'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import FloatingChatWidget from '@/components/custom/ticket'
+import { CLOUD } from '@/components/custom/main-faq'
 
 const images = [
-    "_ALP7813",
-    "_ALP7816",
-    "_ALP7851",
-    "_ALP8910",
-    "_ALP8926",
-    "_ALP9375",
-    "_ALP9378",
-    "_ALP9379",
-    "_ALP9390",
-    "_ALP9396",
-    "_ALP9397",
-    "_ALP9407",
-    "_ALP9412",
-    "_ALP9418",
+    `${CLOUD}/v1764213470/_ALP7813_nggedx.jpg`,
+    `${CLOUD}/v1764213380/_ALP7816_wlw409.jpg`,
+    `${CLOUD}/v1764213469/_ALP7851_zirbpu.jpg`,
+    `${CLOUD}/v1764213471/_ALP8910_ywql1u.jpg`,
+    `${CLOUD}/v1764213471/_ALP8926_zd5ipu.jpg`,
+    `${CLOUD}/v1764213380/_ALP9375_lmxrre.jpg`,
+    `${CLOUD}/v1764213470/_ALP9378_n5k8yo.jpg`,
+    `${CLOUD}/v1764213470/_ALP9379_hrh1j8.jpg`,
+    `${CLOUD}/v1764213380/_ALP9390_vwpetm.jpg`,
+    `${CLOUD}/v1764213469/_ALP9396_jgjo4i.jpg`,
+    `${CLOUD}/v1764213380/_ALP9397_qzxzfm.jpg`,
+    `${CLOUD}/v1764213418/_ALP9407_s8e69i.jpg`,
+    `${CLOUD}/v1764213469/_ALP9412_h8zlyu.jpg`,
+    `${CLOUD}/v1764213883/9418_suhlas.png`,
 ]
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "700"] })
@@ -51,7 +52,7 @@ function Page() {
             <section
                 className="relative w-full min-h-screen bg-center bg-cover bg-fixed flex flex-col justify-center items-center text-white"
                 style={{
-                    backgroundImage: "url('/assets/img/sports-center/suite/twin-bed/_ALP9397.jpg')",
+                    backgroundImage: `url(${CLOUD}/v1764213380/_ALP9397_qzxzfm.jpg)`,
                 }}
             >
                 <div className="absolute inset-0 bg-black/40" />
@@ -100,7 +101,7 @@ function Page() {
                             className="flex-shrink-0 w-80 h-80 sm:w-149 sm:h-149 snap-start relative overflow-hidden"
                         >
                             <Image
-                                src={`/assets/img/sports-center/suite/twin-bed/${img}.jpg`}
+                                src={img}
                                 alt="Twin Bed Room"
                                 fill
                                 className="object-cover"

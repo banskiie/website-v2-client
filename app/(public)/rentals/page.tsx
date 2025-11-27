@@ -25,6 +25,7 @@ import { InfoCard, Stat, Step } from "@/components/custom/step"
 import { Separator } from "@/components/ui/separator"
 import { features, rentals } from "@/components/custom/data/items"
 import RentalsSection from "@/components/custom/rentals-section"
+import { CLOUD } from "@/components/custom/main-faq"
 
 
 function Page() {
@@ -138,12 +139,12 @@ function Page() {
           transition={{ duration: 1.2, ease: "easeOut" }}
         >
           <Image
-            src="/assets/c_one_background.jpg"
+            src={`${CLOUD}/v1764038557/c_one_background_hjai7k.jpg`}
             alt="C-ONE Background"
             fill
             className="object-cover w-full h-full opacity-40"
             loading="lazy"
-            blurDataURL="/assets/c_one_background.jpg"
+            blurDataURL={`${CLOUD}/v1764038557/c_one_background_hjai7k.jpg`}
           />
           <div className="absolute inset-0 bg-linear-to-b from-black/70 via-black/60 to-black/80"></div>
         </motion.div>
@@ -155,7 +156,7 @@ function Page() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="inline-flex items-center gap-2 bg-yellow-600/10 text-white font-medium px-4 py-2 rounded-full border border-yellow-500/20"
           >
-            <Image src="/assets/c-one-logo.png" alt="Truck Icon" width={28} height={28} />
+            <Image src={`${CLOUD}/v1764038543/c-one-logo_tgi6rl.png`} alt="Truck Icon" width={28} height={28} />
             <span>C-ONE Trading Corporation</span>
           </motion.div>
 
@@ -467,13 +468,13 @@ function Page() {
           >
             <div className="border-3 border-yellow-400 rounded-2xl overflow-hidden shadow-lg">
               <Image
-                src="/assets/img/rentals/rentals-bg-2.png"
+                src={`${CLOUD}/v1764221142/rentals-bg-2_mjga7a.png`}
                 alt="C-ONE Truck Fleet"
                 width={600}
                 height={400}
                 className="object-cover w-full h-full"
                 loading="lazy"
-                blurDataURL="/assets/img/rentals/rentals-bg-2.png"
+                blurDataURL={`${CLOUD}/v1764221142/rentals-bg-2_mjga7a.png`}
               />
             </div>
 

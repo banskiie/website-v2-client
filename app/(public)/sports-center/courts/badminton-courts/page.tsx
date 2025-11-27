@@ -2,6 +2,7 @@
 
 import Footer from '@/components/custom/footer'
 import Header from '@/components/custom/header'
+import { CLOUD } from '@/components/custom/main-faq'
 import ScrollIndicator from '@/components/custom/scroll-indicator'
 import FloatingChatWidget from '@/components/custom/ticket'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
@@ -11,14 +12,28 @@ import { Badge, Clock, Map, MapPin, MouseIcon, Phone } from 'lucide-react'
 import Image from 'next/image'
 import React, { useCallback, useEffect, useState } from 'react'
 
-const badmintonCourts = Array.from({ length: 11 }, (_, i) => ({
-    image: `/assets/img/courts/courts/court-${i + 1}.png`,
+const courtFiles = [
+    "v1764121318/court-1_vj1uxt.png",
+    "v1764121322/court-2_cqiygl.png",
+    "v1764121324/court-3_mu0wnq.png",
+    "v1764121326/court-4_vfiy0e.png",
+    "v1764121329/court-5_e2as1g.png",
+    "v1764121331/court-6_mrxr9z.png",
+    "v1764121333/court-7_f1hovc.png",
+    "v1764121335/court-8_q5cmcv.png",
+    "v1764121339/court-9_k7k4nb.png",
+    "v1764121317/court-10_jwx4ts.png",
+    "v1764121319/court-11_pokcfw.png",
+]
+
+const badmintonCourts = courtFiles.map(file => ({
+    image: `${CLOUD}/${file}`,
 }))
 
 const locations = [
     {
         name: "Kauswagan Court",
-        img: "/assets/img/sports-center/court/location/kauswagan.jpg",
+        img: `${CLOUD}/v1764120981/kauswagan_quoxl9.jpg`,
         hours: "6:00 AM - 10:00 PM",
         fields: 11,
         phone: "0917-123-4567",
@@ -26,7 +41,7 @@ const locations = [
     },
     {
         name: "Uptown Court",
-        img: "/assets/img/sports-center/court/location/uptown.png",
+        img: `${CLOUD}/v1764120984/uptown_a1vgyb.png`,
         hours: "6:00 AM - 10:00 PM",
         fields: 2,
         phone: "0917-134-4695",
@@ -34,12 +49,12 @@ const locations = [
     },
     {
         name: "Limketkai Mall Court",
-        img: "/assets/img/sports-center/court/location/limketkai.jpg",
+        img: `${CLOUD}/v1764120982/limketkai_p27fd9.jpg`,
         hours: "6:00 AM - 09:00 PM",
         fields: 4,
         phone: "0917-134-4695",
         map: "Limketkai Mall, Cinema 2"
-        
+
     },
 ]
 
@@ -48,48 +63,48 @@ const performanceEnhancers = [
         title: 'Control',
         description:
             'Control in badminton refers to having the freedom to place your shots where you want. Good control translates into accurate shooting as a result.',
-        image: '/assets/img/courts/badminton/mechanics/Control.png',
+        image: `${CLOUD}/v1764121996/Control_nokrsg.png`,
     },
     {
         title: 'Strength',
         description:
             'Badminton also requires strength, which the player will be exerting power against resistance. One of the important components to increasing speed and power on the court is developing strength.',
-        image: '/assets/img/courts/badminton/mechanics/Strength.png',
+        image: `${CLOUD}/v1764122001/Strength_mtvcse.png`,
     },
     {
         title: 'Mindplay',
         description:
             'Keep your thoughts active. Badminton undoubtedly is a mind game; it demands the player to think while playing. Your talents will improve as a result of developing your mental game.',
-        image: '/assets/img/courts/badminton/mechanics/Mindplay.png',
+        image: `${CLOUD}/v1764121994/Mindplay_y5xm1m.png`,
     },
     {
         title: 'Movements',
         description:
             'In badminton, there are five main strokes: service, clear shot, drive shot, drop shot, and smash shot. Learning these motions is crucial if you want to advance your playing abilities.',
-        image: '/assets/img/courts/badminton/mechanics/Movements.png',
+        image: `${CLOUD}/v1764121996/Movements_iwhy5r.png`,
     },
 ]
 
 const tournamentData = [
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0030.png', alt: 'DSC_0030' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0036.png', alt: 'DSC_0036' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0059.png', alt: 'DSC_0059' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0083.png', alt: 'DSC_0083' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0086.png', alt: 'DSC_0086' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0160.png', alt: 'DSC_0160' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0204.png', alt: 'DSC_0204' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0251.png', alt: 'DSC_0251' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0263.png', alt: 'DSC_0263' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0303.png', alt: 'DSC_0303' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0304.png', alt: 'DSC_0304' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0341.png', alt: 'DSC_0341' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0351.png', alt: 'DSC_0351' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0363.png', alt: 'DSC_0363' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0683.png', alt: 'DSC_0683' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0694.png', alt: 'DSC_0694' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0892.png', alt: 'DSC_0892' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0954.png', alt: 'DSC_0954' },
-    { src: '/assets/img/courts/badminton/tournaments/DSC_0968.png', alt: 'DSC_0968' },
+    { src: `${CLOUD}/v1764122107/DSC_0030_f2i5vu.png`, alt: 'DSC_0030' },
+    { src: `${CLOUD}/v1764122132/DSC_0036_myth54.png`, alt: 'DSC_0036' },
+    { src: `${CLOUD}/v1764122110/DSC_0059_b7x9g9.png`, alt: 'DSC_0059' },
+    { src: `${CLOUD}/v1764122156/DSC_0083_hqhxrq.png`, alt: 'DSC_0083' },
+    { src: `${CLOUD}/v1764122114/DSC_0086_mqcyar.png`, alt: 'DSC_0086' },
+    { src: `${CLOUD}/v1764122159/DSC_0160_dthuci.png`, alt: 'DSC_0160' },
+    { src: `${CLOUD}/v1764122116/DSC_0204_xlimoe.png`, alt: 'DSC_0204' },
+    { src: `${CLOUD}/v1764122121/DSC_0251_ufeahg.png`, alt: 'DSC_0251' },
+    { src: `${CLOUD}/v1764122122/DSC_0263_wfcd5d.png`, alt: 'DSC_0263' },
+    { src: `${CLOUD}/v1764122126/DSC_0303_rllzam.png`, alt: 'DSC_0303' },
+    { src: `${CLOUD}/v1764122129/DSC_0304_ejyvpi.png`, alt: 'DSC_0304' },
+    { src: `${CLOUD}/v1764122135/DSC_0341_c9gfrz.png`, alt: 'DSC_0341' },
+    { src: `${CLOUD}/v1764122138/DSC_0351_nwz1kn.png`, alt: 'DSC_0351' },
+    { src: `${CLOUD}/v1764122141/DSC_0363_yhvbgg.png`, alt: 'DSC_0363' },
+    { src: `${CLOUD}/v1764122144/DSC_0683_w6ccfd.png`, alt: 'DSC_0683' },
+    { src: `${CLOUD}/v1764122162/DSC_0694_w87da7.png`, alt: 'DSC_0694' },
+    { src: `${CLOUD}/v1764122147/DSC_0892_mhvhv5.png`, alt: 'DSC_0892' },
+    { src: `${CLOUD}/v1764122150/DSC_0954_qzy0tf.png`, alt: 'DSC_0954' },
+    { src: `${CLOUD}/v1764122153/DSC_0968_mfd1gr.png`, alt: 'DSC_0968' },
 ]
 
 function page() {
@@ -143,8 +158,7 @@ function page() {
             <div
                 className="relative h-screen bg-fixed bg-center bg-cover"
                 style={{
-                    backgroundImage:
-                        "url('/assets/img/sports-center/court/Background-Badminton.png')",
+                    backgroundImage: `url('${CLOUD}/v1764116059/Background-Badminton_vmiblr.png')`,
                 }}
             >
                 <div className="absolute inset-0 bg-black/60"></div>
@@ -192,7 +206,7 @@ function page() {
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     >
                         <Image
-                            src="/assets/img/courts/courts/Rubberized_Landscape.png"
+                            src={`${CLOUD}/v1764121340/Rubberized_Landscape_vi8wr0.png`}
                             alt="Rubberized Court"
                             fill
                             className="object-cover"
@@ -239,7 +253,7 @@ function page() {
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     >
                         <Image
-                            src="/assets/img/courts/courts/Wood_Court_Landscape.png"
+                            src={`${CLOUD}/v1764121345/Wood_Court_Landscape_x3uk9v.png`}
                             alt="Wooden Court"
                             fill
                             className="object-cover"
@@ -283,7 +297,7 @@ function page() {
             <section className="relative py-12 px-4 sm:py-16 sm:px-8 md:py-20 md:px-12 lg:py-20 lg:px-16 mt-10 md:mt-16 lg:mt-20">
                 <div className="absolute inset-0 z-0">
                     <Image
-                        src="/assets/img/courts/carousel/carousel-3.png"
+                        src={`${CLOUD}/v1764210392/carousel-3_jctyuh.png`}
                         alt="Background"
                         fill
                         className="object-cover w-full h-full"
@@ -292,7 +306,6 @@ function page() {
                 </div>
 
                 <div className="relative z-10 max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-8 md:gap-12 items-center">
-                    {/* TEXT BLOCK */}
                     <div className="col-span-1 sm:col-span-2 md:col-span-2 lg:col-span-1">
                         <motion.h2
                             className="text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-4 sm:mb-5 md:mb-6 text-center lg:text-left"
@@ -314,7 +327,6 @@ function page() {
                         </motion.p>
                     </div>
 
-                    {/* GRID CARDS */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-x-6 sm:gap-x-10 md:gap-x-20 lg:gap-x-60 gap-y-8 sm:gap-y-10 col-span-1 sm:col-span-2 md:col-span-2 lg:col-span-1">
                         {performanceEnhancers.map((enhancer, index) => (
                             <motion.div
@@ -511,7 +523,7 @@ function page() {
 
             <section
                 className="relative h-[400px] md:h-[600px] w-full bg-center bg-cover bg-fixed"
-                style={{ backgroundImage: "url('/assets/img/courts/courts/court-10.png')" }}
+                style={{ backgroundImage: `url(${CLOUD}/v1764121317/court-10_jwx4ts.png)` }}
             >
                 <div className="absolute inset-0 bg-black/30"></div>
             </section>

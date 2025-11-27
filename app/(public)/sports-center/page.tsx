@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { CLOUD } from "@/components/custom/main-faq"
 
 export default function Page() {
   const router = useRouter()
@@ -23,7 +24,7 @@ export default function Page() {
 
   const images = [
     {
-      src: "/assets/img/sports-center/shuttlebrew/_ALP1992.jpg",
+      src: `${CLOUD}/v1764115964/_ALP1992_mygjrm.jpg`,
       id: "shuttlebrew",
       alt: "ShuttleBrew",
       label: "ShuttleBrew",
@@ -31,7 +32,7 @@ export default function Page() {
       link: "/sports-center/shuttlebrew",
     },
     {
-      src: "/assets/img/sports-center/court/Background-Badminton.png",
+      src: `${CLOUD}/v1764116059/Background-Badminton_vmiblr.png`,
       id: "courts",
       alt: "Sports Center",
       label: "Sports Center",
@@ -39,7 +40,7 @@ export default function Page() {
       link: "/sports-center/courts",
     },
     {
-      src: "/assets/img/sports-center/suite/_ALP9611-Enhanced-NR.jpg",
+      src: `${CLOUD}/v1764116192/_ALP9611-Enhanced-NR_mtutma.jpg`,
       id: "suites",
       alt: "Courtside Suites",
       label: "Courtside Suites",
@@ -49,15 +50,13 @@ export default function Page() {
   ]
 
   useEffect(() => {
-    // Check screen size on mount and resize
     const checkScreenSize = () => {
-      setIsLargeScreen(window.innerWidth >= 1024) // lg breakpoint
+      setIsLargeScreen(window.innerWidth >= 1024)
     }
 
     checkScreenSize()
     window.addEventListener("resize", checkScreenSize)
 
-    // Show notification when page loads
     setShowNotification(true)
     const t = window.setTimeout(() => {
       setShowNotification(false)
@@ -105,7 +104,6 @@ export default function Page() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Large Screen Layout - EXACTLY like your old code */}
       <div className="hidden lg:block w-full h-screen overflow-hidden relative">
         <AnimatePresence>
           {images.map(({ src, id, alt, label, description, link }, idx) => {

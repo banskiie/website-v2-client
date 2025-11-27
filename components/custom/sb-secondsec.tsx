@@ -1,6 +1,7 @@
 import { Coffee } from "lucide-react"
 import Image from "next/image"
 import { motion } from "framer-motion"
+import { CLOUD } from "./main-faq"
 
 export default function SecondSection({ scrollToMenu }: { scrollToMenu: () => void }) {
   return (
@@ -9,7 +10,7 @@ export default function SecondSection({ scrollToMenu }: { scrollToMenu: () => vo
       className="relative w-full min-h-screen overflow-hidden bg-[#FFF2E6] flex flex-col lg:flex-row items-center justify-between px-6 sm:px-10 md:px-20 py-20"
     >
       <div className="absolute inset-0 z-0 pointer-events-none">
-        {[...Array(6)].map((_, i) => (
+        {[...Array(3)].map((_, i) => (
           <Image
             key={i}
             src="/coffee-bean-roast-brew-svgrepo-com.svg"
@@ -18,8 +19,8 @@ export default function SecondSection({ scrollToMenu }: { scrollToMenu: () => vo
             height={60}
             className={`absolute opacity-10 rotate-[${Math.random() * 360}deg]`}
             style={{
-              top: `${Math.random() * 90}%`,
-              left: `${Math.random() * 90}%`,
+              top: `${Math.random() * 40}%`,
+              left: `${Math.random() * 45}%`,
             }}
           />
         ))}
@@ -30,8 +31,8 @@ export default function SecondSection({ scrollToMenu }: { scrollToMenu: () => vo
             size={80}
             className="absolute text-[#7B5C45]/20"
             style={{
-              top: `${Math.random() * 85}%`,
-              left: `${Math.random() * 85}%`,
+              top: `${Math.random() * 40}%`,
+              left: `${Math.random() * 45}%`,
               transform: `rotate(${Math.random() * 360}deg)`,
             }}
           />
@@ -45,7 +46,7 @@ export default function SecondSection({ scrollToMenu }: { scrollToMenu: () => vo
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 1 }}
       >
-        ShuttleBrew
+        ShuttleBrewf
       </motion.h1>
 
       <motion.div
@@ -57,7 +58,7 @@ export default function SecondSection({ scrollToMenu }: { scrollToMenu: () => vo
       >
         <div className="absolute inset-0 bg-black/40 z-10"></div>
         <Image
-          src="/assets/img/sports-center/shuttlebrew/gallery/_ALP9323.jpg"
+          src={`${CLOUD}/v1764116604/_ALP9323_uewrgm.jpg`}
           alt="ShuttleBrew Gallery"
           width={900}
           height={1100}

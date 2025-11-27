@@ -2,11 +2,12 @@
 
 import { motion } from "framer-motion"
 import Image from "next/image"
+import { CLOUD } from "./main-faq"
 
 const highlights = [
     {
         id: 1,
-        image: "/assets/img/sports-center/shuttlebrew/kumbira/2.png",
+        image: `${CLOUD}/v1764118209/2_t2c0ok.png`,
         badge: "Kumbira 2025",
         date: "October 15 – 17,2025",
         title: "Winner at the Latte Art Contest ",
@@ -18,7 +19,7 @@ We couldn’t be prouder to have you on the ShuttleBrew team — keep chasing dr
     },
     {
         id: 2,
-        image: "/assets/img/sports-center/shuttlebrew/kumbira/557267221_122144346476406293_1247136813454960039_n.jpg",
+        image: `${CLOUD}/v1764118312/557267221_122144346476406293_1247136813454960039_n_jgicqu.jpg`,
         badge: "BREW FESTIVAL 2025",
         date: "September 26 – 28, 2025",
         title: "BREW FESTIVAL 2025 ",
@@ -30,7 +31,7 @@ We’re beyond proud of our team for stepping up, representing ShuttleBrew, and 
     },
     {
         id: 3,
-        image: "/assets/img/sports-center/shuttlebrew/COC/coc.jpg",
+        image: `${CLOUD}/v1764118394/coc_bl05vv.jpg`,
         badge: "ORO BEST EXPO 2025", //𝐂𝐃𝐎 𝐎𝐑𝐎 𝐂𝐇𝐀𝐌𝐁𝐄𝐑 𝐎𝐅 𝐂𝐎𝐌𝐌𝐄𝐑𝐂𝐄 
         date: "October 30 – 31, 2025",
         title: "3RD PLACER - CDO ORO CHAMBER OF COMMERCE",

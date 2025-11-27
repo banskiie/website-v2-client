@@ -1,3 +1,5 @@
+import { CLOUD } from "../main-faq"
+
 export interface DrinkItem {
   name: string
   category: string
@@ -12,12 +14,12 @@ export interface DrinkItem {
 export const drinks: DrinkItem[] = [
 
   // Espresso
-  { name: "Caramel Macchiato", category: "Espresso", img: "/assets/img/sports-center/shuttlebrew/menu/drinks/Caramel Macchiato.png", description: "Sweet and rich caramel espresso drink", ingredients: "Espresso, Milk, Caramel", price: 130.00, oldPrice: 4.5, tag: "" },
-  { name: "Caramel Popcorn", category: "Espresso", img: "/assets/img/sports-center/shuttlebrew/menu/drinks/Caramel Popcorn.png", description: "Espresso with a hint of caramel popcorn flavor", ingredients: "Espresso, Milk, Caramel, Popcorn Essence", price: 130.00, oldPrice: 4.5, tag: "" },
+  { name: "Caramel Macchiato", category: "Espresso", img: `${CLOUD}/v1764117205/Caramel_Macchiato_dm0yrw.png`, description: "Sweet and rich caramel espresso drink", ingredients: "Espresso, Milk, Caramel", price: 130.00, oldPrice: 4.5, tag: "" },
+  { name: "Caramel Popcorn", category: "Espresso", img: `${CLOUD}/v1764117207/Caramel_Popcorn_lv3elu.png`, description: "Espresso with a hint of caramel popcorn flavor", ingredients: "Espresso, Milk, Caramel, Popcorn Essence", price: 130.00, oldPrice: 4.5, tag: "" },
   // { name: "Creme Brulee", category: "Espresso", img: "/assets/img/sports-center/shuttlebrew/menu/drinks/_ALP9563.png", description: "Smooth espresso infused with creme brulee flavor", ingredients: "Espresso, Milk, Caramelized Sugar, Vanilla", price: 130.00, oldPrice: 4.5, tag: "" },
-  { name: "Classic Mocha", category: "Espresso", img: "/assets/img/sports-center/shuttlebrew/menu/drinks/Classic Mocha.png", description: "Chocolatey espresso delight", ingredients: "Espresso, Milk, Chocolate Syrup", price: 130.00, oldPrice: 4.5, tag: "" },
-  { name: "Spanish Latte", category: "Espresso", img: "/assets/img/sports-center/shuttlebrew/menu/drinks/Spanish Latte.png", description: "Sweet and creamy Spanish-style latte", ingredients: "Espresso, Condensed Milk, Steamed Milk", price: 130.00, oldPrice: 4.5, tag: "" },
-  { name: "Matcha Latte", category: "Espresso", img: "/assets/img/sports-center/shuttlebrew/menu/drinks/Matcha Latte.png", description: "Matcha latte with espresso shot", ingredients: "Matcha, Milk, Espresso", price: 130.00, oldPrice: 4.5, tag: "" },
+  { name: "Classic Mocha", category: "Espresso", img: `${CLOUD}/v1764117208/Classic_Mocha_v8e5ys.png`, description: "Chocolatey espresso delight", ingredients: "Espresso, Milk, Chocolate Syrup", price: 130.00, oldPrice: 4.5, tag: "" },
+  { name: "Spanish Latte", category: "Espresso", img: `${CLOUD}/v1764117211/Spanish_Latte_hwhzoz.png`, description: "Sweet and creamy Spanish-style latte", ingredients: "Espresso, Condensed Milk, Steamed Milk", price: 130.00, oldPrice: 4.5, tag: "" },
+  { name: "Matcha Latte", category: "Espresso", img: `${CLOUD}/v1764117196/Matcha_Latte_afbrd9.png`, description: "Matcha latte with espresso shot", ingredients: "Matcha, Milk, Espresso", price: 130.00, oldPrice: 4.5, tag: "" },
 ]
 
 // export const drinks: DrinkItem[] = [

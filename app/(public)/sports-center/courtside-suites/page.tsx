@@ -695,38 +695,39 @@ import Link from "next/link"
 import useSmoothScroll from "@/hooks/useSmoothScroll"
 import { RulerDimensionLine, Users2 } from "lucide-react"
 import FloatingChatWidget from "@/components/custom/ticket"
+import { CLOUD } from "@/components/custom/main-faq"
 
 const features = [
   {
-    img: "/assets/img/sports-center/suite/_ALP9421.jpg",
+    img: `${CLOUD}/v1764211574/_ALP9421_c9phyg.jpg`,
     title: "Luxury Lounges",
     desc: "Relax in our premium lounges designed for ultimate comfort and exclusivity.",
   },
   {
-    img: "/assets/img/sports-center/suite/_ALP9397.jpg",
+    img: `${CLOUD}/v1764211576/_ALP9397_cjvv7r.jpg`,
     title: "Private Dining",
     desc: "Enjoy gourmet catering with a wide range of delicious food and drinks.",
   },
   {
-    img: "/assets/img/sports-center/suite/_ALP9605-Enhanced-NR.jpg",
+    img: `${CLOUD}/v1764211575/_ALP9605-Enhanced-NR_hjo7u2.jpg`,
     title: "Panoramic Views",
     desc: "Take in stunning views of the game with prime seating locations.",
   },
   {
-    img: "/assets/img/sports-center/suite/_ALP9615-Enhanced-NR.jpg",
+    img: `${CLOUD}/v1764211578/_ALP9615-Enhanced-NR_ksjfjg.jpg`,
     title: "World-Class Service",
     desc: "Our dedicated staff ensures a seamless and unforgettable experience.",
   },
   {
-    img: "/assets/img/sports-center/suite/_ALP9615-Enhanced-NR.jpg",
+    img: `${CLOUD}/v1764211816/_ALP9608-Enhanced-NR_te67tf.jpg`,
     title: "World-Class Service",
     desc: "Our dedicated staff ensures a seamless and unforgettable experience.",
   },
 ]
 
 const accommodationImages = [
-  "/assets/img/sports-center/suite/_ALP9421.jpg",
-  "/assets/img/sports-center/suite/_ALP9397.jpg",
+  `${CLOUD}/v1764211864/_ALP9421_ype0yc.jpg`,
+  `${CLOUD}/v1764211865/_ALP9397_wvlkwq.jpg`,
   // "/assets/img/sports-center/suite/_ALP9605-Enhanced-NR.jpg",
   // "/assets/img/sports-center/suite/_ALP9615-Enhanced-NR.jpg",
   // "/assets/img/sports-center/suite/_ALP9615-Enhanced-NR.jpg",
@@ -867,7 +868,7 @@ export default function Page() {
       <div ref={heroRef} className="relative w-full h-[100vh] md:h-screen overflow-hidden">
         <motion.div
           style={{
-            backgroundImage: "url(/assets/img/sports-center/suite/_ALP9611-Enhanced-NR.jpg)",
+            backgroundImage: `url(${CLOUD}/v1764116192/_ALP9611-Enhanced-NR_mtutma.jpg)`,
             backgroundPosition: "center",
             backgroundSize: "cover",
             y: heroBgY,
@@ -1027,7 +1028,7 @@ export default function Page() {
       <div ref={expRef} className="relative w-full h-[60vh] md:h-screen overflow-hidden">
         <motion.div
           style={{
-            backgroundImage: "url(/assets/img/sports-center/suite/_ALP9605-Enhanced-NR.jpg)",
+            backgroundImage: `url(${CLOUD}/v1764211575/_ALP9605-Enhanced-NR_hjo7u2.jpg)`,
             backgroundPosition: "center",
             backgroundSize: "cover",
             y: expBgY,
@@ -1167,10 +1168,8 @@ export default function Page() {
                     }}
                   />
 
-                  {/* Gradient */}
                   <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-[#ac8d6e]/80 to-transparent" />
 
-                  {/* Caption */}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center px-4 w-full">
                     <p className="text-white text-lg font-semibold drop-shadow-md">
                       {accommodationCaptions[i].title}
@@ -1187,7 +1186,6 @@ export default function Page() {
                     </div>
                   </div>
 
-                  {/* Hover overlay */}
                   <div className="absolute inset-0 bg-black/80 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-6 text-center">
                     <h3 className="text-xl font-bold mb-3">{accommodationCaptions[i].title}</h3>
                     <p className="text-sm mb-4">{accommodationCaptions[i].desc}</p>
@@ -1230,7 +1228,7 @@ export default function Page() {
 
             <div className="relative h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden shadow-xl">
               <Image
-                src="/assets/img/sports-center/suite/_ALP9374.jpg"
+                src={`${CLOUD}/v1764212169/_ALP9374_lqst5s.jpg`}
                 alt="Suite Lounge"
                 fill
                 className="object-cover"
@@ -1313,7 +1311,7 @@ export default function Page() {
       <div ref={visitRef} className="relative w-full h-[60vh] md:h-[70vh] overflow-hidden">
         <motion.div
           style={{
-            backgroundImage: "url(/assets/img/sports-center/suite/_ALP9454.jpg)",
+            backgroundImage: `url(${CLOUD}/v1764212237/_ALP9454_mfp6hs.jpg)`,
             backgroundPosition: "center",
             backgroundSize: "cover",
             y: visitBgY,

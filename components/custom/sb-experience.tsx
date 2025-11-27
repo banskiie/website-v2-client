@@ -5,6 +5,7 @@
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import FloatingCard from "@/components/custom/floating-card"
+import { CLOUD } from "./main-faq"
 
 type ElementType = "cup" | "light"
 
@@ -171,19 +172,19 @@ export default function ShuttleBrewExperience() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl relative z-10">
                 <FloatingCard
-                    img="/assets/img/sports-center/shuttlebrew/hcd.jpg"
+                    img={`${CLOUD}/v1764118899/hcd_wk6cg1.jpg`}
                     title="Happy International Coffee Day"
                     description="This year’s theme, “Embracing Collaboration More Than Ever,” reminds us that every cup of coffee is a story of teamwork — from farmers growing the beans, to roasters perfecting the flavor, to baristas crafting each cup with care, and to YOU, our coffee community, who share in the joy of every sip. "
                     delay={0}
                 />
                 <FloatingCard
-                    img="/assets/img/sports-center/shuttlebrew/menu/2.jpg"
+                    img={`${CLOUD}/v1764119176/beans_q4flfw.png`}
                     title="Freshly Roasted Beans"
                     description="Only the finest beans are hand-selected and roasted for peak flavor."
                     delay={0.2}
                 />
                 <FloatingCard
-                    img="/assets/img/sports-center/shuttlebrew/menu/3.jpg"
+                    img={`${CLOUD}/v1764118912/3_qn77lk.jpg`}
                     title="Exclusive Specials"
                     description="Enjoy seasonal drinks, promotions, and unique coffee blends only at ShuttleBrew."
                     delay={0.4}

@@ -4,6 +4,7 @@ import React from "react"
 import { motion } from "framer-motion"
 import Image from "next/image"
 import { Calendar, Users } from "lucide-react"
+import { CLOUD } from "./main-faq"
 
 const events = [
   {
@@ -11,7 +12,7 @@ const events = [
     date: "Aug 21, 2026",
     type: "Upcoming",
     participants: 32,
-    image: "/assets/img/sports-center/events/badminton-tournament-2026.jpg",
+    image: `${CLOUD}/v1764120746/no_img_hsdism.png`,
     link: "/sports-center/tournaments/2026-badminton",
   },
   {
@@ -19,7 +20,7 @@ const events = [
     date: "Aug 12, 2025",
     type: "Past",
     participants: 20,
-    image: "/assets/img/sports-center/events/kcz-pics.jpg",
+    image: `${CLOUD}/v1764120746/no_img_hsdism.png`,
     link: "/sports-center/tournaments/kcz-2025",
   },
   {
@@ -27,7 +28,7 @@ const events = [
     date: "Aug 21, 2025",
     type: "Past",
     participants: 40,
-    image: "/assets/img/sports-center/court/v8.jpg",
+    image: `${CLOUD}/v1764120595/v8_uip3jv.jpg`,
     link: "/sports-center/tournaments/badminton-tournament-2025",
   },
 ]
@@ -37,7 +38,7 @@ export default function EventsSection() {
     <section className="w-full relative py-20 px-4 md:px-16">
       <div className="absolute inset-0">
         <Image
-          src="/assets/img/rentals/rentals-bg.png"
+          src={`${CLOUD}/v1764047597/rentals-bg_cblsrb.png`}
           alt="Events Background"
           fill
           className="object-cover"

@@ -4,6 +4,7 @@ import React, { ReactNode, Ref, useRef, useState } from "react"
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import Link from "next/link"
+import { CLOUD } from "./main-faq"
 
 // Food data array
 const food = [
@@ -16,7 +17,7 @@ const food = [
                 fresh vegetables and a soft-boiled egg.
             </>
         ),
-        img: "/assets/img/sports-center/shuttlebrew/menu/ramen.png",
+        img: `${CLOUD}/v1764117505/ramen_wlyath.png`,
         href: "/menu/ramen",
         bigger: true,
         reverse: false
@@ -29,7 +30,7 @@ const food = [
                 Classic <span className="text-[#ffbc52] font-semibold">carbonara</span> pasta with creamy sauce, crispy bacon, and parmesan cheese.
             </>
         ),
-        img: "/assets/img/sports-center/shuttlebrew/menu/carbonara.png",
+        img: `${CLOUD}/v1764117559/carbonara_bperbg.png`,
         href: "/menu/power-smash-carbonara",
         bigger: false,
         reverse: true
@@ -42,7 +43,7 @@ const food = [
                 Juicy <span className="text-[#ffbc52] font-semibold">burger</span> stacked with crispy fries inside, fresh lettuce, tomato, and our special sauce.
             </>
         ),
-        img: "/assets/img/sports-center/shuttlebrew/menu/buns-burger.png",
+        img: `${CLOUD}/v1764117571/buns-burger_fwvi73.png`,
         href: "/menu/shuttle-buns-burger",
         bigger: false,
         reverse: false
@@ -55,7 +56,7 @@ const food = [
                 Crispy fries topped with melted <span className="text-[#ffbc52] font-semibold">cheese</span> and savory smash sauce, perfect for sharing or snacking.
             </>
         ),
-        img: "/assets/img/sports-center/shuttlebrew/menu/fries.png",
+        img: `${CLOUD}/v1764117581/fries_n4e92h.png`,
         href: "/menu/cheese-fries",
         bigger: false,
         reverse: true
@@ -73,19 +74,19 @@ const food = [
     //     bigger: true,
     //     reverse: false
     // },
-    // {
-    //     number: 6,
-    //     title: "Crunch Serve Nachos",
-    //     description: (
-    //         <>
-    //             Crispy <span className="text-[#ffbc52] font-semibold">nachos</span> topped with melted cheese, jalapeños, and our special sauce.
-    //         </>
-    //     ),
-    //     img: "/assets/img/sports-center/shuttlebrew/menu/nachos.png",
-    //     href: "/menu/crunch-serve-nachos",
-    //     bigger: true,
-    //     reverse: true
-    // },
+    {
+        number: 5,
+        title: "Crunch Serve Nachos",
+        description: (
+            <>
+                Crispy <span className="text-[#ffbc52] font-semibold">nachos</span> topped with melted cheese, jalapeños, and our special sauce.
+            </>
+        ),
+        img: `${CLOUD}/v1764118079/nachos_gj1o07.png`,
+        href: "/menu/crunch-serve-nachos",
+        bigger: true,
+        reverse: true
+    },
     // {
     //     number: 7,
     //     title: "Shuttle Fries",

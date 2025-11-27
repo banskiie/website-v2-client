@@ -4,6 +4,7 @@ import CategorySelection from '@/components/custom/category-selection'
 import EventsSection from '@/components/custom/event-section'
 import Footer from '@/components/custom/footer'
 import Header from '@/components/custom/header'
+import { CLOUD } from '@/components/custom/main-faq'
 import ScrollIndicator from '@/components/custom/scroll-indicator'
 import LocationSection from '@/components/custom/sports-center-loc'
 import SportsFacts from '@/components/custom/sports-facts'
@@ -27,19 +28,19 @@ import React, { useEffect, useState } from 'react'
 
 const scrollImages = [
     {
-        src: "/assets/img/sports-center/shuttlebrew/sb_icon.png",
+        src: `${CLOUD}/v1764048136/sb_icon_ftg2zo.png`,
         alt: "Shuttle Brew Logo"
     },
     {
-        src: "/assets/img/sports-center/court/LOGO-NEW-SPORTSCENTER_BLACK.png",
+        src: `${CLOUD}/v1764048167/LOGO-NEW-SPORTSCENTER_BLACK_wewxmw.png`,
         alt: "C-One Sports Center Logo"
     },
     {
-        src: "/assets/img/sports-center/suite/courtsidelogo_transparent_black.png",
+        src: `${CLOUD}/v1764048195/courtsidelogo_transparent_black_lkpssv.png`,
         alt: "Courtside Logo"
     },
     {
-        src: "/assets/c-one-logo2.png",
+        src: `${CLOUD}/v1764038540/c-one-logo2_y4elbf.png`,
         alt: "C-One Logo"
     }
 ]
@@ -76,6 +77,9 @@ function page() {
         setShowPanel(false);
     }
 
+    const bgUrl = `${CLOUD}/v1764120057/bg-badminton2_jue7vd.jpg`
+
+
     return (
         <div className="min-h-screen flex flex-col ">
             <Header />
@@ -83,7 +87,7 @@ function page() {
             <div className="w-full h-screen relative overflow-hidden">
                 <div className="absolute inset-0">
                     <Image
-                        src="/assets/img/sports-center/court/Background-Badminton.png"
+                        src={`${CLOUD}/v1764116059/Background-Badminton_vmiblr.png`}
                         alt="Badminton Court"
                         fill
                         className="object-cover w-full h-full"
@@ -179,10 +183,8 @@ function page() {
                     </motion.p>
                 </motion.div>
 
-                {/* ✅ Responsive layout: no gap in sm/md, small gap in lg */}
                 <div className="flex flex-col lg:flex-row w-full h-auto lg:h-[80vh] gap-0 lg:gap-1">
 
-                    {/* Badminton Court */}
                     <div className="relative flex-1 min-h-[50vh] lg:min-h-0 min-w-[20%] overflow-hidden cursor-pointer shadow-lg transition-all duration-900 ease-in-out hover:lg:flex-[5]">
                         <motion.div
                             className="absolute inset-0 overflow-hidden transform hover:scale-105"
@@ -195,7 +197,7 @@ function page() {
                             viewport={{ once: true, amount: 0.3 }}
                         >
                             <Image
-                                src="/assets/img/sports-center/court/Background-Badminton.png"
+                                src={`${CLOUD}/v1764116059/Background-Badminton_vmiblr.png`}
                                 alt="Badminton Court"
                                 fill
                                 className="object-cover"
@@ -232,7 +234,7 @@ function page() {
                             viewport={{ once: true, amount: 0.3 }}
                         >
                             <Image
-                                src="/assets/img/sports-center/court/DSC_0052.png"
+                                src={`${CLOUD}/v1764119987/DSC_0052_ekawpx.png`}
                                 alt="Ping Pong Court"
                                 fill
                                 className="object-cover"
@@ -285,8 +287,10 @@ function page() {
             </div >
 
             <div className="w-full bg-linear-to-b from-green-80 to-gray-250 py-70 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20 bg-[url('/assets/img/sports-center/court/bg-badminton2.jpg')] bg-center bg-cover bg-no-repeat"></div>
-
+                <div
+                    className="absolute inset-0 opacity-20 bg-center bg-cover bg-no-repeat"
+                    style={{ backgroundImage: `url('${CLOUD}/v1764120057/bg-badminton2_jue7vd.jpg')` }}
+                ></div>
                 <div className="relative z-10 max-w-3xl mx-auto text-center px-6">
                     <h2 className="text-4xl md:text-5xl font-extrabold text-green-800 drop-shadow-sm">
                         Badminton Tournament {new Date().getFullYear()}
@@ -316,12 +320,6 @@ function page() {
 
                 </div>
             </div>
-
-            {/* FAQ sa Tournament */}
-            <div>
-
-            </div>
-
 
             <div>
                 <SportsFacts />

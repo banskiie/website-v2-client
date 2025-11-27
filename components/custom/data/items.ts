@@ -1,4 +1,5 @@
 import { Award, Clock, Headset, PhilippinePeso, Shield, WrenchIcon } from "lucide-react"
+import { CLOUD } from "../main-faq"
 
 const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
 
@@ -143,7 +144,7 @@ export const features = [
 
 export const rentals = [
   {
-    img: `${DRIVE}/img/rentals/items/prime_mover.png`,
+    img: `${CLOUD}/v1764223008/prime_mover_gynsht.png`,
     label: "Prime Mover Rentals",
     emoji: "📦",
     capacity: "Up to 1.5 tons",
@@ -152,7 +153,7 @@ export const rentals = [
     tags: ["Fuel Efficient", "Easy to Drive", "City-Friendly"],
   },
   {
-    img: `${DRIVE}/img/rentals/items/self_loader.png`,
+    img: `${CLOUD}/v1764223011/self_loader_b6p3r8.png`,
     label: "Self Loader Rentals",
     emoji: "🚛",
     capacity: "3–5 tons",
@@ -161,7 +162,7 @@ export const rentals = [
     tags: ["Spacious Cargo Area", "Loading Ramp", "Weather Protected"],
   },
   {
-    img: `${DRIVE}/img/rentals/items/no_img.png`,
+    img: `${CLOUD}/v1764223014/no_img_rchb9c.png`,
     label: "Truck Rentals",
     emoji: "🚚",
     capacity: "10+ tons",
@@ -170,7 +171,7 @@ export const rentals = [
     tags: ["Heavy Load", "Long Distance", "Durable"],
   },
   {
-    img: `${DRIVE}/img/rentals/items/no_img.png`,
+    img: `${CLOUD}/v1764223014/no_img_rchb9c.png`,
     label: "Forklift Rentals",
     emoji: "🚚",
     capacity: "10+ tons",
@@ -179,7 +180,7 @@ export const rentals = [
     tags: ["Heavy Load", "Long Distance", "Durable"],
   },
   {
-    img: `${DRIVE}/img/rentals/items/no_img.png`,
+    img: `${CLOUD}/v1764223014/no_img_rchb9c.png`,
     label: "Backhoe Rentals",
     emoji: "🚚",
     capacity: "10+ tons",
@@ -188,7 +189,7 @@ export const rentals = [
     tags: ["Heavy Load", "Long Distance", "Durable"],
   },
   {
-    img: `${DRIVE}/img/rentals/items/xl_wheel_loader.png`,
+    img: `${CLOUD}/v1764223166/xl_wheel_loader_rxkoqq.png`,
     label: "Wheel Loader Rentals",
     emoji: "🚚",
     capacity: "10+ tons",
@@ -197,7 +198,7 @@ export const rentals = [
     tags: ["Heavy Load", "Long Distance", "Durable"],
   },
   {
-    img: `${DRIVE}/img/rentals/items/no_img.png`,
+    img: `${CLOUD}/v1764223014/no_img_rchb9c.png`,
     label: "Grader Rentals",
     emoji: "🚚",
     capacity: "25 Tons",
@@ -206,7 +207,7 @@ export const rentals = [
     tags: ["Length: 19ft", "Width: 10ft", "Height: 4ft"],
   },
   {
-    img: `${DRIVE}/img/rentals/items/no_img.png`,
+    img: `${CLOUD}/v1764223014/no_img_rchb9c.png`,
     label: "Low Bed Double Axle Rentals",
     emoji: "🚚",
     capacity: "50 Tons",
@@ -215,7 +216,7 @@ export const rentals = [
     tags: ["Length: 37ft", "Width: 9ft", "Height: 5.3ft"],
   },
   {
-    img: `${DRIVE}/img/rentals/items/no_img.png`,
+    img: `${CLOUD}/v1764223014/no_img_rchb9c.png`,
     label: "Low Bed Triple Axle 120103 Rentals",
     emoji: "🚚",
     title: "Low Bed Triple Axle",
@@ -227,7 +228,7 @@ export const rentals = [
     ],
   },
   {
-    img: `${DRIVE}/img/rentals/items/f_self_loader.png`,
+    img: `${CLOUD}/v1764223034/f_self_loader_gqwavq.png`,
     label: "Fighter Self Loader",
     emoji: "🚚",
     capacity: "7 Tons",
@@ -236,7 +237,7 @@ export const rentals = [
     tags: ["Length: 37ft", "Width: 9ft", "Height: 5.3ft"],
   },
   {
-    img: `${DRIVE}/img/rentals/items/gen_45.png`,
+    img: `${CLOUD}/v1764223044/gen_45_dlamz7.png`,
     label: "Generator Rentals",
     emoji: "🏗️",
     capacity: "10 TONS",
@@ -256,7 +257,7 @@ export const rentals = [
     capacity: "25 TONS",
     extra: "5 TONS also available",
     desc: "Reliable cranes available for construction, heavy lifting, and transport operations. Perfect for large-scale industrial projects.",
-    img: `${DRIVE}/img/rentals/items/gen_60.png`,
+    img: `${CLOUD}/v1764223048/gen_60_dnz4uo.png`,
     units: [
       { quantity: 1, capacity: "5 TONS", stages: "" },
       { quantity: 1, capacity: "25 TONS", stages: "" },
@@ -270,7 +271,7 @@ export const rentals = [
     capacity: "0.80 CBM",
     extra: "Multiple sizes available",
     desc: "Versatile backhoe units for excavation, digging, and small-scale construction projects.",
-    img: `${DRIVE}/img/rentals/items/no_img.png`,
+    img: `${CLOUD}/v1764223014/no_img_rchb9c.png`,
     units: [
       { quantity: 1, capacity: "0.08 CBM" },
       { quantity: 1, capacity: "0.30 CBM" },
@@ -289,7 +290,7 @@ export const rentals = [
     capacity: "25 TONS",
     extra: "5 TONS also available",
     desc: "Reliable cranes available for construction, heavy lifting, and transport operations. Perfect for large-scale industrial projects.",
-    img: `${DRIVE}/img/rentals/items/no_img.png`,
+    img: `${CLOUD}/v1764223014/no_img_rchb9c.png`,
     units: [
       { quantity: 1, capacity: "5 TONS", stages: "" },
       { quantity: 1, capacity: "25 TONS", stages: "" },
@@ -303,7 +304,7 @@ export const rentals = [
     capacity: "25 TONS",
     extra: "5 TONS also available",
     desc: "Reliable cranes available for construction, heavy lifting, and transport operations. Perfect for large-scale industrial projects.",
-    img: `${DRIVE}/img/rentals/items/no_img.png`,
+    img: `${CLOUD}/v1764223014/no_img_rchb9c.png`,
     units: [
       { quantity: 1, capacity: "5 TONS", stages: "" },
       { quantity: 1, capacity: "25 TONS", stages: "" },
@@ -317,7 +318,7 @@ export const rentals = [
     capacity: "Brand New",
     extra: "5 TONS also available",
     desc: "Reliable cranes available for construction, heavy lifting, and transport operations. Perfect for large-scale industrial projects.",
-    img: `${DRIVE}/img/rentals/items/no_img.png`,
+    img: `${CLOUD}/v1764223014/no_img_rchb9c.png`,
     units: [
       { quantity: 1, capacity: "5 TONS", stages: "" },
       { quantity: 1, capacity: "25 TONS", stages: "" },
@@ -331,7 +332,7 @@ export const rentals = [
     capacity: "Brand New",
     extra: "5 TONS also available",
     desc: "Reliable cranes available for construction, heavy lifting, and transport operations. Perfect for large-scale industrial projects.",
-    img: `${DRIVE}/img/rentals/items/Xiniu_Excavator.png`,
+    img: `${CLOUD}/v1764223060/Xiniu_Excavator_yu76ug.png`,
     units: [
       { quantity: 1, capacity: "5 TONS", stages: "" },
       { quantity: 1, capacity: "25 TONS", stages: "" },

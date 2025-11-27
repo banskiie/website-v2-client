@@ -414,8 +414,6 @@ function page() {
       <div className="relative w-full bg-[#032c24] py-20 overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(144,238,144,0.25)_1px,transparent_1px),linear-gradient(to_bottom,rgba(144,238,144,0.25)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-
-
         <div className="absolute -left-9 top-0 h-full w-[90%] bg-linear-to-r from-black/90 via-gray-500/40 to-transparent blur-xl" />
         <div className="absolute -right-9 top-0 h-full w-[90%] bg-linear-to-l from-black/90 via-gray-500/40 to-transparent blur-xl" />
 

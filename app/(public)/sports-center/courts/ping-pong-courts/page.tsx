@@ -9,16 +9,17 @@ import Footer from '@/components/custom/footer'
 import ScrollIndicator from '@/components/custom/scroll-indicator'
 import FloatingChatWidget from '@/components/custom/ticket'
 import useSmoothScroll from '@/hooks/useSmoothScroll'
+import { CLOUD } from '@/components/custom/main-faq'
 
 const table_tennis_courts = [
-    "DSC_0034.png",
-    "DSC_0036.png",
-    "DSC_0037.png",
-    "DSC_0042.png",
-    "DSC_0045.png",
-    "DSC_0052.png",
-    "DSC_0055.png",
-    "DSC_0062.png",
+    `${CLOUD}/v1764210800/DSC_0034_msqtkd.png`,
+    `${CLOUD}/v1764210888/DSC_0036_zk1iyl.png`,
+    `${CLOUD}/v1764210889/DSC_0037_yitigu.png`,
+    `${CLOUD}/v1764210889/DSC_0042_tby5zp.png`,
+    `${CLOUD}/v1764210814/DSC_0045_uggyrm.png`,
+    `${CLOUD}/v1764210817/DSC_0052_hdgbnn.png`,
+    `${CLOUD}/v1764210814/DSC_0055_mtsky0.png`,
+    `${CLOUD}/v1764210813/DSC_0062_x7pgt4.png`,
 ]
 function page() {
     useSmoothScroll()
@@ -56,7 +57,7 @@ function page() {
                 <div
                     className="relative h-screen bg-fixed bg-center bg-cover"
                     style={{
-                        backgroundImage: "url('/assets/img/sports-center/court/DSC_0052.png')",
+                        backgroundImage: `url('${CLOUD}/v1764210817/DSC_0052_hdgbnn.png')`,
                     }}
                 >
                     <div className="absolute inset-0 bg-black/60"></div>
@@ -131,7 +132,7 @@ function page() {
                                 style={{ rotateX: springRotateX, rotateY: springRotateY, transformPerspective: 1000 }}
                             >
                                 <Image
-                                    src="/assets/img/sports-center/court/DSC_0052.png"
+                                    src={`${CLOUD}/v1764210817/DSC_0052_hdgbnn.png`}
                                     alt="Table Tennis Room"
                                     fill
                                     className="object-cover w-full h-full"
@@ -188,7 +189,7 @@ function page() {
 
             <section
                 className="relative h-screen bg-fixed bg-center bg-cover"
-                style={{ backgroundImage: "url('/assets/img/courts/tbltennis/court/DSC_0062.png')" }}
+                style={{ backgroundImage: `url('${CLOUD}/v1764210813/DSC_0062_x7pgt4.png')` }}
             >
                 <div className="absolute inset-0 bg-black/60"></div>
 
@@ -247,7 +248,7 @@ function page() {
                                 className="relative w-full h-64 rounded-xl overflow-hidden shadow-lg"
                             >
                                 <Image
-                                    src={`/assets/img/courts/tbltennis/court/${img}`}
+                                    src={`${img}`}
                                     alt={img}
                                     fill
                                     className="object-cover w-full h-full hover:scale-105 transition-transform duration-500"
@@ -257,7 +258,6 @@ function page() {
                     </div>
                 </div>
             </section>
-
 
             <Footer />
             <ScrollIndicator />

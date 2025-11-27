@@ -150,10 +150,13 @@ export default function RentalsSection() {
                         </button>
 
                         <div className="text-center">
-                            <img
+                            <Image
                                 src={selectedVehicle.img}
                                 alt={selectedVehicle.title}
-                                className="w-40 h-40 mx-auto object-cover rounded-xl"
+                                className="w-120 h-80 mx-auto object-cover rounded-xl"
+                                loading="lazy"
+                                width={480}
+                                height={320}
                             />
                             <h3 className="text-lg font-semibold mt-4 text-gray-800">
                                 {selectedVehicle.title}

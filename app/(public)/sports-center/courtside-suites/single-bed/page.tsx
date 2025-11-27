@@ -11,19 +11,20 @@ import { motion } from 'framer-motion'
 import { Playfair_Display } from 'next/font/google'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import FloatingChatWidget from '@/components/custom/ticket'
+import { CLOUD } from '@/components/custom/main-faq'
 
 const images = [
-    "_ALP5384",
-    "_ALP5387",
-    "_ALP5415",
-    "_ALP5438",
-    "_ALP5440",
-    "_ALP5448",
-    "_ALP5453",
-    "_ALP9421",
-    "_ALP9448",
-    "_ALP9452",
-    "_ALP9455",
+    `${CLOUD}/v1764214331/_ALP5384_hkuvdx.jpg`,
+    `${CLOUD}/v1764214330/_ALP5387_kijnk6.jpg`,
+    `${CLOUD}/v1764214334/_ALP5415_rq3ilw.jpg`,
+    `${CLOUD}/v1764214332/_ALP5438_mxem1m.jpg`,
+    `${CLOUD}/v1764214333/_ALP5440_almsfx.jpg`,
+    `${CLOUD}/v1764214335/_ALP5448_lsmuk1.jpg`,
+    `${CLOUD}/v1764214330/_ALP5453_pycmnw.jpg`,
+    `${CLOUD}/v1764214331/_ALP9421_cjj7se.jpg`,
+    `${CLOUD}/v1764214331/_ALP9448_d97bqg.jpg`,
+    `${CLOUD}/v1764214332/_ALP9452_gw4kgw.jpg`,
+    `${CLOUD}/v1764214332/_ALP9455_xgpxso.jpg`,
 ]
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "700"] })
@@ -48,7 +49,7 @@ function Page() {
             <section
                 className="relative w-full min-h-screen bg-center bg-cover bg-fixed flex flex-col justify-center items-center text-white"
                 style={{
-                    backgroundImage: "url('/assets/img/sports-center/suite/single-bed/_ALP5415.jpg')",
+                    backgroundImage: `url(${CLOUD}/v1764214334/_ALP5415_rq3ilw.jpg)`,
                 }}
             >
                 <div className="absolute inset-0 bg-black/40" />
@@ -97,7 +98,7 @@ function Page() {
                             className="flex-shrink-0 w-80 h-80 sm:w-149 sm:h-149 snap-start relative overflow-hidden"
                         >
                             <Image
-                                src={`/assets/img/sports-center/suite/single-bed/${img}.jpg`}
+                                src={img}
                                 alt="Single Bed Room"
                                 fill
                                 className="object-cover"

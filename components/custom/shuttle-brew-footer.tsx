@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { CLOUD } from "./main-faq"
 
 export default function ShuttleBrewFooter() {
   const currentYear = new Date().getFullYear()
@@ -11,7 +12,7 @@ export default function ShuttleBrewFooter() {
       <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="flex flex-col items-start">
           <Image
-            src="/assets/img/sports-center/shuttlebrew/sb_icon.png"
+            src={`${CLOUD}/v1764048136/sb_icon_ftg2zo.png`}
             alt="ShuttleBrew Logo"
             width={100}
             height={100}
