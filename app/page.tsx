@@ -162,7 +162,7 @@ const Home = () => {
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="text-[#2FB44D] text-base sm:text-lg font-semibold mb-1"
             >
-              More Info. About C-ONE
+              More Information About C-ONE
             </motion.p>
 
             <motion.h2
