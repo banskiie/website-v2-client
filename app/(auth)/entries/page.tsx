@@ -467,7 +467,7 @@ const Page = () => {
           const { eventName, tournamentName } = row.original as any
           return (
             <div className="h-full flex flex-col justify-center">
-              <span className="block">{eventName}</span>
+              <span className="block capitalize">{eventName.toLocaleLowerCase()}</span>
               <span className="block text-xs text-muted-foreground">
                 {tournamentName}
               </span>
