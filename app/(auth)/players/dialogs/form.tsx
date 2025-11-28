@@ -107,8 +107,6 @@ const FormDialog = (props: Props) => {
   // Combined loading state
   const loading = isPending || fetchLoading
 
-  console.log(data)
-
   const form = useForm({
     defaultValues: {
       firstName: "",
@@ -171,7 +169,6 @@ const FormDialog = (props: Props) => {
 
   useEffect(() => {
     if (data) {
-      console.log(data)
       form.reset({
         firstName: data.player.firstName || "",
         middleName: data.player.middleName || "",
