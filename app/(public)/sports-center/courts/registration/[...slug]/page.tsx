@@ -54,18 +54,18 @@ const SuccessModal = ({ isOpen, onClose, message }: {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="animate-in fade-in-90 zoom-in-90 duration-300 mx-4 w-full max-w-md">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 text-center transform transition-all duration-300 scale-100">
-                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500 animate-in zoom-in-50 duration-500">
-                        <Check className="h-10 w-10 text-white animate-in fade-in-50 duration-700 delay-300" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="animate-in fade-in-90 zoom-in-90 duration-300 w-full max-w-md">
+                <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 text-center transform transition-all duration-300 scale-100">
+                    <div className="mx-auto mb-4 sm:mb-6 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-green-500 animate-in zoom-in-50 duration-500">
+                        <Check className="h-8 w-8 sm:h-10 sm:w-10 text-white animate-in fade-in-50 duration-700 delay-300" />
                     </div>
 
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3 animate-in fade-in-50 duration-500 delay-200">
+                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3 animate-in fade-in-50 duration-500 delay-200">
                         Successfully Registered!
                     </h3>
 
-                    <p className="text-gray-600 mb-6 animate-in fade-in-50 duration-500 delay-300">
+                    <p className="text-gray-600 text-sm sm:text-base mb-4 sm:mb-6 animate-in fade-in-50 duration-500 delay-300">
                         {message}
                     </p>
 
@@ -424,12 +424,12 @@ export default function Page({ params }: RegistrationPageProps) {
             )}
 
             <Card className="w-full max-w-6xl mx-auto mt-16">
-                <CardHeader className="mx-auto w-full max-w-md text-center">
-                    <CardTitle className="text-2xl font-semibold">
+                <CardHeader className="mx-auto w-full max-w-md text-center px-4 sm:px-6">
+                    <CardTitle className="text-xl sm:text-2xl font-semibold">
                         {tournament.name}
                     </CardTitle>
-                    <div className="flex items-center mt-3 justify-center gap-2 text-lg text-muted-foreground">
-                        <CalendarIcon className="w-5 h-5" />
+                    <div className="flex items-center mt-2 sm:mt-3 justify-center gap-2 text-base sm:text-lg text-muted-foreground">
+                        <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                         <CardDescription>
                             <span>
                                 {`${new Date(
@@ -454,13 +454,13 @@ export default function Page({ params }: RegistrationPageProps) {
                         }}
                         className="space-y-6"
                     >
-                        <div className="max-w-5xl mx-auto p-6 bg-white rounded-xl shadow-md border border-green-200">
+                        <div className="max-w-5xl mx-auto p-4 sm:p-6 bg-white rounded-xl shadow-md border border-green-200">
                             <div className="text-center space-y-4 mt-4">
                                 <CardTitle className="flex items-center gap-2 text-green-800 justify-center">
                                     <div className="p-2 bg-linear-to-r from-green-400 to-teal-500 rounded-lg shadow-md">
-                                        <Users2 className="w-5 h-5 text-white" />
+                                        <Users2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                     </div>
-                                    <span className="text-2xl font-semibold">Club Information</span>
+                                    <span className="text-xl sm:text-2xl font-semibold">Club Information</span>
                                 </CardTitle>
 
                                 <p className="text-green-800 text-sm">
@@ -510,9 +510,9 @@ export default function Page({ params }: RegistrationPageProps) {
                                         }}
                                     />
                                 </div>
-                                <div className="flex items-center justify-center gap-2 mt-7 mb-4">
+                                <div className="flex items-center justify-center gap-2 mt-6 mb-4">
                                     <div className="p-2 bg-linear-to-r from-green-400 to-teal-500 rounded-lg">
-                                        <Mail className="w-5 h-5 text-white" />
+                                        <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                     </div>
                                     <span className="text-green-800 font-semibold text-lg">
                                         Club Contact Information (Optional)
@@ -556,10 +556,10 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             />
                                                             <InputGroupAddon>
                                                                 {name === "clubEmail" ? (
-                                                                    <MailIcon className="w-5 h-5 text-gray-500" />
+                                                                    <MailIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
                                                                 ) : (
                                                                     <div className="flex items-center gap-1 text-gray-500">
-                                                                        <PhoneIcon className="w-5 h-5" />
+                                                                        <PhoneIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                                                                         <span className="text-sm font-medium">+63</span>
                                                                     </div>
                                                                 )}
@@ -583,93 +583,64 @@ export default function Page({ params }: RegistrationPageProps) {
                             </div>
                         </div>
 
-                        {/* Registration Fee Notification in the form */}
-                        <div className="text-start space-y-4 max-w-5xl mx-auto">
+                        <div className="text-start space-y-4 max-w-5xl mx-auto px-4 sm:px-0">
                             <CardTitle className="flex items-center gap-2 text-green-800 justify-start">
                                 <div className="p-2 bg-linear-to-r from-yellow-400 to-orange-500 rounded-lg">
                                     <span className="text-white font-bold">💰</span>
                                 </div>
-                                <span className="text-xl font-semibold">Registration Fee</span>
+                                <span className="text-lg sm:text-xl font-semibold">Registration Fee</span>
                             </CardTitle>
 
                             {event && tournament && (
-                                <div className="bg-linear-to-r from-green-50 to-teal-50 p-6 rounded-lg border border-green-200">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        {tournament.settings?.hasEarlyBird ? (
-                                            <Badge className="bg-green-100 text-green-800 border-green-300">
-                                                Early Bird Pricing Applied
-                                            </Badge>
-                                        ) : (
-                                            <Badge className="bg-gray-100 text-gray-800 border-gray-300">
-                                                Regular Pricing
-                                            </Badge>
-                                        )}
-                                    </div>
+                                <div className="bg-linear-to-r from-green-50 to-teal-50 p-4 sm:p-6 rounded-lg border border-green-200">
 
-                                    <div className="space-y-3">
+                                    <div className="flex flex-row justify-between items-start gap-4">
 
-                                        {(() => {
-                                            const hasEarlyBird = tournament.settings?.hasEarlyBird;
-                                            const actualPricePerPlayer = hasEarlyBird && event.earlyBirdPricePerPlayer
-                                                ? event.earlyBirdPricePerPlayer
-                                                : event.pricePerPlayer ?? 0
+                                        <div>
+                                            {tournament.settings?.hasEarlyBird ? (
+                                                <Badge className="bg-green-100 text-green-800 border-green-300">
+                                                    Early Bird Pricing
+                                                </Badge>
+                                            ) : (
+                                                <Badge className="bg-gray-100 text-gray-800 border-gray-300">
+                                                    Regular Pricing
+                                                </Badge>
+                                            )}
+                                        </div>
 
-                                            const currencySymbol = event.currency?.toUpperCase() === "USD" ? "$" : "₱";
+                                        <div className="text-left sm:text-right">
 
-                                            return (
-                                                <>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-gray-700 font-medium">
-                                                            Price per Player:
-                                                        </span>
-                                                        <div className="text-right">
-                                                            {hasEarlyBird && event.earlyBirdPricePerPlayer && (
-                                                                <div className="text-sm text-gray-500 line-through">
-                                                                    {currencySymbol}{event.pricePerPlayer?.toLocaleString()}
-                                                                </div>
-                                                            )}
-                                                            <div className="text-lg font-bold text-green-700">
-                                                                {currencySymbol}{actualPricePerPlayer?.toLocaleString()}
-                                                            </div>
-                                                        </div>
+                                            {tournament.settings?.hasEarlyBird &&
+                                                event.earlyBirdPricePerPlayer && (
+                                                    <div className="text-sm text-gray-500 line-through">
+                                                        ₱{event.pricePerPlayer?.toLocaleString()}
                                                     </div>
+                                                )}
 
-                                                    {event.type === "DOUBLES" && (
-                                                        <div className="flex justify-between items-center pt-2 border-t border-green-100">
-                                                            <span className="text-gray-700 font-medium">
-                                                                Total for Pair:
-                                                            </span>
-                                                            <div className="text-right">
-                                                                {hasEarlyBird && event.earlyBirdPricePerPlayer && event.pricePerPlayer && (
-                                                                    <div className="text-sm text-gray-500 line-through">
-                                                                        {currencySymbol}{(event.pricePerPlayer * 2)?.toLocaleString()}
-                                                                    </div>
-                                                                )}
-                                                                <div className="text-xl font-bold text-green-800">
-                                                                    {currencySymbol}{(actualPricePerPlayer * 2)?.toLocaleString()}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                            <div className="text-lg font-bold text-green-700">
+                                                ₱{(
+                                                    tournament.settings?.hasEarlyBird &&
+                                                        event.earlyBirdPricePerPlayer
+                                                        ? event.earlyBirdPricePerPlayer
+                                                        : event.pricePerPlayer
+                                                )?.toLocaleString()}
+                                            </div>
 
-                                                    {hasEarlyBird && event.earlyBirdPricePerPlayer && event.pricePerPlayer && (
-                                                        <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                                                            <div className="flex items-center gap-2 text-yellow-800">
-                                                                <span className="text-lg">🎉</span>
-                                                                <span className="font-semibold">
-                                                                    You save {currencySymbol}{(event.pricePerPlayer - event.earlyBirdPricePerPlayer)?.toLocaleString()} per player!
-                                                                </span>
-                                                            </div>
-                                                            {event.type === "DOUBLES" && (
-                                                                <div className="text-yellow-700 text-sm mt-1">
-                                                                    Total savings: {currencySymbol}{((event.pricePerPlayer - event.earlyBirdPricePerPlayer) * 2)?.toLocaleString()}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </>
-                                            );
-                                        })()}
+                                            {/* Savings */}
+                                            {/* {tournament.settings?.hasEarlyBird &&
+                                                event.earlyBirdPricePerPlayer &&
+                                                event.pricePerPlayer && (
+                                                    <div className="text-xs text-yellow-700 flex items-center justify-end gap-1 mt-1">
+                                                        🎉
+                                                        <span>
+                                                            ₱{(
+                                                                event.pricePerPlayer -
+                                                                event.earlyBirdPricePerPlayer
+                                                            )?.toLocaleString()} Saved!
+                                                        </span>
+                                                    </div>
+                                                )} */}
+                                        </div>
                                     </div>
 
                                     <div className="mt-4 p-4 bg-green-100 text-green-800 border-green-300 rounded-lg border">
@@ -683,7 +654,7 @@ export default function Page({ params }: RegistrationPageProps) {
                             )}
                         </div>
 
-                        <div className="max-w-5xl mx-auto mt-6 p-6 bg-white rounded-xl shadow-md border border-green-200">
+                        <div className="max-w-5xl mx-auto mt-6 p-4 sm:p-6 bg-white rounded-xl shadow-md border border-green-200">
                             <div className="text-start space-y-4">
                                 <CardTitle className="flex flex-col items-center gap-2 text-green-800 justify-center">
                                     <p className="text-green-700 text-sm">
@@ -691,8 +662,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                     </p>
                                     <div className="mx-auto p-3 bg-linear-to-r from-teal-100 to-teal-200 border border-teal-200 rounded-xl shadow-md w-max">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-4 h-4 bg-linear-to-r from-teal-200 to-teal-300 rounded-full shadow-inner"></div>
-                                            <span className="text-xl font-semibold">
+                                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-linear-to-r from-teal-200 to-teal-300 rounded-full shadow-inner"></div>
+                                            <span className="text-lg sm:text-xl font-semibold">
                                                 {event?.name}
                                                 {event?.type
                                                     ? ` (${event.type.charAt(0).toUpperCase()}${event.type.slice(1).toLowerCase()})`
@@ -709,9 +680,9 @@ export default function Page({ params }: RegistrationPageProps) {
                                         <div key={playerNum} className="pt-4">
                                             <div className="flex items-start gap-2 justify-start text-lime-800">
                                                 <div className="p-2 rounded-lg bg-linear-to-r from-lime-400 to-emerald-500 mb-4">
-                                                    <User className="w-5 h-5 text-white" />
+                                                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                                 </div>
-                                                <span className="text-xl font-semibold">
+                                                <span className="text-lg sm:text-xl font-semibold">
                                                     Personal Information for Player {playerNum}
                                                 </span>
                                             </div>
@@ -747,7 +718,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                         isMixed ? (
                                                                             <InputGroup>
                                                                                 <InputGroupAddon className="mx-auto px-3">
-                                                                                    <VenusAndMarsIcon />
+                                                                                    <VenusAndMarsIcon className="w-4 h-4" />
                                                                                 </InputGroupAddon>
 
                                                                                 <Select
@@ -768,7 +739,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                         ) : (
                                                                             <InputGroup>
                                                                                 <InputGroupAddon className="mx-auto px-3">
-                                                                                    <VenusAndMarsIcon />
+                                                                                    <VenusAndMarsIcon className="w-4 h-4" />
                                                                                 </InputGroupAddon>
 
                                                                                 <InputGroupInput
@@ -782,7 +753,7 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                                                         <InputGroup>
                                                                             <InputGroupAddon className="mx-auto px-3">
-                                                                                <RulerIcon />
+                                                                                <RulerIcon className="w-4 h-4" />
                                                                             </InputGroupAddon>
                                                                             <Select
                                                                                 name={field.name}
@@ -849,7 +820,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                 className="!pl-4"
                                                                             />
                                                                             <InputGroupAddon className="mx-auto px-3">
-                                                                                <User2 />
+                                                                                <User2 className="w-4 h-4" />
                                                                             </InputGroupAddon>
                                                                         </InputGroup>
 
@@ -872,7 +843,7 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                                         return (
                                                             <Field data-invalid={isInvalid} className="text-left">
-                                                                <div className="border-2 border-dashed border-green-300 rounded-2xl p-6 bg-white flex flex-col items-center justify-center text-center gap-4">
+                                                                <div className="border-2 border-dashed border-green-300 rounded-2xl p-4 sm:p-6 bg-white flex flex-col items-center justify-center text-center gap-4">
                                                                     <div className="w-full flex flex-col text-left">
                                                                         <FieldLabel htmlFor={field.name} className="text-green-800 font-bold text-lg">
                                                                             Important: Please Upload a Clear ID for Verification <span className="text-red-500">*</span>
@@ -890,7 +861,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                 alt="Uploaded ID Preview"
                                                                                 width={400}
                                                                                 height={250}
-                                                                                className="max-w-full rounded-lg border shadow"
+                                                                                className="max-w-full h-auto rounded-lg border shadow"
+                                                                                style={{ maxWidth: 'min(400px, 100%)' }}
                                                                             />
                                                                         ) : (
                                                                             <Image
@@ -898,18 +870,19 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                 alt="Sample ID"
                                                                                 width={400}
                                                                                 height={250}
-                                                                                className="max-w-full rounded-lg border shadow"
+                                                                                className="max-w-full h-auto rounded-lg border shadow"
+                                                                                style={{ maxWidth: 'min(400px, 100%)' }}
                                                                             />
                                                                         )}
                                                                     </div>
 
                                                                     <label
                                                                         htmlFor={`player${playerNum}IdUpload`}
-                                                                        className="cursor-pointer w-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-green-300 rounded-xl bg-green-50 hover:bg-green-100 transition"
+                                                                        className="cursor-pointer w-full flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed border-green-300 rounded-xl bg-green-50 hover:bg-green-100 transition"
                                                                     >
-                                                                        <UploadIcon className='w-8 h-8 text-green-600 mb-2' />
+                                                                        <UploadIcon className='w-6 h-6 sm:w-8 sm:h-8 text-green-600 mb-2' />
 
-                                                                        <span className="text-green-700 font-medium">
+                                                                        <span className="text-green-700 font-medium text-sm sm:text-base">
                                                                             Drag & Drop your files or <span className="underline">Browse</span>
                                                                         </span>
 
@@ -932,16 +905,16 @@ export default function Page({ params }: RegistrationPageProps) {
                                                 />
                                             </div>
 
-                                            <div className="flex items-start justify-start gap-2 mt-7 mb-2">
+                                            <div className="flex items-start justify-start gap-2 mt-6 mb-2">
                                                 <div className="p-2 bg-linear-to-r from-green-500 to-teal-600 rounded-lg">
-                                                    <Phone className="w-5 h-5 text-white" />
+                                                    <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                                 </div>
                                                 <span className="text-green-800 font-semibold text-lg">
                                                     Contact Information {playerNum}
                                                 </span>
                                             </div>
 
-                                            <div className="flex items-center space-x-2 p-3 bg-green-100/50 rounded-lg border border-green-200 mb-4">
+                                            <div className="flex items-start space-x-2 p-3 bg-green-100/50 rounded-lg border border-green-200 mb-4">
                                                 <Switch
                                                     checked={playerNum === 1 ? syncPlayer1 : syncPlayer2}
                                                     onCheckedChange={(checked) => {
@@ -959,9 +932,9 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             }
                                                         }
                                                     }}
-                                                    className="cursor-pointer"
+                                                    className="cursor-pointer flex-shrink-0 mt-1"
                                                 />
-                                                <label className="text-sm text-green-800 font-medium">
+                                                <label className="text-sm text-green-800 font-medium flex-1">
                                                     Use Club Contact Information
                                                 </label>
                                             </div>
@@ -997,9 +970,9 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                         />
                                                                         <InputGroupAddon className="mx-auto px-3">
                                                                             {name.includes("Email") ? (
-                                                                                <MailIcon />
+                                                                                <MailIcon className="w-4 h-4" />
                                                                             ) : (
-                                                                                <PhoneIcon />
+                                                                                <PhoneIcon className="w-4 h-4" />
                                                                             )}
                                                                         </InputGroupAddon>
                                                                     </InputGroup>
@@ -1022,19 +995,19 @@ export default function Page({ params }: RegistrationPageProps) {
                 </CardContent>
 
                 <CardFooter>
-                    <Field orientation="horizontal" className="justify-center gap-4">
-                        <Button type="button" variant="outline" onClick={() => form.reset()} className="px-30 py-5 cursor-pointer">
+                    <div className="flex flex-col sm:flex-row justify-center gap-4 w-full">
+                        <Button type="button" variant="outline" onClick={() => form.reset()} className="lg:w-1/2! w-auto! px-6 py-5 cursor-pointer">
                             Reset
                         </Button>
                         <Button
                             type="submit"
                             form="registration-form"
                             disabled={submitting}
-                            className="px-30 py-5 cursor-pointer"
+                            className="lg:w-1/2! w-auto!  px-6 py-5 cursor-pointer"
                         >
                             {submitting ? "Submitting..." : "Submit"}
                         </Button>
-                    </Field>
+                    </div>
                 </CardFooter>
                 <FloatingTicketing />
             </Card>

@@ -408,6 +408,9 @@ export function UploadProofMergedModal({
   const [amountLabel, setAmountLabel] = useState("Total")
   const [referenceLabel, setReferenceLabel] = useState("Reference No.")
 
+  // NEW STATE FOR CONFIRMATION DIALOG
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
+
   const { data: tournamentsData, loading: tournamentsLoading, error: tournamentsError } = useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
   const [createPayment, { loading: createPaymentLoading, error: createPaymentError }] = useMutation<createPaymentResponse, { input: CreatePaymentInput }>(CREATE_PAYMENT)
 
@@ -548,6 +551,7 @@ export function UploadProofMergedModal({
     setConfirmationNumber("")
     setAmountLabel("Total")
     setReferenceLabel("Reference No.")
+    setShowConfirmationDialog(false)
   }
 
   const handleClose = () => {
@@ -861,7 +865,6 @@ export function UploadProofMergedModal({
       return
     }
 
-    // Check if all entries have valid entryIds
     const invalidEntries = entriesState.map((_, index) => {
       const details = entryDetails[index]
       if (!details?.entryId) {
@@ -875,10 +878,16 @@ export function UploadProofMergedModal({
       return
     }
 
+    setShowConfirmationDialog(true)
+  }
+
+  const handleConfirmPayment = async () => {
+    setShowConfirmationDialog(false)
+
     try {
       setIsUploading(true)
 
-      const imageUrl = await uploadFile(file)
+      const imageUrl = await uploadFile(file!)
 
       if (!imageUrl) {
         setError("Failed to upload receipt image. Please try again.")
@@ -889,6 +898,7 @@ export function UploadProofMergedModal({
       setUploadedFileUrl(imageUrl)
 
       const totalAmount = parseFloat(amount) || 0
+      let remainingAmount = totalAmount
 
       // Create entry list with proper entryIds and isFullyPaid calculation
       const entryList = entriesState.map((entry, index) => {
@@ -899,11 +909,18 @@ export function UploadProofMergedModal({
           throw new Error(`No entryId found for entry ${index + 1}`)
         }
 
-        const isFullyPaid = totalAmount >= entryAmount
+        // Calculate if this entry is fully paid based on remaining amount
+        const isFullyPaid = remainingAmount >= entryAmount
 
+        // Deduct the paid amount from remaining (either full entry amount or remaining amount)
+        const amountPaidForThisEntry = Math.min(remainingAmount, entryAmount)
+        remainingAmount -= amountPaidForThisEntry
+
+        // Only include fields that are defined in your GraphQL schema
         return {
           entry: entryDetailsData.entryId,
           isFullyPaid
+          // Remove amountPaid as it's not in your schema
         }
       })
 
@@ -921,6 +938,16 @@ export function UploadProofMergedModal({
       }
 
       console.log('Submitting payment:', input)
+      console.log('Payment distribution:', entriesState.map((_, index) => {
+        const entryAmount = entryAmounts[index] || 0
+        const isFullyPaid = entryList[index]?.isFullyPaid || false
+        return {
+          entry: index + 1,
+          isFullyPaid,
+          amountRequired: entryAmount,
+          status: isFullyPaid ? 'Fully Paid' : 'Partially Paid'
+        }
+      }))
 
       const result = await createPayment({
         variables: { input }
@@ -939,6 +966,11 @@ export function UploadProofMergedModal({
     } finally {
       setIsUploading(false)
     }
+  }
+
+  // NEW FUNCTION TO CANCEL CONFIRMATION
+  const handleCancelPayment = () => {
+    setShowConfirmationDialog(false)
   }
 
   const handleAddEntry = () => {
@@ -1021,6 +1053,162 @@ export function UploadProofMergedModal({
     </motion.div>
   )
 
+  const ConfirmationDialog = () => (
+    <motion.div
+      className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+      >
+        <div className="text-center mb-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-2">
+            Confirm Payment Submission
+          </h3>
+          <p className="text-gray-600 text-sm">
+            Please review your payment details before submitting:
+          </p>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="text-sm font-medium text-gray-700 mb-1">Total Required:</div>
+              <div className="text-base font-bold text-green-600">
+                ₱{totalRequired.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </div>
+            </div>
+
+            {(reference || confirmationNumber) && (
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="text-sm font-medium text-gray-700 mb-1">Reference No.</div>
+                <div className="text-base font-bold text-blue-600 truncate">
+                  {reference && reference !== "Not found" ? reference : confirmationNumber}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="text-sm font-medium text-gray-700 mb-1">Payer Name</div>
+            <div className="text-base font-medium text-gray-800">
+              {payerName.trim() || "Player"}
+            </div>
+          </div>
+
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <span className="text-sm font-medium text-gray-700 block mb-2">
+              Payment Distribution:
+            </span>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {(() => {
+                let remaining = parseFloat(amount) || 0
+                return entriesState.map((entry, index) => {
+                  const entryAmount = entryAmounts[index] || 0
+                  const isFullyPaid = remaining >= entryAmount
+                  const amountPaid = Math.min(remaining, entryAmount)
+                  remaining -= amountPaid;
+
+                  return (
+                    <div key={index} className="flex justify-between items-center text-xs p-2 bg-white rounded border">
+                      <div>
+                        <span className="font-medium">Entry {index + 1}:</span>
+                        <span className="text-gray-600 ml-2">
+                          {entry.entryNumber} ({entry.entryKey})
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-medium ${isFullyPaid ? 'text-green-600' : 'text-yellow-600'}`}>
+                          {isFullyPaid ? '✓ Fully Paid' : `₱${amountPaid.toLocaleString()} / ₱${entryAmount.toLocaleString()}`}
+                        </div>
+                        <div className="text-gray-500 text-xs">
+                          {isFullyPaid ? `₱${entryAmount.toLocaleString()}` : `Missing ₱${(entryAmount - amountPaid).toLocaleString()}`}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          </div>
+
+          {/* Entries to Pay */}
+
+          {/* <div className="p-3 bg-gray-50 rounded-lg">
+            <span className="text-sm font-medium text-gray-700 block mb-2">
+              Entries to Pay ({entriesState.length}):
+            </span>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {entriesState.map((entry, index) => {
+                const details = entryDetails[index]
+                const entryAmount = entryAmounts[index]
+
+                return (
+                  <div key={index} className="flex justify-between items-center text-xs p-2 bg-white rounded border">
+                    <div>
+                      <span className="font-medium">Entry {index + 1}:</span>
+                      <span className="text-gray-600 ml-2">
+                        {entry.entryNumber} ({entry.entryKey})
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium text-green-600">
+                        ₱{entryAmount?.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        }) || '0.00'}
+                      </div>
+                      {details && (
+                        <div className="text-gray-500 text-xs">
+                          {details.eventType} Event
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div> */}
+
+          <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <span className="text-sm font-bold text-blue-700">Payment Amount</span>
+            <span className="text-lg font-bold text-blue-700">
+              ₱{parseFloat(amount).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              })}
+
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <Button
+            onClick={handleCancelPayment}
+            className="flex-1 bg-gray-300 text-gray-700 hover:bg-gray-400"
+            disabled={createPaymentLoading || isUploading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmPayment}
+            className="flex-1 bg-green-600 text-white hover:bg-green-700"
+            disabled={createPaymentLoading || isUploading}
+          >
+            {isUploading ? "Uploading..." : createPaymentLoading ? "Submitting..." : "Confirm Payment"}
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
 
   const cumulativeAmounts = calculateCumulativeAmounts()
 
@@ -1111,6 +1299,62 @@ export function UploadProofMergedModal({
               </button>
             </div>
 
+            {(reference || confirmationNumber || totalRequired > 0 || priceReminder) && (
+              <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    {Object.values(entryAmounts).some(amount => amount !== null) ? (
+                      <div className="text-sm font-medium text-blue-600">
+                        <div className="font-semibold mb-1">Total Amount Required</div>
+                        {totalRequired > 0 && (
+                          <div className="text-red-600 text-lg">
+                            <span className="font-medium">₱</span>
+                            {totalRequired.toLocaleString('en-US', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </div>
+                        )}
+                        {priceReminder && (
+                          <div className={`text-sm w-full p-2 rounded-lg border ${priceReminder.startsWith("✅")
+                            ? "bg-green-100 border-green-300 text-green-600"
+                            : "bg-red-100 border-red-300 text-red-600"
+                            }`}>
+                            {priceReminder}
+                          </div>
+                        )}
+                      </div>
+                    ) : amount ? (
+                      <div className="text-sm font-medium text-green-600">
+                        <div className="font-semibold mb-1">Payment Amount</div>
+                        <div className="text-lg">
+                          ₱{parseFloat(amount).toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm font-medium text-gray-600">
+                        No Amount Displayed yet
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    {(reference || confirmationNumber) && (
+                      <div className="text-sm font-medium text-blue-600">
+                        <div className="font-semibold mb-1">{referenceLabel}</div>
+                        <div className="text-lg font-mono bg-blue-50 p-2 rounded border">
+                          {reference && reference !== "Not found" ? reference : confirmationNumber}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1">
               {error && (
                 <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
@@ -1127,59 +1371,6 @@ export function UploadProofMergedModal({
               )}
 
               <div className="w-full">
-                <div className="px-14 pb-2 space-y-3">
-                  {/* {Object.values(entryErrors).some(error => error !== "") && (
-                    <div className="text-sm font-medium text-red-600 bg-red-50 p-2 rounded-lg border border-red-200">
-                      Please fix the entry errors below before proceeding.
-                    </div>
-                  )} */}
-
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      {Object.values(entryAmounts).some(amount => amount !== null) ? (
-                        <div className="text-sm font-medium text-blue-600">
-                          <div className="font-semibold mb-1">Total Amount Required</div>
-                          {totalRequired > 0 && (
-                            <div className="text-red-600 text-lg">
-                              <span className="font-medium">₱</span>
-                              {totalRequired.toLocaleString('en-US', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      ) : amount ? (
-                        <div className="text-sm font-medium text-green-600">
-                          <div className="font-semibold mb-1">Payment Amount</div>
-                          <div className="text-lg">
-                            ₱{parseFloat(amount).toLocaleString('en-US', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2
-                            })}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-sm font-medium text-gray-600">
-                          No Amount Displayed yet.
-                        </div>
-                      )}
-
-
-                    </div>
-
-                    <div>
-                      {(reference || confirmationNumber) && (
-                        <div className="text-sm font-medium text-blue-600">
-                          <div className="font-semibold mb-1">{referenceLabel}</div>
-                          <div className="text-lg font-mono bg-blue-50 p-2 rounded border">
-                            {reference && reference !== "Not found" ? reference : confirmationNumber}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
                 <Separator className="mx-2 mb-2" />
                 <div className="grid grid-cols-2 gap-14 px-14">
                   <label className="block text-sm font-medium text-gray-700 text-start">
@@ -1290,7 +1481,7 @@ export function UploadProofMergedModal({
 
               <div className="mb-4 mt-6">
                 <label className="block text-sm font-medium text-gray-700 text-start mb-2">
-                  Payer Name 
+                  Payer Name
                 </label>
                 <input
                   type="text"
@@ -1390,20 +1581,6 @@ export function UploadProofMergedModal({
 
                 {(scannedTotal || reference || confirmationNumber) && (
                   <div className="w-full mt-4 space-y-3">
-                    {scannedTotal && scannedTotal !== "Not found" && (
-                      <div className="p-3 bg-green-100 rounded-xl">
-                        <p className="text-sm text-gray-500">{amountLabel} (Scanned)</p>
-                        <p className="text-lg font-bold text-green-700">{scannedTotal}</p>
-                      </div>
-                    )}
-
-                    {reference && reference !== "Not found" && (
-                      <div className="p-3 bg-blue-100 rounded-xl">
-                        <p className="text-sm text-gray-500">{referenceLabel}</p>
-                        <p className="text-lg font-bold text-blue-700">{reference}</p>
-                      </div>
-                    )}
-
                     {showConfirmationInput && confirmationNumber && (
                       <div className="p-3 bg-yellow-100 rounded-xl">
                         <p className="text-sm text-gray-500">
@@ -1431,18 +1608,12 @@ export function UploadProofMergedModal({
                         }}
                         className="w-full bg-red-200 text-gray-800 hover:bg-red-300"
                       >
-                       Remove
+                        Remove
                       </Button>
                     )}
                   </div>
                 )}
               </div>
-
-              {priceReminder && (
-                <div className={`text-sm font-medium ${priceReminder.startsWith("✅") ? "text-green-600" : "text-red-600"}`}>
-                  {priceReminder}
-                </div>
-              )}
             </div>
 
             <div className="p-3 border-t bg-white border-gray-200">
@@ -1481,12 +1652,13 @@ export function UploadProofMergedModal({
                 onClick={handleSubmit}
                 disabled={createPaymentLoading || isUploading || !file}
               >
-                {isUploading ? "Uploading..." : createPaymentLoading ? "Submitting..." : "Submit"}
+                {isUploading ? "Uploading..." : createPaymentLoading ? "Submitting..." : "Submit Payment"}
               </Button>
             </div>
 
             <AnimatePresence>
               {success && <SuccessModal />}
+              {showConfirmationDialog && <ConfirmationDialog />}
             </AnimatePresence>
           </motion.div>
         </motion.div>
@@ -1494,7 +1666,6 @@ export function UploadProofMergedModal({
     </AnimatePresence>
   )
 }
-
 export function CheckEntryModal({
   isOpen,
   onClose,
@@ -1678,7 +1849,7 @@ export function CheckEntryModal({
                 </div>
 
                 <p className="text-sm text-gray-500 mt-3">
-                  {statuses.length > 0 
+                  {statuses.length > 0
                     ? "Here's the detailed status history for your entry."
                     : "No status history found for this entry."
                   }
