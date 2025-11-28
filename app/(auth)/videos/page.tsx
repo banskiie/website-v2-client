@@ -12,7 +12,8 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { User2, UserCircle } from "lucide-react"
+import { UserCircle } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const VIDEOS = gql`
   query Videos($first: Int, $after: String, $search: String) {
@@ -57,7 +58,7 @@ const Page = () => {
   // Global Search
   const [search, setSearch] = useState<string>("")
   const [searchTerm, setSearchTerm] = useState("")
-  const { data }: any = useQuery(VIDEOS, {
+  const { data, loading }: any = useQuery(VIDEOS, {
     variables: { first: rows, search },
     fetchPolicy: "network-only",
     notifyOnNetworkStatusChange: true,
@@ -99,8 +100,8 @@ const Page = () => {
   }
 
   return (
-    <div className="flex flex-col -m-2">
-      <div className="h-12 w-full flex items-between justify-between gap-2 p-2 sticky top-0 bg-background z-10">
+    <div className="flex flex-col h-full">
+      <div className="h-12 w-full flex items-between justify-between gap-2 sticky top-0 bg-background z-10">
         <InputGroup className="flex-1 max-w-[580px]">
           <InputGroupInput
             value={searchTerm}
@@ -136,52 +137,74 @@ const Page = () => {
         </InputGroup>
         <UploadDialog />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
-        {nodes.map((video: any) => (
-          <div
-            className="h-full w-full flex flex-col rounded-none items-start gap-px p-2 hover:bg-accent/50 cursor-pointer"
-            key={video._id}
-            onClick={() => router.push(`/videos/${video._id}`)}
-          >
-            <Image
-              width={300}
-              height={300}
-              src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
-              alt={video.title}
-              className="object-cover w-full h-full aspect-video rounded"
-            />
-            <span className="text-lg font-medium truncate block pb-1 -mb-px">
-              {video.title}
-            </span>
-            {video?.players?.length > 0 ? (
-              <div className="flex items-center gap-1 pb-1 -mb-1.5">
-                <UserCircle className="size-3.5" />
-                <span className="truncate blcok">
-                  {video?.players.length > 2
-                    ? `${video.players[0].firstName} ${
-                        video.players[0].lastName
-                      }, ${video.players[1].firstName} ${
-                        video.players[1].lastName
-                      } and ${video.players.length - 2} more`
-                    : video?.players
-                        .map(
-                          (player: any) =>
-                            `${player.firstName} ${player.lastName}`
-                        )
-                        .join(", ")}
-                </span>
-              </div>
-            ) : (
-              <span className="truncate block pb-1 -mb-px text-muted-foreground">
-                No players
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 flex-1 gap-x-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-fit w-full flex flex-col rounded-none items-start gap-1 hover:bg-accent/50 cursor-pointer"
+            >
+              <Skeleton className="h-76 w-full flex flex-col rounded items-start gap-px p-2 hover:bg-accent/50 cursor-pointer" />
+              <Skeleton className="h-4 w-3/4 flex flex-col rounded items-start gap-px p-2 hover:bg-accent/50 cursor-pointer" />
+              <Skeleton className="h-4 w-1/3 flex flex-col rounded items-start gap-px p-2 hover:bg-accent/50 cursor-pointer" />
+              <Skeleton className="h-4 w-1/2 flex flex-col rounded items-start gap-px p-2 hover:bg-accent/50 cursor-pointer" />
+            </div>
+          ))}
+        </div>
+      ) : nodes.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 flex-1 gap-x-2">
+          {nodes.map((video: any) => (
+            <div
+              className="h-fit w-full flex flex-col items-start hover:bg-accent/50 cursor-pointer rounded-md"
+              key={video._id}
+              onClick={() => router.push(`/videos/${video._id}`)}
+            >
+              <Image
+                width={300}
+                height={300}
+                src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
+                alt={video.title}
+                className="object-cover w-full aspect-video rounded"
+              />
+              <span className="text-lg font-medium truncate block">
+                {video.title}
               </span>
-            )}
-            <span className="truncate block pb-1 -mb-px">
-              {formatVideoDate(video.dateUploaded)}
-            </span>
-          </div>
-        ))}
-      </div>
+              {video?.players?.length > 0 ? (
+                <div className="flex items-center gap-1 -my-1">
+                  <UserCircle className="size-3.5" />
+                  <span className="truncate block">
+                    {video?.players.length > 2
+                      ? `${video.players[0].firstName} ${
+                          video.players[0].lastName
+                        }, ${video.players[1].firstName} ${
+                          video.players[1].lastName
+                        } and ${video.players.length - 2} more`
+                      : video?.players
+                          .map(
+                            (player: any) =>
+                              `${player.firstName} ${player.lastName}`
+                          )
+                          .join(", ")}
+                  </span>
+                </div>
+              ) : (
+                <span className="truncate block pb-1 -mb-px text-muted-foreground">
+                  No players
+                </span>
+              )}
+              <span className="truncate block pb-1 -mb-px">
+                {formatVideoDate(video.dateUploaded)}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex items-center justify-center h-full flex-1 bg-slate-100 rounded-xl">
+          <span className="text-muted-foreground text-2xl">
+            Please upload videos to see them here. 😒
+          </span>
+        </div>
+      )}
     </div>
   )
 }

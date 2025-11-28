@@ -1,4 +1,5 @@
-import { Gender } from "./shared.interface"
+import type { Gender } from "./shared.interface"
+import { IVideo } from "./video.interface"
 
 export enum PlayerLevel {
   BEGINNER = "BEGINNER",
@@ -50,9 +51,10 @@ export interface IPlayer extends Document {
   birthDate: Date
   email?: string
   phoneNumber?: string
+  videos?: IVideo[]
   levels: ILevel[]
   validDocuments: IValidDocument[]
-  isArchived: boolean
+  isActive: boolean
 }
 
 export interface IPlayerInput extends Request {
@@ -67,5 +69,5 @@ export interface IPlayerInput extends Request {
   phoneNumber?: string
   levels: ILevel[]
   validDocuments: IValidDocument[]
-  isArchived: boolean
+  isActive: boolean
 }

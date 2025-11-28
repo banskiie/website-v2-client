@@ -25,7 +25,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { EntryStatus, IEntry, IEntryInput } from "@/types/entry.interface"
+import { EntryStatus, IEntry, IEntryNode } from "@/types/entry.interface"
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 import { ColumnDef } from "@tanstack/react-table"
@@ -42,10 +42,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import ViewDialog from "./dialogs/view"
-import StatusDialog from "./dialogs/statuses"
 import { Checkbox } from "@/components/ui/checkbox"
 import BatchMenu from "./dialogs/batch"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns/format"
+import StatusDialog from "./dialogs/status"
+import ActiveBadge from "@/components/badges/active-badge"
+import EntryStatusBadge from "@/components/badges/entry-status-badge"
+import EntryTable from "@/components/table/entry-table"
 
 const ENTRIES = gql`
   query Entries(
@@ -68,7 +73,9 @@ const ENTRIES = gql`
         cursor
         node {
           _id
+          dateUpdated
           entryNumber
+          entryKey
           eventName
           tournamentName
           club
@@ -89,45 +96,44 @@ const ENTRIES = gql`
   }
 `
 
-const ENTRY_CHANGED = gql`
-  subscription EntryChanged {
-    entryChanged {
-      type
-      entry {
-        _id
-        entryNumber
-        eventName
-        tournamentName
-        club
-        isInSoftware
-        isEarlyBird
-        currentStatus
-        playerList {
-          player1Name
-          player2Name
-        }
-      }
-      entries {
-        _id
-        entryNumber
-        eventName
-        tournamentName
-        club
-        isInSoftware
-        isEarlyBird
-        currentStatus
-        playerList {
-          player1Name
-          player2Name
-        }
-      }
-    }
-  }
-`
+// const ENTRY_CHANGED = gql`
+//   subscription EntryChanged {
+//     entryChanged {
+//       type
+//       entry {
+//         _id
+//         entryNumber
+//         eventName
+//         tournamentName
+//         club
+//         isInSoftware
+//         isEarlyBird
+//         currentStatus
+//         playerList {
+//           player1Name
+//           player2Name
+//         }
+//       }
+//       entries {
+//         _id
+//         entryNumber
+//         eventName
+//         tournamentName
+//         club
+//         isInSoftware
+//         isEarlyBird
+//         currentStatus
+//         playerList {
+//           player1Name
+//           player2Name
+//         }
+//       }
+//     }
+//   }
+// `
 
-const ActionsColumn = ({ data }: { data?: IEntryInput }) => {
+const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
   const entry = useMemo(() => data, [data])
-  // console.log(entry, "CHECK PLAYER")
   const [menuOpen, setMenuOpen] = useState(false)
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
@@ -143,11 +149,6 @@ const ActionsColumn = ({ data }: { data?: IEntryInput }) => {
           <ViewDialog _id={entry?._id} />
           <FormDialog _id={entry?._id} onClose={() => setMenuOpen(false)} />
           <DropdownMenuSeparator />
-          <StatusDialog
-            _id={entry?._id}
-            onClose={() => setMenuOpen(false)}
-            // statuses={entry?.statuses}
-          />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -192,95 +193,95 @@ const Page = () => {
     notifyOnNetworkStatusChange: true,
   })
 
-  // Subscription to Entry Changes
-  useEffect(() => {
-    const unsubscribe = subscribeToMore({
-      document: ENTRY_CHANGED,
-      updateQuery: (prev: any, { subscriptionData }: any) => {
-        if (!subscriptionData.data) return prev
-        const { type, entry, entries } = subscriptionData.data.entryChanged
-        // Update the entries list based on the type of change
-        switch (type) {
-          case "CREATE":
-            // Add the new entry to the top of the list
-            const newEntry = entry
-            const newEntryExists = prev.entries.edges.find(
-              (edge: any) => edge.node._id === newEntry?._id
-            )
-            if (newEntryExists || search || sort || filter.length > 0)
-              return prev // Skip updating during search/sort/filter
-            toast.success(`Entry (${newEntry?.name}) has been created.`)
-            return Object.assign({}, prev, {
-              entries: {
-                ...prev.entries,
-                total: prev.entries.total + 1,
-                edges: [
-                  { cursor: newEntry?._id, node: newEntry },
-                  ...prev.entries.edges,
-                ],
-              },
-            })
-          case "UPDATE":
-            // Update the existing entry in the list
-            const updatedEntry = entry
-            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-            toast.success(`Entry (${updatedEntry?.name}) has been updated.`)
-            return Object.assign({}, prev, {
-              entries: {
-                ...prev.entries,
-                edges: prev.entries.edges.map((edge: any) =>
-                  edge.node._id === updatedEntry._id
-                    ? { ...edge, node: updatedEntry }
-                    : edge
-                ),
-              },
-            })
-          case "DELETE":
-            // Remove the deleted entry from the list
-            const deletedEntry = entry
-            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-            toast.success(`Entry (${deletedEntry?.name}) has been deleted.`)
-            return Object.assign({}, prev, {
-              entries: {
-                ...prev.entries,
-                total: prev.entries.total - 1,
-                edges: prev.entries.edges.filter(
-                  (edge: any) => edge.node._id !== deletedEntry._id
-                ),
-              },
-            })
-          case "BATCH_UPDATE":
-            const updatedEntries = entries
-            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-            toast.success(
-              `Batch update successful for ${updatedEntries.length} entries.`
-            )
-            const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
-            return Object.assign({}, prev, {
-              entries: {
-                ...prev.entries,
-                edges: prev.entries.edges.map((edge: any) =>
-                  updatedIds.has(edge.node._id)
-                    ? {
-                        ...edge,
-                        node: {
-                          ...edge.node,
-                          ...updatedEntries.find(
-                            (u: any) => u._id === edge.node._id
-                          ),
-                        },
-                      }
-                    : edge
-                ),
-              },
-            })
-          default:
-            return prev
-        }
-      },
-    })
-    return () => unsubscribe()
-  }, [subscribeToMore, search, sort, filter])
+  // // Subscription to Entry Changes
+  // useEffect(() => {
+  //   const unsubscribe = subscribeToMore({
+  //     document: ENTRY_CHANGED,
+  //     updateQuery: (prev: any, { subscriptionData }: any) => {
+  //       if (!subscriptionData.data) return prev
+  //       const { type, entry, entries } = subscriptionData.data.entryChanged
+  //       // Update the entries list based on the type of change
+  //       switch (type) {
+  //         case "CREATE":
+  //           // Add the new entry to the top of the list
+  //           const newEntry = entry
+  //           const newEntryExists = prev.entries.edges.find(
+  //             (edge: any) => edge.node._id === newEntry?._id
+  //           )
+  //           if (newEntryExists || search || sort || filter.length > 0)
+  //             return prev // Skip updating during search/sort/filter
+  //           toast.success(`Entry (${newEntry?.name}) has been created.`)
+  //           return Object.assign({}, prev, {
+  //             entries: {
+  //               ...prev.entries,
+  //               total: prev.entries.total + 1,
+  //               edges: [
+  //                 { cursor: newEntry?._id, node: newEntry },
+  //                 ...prev.entries.edges,
+  //               ],
+  //             },
+  //           })
+  //         case "UPDATE":
+  //           // Update the existing entry in the list
+  //           const updatedEntry = entry
+  //           if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+  //           toast.success(`Entry (${updatedEntry?.name}) has been updated.`)
+  //           return Object.assign({}, prev, {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: prev.entries.edges.map((edge: any) =>
+  //                 edge.node._id === updatedEntry._id
+  //                   ? { ...edge, node: updatedEntry }
+  //                   : edge
+  //               ),
+  //             },
+  //           })
+  //         case "DELETE":
+  //           // Remove the deleted entry from the list
+  //           const deletedEntry = entry
+  //           if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+  //           toast.success(`Entry (${deletedEntry?.name}) has been deleted.`)
+  //           return Object.assign({}, prev, {
+  //             entries: {
+  //               ...prev.entries,
+  //               total: prev.entries.total - 1,
+  //               edges: prev.entries.edges.filter(
+  //                 (edge: any) => edge.node._id !== deletedEntry._id
+  //               ),
+  //             },
+  //           })
+  //         case "BATCH_UPDATE":
+  //           const updatedEntries = entries
+  //           if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+  //           toast.success(
+  //             `Batch update successful for ${updatedEntries.length} entries.`
+  //           )
+  //           const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
+  //           return Object.assign({}, prev, {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: prev.entries.edges.map((edge: any) =>
+  //                 updatedIds.has(edge.node._id)
+  //                   ? {
+  //                       ...edge,
+  //                       node: {
+  //                         ...edge.node,
+  //                         ...updatedEntries.find(
+  //                           (u: any) => u._id === edge.node._id
+  //                         ),
+  //                       },
+  //                     }
+  //                   : edge
+  //               ),
+  //             },
+  //           })
+  //         default:
+  //           return prev
+  //       }
+  //     },
+  //   })
+  //   return () => unsubscribe()
+  // }, [subscribeToMore, search, sort, filter])
 
   // Memoized Data Processing
   const { total, nodes, pageInfo } = useMemo(() => {
@@ -321,7 +322,7 @@ const Page = () => {
   }, [])
 
   // Table Columns
-  const columns: ColumnDef<IEntry>[] = useMemo(
+  const columns: ColumnDef<IEntryNode>[] = useMemo(
     () => [
       {
         id: "select",
@@ -369,189 +370,143 @@ const Page = () => {
         size: 10,
       },
       {
-        accessorKey: "entryNumber",
+        accessorKey: "dateUpdated",
         header: () => (
           <SortHeader
-            label="Entry Number"
-            sortKey="entryNumber"
+            label="Date"
+            sortKey="dateUpdated"
             sortState={sort}
             onSortChange={onSort}
           />
         ),
         footer: () => (
           <ColumnFilter
-            label="Entry Number"
-            filterKey="entryNumber"
+            label="Date"
+            filterKey="dateUpdated"
+            filterType="DATE_RANGE"
+            filterValue={filter}
+            onFilterChange={onFilter}
+          />
+        ),
+        cell: ({ row }) => (
+          <div className="h-full flex items-center">
+            <span className="block">
+              {format(new Date((row.original as any).dateUpdated), "MMM dd, p")}{" "}
+            </span>
+            <div className="inline-flex gap-1">
+              {row.original.isEarlyBird && (
+                <Badge variant="outline-info" className="text-[0.65rem] px-1.5">
+                  Early Bird
+                </Badge>
+              )}
+              {row.original.isInSoftware && (
+                <Badge
+                  variant="outline-warning"
+                  className="text-[0.65rem] px-1.5"
+                >
+                  In Software
+                </Badge>
+              )}
+            </div>
+          </div>
+        ),
+        size: 80,
+      },
+      {
+        accessorKey: "entryNumber",
+        header: () => (
+          <SortHeader
+            label="Entry No."
+            sortKey="entryDetails"
+            sortState={sort}
+            onSortChange={onSort}
+          />
+        ),
+        footer: () => (
+          <ColumnFilter
+            label="Entry No."
+            filterKey="entryDetails"
             filterType="TEXT"
             filterValue={filter}
             onFilterChange={onFilter}
           />
         ),
+        cell: ({ row }) => {
+          const { entryNumber, entryKey } = row.original as any
+          return (
+            <div className="h-full flex flex-col justify-center">
+              <span className="block">{entryNumber}</span>
+              <span className="block text-xs text-muted-foreground">
+                {entryKey}
+              </span>
+            </div>
+          )
+        },
+        size: 80,
       },
       {
         accessorKey: "eventName",
         header: () => (
           <SortHeader
-            label="Event Name"
-            sortKey="eventName"
+            label="Event"
+            sortKey="event"
             sortState={sort}
             onSortChange={onSort}
           />
         ),
         footer: () => (
           <ColumnFilter
-            label="Event Name"
-            filterKey="eventName"
+            label="Event"
+            filterKey="event"
             filterType="TEXT"
             filterValue={filter}
             onFilterChange={onFilter}
           />
         ),
-      },
-      {
-        accessorKey: "tournamentName",
-        header: () => (
-          <SortHeader
-            label="Tournament Name"
-            sortKey="tournamentName"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
-        footer: () => (
-          <ColumnFilter
-            label="Tournament Name"
-            filterKey="tournamentName"
-            filterType="TEXT"
-            filterValue={filter}
-            onFilterChange={onFilter}
-          />
-        ),
+        cell: ({ row }) => {
+          const { eventName, tournamentName } = row.original as any
+          return (
+            <div className="h-full flex flex-col justify-center">
+              <span className="block">{eventName}</span>
+              <span className="block text-xs text-muted-foreground">
+                {tournamentName}
+              </span>
+            </div>
+          )
+        },
+        size: 80,
       },
       {
         accessorKey: "playerList",
-        header: () => (
-          <SortHeader
-            label="Player List"
-            sortKey="playerList"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
+        header: "Players",
         footer: () => (
           <ColumnFilter
-            label="Player List"
-            filterKey="playerList"
+            label="Players"
+            filterKey="players"
             filterType="TEXT"
             filterValue={filter}
             onFilterChange={onFilter}
           />
         ),
-      },
-      {
-        accessorKey: "club",
-        header: () => (
-          <SortHeader
-            label="Club"
-            sortKey="club"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
-        footer: () => (
-          <ColumnFilter
-            label="Club"
-            filterKey="club"
-            filterType="TEXT"
-            filterValue={filter}
-            onFilterChange={onFilter}
-          />
-        ),
-      },
-      {
-        accessorKey: "isInSoftware",
-        header: () => (
-          <SortHeader
-            label="Is In Software"
-            sortKey="isInSoftware"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
-        footer: () => (
-          <ColumnFilter
-            label="Is In Software"
-            filterKey="isInSoftware"
-            filterType="BOOLEAN"
-            filterValue={filter}
-            onFilterChange={onFilter}
-          />
-        ),
-        cell: ({ row }) => (
-          <Badge
-            variant={row.original.isInSoftware ? "destructive" : "success"}
-          >
-            {row.original.isInSoftware ? "Archived" : "Active"}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: "isInSoftware",
-        header: () => (
-          <SortHeader
-            label="Is In Software"
-            sortKey="isInSoftware"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
-        footer: () => (
-          <ColumnFilter
-            label="Is In Software"
-            filterKey="isInSoftware"
-            filterType="BOOLEAN"
-            filterValue={filter}
-            onFilterChange={onFilter}
-          />
-        ),
-        cell: ({ row }) => (
-          <Badge
-            variant={row.original.isInSoftware ? "destructive" : "success"}
-          >
-            {row.original.isInSoftware ? "Archived" : "Active"}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: "isEarlyBird",
-        header: () => (
-          <SortHeader
-            label="Is Earlybird"
-            sortKey="isEarlyBird"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
-        footer: () => (
-          <ColumnFilter
-            label="Is Earlybird"
-            filterKey="isEarlyBird"
-            filterType="BOOLEAN"
-            filterValue={filter}
-            onFilterChange={onFilter}
-          />
-        ),
-        cell: ({ row }) => (
-          <Badge variant={row.original.isEarlyBird ? "destructive" : "success"}>
-            {row.original.isEarlyBird ? "Archived" : "Active"}
-          </Badge>
-        ),
+        cell: ({ row }) => {
+          const { playerList, club } = row.original as any
+          return (
+            <div className="h-full flex flex-col justify-center">
+              <span className="block">{playerList.player1Name}</span>
+              <span className="block">{playerList.player2Name}</span>
+              <span className="block text-xs text-muted-foreground">
+                {club}
+              </span>
+            </div>
+          )
+        },
+        size: 200,
       },
       {
         accessorKey: "currentStatus",
         header: () => (
           <SortHeader
-            label="Current Status"
+            label="Status"
             sortKey="currentStatus"
             sortState={sort}
             onSortChange={onSort}
@@ -559,22 +514,23 @@ const Page = () => {
         ),
         footer: () => (
           <ColumnFilter
-            label="Current Status"
+            label="Status"
             filterKey="currentStatus"
             filterType="SELECT"
+            options={Object.values(EntryStatus).map((status) => ({
+              label: status.toLocaleLowerCase().replaceAll("_", " "),
+              value: status,
+            }))}
             filterValue={filter}
             onFilterChange={onFilter}
-            options={Object.entries(EntryStatus).map(([value, label]) => ({
-              label: label.toLocaleLowerCase().replaceAll("_", " "),
-              value,
-            }))}
           />
         ),
-        // cell: ({ row }) => (
-        //   <span className="capitalize">
-        //     {row.original.statuses.toLocaleLowerCase()}
-        //   </span>
-        // ),
+        cell: ({ row }) => (
+          <EntryStatusBadge
+            status={(row.original as any).currentStatus as EntryStatus}
+          />
+        ),
+        size: 20,
       },
     ],
     [sort, onSort, filter, onFilter, selectedIds, data?.entries]
@@ -814,7 +770,7 @@ const Page = () => {
           </div>
         </div>
       </div>
-      <DataTable
+      <EntryTable
         loading={loading}
         columns={columns}
         data={nodes.slice((page.current - 1) * rows, page.current * rows)}

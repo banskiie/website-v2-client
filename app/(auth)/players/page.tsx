@@ -25,13 +25,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  PlayerLevel,
-  ValidDocumentType,
-  IPlayer,
-  IPlayerInput,
-} from "@/types/player.interface"
-import { Gender } from "@/types/shared.interface"
+import { IPlayer, IPlayerInput } from "@/types/player.interface"
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 import { ColumnDef } from "@tanstack/react-table"
@@ -48,10 +42,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import ViewDialog from "./dialogs/view"
-import ArchiveDialog from "./dialogs/archive"
 import { Checkbox } from "@/components/ui/checkbox"
 import BatchMenu from "./dialogs/batch"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns/format"
+import StatusDialog from "./dialogs/status"
+import ActiveBadge from "@/components/badges/active-badge"
 
 const PLAYERS = gql`
   query Players(
@@ -78,7 +75,7 @@ const PLAYERS = gql`
           currentLevel
           gender
           birthDate
-          isArchived
+          isActive
         }
       }
       pageInfo {
@@ -99,7 +96,7 @@ const PLAYER_CHANGED = gql`
         currentLevel
         gender
         birthDate
-        isArchived
+        isActive
       }
       players {
         _id
@@ -107,15 +104,14 @@ const PLAYER_CHANGED = gql`
         currentLevel
         gender
         birthDate
-        isArchived
+        isActive
       }
     }
   }
 `
 
-const ActionsColumn = ({ data }: { data?: IPlayerInput }) => {
+const ActionsColumn = ({ data }: { data?: IPlayer }) => {
   const player = useMemo(() => data, [data])
-  // console.log(player, "CHECK PLAYER")
   const [menuOpen, setMenuOpen] = useState(false)
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
@@ -131,10 +127,10 @@ const ActionsColumn = ({ data }: { data?: IPlayerInput }) => {
           <ViewDialog _id={player?._id} />
           <FormDialog _id={player?._id} onClose={() => setMenuOpen(false)} />
           <DropdownMenuSeparator />
-          <ArchiveDialog
+          <StatusDialog
             _id={player?._id}
             onClose={() => setMenuOpen(false)}
-            isArchived={player?.isArchived}
+            isActive={player?.isActive}
           />
         </DropdownMenuGroup>
       </DropdownMenuContent>
@@ -390,20 +386,19 @@ const Page = () => {
           <ColumnFilter
             label="Current Level"
             filterKey="currentLevel"
-            filterType="SELECT"
+            filterType="TEXT"
             filterValue={filter}
             onFilterChange={onFilter}
-            options={Object.entries(PlayerLevel).map(([value, label]) => ({
-              label: label.toLocaleLowerCase().replaceAll("_", " "),
-              value,
-            }))}
           />
         ),
-        // cell: ({ row }) => (
-        //   <span className="capitalize">
-        //     {row.original.currentLevel.toLocaleLowerCase()}
-        //   </span>
-        // ),
+        cell: ({ row }) => {
+          const level = (row.original as any).currentLevel
+          return (
+            <span className={cn(level ? "" : "text-muted-foreground")}>
+              {level || "No Level"}
+            </span>
+          )
+        },
       },
       {
         accessorKey: "gender",
@@ -420,25 +415,33 @@ const Page = () => {
             label="Gender"
             filterKey="gender"
             filterType="SELECT"
+            options={[
+              { label: "Male", value: "MALE" },
+              { label: "Female", value: "FEMALE" },
+            ]}
             filterValue={filter}
             onFilterChange={onFilter}
-            options={Object.entries(Gender).map(([value, label]) => ({
-              label: label.toLocaleLowerCase().replaceAll("_", " "),
-              value,
-            }))}
           />
         ),
-        cell: ({ row }) => (
-          <span className="capitalize">
-            {row.original.gender.toLocaleLowerCase()}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const gender = (row.original as any).gender
+          return (
+            <span
+              className={cn(
+                gender == "MALE" ? "text-blue-700" : "text-pink-600",
+                "capitalize"
+              )}
+            >
+              {gender.toLocaleLowerCase()}
+            </span>
+          )
+        },
       },
       {
         accessorKey: "birthDate",
         header: () => (
           <SortHeader
-            label="Birthdate"
+            label="Birthday"
             sortKey="birthDate"
             sortState={sort}
             onSortChange={onSort}
@@ -446,32 +449,38 @@ const Page = () => {
         ),
         footer: () => (
           <ColumnFilter
-            label="Birthdate"
+            label="Birthday"
             filterKey="birthDate"
-            filterType="DATE"
+            filterType="DATE_RANGE"
             filterValue={filter}
             onFilterChange={onFilter}
           />
         ),
         cell: ({ row }) => {
-          const date = new Date(row.original.birthDate)
+          const birthDate = (row.original as any).birthDate
           return (
             <span>
-              {date.toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
+              {format(new Date(birthDate), "PP")}{" "}
+              <span className="text-muted-foreground">
+                (
+                {birthDate
+                  ? `${Math.floor(
+                      (Date.now() - new Date(birthDate).getTime()) /
+                        (1000 * 60 * 60 * 24 * 365.25)
+                    )} y.o.`
+                  : "N/A"}
+                )
+              </span>
             </span>
           )
         },
       },
       {
-        accessorKey: "isArchived",
+        accessorKey: "isActive",
         header: () => (
           <SortHeader
             label="Status"
-            sortKey="isArchived"
+            sortKey="isActive"
             sortState={sort}
             onSortChange={onSort}
           />
@@ -479,17 +488,13 @@ const Page = () => {
         footer: () => (
           <ColumnFilter
             label="Status"
-            filterKey="isArchived"
+            filterKey="isActive"
             filterType="BOOLEAN"
             filterValue={filter}
             onFilterChange={onFilter}
           />
         ),
-        cell: ({ row }) => (
-          <Badge variant={row.original.isArchived ? "destructive" : "success"}>
-            {row.original.isArchived ? "Archived" : "Active"}
-          </Badge>
-        ),
+        cell: ({ row }) => <ActiveBadge isActive={row.original.isActive} />,
       },
     ],
     [sort, onSort, filter, onFilter, selectedIds, data?.players]

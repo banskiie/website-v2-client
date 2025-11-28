@@ -15,29 +15,41 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import { IPlayer } from "@/types/player.interface"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Link from "next/link"
 
-const EVENT = gql`
-  query Event($_id: ID!) {
-    event(_id: $_id) {
-      name
+const PLAYER = gql`
+  query Player($_id: ID!) {
+    player(_id: $_id) {
+      _id
+      firstName
+      middleName
+      lastName
+      suffix
       gender
-      type
-      maxEntries
-      pricePerPlayer
-      earlyBirdPricePerPlayer
-      currency
-      location
-      maxAge
-      minAge
-      isDissolved
-      tournament {
-        name
-        settings {
-          hasEarlyBird
-        }
+      birthDate
+      email
+      phoneNumber
+      levels {
+        level
+        dateLevelled
       }
+      validDocuments {
+        documentURL
+        documentType
+        dateUploaded
+      }
+      videos {
+        _id
+        title
+        dateUploaded
+        youtubeId
+      }
+      isActive
     }
   }
 `
@@ -47,6 +59,8 @@ type Props = {
   row?: boolean
   openFromParent?: boolean
   setOpenFromParent?: (open: boolean) => void
+  fromVideos?: boolean
+  title?: string
   rowSettings?: {
     clearId: () => void
     open: boolean
@@ -66,12 +80,12 @@ const ViewDialog = (props: Props) => {
       setOpen(value)
     }
   }
-  const { data, loading }: any = useQuery(EVENT, {
+  const { data, loading }: any = useQuery(PLAYER, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
     fetchPolicy: "network-only",
   })
-  const event = data?.event
+  const player = data?.player as IPlayer
 
   const onClose = () => {
     if (props.row) {
@@ -86,7 +100,11 @@ const ViewDialog = (props: Props) => {
     <Dialog modal open={isOpen} onOpenChange={setIsOpen}>
       <form>
         <DialogTrigger asChild>
-          {props.row ? null : (
+          {props.row ? null : props.fromVideos ? (
+            <span className="hover:underline hover:cursor-pointer">
+              {props.title || "View"}
+            </span>
+          ) : (
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               View
             </DropdownMenuItem>
@@ -98,199 +116,159 @@ const ViewDialog = (props: Props) => {
           showCloseButton={false}
         >
           <DialogHeader>
-            <DialogTitle>View Event</DialogTitle>
+            <DialogTitle>View Player</DialogTitle>
             <DialogDescription>
-              View the details of this event below.
+              View the details of this player below.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-2 -mt-2 max-h-[36vh] overflow-y-auto">
-            <div className="col-span-2">
-              <Label>Name</Label>
-              {loading ? (
-                <Skeleton className="w-full my-1 h-3" />
-              ) : (
-                <span className="block text-sm">{event?.name}</span>
-              )}
-            </div>
-            <div className="col-span-2">
-              <Label>Tournament</Label>
-              {loading ? (
-                <Skeleton className="w-full my-1 h-3" />
-              ) : (
-                <span className="block text-sm">{event?.tournament?.name}</span>
-              )}
-            </div>
-            <div>
-              <Label>Location</Label>
-              {loading ? (
-                <Skeleton className="w-full my-1 h-3" />
-              ) : (
-                <span className="block text-sm capitalize">
-                  {event?.location.split("_").join(" ").toLocaleLowerCase()}
-                </span>
-              )}
-            </div>
-            <div>
-              <Label>Gender</Label>
-              {loading ? (
-                <Skeleton className="w-full my-1 h-3" />
-              ) : (
-                <span className="block text-sm capitalize">
-                  {event?.gender.toLocaleLowerCase()}
-                </span>
-              )}
-            </div>
-            <div>
-              <Label>Type</Label>
-              {loading ? (
-                <Skeleton className="w-full my-1 h-3" />
-              ) : (
-                <span className="block text-sm capitalize">
-                  {event?.type.toLocaleLowerCase()}
-                </span>
-              )}
-            </div>
-            {event?.maxEntries ? (
-              <div>
-                <Label>Max Entries</Label>
-                {loading ? (
-                  <Skeleton className="w-full my-1 h-3" />
-                ) : (
-                  <span className="block text-sm capitalize">
-                    {event?.maxEntries === 0 ? "Unlimited" : event?.maxEntries}
-                  </span>
-                )}
-              </div>
-            ) : null}
-
-            <Separator className="col-span-2" />
-            <div>
-              <Label>Registration Fee</Label>
-              {loading ? (
-                <Skeleton className="w-full my-1 h-3" />
-              ) : (
-                <span className="block text-sm capitalize">
-                  {!!(
-                    event?.type === "SINGLES" &&
-                    event?.pricePerPlayer !== undefined &&
-                    event?.currency
-                  ) ? (
-                    Number(event?.pricePerPlayer || 0).toLocaleString("en-US", {
-                      style: "currency",
-                      currency: event?.currency || "PHP",
-                    })
-                  ) : (
-                    <span>
-                      {(Number(event?.pricePerPlayer || 0) * 2).toLocaleString(
-                        "en-US",
-                        {
-                          style: "currency",
-                          currency: event?.currency || "PHP",
-                        }
-                      )}{" "}
-                      <span className="lowercase text-muted-foreground">
-                        (
-                        {Number(event?.pricePerPlayer || 0).toLocaleString(
-                          "en-US",
-                          {
-                            style: "currency",
-                            currency: event?.currency || "PHP",
-                          }
-                        )}{" "}
-                        per player)
-                      </span>
-                    </span>
-                  )}
-                </span>
-              )}
-            </div>
-            {event?.tournament?.settings?.hasEarlyBird ? (
-              <div>
-                <Label>Early Bird Reg. Fee</Label>
-                {loading ? (
-                  <Skeleton className="w-full my-1 h-3" />
-                ) : (
-                  <span className="block text-sm capitalize">
-                    {!!(
-                      event?.type === "SINGLES" &&
-                      event?.earlyBirdPricePerPlayer !== undefined &&
-                      event?.currency
-                    ) ? (
-                      Number(
-                        event?.earlyBirdPricePerPlayer || 0
-                      ).toLocaleString("en-US", {
-                        style: "currency",
-                        currency: event?.currency || "PHP",
-                      })
-                    ) : (
-                      <span>
-                        {(
-                          Number(event?.earlyBirdPricePerPlayer || 0) * 2
-                        ).toLocaleString("en-US", {
-                          style: "currency",
-                          currency: event?.currency || "PHP",
-                        })}{" "}
-                        <span className="lowercase text-muted-foreground">
-                          (
-                          {Number(
-                            event?.earlyBirdPricePerPlayer || 0
-                          ).toLocaleString("en-US", {
-                            style: "currency",
-                            currency: event?.currency || "PHP",
-                          })}{" "}
-                          per player)
-                        </span>
-                      </span>
-                    )}
-                  </span>
-                )}
-              </div>
-            ) : null}
-            {!!(event?.minAge || event?.maxAge) ? (
-              <>
-                <Separator className="col-span-2" />
-                {event?.minAge ? (
-                  <div>
-                    <Label>Minimum Age</Label>
-                    {loading ? (
-                      <Skeleton className="w-full my-1 h-3" />
-                    ) : (
-                      <span className="block text-sm">
-                        {event?.minAge} year{event?.minAge > 1 ? "s" : ""} old
-                      </span>
-                    )}
-                  </div>
-                ) : null}
-                {event?.maxAge ? (
-                  <div>
-                    <Label>Maximum Age</Label>
-                    {loading ? (
-                      <Skeleton className="w-full my-1 h-3" />
-                    ) : (
-                      <span className="block text-sm">
-                        {event?.maxAge} year{event?.maxAge > 1 ? "s" : ""} old
-                      </span>
-                    )}
-                  </div>
-                ) : null}
-              </>
-            ) : null}
-            {event?.isDissolved ? (
-              <>
-                <Separator className="col-span-2" />
-                <div>
-                  <Label className="text-destructive">Dissolved</Label>
+          <Tabs defaultValue="details" className="">
+            <TabsList className="w-full grid grid-cols-4 -mt-2 mb-1">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="levels">Levels</TabsTrigger>
+              <TabsTrigger value="requirements">Requirements</TabsTrigger>
+              <TabsTrigger value="videos">Videos</TabsTrigger>
+            </TabsList>
+            <TabsContent value="details">
+              <div className="grid grid-cols-2 gap-2 -mt-2 h-[36vh] overflow-y-auto place-content-start">
+                <div className="col-span-2">
+                  <Label>Name</Label>
                   {loading ? (
-                    <Skeleton className="my-1 w-20 h-4.25" />
+                    <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">
-                      {event?.isDissolved ? "Yes" : "No"}
+                      {player?.firstName} {player?.middleName}{" "}
+                      {player?.lastName} {player?.suffix}
                     </span>
                   )}
                 </div>
-              </>
-            ) : null}
-          </div>
+                <div className="col-span-2">
+                  <Label>Gender</Label>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span className="block text-sm capitalize">
+                      {player?.gender.toLocaleLowerCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="col-span-2">
+                  <Label>Birthday</Label>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span className="block text-sm capitalize">
+                      {format(
+                        player?.birthDate
+                          ? new Date(player?.birthDate)
+                          : new Date(),
+                        "PP"
+                      )}{" "}
+                      <span className="text-muted-foreground lowercase">
+                        (
+                        {player?.birthDate
+                          ? `${Math.floor(
+                              (Date.now() -
+                                new Date(player?.birthDate).getTime()) /
+                                (1000 * 60 * 60 * 24 * 365.25)
+                            )} y.o.`
+                          : "N/A"}
+                        )
+                      </span>
+                    </span>
+                  )}
+                </div>
+                <div className="col-span-2">
+                  <Label>Email Address</Label>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span className="block text-sm">
+                      {player?.email || "N/A"}
+                    </span>
+                  )}
+                </div>
+                <div className="col-span-2">
+                  <Label>Phone No.</Label>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span
+                      className={cn(
+                        "block text-sm",
+                        !player?.phoneNumber && "text-muted-foreground"
+                      )}
+                    >
+                      {player?.phoneNumber || "N/A"}
+                    </span>
+                  )}
+                </div>
+                <div className="col-span-2">
+                  <Label>Active</Label>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span
+                      className={cn(
+                        "block text-sm",
+                        !player?.isActive && "text-muted-foreground"
+                      )}
+                    >
+                      {player?.isActive ? "Yes" : "No"}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="levels">
+              <div className="grid grid-cols-2 gap-2 -mt-2 h-[36vh] overflow-y-auto place-content-start">
+                {player?.levels && player.levels?.length > 0 ? (
+                  player?.levels.length
+                ) : (
+                  <div className="text-muted-foreground text-sm text-center col-span-2 h-[36vh] flex items-center justify-center">
+                    Unlevelled. 😿
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            <TabsContent value="requirements">
+              <div className="grid grid-cols-2 gap-2 -mt-2 h-[36vh] overflow-y-auto place-content-start">
+                {player?.validDocuments && player.validDocuments?.length > 0 ? (
+                  player?.validDocuments.length
+                ) : (
+                  <div className="text-muted-foreground text-sm text-center col-span-2 h-[36vh] flex items-center justify-center">
+                    No documents submitted.
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            <TabsContent value="videos">
+              <div className="flex flex-col gap-2 -mt-2 h-[36vh] overflow-y-auto place-content-start">
+                {player?.videos && player.videos?.length > 0 ? (
+                  <div className="flex flex-col gap-px">
+                    <Label>Links</Label>
+                    {player?.videos.map((video, index) => (
+                      <div key={video._id}>
+                        <Link
+                          href={`/videos/${video._id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline w-full"
+                        >
+                          <span className="block text-sm">
+                            {index + 1}. {video.title}
+                          </span>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground text-sm text-center col-span-2 h-[36vh] flex items-center justify-center">
+                    No documents submitted.
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
           <DialogFooter>
             <DialogClose asChild>
               <Button className="w-20" onClick={onClose} variant="outline">
