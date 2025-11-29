@@ -207,7 +207,7 @@ function Page() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
               onClick={handleScrollToRentals}
-              className="bg-yellow-500 cursor-pointer hover:bg-yellow-600 text-black font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg shadow-lg transition-all text-xs sm:text-base w-full min-h-[44px] flex items-center justify-center"
+              className="bg-yellow-500 cursor-pointer hover:bg-yellow-600 text-black font-semibold px-3 sm:px-4 lg:px-4 py-2 sm:py-2.5 lg:py-2 rounded-lg shadow-lg transition-all text-xs sm:text-sm lg:text-sm w-full lg:w-auto min-h-[44px] flex items-center justify-center"
             >
               View Our Rents →
             </motion.button>
@@ -215,7 +215,7 @@ function Page() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
-              className="bg-transparent border cursor-pointer border-yellow-400 hover:bg-yellow-400 hover:text-black text-yellow-400 font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-all text-xs sm:text-base w-full min-h-[44px] flex items-center justify-center"
+              className="bg-transparent border cursor-pointer border-yellow-400 hover:bg-yellow-400 hover:text-black text-yellow-400 font-semibold px-3 sm:px-4 lg:px-4 py-2 sm:py-2.5 lg:py-2 rounded-lg transition-all text-xs sm:text-sm lg:text-sm w-full lg:w-auto min-h-[44px] flex items-center justify-center"
               onClick={handleScrollToVisitUs}
             >
               Contact Us Now
