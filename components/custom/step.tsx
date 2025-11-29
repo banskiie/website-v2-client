@@ -44,11 +44,16 @@ export function InfoCard({ Icon, title, desc }: any) {
       transition={{ duration: 0.5 }}
       className="border border-amber-400/40 rounded-xl p-6 text-left bg-black/20 backdrop-blur-sm hover:bg-black/30 transition"
     >
-      <div className="bg-amber-300/20 border border-amber-400/50 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-        <Icon className="w-6 h-6 text-amber-300" />
+      <div className="flex flex-col md:flex-col items-center md:items-start text-center md:text-left">
+        <div className="bg-amber-300/20 border border-amber-400/50 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+          <Icon className="w-6 h-6 text-amber-300" />
+        </div>
+        
+        <div>
+          <h3 className="text-amber-200 font-semibold mb-2">{title}</h3>
+          <p className="text-amber-100/80 text-sm leading-relaxed">{desc}</p>
+        </div>
       </div>
-      <h3 className="text-amber-200 font-semibold mb-2">{title}</h3>
-      <p className="text-amber-100/80 text-sm leading-relaxed">{desc}</p>
     </motion.div>
   )
 }

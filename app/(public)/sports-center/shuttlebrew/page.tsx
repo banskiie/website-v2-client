@@ -258,159 +258,164 @@ const [heroLoaded, setHeroLoaded] = useState(false)
   </motion.div>
 </div>
 
- <div
-      id="second-section"
-      className="relative w-full min-h-screen overflow-hidden bg-[#FFF2E6] flex flex-col lg:flex-row items-center justify-between px-6 sm:px-10 md:px-20 py-20"
-    >
-     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {[...Array(20)].map((_, i) => (
-        <motion.div
-          key={`bean-${i}`}
-          className="absolute"
-          initial={generateRandomPosition()}
-          animate={{
-            opacity: [0, 0.7, 0],
-            top: [`${Math.random() * 90}%`, `${Math.random() * 90}%`],
-            left: [`${Math.random() * 90}%`, `${Math.random() * 90}%`],
-            rotate: [`${Math.random() * 360}deg`, `${Math.random() * 360}deg`],
-          }}
-          transition={{
-            duration: 10 + Math.random() * 10,
-            repeat: Infinity,
-            repeatDelay: Math.random() * 6,
-            ease: "easeInOut",
-          }}
-        >
-          <div className="relative w-[90px] h-[90px]">
-            <Image
-              src="/coffee-bean-roast-brew-svgrepo-com.svg"
-              alt="Coffee Bean"
-              fill
-              sizes="100px"
-              priority
-              className="object-contain rotate-[20deg] opacity-90"
-            />
-          </div>
-        </motion.div>
-      ))}
-
-      {[...Array(15)].map((_, i) => (
-        <motion.div
-          key={`cup-${i}`}
-          className="absolute"
-          initial={generateRandomPosition()}
-          animate={{
-            opacity: [0, 0.15, 0],
-            top: [`${Math.random() * 90}%`, `${Math.random() * 90}%`],
-            left: [`${Math.random() * 90}%`, `${Math.random() * 90}%`],
-            rotate: [`${Math.random() * 360}deg`, `${Math.random() * 360}deg`],
-          }}
-          transition={{
-            duration: 12 + Math.random() * 10,
-            repeat: Infinity,
-            repeatDelay: Math.random() * 6,
-            ease: "easeInOut",
-          }}
-        >
-          <Coffee size={90} color="#20140c" className="opacity-60" />
-        </motion.div>
-      ))}
-    </div>
-
-      <motion.h1
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[120%] text-[8rem] sm:text-[10rem] md:text-[14rem] lg:text-[18rem] font-extrabold text-[#d6bfa6]/30 opacity-10 select-none pointer-events-none whitespace-nowrap z-0"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 1 }}
-      >
-        ShuttleBrew
-      </motion.h1>
-
+<div
+  id="second-section"
+  className="relative w-full min-h-screen overflow-hidden bg-[#FFF2E6] flex flex-col xl:flex-row items-center justify-between px-4 sm:px-6 md:px-10 lg:px-20 py-16 lg:py-20"
+>
+  <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    {[...Array(20)].map((_, i) => (
       <motion.div
-        className="absolute top-0 left-0 z-10"
-        initial={{ opacity: 0, y: -130 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 1 }}
+        key={`bean-${i}`}
+        className="absolute"
+        initial={generateRandomPosition()}
+        animate={{
+          opacity: [0, 0.7, 0],
+          top: [`${Math.random() * 90}%`, `${Math.random() * 90}%`],
+          left: [`${Math.random() * 90}%`, `${Math.random() * 90}%`],
+          rotate: [`${Math.random() * 360}deg`, `${Math.random() * 360}deg`],
+        }}
+        transition={{
+          duration: 10 + Math.random() * 10,
+          repeat: Infinity,
+          repeatDelay: Math.random() * 6,
+          ease: "easeInOut",
+        }}
       >
-        <div className="absolute inset-0 bg-black/40 z-10"></div>
-        <Image
-          src={`${CLOUD}/v1764116604/_ALP9323_uewrgm.jpg`}
-          alt="ShuttleBrew Gallery"
-          width={900}
-          height={1100}
-          loading="lazy"
-          className="object-cover shadow-lg h-[970px]"
-          blurDataURL={`${CLOUD}/v1764116604/_ALP9323_uewrgm.jpg`}
+        <div className="relative w-[60px] h-[60px] sm:w-[70px] sm:h-[70px] md:w-[80px] md:h-[80px] lg:w-[90px] lg:h-[90px]">
+          <Image
+            src="/coffee-bean-roast-brew-svgrepo-com.svg"
+            alt="Coffee Bean"
+            fill
+            sizes="(max-width: 640px) 60px, (max-width: 768px) 70px, (max-width: 1024px) 80px, 90px"
+            priority
+            className="object-contain rotate-[20deg] opacity-90"
+          />
+        </div>
+      </motion.div>
+    ))}
+
+    {[...Array(15)].map((_, i) => (
+      <motion.div
+        key={`cup-${i}`}
+        className="absolute"
+        initial={generateRandomPosition()}
+        animate={{
+          opacity: [0, 0.15, 0],
+          top: [`${Math.random() * 90}%`, `${Math.random() * 90}%`],
+          left: [`${Math.random() * 90}%`, `${Math.random() * 90}%`],
+          rotate: [`${Math.random() * 360}deg`, `${Math.random() * 360}deg`],
+        }}
+        transition={{
+          duration: 12 + Math.random() * 10,
+          repeat: Infinity,
+          repeatDelay: Math.random() * 6,
+          ease: "easeInOut",
+        }}
+      >
+        <Coffee 
+          size={60} 
+          className="sm:w-[70px] sm:h-[70px] md:w-[80px] md:h-[80px] lg:w-[90px] lg:h-[90px] opacity-60" 
+          color="#20140c" 
         />
       </motion.div>
+    ))}
+  </div>
 
-      <div className="w-full lg:w-1/2 z-20 flex flex-col items-end text-right ml-auto">
-        <motion.h2
-          className={`relative text-5xl sm:text-6xl md:text-7xl lg:text-8xl ${Pacific.className}
-                    text-[#644C45] leading-[1.4] max-w-[12rem] sm:max-w-[16rem] md:max-w-[40rem] mr-70 text-center`}
-          initial={{ opacity: 0, y: -30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 1 }}
-        >
-          <span className="absolute w-[133%] h-[122%] bg-[#D8BD92]/60 rounded-b-2xl scale-110 -translate-x-25 -translate-y-20 -z-10"></span>
-          <span className="absolute w-[133%] h-[127%] bg-[#FFBC52]/70 rounded-b-2xl -translate-x-25 -translate-y-28 -z-20"></span>
+  <motion.h1
+    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[120%] text-[4rem] xs:text-[5rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] xl:text-[14rem] 2xl:text-[18rem] font-extrabold text-[#d6bfa6]/30 opacity-10 select-none pointer-events-none whitespace-nowrap z-0"
+    initial={{ opacity: 0, y: 50 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, amount: 0.3 }}
+    transition={{ duration: 1 }}
+  >
+    ShuttleBrew
+  </motion.h1>
 
-          Discover
-          <br />
-          the Art of
-          <br />
-          Perfect
-          <br />
-          Coffee
-        </motion.h2>
+  <motion.div
+    className="hidden xl:block absolute top-0 left-0 z-10 w-full xl:w-auto"
+    initial={{ opacity: 0, y: -130 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, amount: 0.3 }}
+    transition={{ duration: 1 }}
+  >
+    <div className="absolute inset-0 bg-black/40 z-10"></div>
+    <Image
+      src={`${CLOUD}/v1764116604/_ALP9323_uewrgm.jpg`}
+      alt="ShuttleBrew Gallery"
+      width={900}
+      height={1100}
+      loading="lazy"
+      className="object-cover shadow-lg w-full h-[970px] xl:w-[900px]"
+      blurDataURL={`${CLOUD}/v1764116604/_ALP9323_uewrgm.jpg`}
+    />
+  </motion.div>
 
-        <motion.div
-          className="max-w-sm md:max-w-md lg:max-w-lg text-center mt-25 mr-55"
-          initial={{ opacity: 0, x: 50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 1, delay: 0.3 }}
-        >
-          <p className="text-[#3e2b1b] text-sm sm:text-base md:text-lg leading-relaxed mb-10">
-            Experience the craftsmanship behind every cup — from the finest beans to
-            the perfect brew, enjoy the artistry that defines true coffee perfection.
-          </p>
+  <div className="w-full xl:w-1/2 z-20 flex flex-col items-center xl:items-end text-center xl:text-right mt-0 xl:ml-auto">
+    <motion.h2
+      className={`relative text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl ${Pacific.className}
+                text-[#644C45] leading-[1.3] text-center sm:leading-[1.4] max-w-[280px] xs:max-w-[320px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] xl:mr-70`}
+      initial={{ opacity: 0, y: -30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 1 }}
+    >
+      <span className="absolute w-[133%] h-[122%] bg-[#D8BD92]/60 rounded-b-2xl scale-110 -translate-x-17 -translate-y-20 -z-10 hidden xl:block"></span>
+      <span className="absolute w-[133%] h-[127%] bg-[#FFBC52]/70 rounded-b-2xl -translate-x-17 -translate-y-28 -z-20 hidden xl:block"></span>
 
-          <div className="flex flex-wrap justify-end gap-18 text-center mb-10">
-            <div>
-              <h3 className="text-3xl font-bold text-[#20140c]">50+</h3>
-              <p className="text-sm text-[#3e2b1b]">Coffee Drinks</p>
-            </div>
-            <div>
-              <h3 className="text-3xl font-bold text-[#20140c]">50+</h3>
-              <p className="text-sm text-[#3e2b1b]">Refresher Drinks</p>
-            </div>
-            <div>
-              <h3 className="text-3xl font-bold text-[#20140c]">5K+</h3>
-              <p className="text-sm text-[#3e2b1b]">Happy Customers</p>
-            </div>
-          </div>
+      Discover
+      <br />
+      the Art of
+      <br />
+      Perfect
+      <br />
+      Coffee
+    </motion.h2>
 
-          <div className={`flex flex-wrap ${Pacific.className} gap-10 mt-4 justify-center`}>
-            <Button
-              onClick={scrollToMenu}
-              className="bg-[#20140c] text-lg text-[#FFF2E6] font-medium px-8! py-7! rounded-md hover:bg-[#3a2519] transition cursor-pointer"
-              variant="default"
-            >
-              See the Menu
-            </Button>
-            <Button className="bg-transparent  text-lg border border-[#20140c] text-[#20140c] font-medium px-8! py-7! rounded-md hover:bg-[#20140c] hover:text-[#FFF2E6] transition cursor-pointer" variant="default">
-              Explore More
-            </Button>
-          </div>
-        </motion.div>
+    <motion.div
+      className="max-w-xs xs:max-w-sm sm:max-w-md md:max-w-lg xl:max-w-lg text-center mt-8 sm:mt-12 xl:mt-25 xl:mr-55"
+      initial={{ opacity: 0, x: 50 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 1, delay: 0.3 }}
+    >
+      <p className="text-[#3e2b1b] text-sm sm:text-base md:text-lg leading-relaxed mb-6 sm:mb-8 lg:mb-10">
+        Experience the craftsmanship behind every cup — from the finest beans to
+        the perfect brew, enjoy the artistry that defines true coffee perfection.
+      </p>
+
+      <div className="flex flex-wrap justify-center xl:justify-end gap-6 sm:gap-12 lg:gap-18 text-center mb-6 sm:mb-8 lg:mb-10">
+        <div>
+          <h3 className="text-2xl sm:text-3xl font-bold text-[#20140c]">50+</h3>
+          <p className="text-xs sm:text-sm text-[#3e2b1b]">Coffee Drinks</p>
+        </div>
+        <div>
+          <h3 className="text-2xl sm:text-3xl font-bold text-[#20140c]">50+</h3>
+          <p className="text-xs sm:text-sm text-[#3e2b1b]">Refresher Drinks</p>
+        </div>
+        <div>
+          <h3 className="text-2xl sm:text-3xl font-bold text-[#20140c]">5K+</h3>
+          <p className="text-xs sm:text-sm text-[#3e2b1b]">Happy Customers</p>
+        </div>
       </div>
-    </div>
 
-
+      <div className={`flex flex-col sm:flex-row ${Pacific.className} gap-4 sm:gap-6 lg:gap-10 mt-4 justify-center`}>
+        <Button
+          onClick={scrollToMenu}
+          className="bg-[#20140c] text-base sm:text-lg text-[#FFF2E6] font-medium px-6! sm:px-8! py-4! sm:py-7! rounded-md hover:bg-[#3a2519] transition cursor-pointer w-full sm:w-auto"
+          variant="default"
+        >
+          See the Menu
+        </Button>
+        <Button 
+          className="bg-transparent text-base sm:text-lg border border-[#20140c] text-[#20140c] font-medium px-6! sm:px-8! py-4! sm:py-7! rounded-md hover:bg-[#20140c] hover:text-[#FFF2E6] transition cursor-pointer w-full sm:w-auto" 
+          variant="default"
+        >
+          Explore More
+        </Button>
+      </div>
+    </motion.div>
+  </div>
+</div>
 
       <div id="about-us">
         <StoryCarousel />

@@ -38,6 +38,7 @@ import { CreatePaymentInput, createPaymentResponse } from "@/app/(public)/types/
 import { CREATE_PAYMENT } from "@/graphql/payments/mutation"
 import { toast } from "sonner"
 import { Input } from "../ui/input"
+import { format } from "date-fns"
 // const tournament = tournaments.find(t => t.isActive)
 
 export type PublicTournamentsData = {
@@ -263,7 +264,6 @@ export function CategoryModal({
           </div>
         </div>
 
-        {/* Rest of the component remains the same */}
         <div className="bg-blue-50 p-4 rounded-md mb-6 text-left">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-semibold text-gray-700 text-sm">📅</span>
@@ -274,14 +274,15 @@ export function CategoryModal({
           <p className="text-gray-700 text-xs font-medium mb-1">
             {tournament?.name || "Tournament TBA"}
           </p>
-          <p className="text-gray-700 text-xs font-medium">
+            <p className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"}`}>
             {tournament?.isActive ? "Active" : "Inactive"}
-          </p>
+            </p>
           <p className="text-gray-700 text-xs font-medium">
             {tournament
-              ? `${new Date(tournament.dates.tournamentStart).toLocaleDateString()} - ${new Date(
-                tournament.dates.tournamentEnd
-              ).toLocaleDateString()}`
+              ? `${format(new Date(tournament.dates.tournamentStart), "MMM dd, yyyy")} - ${format(
+                new Date(tournament.dates.tournamentEnd),
+                "MMM dd, yyyy"
+              )}`
               : "Dates TBD"}
           </p>
         </div>
@@ -1873,7 +1874,7 @@ export function CheckEntryModal({
                             statusItem.status
                           )} font-medium text-sm`}
                         >
-                          {new Date(statusItem.date).toLocaleString()} →{" "}
+                          {format(new Date(statusItem.date), "MMM dd, yyyy h:mm a")} → {" "}
                           {statusItem.status.replaceAll("_", " ")}
                         </p>
                         {statusItem.reason && (

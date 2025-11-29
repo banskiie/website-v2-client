@@ -432,13 +432,10 @@ export default function Page({ params }: RegistrationPageProps) {
                         <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                         <CardDescription>
                             <span>
-                                {`${new Date(
-                                    tournament.dates.tournamentStart
-                                ).toLocaleString("default", { month: "long" })} 
-                ${new Date(tournament.dates.tournamentStart).getDate()}–${new Date(
-                                    tournament.dates.tournamentEnd
-                                ).getDate()}, 
-                ${new Date(tournament.dates.tournamentStart).getFullYear()}`}
+                                {`${format(new Date(tournament.dates.tournamentStart), "MMM d")}–${format(
+                                    new Date(tournament.dates.tournamentEnd),
+                                    "d"
+                                )}, ${format(new Date(tournament.dates.tournamentStart), "yyyy")}`}
                             </span>
                         </CardDescription>
                     </div>
@@ -460,10 +457,10 @@ export default function Page({ params }: RegistrationPageProps) {
                                     <div className="p-2 bg-linear-to-r from-green-400 to-teal-500 rounded-lg shadow-md">
                                         <Users2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                     </div>
-                                    <span className="text-xl sm:text-2xl font-semibold">Club Information</span>
+                                    <span className="text-lg font-semibold">Club Information</span>
                                 </CardTitle>
 
-                                <p className="text-green-800 text-sm">
+                                <p className="text-green-800 text-xs">
                                     Provide your club details. You can use these contact details for players below.
                                 </p>
 
@@ -503,7 +500,6 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             </Tooltip>
                                                         </InputGroupAddon>
                                                     </InputGroup>
-
                                                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                                                 </Field>
                                             )

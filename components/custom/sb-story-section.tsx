@@ -380,7 +380,6 @@
 //     )
 // }
 
-
 "use client"
 
 import { useState, useRef, useEffect, useMemo } from "react"
@@ -450,14 +449,17 @@ export default function StoryCarousel() {
     }, [zoomedCarouselRef])
 
     return (
-        <div className="relative w-full py-24 px-8 md:px-20 overflow-hidden bg-[#FFF2E6]">
-            <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20">
-                <div className="bg-[#644C45] tracking-wider font-pacifico text-[#fcefdc] text-lg md:text-xl font-medium px-8 py-1 rounded-full shadow-lg ">
+        <div className="relative w-full py-16 md:py-20 lg:py-24 px-6 sm:px-8 md:px-16 lg:px-20 overflow-hidden bg-[#FFF2E6]">
+            {/* Top About Badge - Moved higher */}
+            <div className="absolute top-4 md:top-5 lg:top-4 left-1/2 -translate-x-1/2 z-20">
+                <div className="bg-[#644C45] tracking-wider font-pacifico text-[#fcefdc] text-base sm:text-lg md:text-xl font-medium px-6 sm:px-7 md:px-8 py-1 rounded-full shadow-lg">
                     About
                 </div>
             </div>
-            <div className="absolute inset-0 w-full h-full ">
-                <div className="absolute opacity-30 -bottom-70 -left-50 w-48 h-48 md:w-72 md:h-72 lg:w-170 lg:h-170 rotate-[20deg] pointer-events-none select-none">
+
+            {/* Background Coffee Beans */}
+            <div className="absolute inset-0 w-full h-full">
+                <div className="absolute opacity-30 -bottom-60 sm:-bottom-65 md:-bottom-70 -left-40 sm:-left-45 md:-left-50 w-40 h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 lg:w-60 lg:h-60 xl:w-72 xl:h-72 2xl:w-170 2xl:h-170 rotate-[20deg] pointer-events-none select-none">
                     <Image
                         src="/coffee-bean-roast-brew-svgrepo-com.svg"
                         alt="Coffee Bean"
@@ -465,7 +467,7 @@ export default function StoryCarousel() {
                         className="object-contain"
                     />
                 </div>
-                <div className="absolute opacity-30 -top-70 -right-40 w-48 h-48 md:w-72 md:h-72 lg:w-170 lg:h-170 rotate-[20deg] pointer-events-none select-none">
+                <div className="absolute opacity-30 -top-60 sm:-top-65 md:-top-70 -right-30 sm:-right-35 md:-right-40 w-40 h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 lg:w-60 lg:h-60 xl:w-72 xl:h-72 2xl:w-170 2xl:h-170 rotate-[20deg] pointer-events-none select-none">
                     <Image
                         src="/coffee-bean-roast-brew-svgrepo-com.svg"
                         alt="Coffee Bean"
@@ -475,8 +477,9 @@ export default function StoryCarousel() {
                 </div>
             </div>
 
+            {/* Background Text */}
             <motion.h1
-                className="absolute top-60 left-1/2 -translate-x-1/2 text-[5rem] md:text-[9rem] font-extrabold text-[#e7d7bc] select-none pointer-events-none whitespace-nowrap z-0"
+                className="absolute top-40 sm:top-45 md:top-50 lg:top-55 xl:top-60 left-1/2 -translate-x-1/2 text-[3rem] sm:text-[4rem] md:text-[5rem] lg:text-[6rem] xl:text-[7rem] 2xl:text-[9rem] font-extrabold text-[#e7d7bc] select-none pointer-events-none whitespace-nowrap z-0"
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 0.4, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
@@ -485,22 +488,21 @@ export default function StoryCarousel() {
                 Our Story
             </motion.h1>
 
-            <div className=" border-b-4 absolute inset-0 pointer-events-none select-none">
-
-            </div>
-            <div className="relative max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center z-10">
+            {/* Main Content - Stacked layout for mobile AND tablet (768px), side-by-side only for lg+ */}
+            <div className="relative max-w-7xl mx-auto flex flex-col lg:grid lg:grid-cols-2 gap-12 md:gap-14 lg:gap-16 xl:gap-16 items-center z-10 mt-4 md:mt-6">
+                {/* Image Carousel Section - Always on top for mobile and tablet */}
                 <motion.div
-                    initial={{ opacity: 0, x: -60 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, y: -60 }}
+                    whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 1 }}
-                    className="relative"
+                    className="relative w-full max-w-2xl mx-auto lg:mx-0"
                 >
-                    <div className="absolute -inset-2 -top-5 mb-10 left-10 -right-5 rounded-3xl border-[#5c3d1e] border-2 pointer-events-none -z-10"></div>
+                    <div className="absolute -inset-2 sm:-inset-3 md:-inset-2 -top-4 sm:-top-5 md:-top-5 mb-8 sm:mb-9 md:mb-10 left-8 sm:left-9 md:left-10 -right-4 sm:-right-5 md:-right-5 rounded-2xl sm:rounded-3xl md:rounded-3xl border-[#5c3d1e] border-2 pointer-events-none -z-10"></div>
 
                     <Carousel
                         plugins={[autoplay.current]}
-                        className="w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden"
+                        className="w-full rounded-2xl sm:rounded-3xl md:rounded-3xl shadow-xl sm:shadow-2xl md:shadow-2xl overflow-hidden"
                     >
                         <CarouselContent>
                             {images.map((src, idx) => (
@@ -510,7 +512,7 @@ export default function StoryCarousel() {
                                         alt={`Story image ${idx + 1}`}
                                         width={650}
                                         height={650}
-                                        className="object-cover rounded-3xl h-[400px] md:h-[500px]"
+                                        className="object-cover rounded-2xl sm:rounded-3xl md:rounded-3xl h-[350px] sm:h-[380px] md:h-[420px] lg:h-[460px] xl:h-[500px]"
                                         onClick={() => setZoomedImage(src)}
                                         blurDataURL={src}
                                     />
@@ -519,53 +521,57 @@ export default function StoryCarousel() {
                         </CarouselContent>
                     </Carousel>
 
-                    <div className="absolute -inset-4 bg-gradient-to-tr from-[#fda12f]/25 via-transparent to-[#f38a12]/10 rounded-3xl blur-2xl -z-10"></div>
+                    <div className="absolute -inset-3 sm:-inset-4 md:-inset-4 bg-gradient-to-tr from-[#fda12f]/25 via-transparent to-[#f38a12]/10 rounded-2xl sm:rounded-3xl md:rounded-3xl blur-xl sm:blur-2xl md:blur-2xl -z-10"></div>
                 </motion.div>
 
+                {/* Text Content Section - Always below image for mobile and tablet */}
                 <motion.div
-                    initial={{ opacity: 0, x: 60 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, y: 60 }}
+                    whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 1, delay: 0.2 }}
-                    className="text-[#3a2a1a]"
+                    className="text-[#3a2a1a] w-full max-w-4xl mx-auto lg:mx-0 text-center lg:text-left"
                 >
-                    <h2 className="mb-8 leading-tight flex flex-col gap-4">
-                        <span className="font-nunito-sans text-2xl md:text-3xl font-semibold text-[#5c3d1e]">
+                    <h2 className="mb-6 sm:mb-7 md:mb-8 leading-tight flex flex-col gap-3 sm:gap-4 md:gap-4 items-center lg:items-start">
+                        <span className="font-nunito-sans text-xl sm:text-2xl md:text-2xl lg:text-3xl font-semibold text-[#5c3d1e]">
                             About
                         </span>
-                        <span className="w-20 h-1 bg-[#5c3d1e] block -mt-4" />
-                        <span className="font-nunito-sans text-4xl tracking-wider md:text-5xl font-extrabold bg-gradient-to-r from-[#FDA12F] to-[#F38A12] bg-clip-text text-transparent">
+                        <span className="w-16 sm:w-18 md:w-20 h-1 bg-[#5c3d1e] block -mt-2 sm:-mt-3 md:-mt-4" />
+                        <span className="font-nunito-sans text-3xl sm:text-4xl md:text-4xl lg:text-5xl tracking-wider font-extrabold bg-gradient-to-r from-[#FDA12F] to-[#F38A12] bg-clip-text text-transparent">
                             ShuttleBrew
                         </span>
                     </h2>
 
-                    <p className="font-nunito-sans text-lg md:text-xl text-[#5c3d1e]/90 leading-relaxed mb-6">
-                        Born from the fusion of{" "}
-                        <span className="font-semibold text-[#FDA12F]">sports energy</span> and{" "}
-                        <span className="font-semibold text-[#FDA12F]">coffee passion</span>,
-                        ShuttleBrew is more than just a café. It’s where adrenaline meets aroma —
-                        a hub for champions, dreamers, and coffee lovers alike.
-                    </p>
+                    <div className="space-y-5 sm:space-y-6 md:space-y-6">
+                        <p className="font-nunito-sans text-base sm:text-lg md:text-lg lg:text-xl text-[#5c3d1e]/90 leading-relaxed">
+                            Born from the fusion of{" "}
+                            <span className="font-semibold text-[#FDA12F]">sports energy</span> and{" "}
+                            <span className="font-semibold text-[#FDA12F]">coffee passion</span>,
+                            ShuttleBrew is more than just a café. It's where adrenaline meets aroma —
+                            a hub for champions, dreamers, and coffee lovers alike.
+                        </p>
 
-                    <p className="font-nunito-sans text-lg md:text-xl text-[#5c3d1e]/90 leading-relaxed mb-6">
-                        Every cup we brew is a celebration of{" "}
-                        <span className="text-[#FDA12F] font-semibold">drive</span>,{" "}
-                        <span className="text-[#FDA12F] font-semibold">dedication</span>, and{" "}
-                        <span className="text-[#FDA12F] font-semibold">community</span>. From
-                        handpicked beans to crafted blends, each sip fuels ambition and sparks
-                        connection.
-                    </p>
+                        <p className="font-nunito-sans text-base sm:text-lg md:text-lg lg:text-xl text-[#5c3d1e]/90 leading-relaxed">
+                            Every cup we brew is a celebration of{" "}
+                            <span className="text-[#FDA12F] font-semibold">drive</span>,{" "}
+                            <span className="text-[#FDA12F] font-semibold">dedication</span>, and{" "}
+                            <span className="text-[#FDA12F] font-semibold">community</span>. From
+                            handpicked beans to crafted blends, each sip fuels ambition and sparks
+                            connection.
+                        </p>
 
-                    <p className="font-nunito-sans text-lg md:text-xl text-[#5c3d1e]/90 leading-relaxed">
-                        Whether you’re cooling down after a match or seeking your daily
-                        inspiration, ShuttleBrew is where{" "}
-                        <span className="italic">your story</span> becomes part of ours.
-                    </p>
+                        <p className="font-nunito-sans text-base sm:text-lg md:text-lg lg:text-xl text-[#5c3d1e]/90 leading-relaxed">
+                            Whether you're cooling down after a match or seeking your daily
+                            inspiration, ShuttleBrew is where{" "}
+                            <span className="italic">your story</span> becomes part of ours.
+                        </p>
+                    </div>
 
-                    <div className="flex flex-wrap gap-4 mt-10">
+                    {/* Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-4 mt-8 sm:mt-9 md:mt-10 justify-center lg:justify-start">
                         <a
                             href="/sports-center/shuttlebrew/about-us/"
-                            className="font-nunito-sans bg-gradient-to-r from-[#d77b27] to-[#b85c18] text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:opacity-90 transition cursor-pointer"
+                            className="font-nunito-sans bg-gradient-to-r from-[#d77b27] to-[#b85c18] text-white font-semibold px-6 sm:px-7 md:px-8 py-3 rounded-lg shadow-md hover:opacity-90 transition cursor-pointer text-center text-sm sm:text-base"
                         >
                             View Gallery
                         </a>
@@ -573,7 +579,7 @@ export default function StoryCarousel() {
                             href="https://www.google.com/maps/place/ShuttleBrew+Coffee+Shop/@8.5001182,124.6394385,1169m"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-nunito-sans bg-transparent border border-[#5c3d1e] text-[#5c3d1e] font-semibold px-8 py-3 rounded-lg hover:bg-[#5c3d1e] hover:text-[#efdfc4] transition cursor-pointer"
+                            className="font-nunito-sans bg-transparent border border-[#5c3d1e] text-[#5c3d1e] font-semibold px-6 sm:px-7 md:px-8 py-3 rounded-lg hover:bg-[#5c3d1e] hover:text-[#efdfc4] transition cursor-pointer text-center text-sm sm:text-base"
                         >
                             Visit Us
                         </a>
@@ -581,7 +587,7 @@ export default function StoryCarousel() {
                 </motion.div>
             </div>
 
-            {/* ZOOM MODAL */}
+            {/* ZOOM MODAL - Responsive */}
             {zoomedImage && (
                 <motion.div
                     className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50"
@@ -589,7 +595,7 @@ export default function StoryCarousel() {
                     animate={{ opacity: 1 }}
                 >
                     <div
-                        className="relative w-[90%] max-h-[90%] flex items-center justify-center overflow-hidden"
+                        className="relative w-[95%] sm:w-[92%] md:w-[90%] max-h-[90%] flex items-center justify-center overflow-hidden"
                         onTouchStart={(e) => {
                             touchStartRef.current = e.touches[0].clientX;
                         }}
@@ -601,7 +607,7 @@ export default function StoryCarousel() {
                         }}
                     >
                         <button
-                            className="absolute left-2 z-20 text-white text-3xl w-12 h-12 flex items-center justify-center bg-black/40 rounded-full hover:bg-black/60 transition"
+                            className="absolute left-2 sm:left-3 md:left-2 z-20 text-white text-2xl sm:text-3xl md:text-3xl w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 flex items-center justify-center bg-black/40 rounded-full hover:bg-black/60 transition"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handlePrev();
@@ -616,12 +622,12 @@ export default function StoryCarousel() {
                             width={1200}
                             height={1200}
                             loading="lazy"
-                            className="object-contain max-h-[90vh] rounded-xl shadow-2xl cursor-zoom-out"
+                            className="object-contain max-h-[85vh] sm:max-h-[88vh] md:max-h-[90vh] rounded-lg sm:rounded-xl md:rounded-xl shadow-2xl cursor-zoom-out"
                             onClick={() => setZoomedImage(null)}
                         />
 
                         <button
-                            className="absolute right-2 z-20 text-white text-3xl w-12 h-12 flex items-center justify-center bg-black/40 rounded-full hover:bg-black/60 transition"
+                            className="absolute right-2 sm:right-3 md:right-2 z-20 text-white text-2xl sm:text-3xl md:text-3xl w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 flex items-center justify-center bg-black/40 rounded-full hover:bg-black/60 transition"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleNext();
@@ -635,7 +641,7 @@ export default function StoryCarousel() {
                         {images.map((img, idx) => (
                             <span
                                 key={idx}
-                                className={`w-3 h-3 rounded-full transition ${img === zoomedImage ? "bg-white" : "bg-white/50"
+                                className={`w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full transition ${img === zoomedImage ? "bg-white" : "bg-white/50"
                                     }`}
                             />
                         ))}

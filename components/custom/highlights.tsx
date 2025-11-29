@@ -15,7 +15,7 @@ const highlights = [
 
 Your dedication, creativity, and love for coffee continue to inspire us every single day. From every pour to every design, your passion reminds us that coffee is truly an art from the heart. 💫
 
-We couldn’t be prouder to have you on the ShuttleBrew team — keep chasing dreams and creating beautiful moments, one cup at a time. 💚`,
+We couldn't be prouder to have you on the ShuttleBrew team — keep chasing dreams and creating beautiful moments, one cup at a time. 💚`,
     },
     {
         id: 2,
@@ -25,9 +25,9 @@ We couldn’t be prouder to have you on the ShuttleBrew team — keep chasing dr
         title: "BREW FESTIVAL 2025 ",
         description: `From September 26–28, 2025, our ShuttleBrew baristas had a journey to remember at the Brew Festival in Ayala Malls Centrio. 
 
-         It wasn’t just about the competition—it was about passion, friendship, and the love for coffee that brought everyone together. Every cup poured carried dedication, every smile shared created connections, and every moment was a reminder of why we brew. 🌿
+         It wasn't just about the competition—it was about passion, friendship, and the love for coffee that brought everyone together. Every cup poured carried dedication, every smile shared created connections, and every moment was a reminder of why we brew. 🌿
 
-We’re beyond proud of our team for stepping up, representing ShuttleBrew, and bringing home not just experiences, but memories that will inspire us for years to come. 🙌🤎`,
+We're beyond proud of our team for stepping up, representing ShuttleBrew, and bringing home not just experiences, but memories that will inspire us for years to come. 🙌🤎`,
     },
     {
         id: 3,
@@ -41,7 +41,7 @@ We are incredibly proud of Barista Rolly for winning Champion – Latte Art Cate
 
 Your passion, creativity, and dedication to your craft inspire us every day. Thank you for representing us with excellence — you truly make the Shuttle Brew family proud! 💛🔥
 
-Here’s to more brews, more wins, and more milestones ahead! 🚀`,
+Here's to more brews, more wins, and more milestones ahead! 🚀`,
     },
 ]
 
@@ -56,7 +56,6 @@ export default function HighlightsSection() {
                 transition={{ duration: 0.8 }}
             >
                 <div>
-
                     <h2 className="text-4xl md:text-5xl lg:text-7xl font-medium text-[#5c3d1e] tracking-tight">
                         Highlights
                     </h2>
@@ -80,17 +79,17 @@ export default function HighlightsSection() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, amount: 0.3 }}
                             transition={{ duration: 0.8, delay: index * 0.1 }}
-                            className={`flex flex-col ${isEven ? "md:flex-row-reverse" : "md:flex-row"
+                            className={`flex flex-col ${isEven ? "lg:flex-row-reverse" : "lg:flex-row"
                                 } items-center gap-10 md:gap-16`}
                         >
-                            <div className="relative w-full md:w-1/2">
+                            <div className="relative w-full lg:w-1/2">
                                 <div className="overflow-hidden rounded-2xl shadow-lg">
                                     <Image
                                         src={item.image}
                                         alt={item.title}
                                         width={1000}
                                         height={600}
-                                        className="object-cover w-full h-[350px] md:h-[450px] transition-transform duration-700 hover:scale-105"
+                                        className="object-cover w-full h-[350px] md:h-[450px] lg:h-[500px] transition-transform duration-700 hover:scale-105"
                                         loading="lazy"
                                         blurDataURL={item.image}
                                     />
@@ -98,9 +97,8 @@ export default function HighlightsSection() {
                                 <div className="absolute inset-0 bg-gradient-to-tr from-[#fda12f]/10 via-transparent to-[#f38a12]/10 rounded-2xl blur-2xl -z-10"></div>
                             </div>
 
-                            {/* Text */}
-                            <div className="w-full md:w-1/2 text-center md:text-left">
-                                <div className="flex items-center justify-center md:justify-start gap-3 mb-4">
+                            <div className="w-full lg:w-1/2 text-center lg:text-left">
+                                <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
                                     <span className="px-4 py-1.5 bg-[#5c3d1e] text-[#fcefdc] rounded-full text-sm font-nunito-sans font-semibold">
                                         {item.badge}
                                     </span>

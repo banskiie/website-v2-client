@@ -131,7 +131,7 @@ function Page() {
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      <div className="relative flex flex-col justify-center min-h-screen px-6 md:px-16 bg-black/80 text-white overflow-hidden">
+      <div className="relative flex flex-col justify-center min-h-screen px-4 sm:px-6 md:px-12 lg:px-16 bg-black/80 text-white overflow-hidden">
         <motion.div
           className="absolute inset-0"
           initial={{ opacity: 0, scale: 1.05 }}
@@ -149,14 +149,20 @@ function Page() {
           <div className="absolute inset-0 bg-linear-to-b from-black/70 via-black/60 to-black/80"></div>
         </motion.div>
 
-        <div className="relative z-10 space-y-6 max-w-7xl text-center mx-auto md:text-left lg:px-9">
+        <div className="relative z-10 space-y-4 sm:space-y-5 md:space-y-6 max-w-7xl text-center mx-auto lg:text-left px-2 sm:px-4 lg:px-9">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="inline-flex items-center gap-2 bg-yellow-600/10 text-white font-medium px-4 py-2 rounded-full border border-yellow-500/20"
+            className="inline-flex items-center gap-2 bg-yellow-600/10 text-white font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-yellow-500/20 text-xs sm:text-sm"
           >
-            <Image src={`${CLOUD}/v1764038543/c-one-logo_tgi6rl.png`} alt="Truck Icon" width={28} height={28} />
+            <Image
+              src={`${CLOUD}/v1764038543/c-one-logo_tgi6rl.png`}
+              alt="Truck Icon"
+              width={24}
+              height={24}
+              className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7"
+            />
             <span>C-ONE Trading Corporation</span>
           </motion.div>
 
@@ -164,7 +170,7 @@ function Page() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.5 }}
-            className="text-sm md:text-base text-gray-300"
+            className="text-xs sm:text-sm md:text-base text-gray-300"
           >
             <span className="text-yellow-400 font-medium">Truck Rental</span> Services in Cagayan de Oro
           </motion.p>
@@ -173,7 +179,7 @@ function Page() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
-            className="text-3xl md:text-4xl font-semibold"
+            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold leading-tight sm:leading-snug md:leading-normal"
           >
             C-ONE Trading Corporation offers reliable and well-maintained truck rental services
             for businesses and individuals in Northern Mindanao.
@@ -183,7 +189,7 @@ function Page() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
-            className="text-gray-300 leading-relaxed"
+            className="text-gray-300 leading-relaxed text-sm sm:text-base md:text-lg max-w-4xl mx-auto lg:mx-0"
           >
             Whether you need to transport goods, move equipment, or deliver products, we have the
             right vehicle for your needs. Our fleet includes various truck sizes — from light delivery
@@ -195,13 +201,13 @@ function Page() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 1 }}
-            className="flex flex-wrap gap-4"
+            className="flex flex-row gap-3 sm:gap-4 justify-center lg:justify-start items-stretch"
           >
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
               onClick={handleScrollToRentals}
-              className="bg-yellow-500 cursor-pointer hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-lg shadow-lg transition-all"
+              className="bg-yellow-500 cursor-pointer hover:bg-yellow-600 text-black font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg shadow-lg transition-all text-xs sm:text-base w-full min-h-[44px] flex items-center justify-center"
             >
               View Our Rents →
             </motion.button>
@@ -209,7 +215,7 @@ function Page() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
-              className="bg-transparent border cursor-pointer border-yellow-400 hover:bg-yellow-400 hover:text-black text-yellow-400 font-semibold px-6 py-3 rounded-lg transition-all"
+              className="bg-transparent border cursor-pointer border-yellow-400 hover:bg-yellow-400 hover:text-black text-yellow-400 font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-all text-xs sm:text-base w-full min-h-[44px] flex items-center justify-center"
               onClick={handleScrollToVisitUs}
             >
               Contact Us Now
@@ -220,7 +226,7 @@ function Page() {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ duration: 1, delay: 1.2, ease: "easeOut" }}
-            className="w-full h-px bg-yellow-600/30 my-6 origin-left"
+            className="w-full h-px bg-yellow-600/30 my-4 sm:my-5 md:my-6 origin-left"
           ></motion.div>
 
           <motion.div
@@ -234,7 +240,7 @@ function Page() {
                 transition: { staggerChildren: 0.2, delayChildren: 1.4 },
               },
             }}
-            className="flex flex-wrap gap-10 text-yellow-400 font-semibold"
+            className="flex flex-wrap justify-center lg:justify-start gap-6 sm:gap-8 md:gap-10 text-yellow-400 font-semibold"
           >
             {[
               { value: "15+", label: "Years of Experience" },
@@ -248,9 +254,10 @@ function Page() {
                   visible: { opacity: 1, y: 0 },
                 }}
                 transition={{ duration: 0.6 }}
+                className="text-center lg:text-left"
               >
-                <p className="text-3xl">{stat.value}</p>
-                <p className="text-sm text-gray-300">{stat.label}</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl">{stat.value}</p>
+                <p className="text-xs sm:text-sm text-gray-300 mt-1">{stat.label}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -481,14 +488,14 @@ function Page() {
             <motion.div
               variants={fadeUp}
               transition={{ delay: 0.3 }}
-              className="absolute -bottom-10 -left-10 bg-black/90 border-3 border-yellow-400 text-black font-semibold px-5 py-7 rounded-xl shadow-md flex items-start gap-3"
+              className="absolute -bottom-12 left-1/2 -translate-x-1/2 px-4 py-4 lg:translate-x-0 lg:-bottom-10 lg:-left-10 bg-black/90 border-3 border-yellow-400 text-black font-semibold lg:px-5 lg:py-7 rounded-xl shadow-md flex items-start gap-3"
             >
               <div className="mt-1 text-yellow-400">
                 <MapPin className="w-6 h-6" />
               </div>
               <div className="leading-tight text-left">
-                <div className="text-base text-yellow-400">15+ Years</div>
-                <div className="text-sm font-normal mt-0.5 text-gray-200">Industry Experience</div>
+                <div className="text-sm lg:text-base text-yellow-400">15+ Years</div>
+                <div className="text-xs lg:text-sm font-normal mt-0.5 text-gray-200">Industry Experience</div>
               </div>
             </motion.div>
           </motion.div>

@@ -696,6 +696,7 @@ import useSmoothScroll from "@/hooks/useSmoothScroll"
 import { RulerDimensionLine, Users2 } from "lucide-react"
 import FloatingChatWidget from "@/components/custom/ticket"
 import { CLOUD } from "@/components/custom/main-faq"
+import { Button } from "@/components/ui/button"
 
 const features = [
   {
@@ -1077,7 +1078,7 @@ export default function Page() {
 
       <div id="accommodations" className="py-20 md:py-32 bg-[#232323] relative">
 
-        <button
+        <Button
           onClick={() => {
             if (carouselRef.current) {
               const el = carouselRef.current
@@ -1088,14 +1089,14 @@ export default function Page() {
               }
             }
           }}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-30 
-             bg-[#2FB44D]/60 text-white px-5 py-4 shadow-lg hover:bg-[#2FB44D]/80 transition
+          className="absolute -left-3 top-1/2 -translate-y-1/2 z-30 
+             bg-[#2FB44D]/90 text-white px-6! py-9! shadow-lg hover:bg-[#2FB44D]/80 transition
              rounded-r-full cursor-pointer"
         >
           &lt;
-        </button>
+        </Button>
 
-        <button
+        <Button
           onClick={() => {
             if (carouselRef.current) {
               const el = carouselRef.current
@@ -1106,12 +1107,12 @@ export default function Page() {
               }
             }
           }}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-30 
-             bg-[#2FB44D]/60 text-white px-5 py-4 shadow-lg hover:bg-[#2FB44D]/80 transition
+          className="absolute -right-3 top-1/2 -translate-y-1/2 z-30 
+             bg-[#2FB44D]/90 text-white px-6! py-9! shadow-lg hover:bg-[#2FB44D]/80 transition
              rounded-l-full cursor-pointer"
         >
           &gt;
-        </button>
+        </Button>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-1 relative z-20">
           <motion.div
@@ -1151,7 +1152,7 @@ export default function Page() {
           h-[22rem] sm:h-[28rem] md:h-[26rem] lg:h-[28rem]
           relative overflow-hidden shadow-lg border border-black rounded-t-full group
           snap-center transition-all duration-300
-         ${i === 0 ? 'sm:ml-100 md:ml-0 lg:ml-0' : ""}
+         ${i === 0 ? 'ml-100 md:ml-0 lg:ml-0' : ""}
         `}
                 >
                   <Image

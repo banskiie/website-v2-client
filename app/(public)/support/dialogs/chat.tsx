@@ -20,6 +20,7 @@ import {
   ChevronUp,
   FileText,
   Video,
+  Menu,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { string, z } from "zod"
@@ -154,6 +155,7 @@ export default function ChatStep({
   const [showLoadMoreButton, setShowLoadMoreButton] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // Dropzone configuration
   const { getRootProps, getInputProps } = useDropzone({
@@ -1153,10 +1155,51 @@ export default function ChatStep({
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
-      className="w-full h-screen flex pt-16"
+      className="w-full h-screen flex flex-col lg:flex-row pt-16"
     >
-      {/* Sidebar */}
-      <div className="w-64 bg-linear-to-b from-green-50 to-emerald-50 border-r border-green-100 shrink-0 p-6 space-y-6">
+      {/* Mobile Header */}
+      <div className="lg:hidden bg-white border-b p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-2 rounded-full">
+            <Headphones className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h2 className="text-base text-gray-900 font-semibold">Live Support</h2>
+            <p className="text-sm text-black/80">{name}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="flex items-center gap-1 text-sm bg-green-600 hover:bg-green-700 text-white p-2 rounded-md cursor-pointer transition-all"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1 text-sm bg-green-600 hover:bg-green-700 text-white p-2 rounded-md cursor-pointer transition-all"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Sidebar - Hidden on mobile, shown as overlay when open */}
+      <div className={`
+        fixed lg:relative inset-0 lg:inset-auto z-50 lg:z-auto
+        transform transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        w-64 bg-gradient-to-b from-green-50 to-emerald-50 border-r border-green-100 
+        shrink-0 p-6 space-y-6 lg:flex flex-col
+      `}>
+        {/* Close button for mobile */}
+        <button
+          onClick={() => setIsSidebarOpen(false)}
+          className="lg:hidden absolute top-4 right-4 text-green-700 hover:text-green-900 z-10"
+        >
+          <XCircle className="w-6 h-6" />
+        </button>
+
         <div>
           <h3 className="text-green-900 font-semibold mb-2">C-ONE Chat Support</h3>
           <p className="text-xs text-green-700">Your support conversation</p>
@@ -1167,7 +1210,7 @@ export default function ChatStep({
         <div className="space-y-4">
           <div className="space-y-2">
             <p className="text-xs text-green-600">Email</p>
-            <p className="text-sm text-green-900 font-medium">{email}</p>
+            <p className="text-sm text-green-900 font-medium break-words">{email}</p>
           </div>
 
           <div className="space-y-2">
@@ -1215,11 +1258,21 @@ export default function ChatStep({
         </div>
       </div>
 
+      {/* Overlay for mobile sidebar - Blurry transparent background */}
+      {isSidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-white/20 backdrop-blur-sm z-40"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-white shadow-lg overflow-hidden">
-        <div className="bg-white p-3 text-black shrink-0">
+        {/* Desktop Header */}
+        <div className="hidden lg:block bg-white p-3 text-black shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-linear-to-r from-green-600 to-green-500 text-white p-3 rounded-full backdrop-blur-sm">
+              <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-3 rounded-full backdrop-blur-sm">
                 <Headphones className="w-4 h-4 text-white" />
               </div>
               <div>
@@ -1280,20 +1333,20 @@ export default function ChatStep({
           <div
             ref={chatContainerRef}
             id="chat-container"
-            className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-300"
+            className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-300"
           >
-            {ticketData?.ticket?.total && ticketData.ticket.total <= messages.length ? (
+            {ticketData?.ticket?.total === 0 || ticketData?.ticket?.total && ticketData.ticket.total <= messages.length ? (
               <div className="flex flex-col items-center justify-center w-full py-4">
                 <div className="flex w-full items-center justify-center relative mb-2">
                   <Separator className="absolute w-full" />
                   <span className="text-center text-xs text-muted-foreground px-2 bg-slate-50 z-10">
-                    Start of Conversation ☕
+                    Send A Message... ☕
                   </span>
                 </div>
                 <span className="text-center text-xs text-muted-foreground">
                   {messages.length > 0 && messages[0]?.timestamp
                     ? format(messages[0].timestamp, "PPp")
-                    : "Starting conversation..."
+                    : ""
                   }
                 </span>
               </div>
@@ -1348,7 +1401,7 @@ export default function ChatStep({
                   initial={{ opacity: 0, scale: 0.8, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                  className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border p-2 z-10"
+                  className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border p-2 z-10 min-w-[200px]"
                 >
                   <div className="flex gap-2">
                     <div {...getRootProps({ className: "dropzone" })}>
@@ -1412,7 +1465,7 @@ export default function ChatStep({
                     }
                   })()}
 
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
                       {files[0].name}
                     </p>
@@ -1424,7 +1477,7 @@ export default function ChatStep({
                     type="button"
                     onClick={handleRemoveFile}
                     disabled={isUploading}
-                    className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                    className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer shrink-0"
                   >
                     <XCircle className="w-4 h-4" />
                   </Button>
@@ -1443,12 +1496,12 @@ export default function ChatStep({
             <Button
               type="button"
               onClick={() => setIsAttachmentMenuOpen(!isAttachmentMenuOpen)}
-              className="flex bg-transparent! items-center justify-center w-10 h-10 text-gray-500 hover:text-green-600 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+              className="flex bg-transparent! items-center justify-center w-10 h-10 text-gray-500 hover:text-green-600 hover:bg-gray-100 rounded-full transition-colors cursor-pointer shrink-0"
             >
               <Paperclip className="w-5 h-5" />
             </Button>
 
-            <InputGroup className="flex-1">
+            <InputGroup className="flex-1 min-w-0">
               <InputGroupTextarea
                 placeholder="Type your message..."
                 value={inputMessage}
@@ -1471,10 +1524,10 @@ export default function ChatStep({
             <Button
               type="submit"
               disabled={!inputMessage.trim() && files.length === 0}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-5 rounded-md"
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-5 rounded-md shrink-0"
             >
               <Send className="w-4 h-4" />
-              Send
+              <span className="hidden sm:inline">Send</span>
             </Button>
           </form>
         </div>
