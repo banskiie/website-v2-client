@@ -22,9 +22,17 @@ import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Copy } from "lucide-react"
+import {
+  CheckCircle,
+  CheckCircle2,
+  CircleAlert,
+  CircleStar,
+  Copy,
+  Dot,
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import PlayerViewDialog from "@/app/(auth)/players/dialogs/view"
 
 const ENTRY = gql`
   query Entry($_id: ID!) {
@@ -35,6 +43,14 @@ const ENTRY = gql`
       club
       isInSoftware
       isEarlyBird
+      statuses {
+        status
+        date
+        reason
+        by {
+          name
+        }
+      }
       event {
         name
         type
@@ -57,6 +73,13 @@ const ENTRY = gql`
         phoneNumber
         jerseySize
       }
+      connectedPlayer1 {
+        _id
+        firstName
+        middleName
+        lastName
+        suffix
+      }
       player2Entry {
         firstName
         middleName
@@ -67,6 +90,16 @@ const ENTRY = gql`
         email
         phoneNumber
         jerseySize
+      }
+      connectedPlayer1 {
+        firstName
+        middleName
+        lastName
+        suffix
+        gender
+        birthDate
+        email
+        phoneNumber
       }
     }
   }
@@ -97,7 +130,7 @@ const ViewDialog = (props: Props) => {
       setOpen(value)
     }
   }
-  const { data, loading, error }: any = useQuery(ENTRY, {
+  const { data, loading }: any = useQuery(ENTRY, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
     fetchPolicy: "network-only",
@@ -156,7 +189,7 @@ const ViewDialog = (props: Props) => {
               <TabsTrigger value="status">Status</TabsTrigger>
             </TabsList>
             <TabsContent value="details">
-              <div className="grid grid-cols-2 gap-2 h-[36vh] overflow-y-auto place-content-start">
+              <div className="grid grid-cols-2 gap-2 h-[50vh] overflow-y-auto place-content-start">
                 <div
                   className="col-span-2 hover:cursor-pointer"
                   onClick={(e) => {
@@ -271,10 +304,25 @@ const ViewDialog = (props: Props) => {
               </div>
             </TabsContent>
             <TabsContent value="players">
-              <div className="grid grid-cols-2 gap-2 h-[36vh] overflow-y-auto place-content-start">
+              <div className="grid grid-cols-2 gap-2 h-[50vh] overflow-y-auto place-content-start">
                 {entry?.player1Entry && (
                   <div className="col-span-2 grid grid-cols-2 gap-2 bg-info/10 p-2">
                     <Label className="font-medium col-span-2">Player 1</Label>
+                    {entry?.connectedPlayer1 && (
+                      <div className="col-span-2">
+                        <Label>Connected Player</Label>
+                        {loading ? (
+                          <Skeleton className="w-full my-1 h-3" />
+                        ) : (
+                          <PlayerViewDialog
+                            externalUse
+                            _id={entry?.connectedPlayer1?._id}
+                            title={`${entry?.connectedPlayer1.firstName} ${entry?.connectedPlayer1.middleName} ${entry?.connectedPlayer1.lastName} ${entry?.connectedPlayer1.suffix}`}
+                            titleClassName="block text-sm text-blue-600"
+                          />
+                        )}
+                      </div>
+                    )}
                     <div className="col-span-2">
                       <Label>Entry Name</Label>
                       {loading ? (
@@ -335,8 +383,7 @@ const ViewDialog = (props: Props) => {
                   </div>
                 )}
                 {entry?.event?.type === "DOUBLES" && (
-                  <div className="col-span-2 grid grid-cols-2 gap-2 bg-destructive/20">
-                    <Separator className="col-span-2" />
+                  <div className="col-span-2 grid grid-cols-2 gap-2 bg-destructive/10 p-2">
                     <Label className="font-medium col-span-2">Player 2</Label>
                     {entry?.player2Entry && (
                       <>
@@ -404,7 +451,83 @@ const ViewDialog = (props: Props) => {
               </div>
             </TabsContent>
             <TabsContent value="status">
-              <div className="grid grid-cols-2 gap-2 h-[36vh] overflow-y-auto place-content-start"></div>
+              <div className="flex flex-col gap-2 h-[50vh] overflow-y-auto place-content-start">
+                {loading ? (
+                  <Skeleton className="w-full my-1 h-3" />
+                ) : entry?.statuses && entry?.statuses.length ? (
+                  <div className="h-full">
+                    {entry.statuses
+                      .slice()
+                      .reverse()
+                      .map((status, index) => (
+                        <div key={index} className="flex gap-2">
+                          <div className="flex flex-col justify-start items-center">
+                            {(() => {
+                              if (index === 0) {
+                                switch (status.status) {
+                                  case "PENDING":
+                                    return (
+                                      <CheckCircle2 className="size-4 my-2 text-success" />
+                                    )
+                                }
+                                return (
+                                  <CircleAlert
+                                    className={cn(
+                                      "size-4 my-2",
+                                      index > 0
+                                        ? "text-muted-foreground/50"
+                                        : "text-info"
+                                    )}
+                                  />
+                                )
+                              } else {
+                                return (
+                                  <CheckCircle
+                                    className={cn(
+                                      "size-4 my-2",
+                                      index > 0
+                                        ? "text-muted-foreground/50"
+                                        : "text-success"
+                                    )}
+                                  />
+                                )
+                              }
+                            })()}
+
+                            {index < entry.statuses.length - 1 && (
+                              <div className="min-h-11 w-px bg-gray-200"></div>
+                            )}
+                          </div>
+                          <div className="mt-1">
+                            <span
+                              className={cn(
+                                "capitalize block -mb-0.5",
+                                index === 0
+                                  ? "font-mono"
+                                  : "text-muted-foreground"
+                              )}
+                            >
+                              {status.status
+                                .split("_")
+                                .join(" ")
+                                .toLocaleLowerCase()}
+                            </span>
+                            <span className="text-xs text-muted-foreground block">
+                              {format(status.date, "PPpp")}
+                            </span>
+                            <span className="text-xs text-muted-foreground block">
+                              {status.by?.name}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    No status history available.
+                  </span>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
           <DialogFooter>

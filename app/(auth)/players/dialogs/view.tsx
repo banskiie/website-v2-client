@@ -59,8 +59,9 @@ type Props = {
   row?: boolean
   openFromParent?: boolean
   setOpenFromParent?: (open: boolean) => void
-  fromVideos?: boolean
+  externalUse?: boolean
   title?: string
+  titleClassName?: string
   rowSettings?: {
     clearId: () => void
     open: boolean
@@ -100,8 +101,13 @@ const ViewDialog = (props: Props) => {
     <Dialog modal open={isOpen} onOpenChange={setIsOpen}>
       <form>
         <DialogTrigger asChild>
-          {props.row ? null : props.fromVideos ? (
-            <span className="hover:underline hover:cursor-pointer">
+          {props.row ? null : props.externalUse ? (
+            <span
+              className={cn(
+                "hover:underline hover:cursor-pointer",
+                props.titleClassName
+              )}
+            >
               {props.title || "View"}
             </span>
           ) : (

@@ -583,7 +583,6 @@ const FormDialog = (props: Props) => {
                   </TabsContent>
                   <TabsContent value="fees">
                     <FieldSet className="flex flex-col gap-3 h-[48vh] overflow-y-auto">
-                      {" "}
                       <form.Field
                         name="currency"
                         children={(field) => {
@@ -709,7 +708,6 @@ const FormDialog = (props: Props) => {
                             t.value === state.tournament
                         )?.hasEarlyBird && (
                           <>
-                            {" "}
                             <form.Field
                               name="earlyBirdPricePerPlayer"
                               children={(field) => {

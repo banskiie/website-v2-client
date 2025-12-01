@@ -96,41 +96,45 @@ const ENTRIES = gql`
   }
 `
 
-// const ENTRY_CHANGED = gql`
-//   subscription EntryChanged {
-//     entryChanged {
-//       type
-//       entry {
-//         _id
-//         entryNumber
-//         eventName
-//         tournamentName
-//         club
-//         isInSoftware
-//         isEarlyBird
-//         currentStatus
-//         playerList {
-//           player1Name
-//           player2Name
-//         }
-//       }
-//       entries {
-//         _id
-//         entryNumber
-//         eventName
-//         tournamentName
-//         club
-//         isInSoftware
-//         isEarlyBird
-//         currentStatus
-//         playerList {
-//           player1Name
-//           player2Name
-//         }
-//       }
-//     }
-//   }
-// `
+const ENTRY_CHANGED = gql`
+  subscription EntryChanged {
+    entryChanged {
+      type
+      entry {
+        _id
+        dateUpdated
+        entryNumber
+        entryKey
+        eventName
+        tournamentName
+        club
+        isInSoftware
+        isEarlyBird
+        currentStatus
+        playerList {
+          player1Name
+          player2Name
+        }
+      }
+      entries {
+        _id
+        dateUpdated
+        entryNumber
+        entryKey
+        eventName
+        tournamentName
+        club
+        isInSoftware
+        isEarlyBird
+        currentStatus
+        playerList {
+          player1Name
+          player2Name
+        }
+      }
+    }
+  }
+`
 
 const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
   const entry = useMemo(() => data, [data])
@@ -194,94 +198,96 @@ const Page = () => {
   })
 
   // // Subscription to Entry Changes
-  // useEffect(() => {
-  //   const unsubscribe = subscribeToMore({
-  //     document: ENTRY_CHANGED,
-  //     updateQuery: (prev: any, { subscriptionData }: any) => {
-  //       if (!subscriptionData.data) return prev
-  //       const { type, entry, entries } = subscriptionData.data.entryChanged
-  //       // Update the entries list based on the type of change
-  //       switch (type) {
-  //         case "CREATE":
-  //           // Add the new entry to the top of the list
-  //           const newEntry = entry
-  //           const newEntryExists = prev.entries.edges.find(
-  //             (edge: any) => edge.node._id === newEntry?._id
-  //           )
-  //           if (newEntryExists || search || sort || filter.length > 0)
-  //             return prev // Skip updating during search/sort/filter
-  //           toast.success(`Entry (${newEntry?.name}) has been created.`)
-  //           return Object.assign({}, prev, {
-  //             entries: {
-  //               ...prev.entries,
-  //               total: prev.entries.total + 1,
-  //               edges: [
-  //                 { cursor: newEntry?._id, node: newEntry },
-  //                 ...prev.entries.edges,
-  //               ],
-  //             },
-  //           })
-  //         case "UPDATE":
-  //           // Update the existing entry in the list
-  //           const updatedEntry = entry
-  //           if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-  //           toast.success(`Entry (${updatedEntry?.name}) has been updated.`)
-  //           return Object.assign({}, prev, {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: prev.entries.edges.map((edge: any) =>
-  //                 edge.node._id === updatedEntry._id
-  //                   ? { ...edge, node: updatedEntry }
-  //                   : edge
-  //               ),
-  //             },
-  //           })
-  //         case "DELETE":
-  //           // Remove the deleted entry from the list
-  //           const deletedEntry = entry
-  //           if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-  //           toast.success(`Entry (${deletedEntry?.name}) has been deleted.`)
-  //           return Object.assign({}, prev, {
-  //             entries: {
-  //               ...prev.entries,
-  //               total: prev.entries.total - 1,
-  //               edges: prev.entries.edges.filter(
-  //                 (edge: any) => edge.node._id !== deletedEntry._id
-  //               ),
-  //             },
-  //           })
-  //         case "BATCH_UPDATE":
-  //           const updatedEntries = entries
-  //           if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-  //           toast.success(
-  //             `Batch update successful for ${updatedEntries.length} entries.`
-  //           )
-  //           const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
-  //           return Object.assign({}, prev, {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: prev.entries.edges.map((edge: any) =>
-  //                 updatedIds.has(edge.node._id)
-  //                   ? {
-  //                       ...edge,
-  //                       node: {
-  //                         ...edge.node,
-  //                         ...updatedEntries.find(
-  //                           (u: any) => u._id === edge.node._id
-  //                         ),
-  //                       },
-  //                     }
-  //                   : edge
-  //               ),
-  //             },
-  //           })
-  //         default:
-  //           return prev
-  //       }
-  //     },
-  //   })
-  //   return () => unsubscribe()
-  // }, [subscribeToMore, search, sort, filter])
+  useEffect(() => {
+    const unsubscribe = subscribeToMore({
+      document: ENTRY_CHANGED,
+      updateQuery: (prev: any, { subscriptionData }: any) => {
+        if (!subscriptionData.data) return prev
+        const { type, entry, entries } = subscriptionData.data.entryChanged
+        // Update the entries list based on the type of change
+        switch (type) {
+          case "CREATE":
+            // Add the new entry to the top of the list
+            const newEntry = entry
+            const newEntryExists = prev.entries.edges.find(
+              (edge: any) => edge.node._id === newEntry?._id
+            )
+            if (newEntryExists || search || sort || filter.length > 0)
+              return prev // Skip updating during search/sort/filter
+            toast.success(`Entry (${newEntry?.name}) has been created.`)
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                total: prev.entries.total + 1,
+                edges: [
+                  { cursor: newEntry?._id, node: newEntry },
+                  ...prev.entries.edges,
+                ],
+              },
+            })
+          case "UPDATE":
+            // Update the existing entry in the list
+            const updatedEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Entry (${updatedEntry?.entryNumber}) has been updated.`
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: prev.entries.edges.map((edge: any) =>
+                  edge.node._id === updatedEntry._id
+                    ? { ...edge, node: updatedEntry }
+                    : edge
+                ),
+              },
+            })
+          case "DELETE":
+            // Remove the deleted entry from the list
+            const deletedEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(`Entry (${deletedEntry?.name}) has been deleted.`)
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                total: prev.entries.total - 1,
+                edges: prev.entries.edges.filter(
+                  (edge: any) => edge.node._id !== deletedEntry._id
+                ),
+              },
+            })
+          case "BATCH_UPDATE":
+            const updatedEntries = entries
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Batch update successful for ${updatedEntries.length} entries.`
+            )
+            const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: prev.entries.edges.map((edge: any) =>
+                  updatedIds.has(edge.node._id)
+                    ? {
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedEntries.find(
+                            (u: any) => u._id === edge.node._id
+                          ),
+                        },
+                      }
+                    : edge
+                ),
+              },
+            })
+          default:
+            return prev
+        }
+      },
+    })
+    return () => unsubscribe()
+  }, [subscribeToMore, search, sort, filter])
 
   // Memoized Data Processing
   const { total, nodes, pageInfo } = useMemo(() => {
@@ -389,7 +395,7 @@ const Page = () => {
           />
         ),
         cell: ({ row }) => (
-          <div className="h-full flex items-center">
+          <div className="h-full flex flex-col items-start">
             <span className="block">
               {format(new Date((row.original as any).dateUpdated), "MMM dd, p")}{" "}
             </span>
@@ -467,7 +473,9 @@ const Page = () => {
           const { eventName, tournamentName } = row.original as any
           return (
             <div className="h-full flex flex-col justify-center">
-              <span className="block capitalize">{eventName.toLocaleLowerCase()}</span>
+              <span className="block capitalize">
+                {eventName.toLocaleLowerCase()}
+              </span>
               <span className="block text-xs text-muted-foreground">
                 {tournamentName}
               </span>
@@ -652,7 +660,7 @@ const Page = () => {
               Clear Filtering
             </Button>
           )}
-          {<FormDialog />}
+          <FormDialog />
         </div>
       </div>
       <div className="w-full flex justify-between">

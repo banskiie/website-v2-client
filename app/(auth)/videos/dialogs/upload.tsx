@@ -153,7 +153,6 @@ const UploadDialog = () => {
             return uploadResponse
           })
           if (response) {
-            console.log(response)
             toast.success("Video uploaded successfully!")
             onClose()
           }
@@ -377,7 +376,9 @@ const UploadDialog = () => {
                 {...getRootProps({
                   className: cn(
                     "dropzone",
-                    isPending ? "opacity-50 cursor-wait pointer-events-none" : ""
+                    isPending
+                      ? "opacity-50 cursor-wait pointer-events-none"
+                      : ""
                   ),
                 })}
                 className={cn(
