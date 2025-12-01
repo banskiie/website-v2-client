@@ -32,6 +32,8 @@ export interface ITournamentEvent {
   maxEntries?: number
   currency?: string
   isActive: boolean
+  minAge?: number
+  maxAge?: number
 }
 
 export interface ITournament {

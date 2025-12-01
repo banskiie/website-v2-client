@@ -18,7 +18,7 @@ import {
     FieldLabel,
 } from "@/components/ui/field"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon } from "lucide-react"
+import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon, AlertCircle } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { startTransition, use, useEffect, useState } from "react"
 import Header from "@/components/custom/header-white"
@@ -46,6 +46,7 @@ import FloatingTicketing from "@/components/custom/ticket"
 interface RegistrationPageProps {
     params: Promise<{ slug: string[] }>
 }
+
 const SuccessModal = ({ isOpen, onClose, message }: {
     isOpen: boolean;
     onClose: () => void;
@@ -58,7 +59,7 @@ const SuccessModal = ({ isOpen, onClose, message }: {
             <div className="animate-in fade-in-90 zoom-in-90 duration-300 w-full max-w-md">
                 <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 text-center transform transition-all duration-300 scale-100">
                     <div className="mx-auto mb-4 sm:mb-6 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-green-500 animate-in zoom-in-50 duration-500">
-                        <Check className="h-8 w-8 sm:h-10 sm:w-10 text-white animate-in fade-in-50 duration-700 delay-300" />
+                        <Check className="h-8 w-8 sm:h-10 sm:h-10 text-white animate-in fade-in-50 duration-700 delay-300" />
                     </div>
 
                     <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3 animate-in fade-in-50 duration-500 delay-200">
@@ -79,6 +80,57 @@ const SuccessModal = ({ isOpen, onClose, message }: {
             </div>
         </div>
     )
+}
+
+const ValidationToast = ({ errors, title = "Validation Failed" }: { errors: string[], title?: string }) => {
+    return (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg max-w-md">
+            <div className="flex items-start gap-3">
+                <div className="bg-red-100 p-2 rounded-full">
+                    <AlertCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <div className="flex-1">
+                    <h4 className="font-semibold text-red-800 mb-2">{title}</h4>
+                    <div className="space-y-1">
+                        {errors.map((error, index) => (
+                            <p key={index} className="text-sm text-red-700">
+                                • {error}
+                            </p>
+                        ))}
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-700 border-red-300 hover:bg-red-100"
+                            onClick={() => toast.dismiss()}
+                        >
+                            Dismiss
+                        </Button>
+                        <Button
+                            size="sm"
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            onClick={() => {
+                                const firstError = document.querySelector('[data-invalid="true"]');
+                                if (firstError) {
+                                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                                toast.dismiss();
+                            }}
+                        >
+                            View Details
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+const showValidationToast = (errors: string[], title?: string) => {
+    toast.custom((t) => <ValidationToast errors={errors} title={title} />, {
+        duration: 10000,
+    });
 }
 
 export default function Page({ params }: RegistrationPageProps) {
@@ -105,7 +157,6 @@ export default function Page({ params }: RegistrationPageProps) {
     const event = tournament?.events?.find((e: any) => e._id === eventId) ?? tournament?.events?.[0]
     const hasFreeJersey = tournament?.settings?.hasFreeJersey || false
 
-    // Add this useEffect to log price details automatically if ang page mag loads
     useEffect(() => {
         if (event && tournament) {
             console.log("=== 🎯 AUTOMATIC EARLY BIRD PRICE CHECK ===");
@@ -113,18 +164,12 @@ export default function Page({ params }: RegistrationPageProps) {
             console.log("Event Type:", event.type);
             console.log("Tournament settings.hasEarlyBird:", tournament.settings?.hasEarlyBird);
 
-            // Check early bird at tournament level (settings.hasEarlyBird)
             const hasEarlyBird = tournament.settings?.hasEarlyBird;
             console.log("✅ Early Bird Active:", hasEarlyBird ? "YES" : "NO");
-
-            // console.log("Regular Price:", event.pricePerPlayer);
-            // console.log("Early Bird Price:", event.earlyBirdPricePerPlayer);
 
             const actualPricePerPlayer = hasEarlyBird && event?.earlyBirdPricePerPlayer
                 ? event.earlyBirdPricePerPlayer
                 : event.pricePerPlayer
-
-            // console.log("💰 Price That Will Be Charged:", actualPricePerPlayer)
 
             if (actualPricePerPlayer) {
                 const totalPrice = event.type === "DOUBLES"
@@ -133,7 +178,6 @@ export default function Page({ params }: RegistrationPageProps) {
                 console.log("💵 Total Amount:", totalPrice, event.currency)
             }
 
-            console.log("=============================================");
         }
     }, [event, tournament])
 
@@ -149,6 +193,113 @@ export default function Page({ params }: RegistrationPageProps) {
         | "player1Email" | "player1ContactNumber" | "player1Gender" | "player1JerseySize" | "player1IdUpload"
         | "player2FirstName" | "player2LastName" | "player2MiddleName" | "player2Suffix" | "player2Birthday"
         | "player2Email" | "player2ContactNumber" | "player2Gender" | "player2JerseySize" | "player2IdUpload";
+
+    const calculateAgeAtTournament = (birthday: string | FileList | null): number | null => {
+        if (typeof birthday !== 'string' || !birthday || !tournament?.dates?.tournamentStart) return null;
+
+        const birthDate = new Date(birthday);
+        const tournamentDate = new Date(tournament.dates.tournamentStart);
+
+        let age = tournamentDate.getFullYear() - birthDate.getFullYear();
+        const monthDiff = tournamentDate.getMonth() - birthDate.getMonth();
+
+        if (monthDiff < 0 || (monthDiff === 0 && tournamentDate.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        return age;
+    };
+
+    const getBirthdayString = (fieldValue: any): string | null => {
+        if (typeof fieldValue === 'string' && fieldValue) {
+            return fieldValue;
+        }
+        return null;
+    };
+
+    const extractAndDisplayBackendErrors = (graphQLError: any, form: any) => {
+        const validationErrors = graphQLError?.extensions?.validationErrors;
+
+        if (validationErrors && Array.isArray(validationErrors)) {
+            console.log("Backend validation errors:", validationErrors);
+
+            const fieldMapping: Record<string, string> = {
+                'player1Entry.birthDate': 'player1Birthday',
+                'player2Entry.birthDate': 'player2Birthday',
+                'player1Entry.birthdate': 'player1Birthday',
+                'player2Entry.birthdate': 'player2Birthday',
+                'player1Entry.gender': 'player1Gender',
+                'player2Entry.gender': 'player2Gender',
+                'player1Entry.phoneNumber': 'player1ContactNumber',
+                'player2Entry.phoneNumber': 'player2ContactNumber',
+                'player1Entry.email': 'player1Email',
+                'player2Entry.email': 'player2Email',
+                'player1Entry.firstName': 'player1FirstName',
+                'player2Entry.firstName': 'player2FirstName',
+                'player1Entry.lastName': 'player1LastName',
+                'player2Entry.lastName': 'player2LastName',
+                'player1Entry.middleName': 'player1MiddleName',
+                'player2Entry.middleName': 'player2MiddleName',
+                'player1Entry.suffix': 'player1Suffix',
+                'player2Entry.suffix': 'player2Suffix',
+                'club': 'club',
+            };
+
+            let hasAgeError = false;
+            let hasGenderError = false;
+            const ageErrorMessages: string[] = [];
+            const genderErrorMessages: string[] = [];
+
+            validationErrors.forEach((err: any) => {
+                const backendPath = Array.isArray(err.path) ? err.path.join('.') : err.path;
+                const frontendFieldName = fieldMapping[backendPath] || err.path?.[0];
+
+                if (frontendFieldName) {
+                    console.log(`Mapping backend error: ${backendPath} -> ${frontendFieldName}`);
+
+                    if (backendPath.includes('birthDate') || backendPath.includes('birthdate') ||
+                        err.message.toLowerCase().includes('age') ||
+                        err.message.toLowerCase().includes('birth year')) {
+                        hasAgeError = true;
+                        ageErrorMessages.push(err.message);
+                    }
+                    
+                    if (backendPath.includes('gender') || 
+                        err.message.toLowerCase().includes('gender') ||
+                        err.message.toLowerCase().includes('mixed') ||
+                        err.message.toLowerCase().includes('different')) {
+                        hasGenderError = true;
+                        genderErrorMessages.push(err.message);
+                    }
+
+                    form.setFieldMeta(frontendFieldName as any, {
+                        isTouched: true,
+                        errors: [err.message],
+                        errorMap: { onBlur: err.message }
+                    });
+                }
+            });
+
+            if (hasAgeError && ageErrorMessages.length > 0) {
+                showValidationToast(ageErrorMessages, "Age Validation Failed");
+            }
+            
+            if (hasGenderError && genderErrorMessages.length > 0) {
+                showValidationToast(genderErrorMessages, "Gender Validation Failed");
+            }
+
+            return { hasAgeError, hasGenderError };
+        }
+        return { hasAgeError: false, hasGenderError: false };
+    };
+
+    const eventDataForValidation = event && tournament ? {
+        ...event,
+        tournamentStart: tournament.dates.tournamentStart,
+        minAge: event.minAge,
+        maxAge: event.maxAge,
+        gender: event.gender
+    } : undefined;
 
     const form = useForm({
         defaultValues: {
@@ -177,8 +328,8 @@ export default function Page({ params }: RegistrationPageProps) {
             ...(hasFreeJersey && { player2JerseySize: "" }),
         },
         validators: {
-            onChange: createFormSchema(event?.type || "SINGLES", hasFreeJersey) as any,
-            onSubmit: createFormSchema(event?.type || "SINGLES", hasFreeJersey) as any,
+            onChange: createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation) as any,
+            onSubmit: createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation) as any,
         },
         onSubmit: async ({ value }) => {
             startTransition(async () => {
@@ -187,6 +338,45 @@ export default function Page({ params }: RegistrationPageProps) {
 
                 try {
                     console.log("Preparing GraphQL mutation input...");
+
+                    const schema = createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation);
+                    const validationResult = schema.safeParse(value);
+                    
+                    if (!validationResult.success) {
+                        const ageErrors = validationResult.error.issues.filter((err: any) => 
+                            err.path.includes('Birthday') || 
+                            err.message.toLowerCase().includes('age')
+                        );
+                        
+                        const genderErrors = validationResult.error.issues.filter((err: any) => 
+                            err.path.includes('Gender') || 
+                            err.message.toLowerCase().includes('gender') ||
+                            err.message.toLowerCase().includes('mixed')
+                        );
+                        
+                        if (ageErrors.length > 0) {
+                            const ageErrorMessages = ageErrors.map((err: any) => err.message);
+                            showValidationToast(ageErrorMessages, "Age Validation Failed");
+                            
+                            console.log("Age validation failed, stopping submission");
+                            return;
+                        }
+                        
+                        if (genderErrors.length > 0) {
+                            const genderErrorMessages = genderErrors.map((err: any) => err.message);
+                            showValidationToast(genderErrorMessages, "Gender Validation Failed");
+                            
+                            console.log("Gender validation failed, stopping submission");
+                            return;
+                        }
+                        
+                        console.log("Form validation failed:", validationResult.error);
+                        toast.error("Validation Error", {
+                            description: "Please check all required fields.",
+                            duration: 5000,
+                        });
+                        return;
+                    }
 
                     const finalFormData = {
                         ...value,
@@ -209,7 +399,6 @@ export default function Page({ params }: RegistrationPageProps) {
                             email: playerData[`player${playerNum}Email`],
                             phoneNumber: playerData[`player${playerNum}ContactNumber`],
                             gender: playerData[`player${playerNum}Gender`],
-                            // idUpload: playerData[`player${playerNum}IdUpload`]?.[0],
                         };
 
                         if (hasFreeJersey && playerData[`player${playerNum}JerseySize`]) {
@@ -221,11 +410,6 @@ export default function Page({ params }: RegistrationPageProps) {
 
                         return baseEntry;
                     };
-
-                    // const hasEarlyBird = event?.hasEarlyBird || tournament?.hasEarlyBird
-                    // const actualPricePerPlayer = hasEarlyBird && event?.earlyBirdPricePerPlayer
-                    //     ? event.earlyBirdPricePerPlayer
-                    //     : event?.pricePerPlayer;
 
                     const input = {
                         event: eventId,
@@ -257,9 +441,36 @@ export default function Page({ params }: RegistrationPageProps) {
                         console.error("Registration failed:", result.data?.registerEntry?.message);
                         toast.error(`Registration failed: ${result.data?.registerEntry?.message || "Unknown error"}`);
                     }
-                } catch (error) {
+                } catch (error: any) {
                     console.error("Submission error:", error);
-                    toast.error("An error occurred during submission. Please check the console for details.");
+
+                    if (error.graphQLErrors && error.graphQLErrors.length > 0) {
+                        const graphQLError = error.graphQLErrors[0];
+
+                        extractAndDisplayBackendErrors(graphQLError, form);
+
+                        if (graphQLError.message) {
+                            toast.error("Validation Error", {
+                                description: graphQLError.message,
+                                duration: 5000,
+                            });
+                        } else {
+                            toast.error("Validation failed", {
+                                description: "Please check all fields and try again.",
+                                duration: 5000,
+                            });
+                        }
+                    } else if (error.networkError) {
+                        toast.error("Network Error", {
+                            description: "Please check your internet connection and try again.",
+                            duration: 5000,
+                        });
+                    } else {
+                        toast.error("Submission Error", {
+                            description: "An unexpected error occurred. Please try again.",
+                            duration: 5000,
+                        });
+                    }
                 }
             });
         },
@@ -389,6 +600,46 @@ export default function Page({ params }: RegistrationPageProps) {
         ];
     };
 
+    const getAgeRequirementsText = () => {
+        if (!event) return null;
+
+        const minAge = (event as any).minAge;
+        const maxAge = (event as any).maxAge;
+
+        if (minAge && maxAge) {
+            return `Ages ${minAge} to ${maxAge}`;
+        } else if (minAge) {
+            return `Minimum age: ${minAge}`;
+        } else if (maxAge) {
+            return `Maximum age: ${maxAge}`;
+        }
+        return null;
+    };
+
+    const EnhancedFieldError = ({ errors }: { errors: any[] }) => {
+        if (!errors || errors.length === 0) return null;
+        
+        return (
+            <div className="mt-2 space-y-1">
+                {errors.map((error, index) => {
+                    const errorMessage = typeof error === 'object' && error.message 
+                        ? error.message 
+                        : String(error);
+                    
+                    return (
+                        <div 
+                            key={index} 
+                            className="flex items-start gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200"
+                        >
+                            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            <span>{errorMessage}</span>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -418,8 +669,13 @@ export default function Page({ params }: RegistrationPageProps) {
             />
 
             {submitError && (
-                <div className="max-w-4xl mx-auto mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                    <strong>Submission Error:</strong> {submitError.message}
+                <div className="max-w-4xl mx-auto mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                    <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <strong>Submission Error:</strong> {submitError.message}
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -451,6 +707,66 @@ export default function Page({ params }: RegistrationPageProps) {
                         }}
                         className="space-y-6"
                     >
+                        {/* {isMixed && event?.type === "DOUBLES" && (
+                            <div className="max-w-5xl mx-auto p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                                <div className="flex items-start gap-3">
+                                    <div className="bg-purple-100 p-2 rounded-lg">
+                                        <VenusAndMarsIcon className="w-5 h-5 text-purple-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-purple-800 mb-1">
+                                            Mixed Doubles Event
+                                        </h3>
+                                        <div className="text-purple-700 text-sm space-y-1">
+                                            <p>
+                                                <strong>Important:</strong> This is a MIXED doubles event.
+                                            </p>
+                                            <p className="font-medium">
+                                                You must register one male and one female player.
+                                            </p>
+                                            <p className="text-xs mt-2">
+                                                The system will validate that Player 1 and Player 2 have different genders.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {event && ((event as any).minAge || (event as any).maxAge) && (
+                            <div className="max-w-5xl mx-auto p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                                <div className="flex items-start gap-3">
+                                    <div className="bg-blue-100 p-2 rounded-lg">
+                                        <InfoIcon className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-blue-800 mb-1">
+                                            Age Requirements for {event.name}
+                                        </h3>
+                                        <div className="text-blue-700 text-sm space-y-1">
+                                            <p>
+                                                <strong>Age Range:</strong>{" "}
+                                                {(event as any).minAge && (event as any).maxAge
+                                                    ? `${(event as any).minAge} to ${(event as any).maxAge} years old`
+                                                    : (event as any).minAge
+                                                        ? `Minimum ${(event as any).minAge} years old`
+                                                        : `Maximum ${(event as any).maxAge} years old`}
+                                            </p>
+                                            {tournament?.dates?.tournamentStart && (
+                                                <p>
+                                                    <strong>Age Calculation Date:</strong>{" "}
+                                                    {format(new Date(tournament.dates.tournamentStart), "MMMM d, yyyy")}
+                                                </p>
+                                            )}
+                                            <p className="mt-2 font-medium">
+                                                Your age will be automatically calculated based on the tournament start date.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )} */}
+
                         <div className="max-w-5xl mx-auto p-4 sm:p-6 bg-white rounded-xl shadow-md border border-green-200">
                             <div className="text-center space-y-4 mt-4">
                                 <CardTitle className="flex items-center gap-2 text-green-800 justify-center">
@@ -472,7 +788,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                             return (
                                                 <Field data-invalid={isInvalid} className="text-left">
                                                     <FieldLabel htmlFor={field.name} className="text-green-800">
-                                                        Club
+                                                        Club<span className="text-red-500">*</span>
                                                     </FieldLabel>
 
                                                     <InputGroup>
@@ -500,7 +816,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             </Tooltip>
                                                         </InputGroupAddon>
                                                     </InputGroup>
-                                                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                                                    {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} />}
                                                 </Field>
                                             )
                                         }}
@@ -535,7 +851,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             htmlFor={field.name}
                                                             className="text-green-800"
                                                         >
-                                                            {label}
+                                                            {label}<span className="text-red-500">*</span>
                                                         </FieldLabel>
 
                                                         <InputGroup>
@@ -562,7 +878,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             </InputGroupAddon>
                                                         </InputGroup>
 
-                                                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                                                        {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} />}
                                                     </Field>
                                                 )
                                             }}
@@ -622,20 +938,6 @@ export default function Page({ params }: RegistrationPageProps) {
                                                 )?.toLocaleString()}
                                             </div>
 
-                                            {/* Savings */}
-                                            {/* {tournament.settings?.hasEarlyBird &&
-                                                event.earlyBirdPricePerPlayer &&
-                                                event.pricePerPlayer && (
-                                                    <div className="text-xs text-yellow-700 flex items-center justify-end gap-1 mt-1">
-                                                        🎉
-                                                        <span>
-                                                            ₱{(
-                                                                event.pricePerPlayer -
-                                                                event.earlyBirdPricePerPlayer
-                                                            )?.toLocaleString()} Saved!
-                                                        </span>
-                                                    </div>
-                                                )} */}
                                         </div>
                                     </div>
 
@@ -706,9 +1008,38 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                         ? "Jersey Size"
                                                                                         : "Suffix";
 
+                                                            // Type-safe handling of birthday field
+                                                            const birthdayString = name.includes("Birthday")
+                                                                ? getBirthdayString(field.state.value)
+                                                                : null;
+                                                            const calculatedAge = birthdayString
+                                                                ? calculateAgeAtTournament(birthdayString)
+                                                                : null;
+                                                            const minAge = (event as any)?.minAge;
+                                                            const maxAge = (event as any)?.maxAge;
+
                                                             return (
-                                                                <Field data-invalid={isInvalid}>
-                                                                    <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+                                                                <Field data-invalid={isInvalid} className="text-left">
+                                                                    <div className="flex justify-between items-center mb-1">
+                                                                        <FieldLabel htmlFor={field.name} className="text-green-800">
+                                                                            {label} {!name.includes("MiddleName") && !name.includes("Suffix") && <span className="text-red-500">*</span>}
+                                                                        </FieldLabel>
+
+                                                                        {/* Show calculated age for birthday field */}
+                                                                        {name.includes("Birthday") && birthdayString && tournament?.dates?.tournamentStart && (
+                                                                            <div className="flex items-center gap-1">
+                                                                                <span className={`text-xs font-medium px-2 py-0.5 rounded ${minAge !== undefined && maxAge !== undefined &&
+                                                                                        calculatedAge !== null &&
+                                                                                        calculatedAge >= minAge &&
+                                                                                        calculatedAge <= maxAge
+                                                                                        ? 'text-green-600 bg-green-50 border border-green-200'
+                                                                                        : 'text-red-600 bg-red-50 border border-red-200'
+                                                                                    }`}>
+                                                                                    Age: {calculatedAge}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
 
                                                                     {name.includes("Gender") ? (
                                                                         isMixed ? (
@@ -723,7 +1054,10 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                     onValueChange={field.handleChange}
                                                                                     aria-invalid={isInvalid}
                                                                                 >
-                                                                                    <SelectTrigger id={field.name} className="flex-1 !border-none">
+                                                                                    <SelectTrigger
+                                                                                        id={field.name}
+                                                                                        className={`flex-1 ${isInvalid ? 'border-red-300 bg-red-50' : 'border-green-200'}`}
+                                                                                    >
                                                                                         <SelectValue placeholder="Select Gender" />
                                                                                     </SelectTrigger>
                                                                                     <SelectContent>
@@ -757,7 +1091,10 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                 onValueChange={field.handleChange}
                                                                                 aria-invalid={isInvalid}
                                                                             >
-                                                                                <SelectTrigger id={field.name} className="flex-1 !border-none">
+                                                                                <SelectTrigger
+                                                                                    id={field.name}
+                                                                                    className={`flex-1 ${isInvalid ? 'border-red-300 bg-red-50' : 'border-green-200'}`}
+                                                                                >
                                                                                     <SelectValue placeholder="Select Jersey Size" />
                                                                                 </SelectTrigger>
                                                                                 <SelectContent>
@@ -772,37 +1109,40 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                         </InputGroup>
 
                                                                     ) : name.includes("Birthday") ? (
-                                                                        <Popover>
-                                                                            <PopoverTrigger asChild>
-                                                                                <Button
-                                                                                    variant="outline"
-                                                                                    className={`w-full justify-start text-left font-normal border-green-200 bg-white ${!field.state.value && "text-muted-foreground"}`}
-                                                                                >
-                                                                                    {typeof field.state.value === "string" && field.state.value
-                                                                                        ? format(new Date(field.state.value), "PPP")
-                                                                                        : "Pick a date"}
-                                                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                                                </Button>
-                                                                            </PopoverTrigger>
-                                                                            <PopoverContent className="w-auto p-0" align="start">
-                                                                                <Calendar
-                                                                                    mode="single"
-                                                                                    selected={
-                                                                                        typeof field.state.value === "string"
-                                                                                            ? new Date(field.state.value)
-                                                                                            : undefined
-                                                                                    }
-                                                                                    onSelect={(date) => {
-                                                                                        field.handleChange(date ? format(date, "yyyy-MM-dd") : "")
-                                                                                    }}
-                                                                                    initialFocus
-                                                                                    captionLayout="dropdown"
-                                                                                    fromYear={1800}
-                                                                                    toYear={new Date().getFullYear()}
-                                                                                    className="rounded-md border cursor-pointer"
-                                                                                />
-                                                                            </PopoverContent>
-                                                                        </Popover>
+                                                                        <div className="space-y-2">
+                                                                            <Popover>
+                                                                                <PopoverTrigger asChild>
+                                                                                    <Button
+                                                                                        variant="outline"
+                                                                                        className={`w-full justify-start text-left font-normal ${isInvalid ? 'border-red-300 bg-red-50' : 'border-green-200 bg-white'} ${!field.state.value && "text-muted-foreground"}`}
+                                                                                    >
+                                                                                        {typeof field.state.value === "string" && field.state.value
+                                                                                            ? format(new Date(field.state.value), "PPP")
+                                                                                            : "Pick a date"}
+                                                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                                                    </Button>
+                                                                                </PopoverTrigger>
+                                                                                <PopoverContent className="w-auto p-0" align="start">
+                                                                                    <Calendar
+                                                                                        mode="single"
+                                                                                        selected={
+                                                                                            typeof field.state.value === "string"
+                                                                                                ? new Date(field.state.value)
+                                                                                                : undefined
+                                                                                        }
+                                                                                        onSelect={(date) => {
+                                                                                            field.handleChange(date ? format(date, "yyyy-MM-dd") : "")
+                                                                                        }}
+                                                                                        initialFocus
+                                                                                        captionLayout="dropdown"
+                                                                                        fromYear={1900}
+                                                                                        toYear={new Date().getFullYear()}
+                                                                                        className="rounded-md border cursor-pointer"
+                                                                                    />
+                                                                                </PopoverContent>
+                                                                            </Popover>
+
+                                                                        </div>
                                                                     ) : (
                                                                         <InputGroup>
                                                                             <InputGroupInput
@@ -813,7 +1153,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                 onChange={(e) => field.handleChange(e.target.value)}
                                                                                 placeholder={`Enter ${label}`}
                                                                                 aria-invalid={isInvalid}
-                                                                                className="!pl-4"
+                                                                                className={`!pl-4 ${isInvalid ? 'border-red-300 bg-red-50' : ''}`}
                                                                             />
                                                                             <InputGroupAddon className="mx-auto px-3">
                                                                                 <User2 className="w-4 h-4" />
@@ -822,7 +1162,7 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                                                     )}
 
-                                                                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                                                                    {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} />}
                                                                 </Field>
                                                             );
                                                         }}
@@ -894,7 +1234,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                         />
                                                                     </label>
                                                                 </div>
-                                                                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                                                                {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} />}
                                                             </Field>
                                                         );
                                                     }}
@@ -949,7 +1289,9 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                                             return (
                                                                 <Field data-invalid={isInvalid} className="text-left">
-                                                                    <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+                                                                    <FieldLabel htmlFor={field.name} className="text-green-800">
+                                                                        {label} <span className="text-red-500">*</span>
+                                                                    </FieldLabel>
                                                                     <InputGroup>
                                                                         <InputGroupInput
                                                                             id={field.name}
@@ -962,7 +1304,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                             disabled={
                                                                                 playerNum === 1 ? syncPlayer1 : syncPlayer2
                                                                             }
-                                                                            className="!pl-3"
+                                                                            className={`!pl-3 ${isInvalid ? 'border-red-300 bg-red-50' : ''}`}
                                                                         />
                                                                         <InputGroupAddon className="mx-auto px-3">
                                                                             {name.includes("Email") ? (
@@ -974,7 +1316,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                     </InputGroup>
 
                                                                     {isInvalid && (
-                                                                        <FieldError errors={field.state.meta.errors} />
+                                                                        <EnhancedFieldError errors={field.state.meta.errors} />
                                                                     )}
                                                                 </Field>
                                                             )

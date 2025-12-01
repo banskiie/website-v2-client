@@ -1624,7 +1624,6 @@ export function UploadProofMergedModal({
                 </label>
                 <Input
                   type="number"
-                  disabled
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="Amount: ₱1000.00"
