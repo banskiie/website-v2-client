@@ -20,18 +20,14 @@ import { IEntry } from "@/types/entry.interface"
 import { format, formatDistanceToNowStrict } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Link from "next/link"
 import { toast } from "sonner"
 import {
   CheckCircle,
   CheckCircle2,
   CircleAlert,
-  CircleStar,
   Copy,
-  Dot,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import PlayerViewDialog from "@/app/(auth)/players/dialogs/view"
 
 const ENTRY = gql`
@@ -91,15 +87,12 @@ const ENTRY = gql`
         phoneNumber
         jerseySize
       }
-      connectedPlayer1 {
+      connectedPlayer2 {
+        _id
         firstName
         middleName
         lastName
         suffix
-        gender
-        birthDate
-        email
-        phoneNumber
       }
     }
   }
@@ -387,6 +380,21 @@ const ViewDialog = (props: Props) => {
                     <Label className="font-medium col-span-2">Player 2</Label>
                     {entry?.player2Entry && (
                       <>
+                        {entry?.connectedPlayer2 && (
+                          <div className="col-span-2">
+                            <Label>Connected Player</Label>
+                            {loading ? (
+                              <Skeleton className="w-full my-1 h-3" />
+                            ) : (
+                              <PlayerViewDialog
+                                externalUse
+                                _id={entry?.connectedPlayer2?._id}
+                                title={`${entry?.connectedPlayer2.firstName} ${entry?.connectedPlayer2.middleName} ${entry?.connectedPlayer2.lastName} ${entry?.connectedPlayer2.suffix}`}
+                                titleClassName="block text-sm text-blue-600"
+                              />
+                            )}
+                          </div>
+                        )}
                         <div className="col-span-2">
                           <Label>Entry Name</Label>
                           {loading ? (

@@ -98,7 +98,7 @@ const FormDialog = (props: Props) => {
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
   // Combined loading state
   const isLoading = isUpdate ? isPending || fetchLoading : false
-  // Role Options
+  // Gender Options
   const [openGenders, setOpenGenders] = useState(false)
   const genders = Object.values(Gender).map((gender) => ({
     label: gender.toLocaleLowerCase().replaceAll("_", " "),
@@ -472,13 +472,25 @@ const FormDialog = (props: Props) => {
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0">
-                        <Command>
+                        <Command
+                          filter={(value, search) =>
+                            genders
+                              .find(
+                                (t: { value: string; label: string }) =>
+                                  t.value === value
+                              )
+                              ?.label.toLowerCase()
+                              .includes(search.toLowerCase())
+                              ? 1
+                              : 0
+                          }
+                        >
                           <CommandInput placeholder="Select Role" />
                           <CommandList className="max-h-72 overflow-y-auto">
                             <CommandEmpty>No role found.</CommandEmpty>
                             <CommandGroup>
                               <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
-                                Roles
+                                Gender
                               </Label>
                               {genders?.map((o) => (
                                 <CommandItem

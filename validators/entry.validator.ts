@@ -41,6 +41,8 @@ export const CreateEntrySchema = z.object({
   player2Entry: NewPlayerEntrySchema.optional().nullable(),
   connectedPlayer1: z.string().optional().nullable(),
   connectedPlayer2: z.string().optional().nullable(),
+  isPlayer1New: z.boolean().default(false),
+  isPlayer2New: z.boolean().default(false),
   isInSoftware: z.boolean().default(false),
   isEarlyBird: z.boolean().default(false),
 })

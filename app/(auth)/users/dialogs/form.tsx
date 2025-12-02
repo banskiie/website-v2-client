@@ -346,7 +346,18 @@ const FormDialog = (props: Props) => {
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0">
-                        <Command>
+                        <Command
+                          filter={(value, search) =>
+                            Roles.find(
+                              (t: { value: string; label: string }) =>
+                                t.value === value
+                            )
+                              ?.label.toLowerCase()
+                              .includes(search.toLowerCase())
+                              ? 1
+                              : 0
+                          }
+                        >
                           <CommandInput placeholder="Select Role" />
                           <CommandList className="max-h-72 overflow-y-auto">
                             <CommandEmpty>No role found.</CommandEmpty>

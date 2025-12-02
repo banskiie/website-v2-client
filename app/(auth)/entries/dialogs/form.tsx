@@ -45,6 +45,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { EventGender, EventType } from "@/types/event.interface"
 import { Checkbox } from "@/components/ui/checkbox"
 import { JerseySize } from "@/types/jersey.interface"
+import { format } from "date-fns"
+import { Calendar } from "@/components/ui/calendar"
+import { Separator } from "@/components/ui/separator"
 
 const ENTRY = gql`
   query Entry($_id: ID!) {
@@ -82,10 +85,6 @@ const ENTRY = gql`
       }
       connectedPlayer1 {
         _id
-        firstName
-        middleName
-        lastName
-        suffix
       }
       player2Entry {
         firstName
@@ -98,15 +97,8 @@ const ENTRY = gql`
         phoneNumber
         jerseySize
       }
-      connectedPlayer1 {
-        firstName
-        middleName
-        lastName
-        suffix
-        gender
-        birthDate
-        email
-        phoneNumber
+      connectedPlayer2 {
+        _id
       }
     }
   }
@@ -133,6 +125,10 @@ const UPDATE = gql`
 const OPTIONS = gql`
   query Options {
     tournamentOptions {
+      label
+      value
+    }
+    playerOptions {
       label
       value
     }
@@ -182,6 +178,9 @@ const FormDialog = (props: Props) => {
       fetchPolicy: "no-cache",
     })
   const tournaments = optionsData?.tournamentOptions || []
+  // Player Options
+  const [openPlayers, setOpenPlayers] = useState(false)
+  const players = optionsData?.playerOptions || []
   // Event Options by Tournament
   const [tournamentId, setTournamentId] = useState<string | null>(null)
   const [openEvents, setOpenEvents] = useState(false)
@@ -197,6 +196,12 @@ const FormDialog = (props: Props) => {
   const jerseySizes = Object.values(JerseySize).map((size) => ({
     label: size,
     value: size,
+  }))
+  // Gender Options
+  const [openGenders, setOpenGenders] = useState(false)
+  const genders = Object.values(Gender).map((gender) => ({
+    label: gender.toLocaleLowerCase().replaceAll("_", " "),
+    value: gender,
   }))
   // Combined loading state
   const loading =
@@ -233,6 +238,7 @@ const FormDialog = (props: Props) => {
       connectedPlayer2: null as string | null,
       isInSoftware: false,
       isEarlyBird: false,
+      ...(isUpdate ? {} : { isPlayer1New: false, isPlayer2New: false }),
     },
     validators: {
       onSubmit: ({ formApi, value: payload }) => {
@@ -245,8 +251,6 @@ const FormDialog = (props: Props) => {
             ...payload,
             player2Entry: isDoubles ? payload.player2Entry : null,
           }
-
-          console.log("Validated Payload:", modifiedPayload)
           CreateEntrySchema.parse(modifiedPayload)
         } catch (error: any) {
           console.error(error)
@@ -295,19 +299,18 @@ const FormDialog = (props: Props) => {
           })
           if (response) onClose()
         } catch (error: any) {
-          console.error(error.errors)
-          // if (error.name == "CombinedGraphQLErrors") {
-          //   const fieldErrors = error.errors[0].extensions.fields
-          //   if (fieldErrors)
-          //     fieldErrors.map(
-          //       ({ path, message }: { path: string; message: string }) =>
-          //         formApi.fieldInfo[
-          //           path as keyof typeof formApi.fieldInfo
-          //         ].instance?.setErrorMap({
-          //           onSubmit: { message },
-          //         })
-          //     )
-          // }
+          if (error.name == "CombinedGraphQLErrors") {
+            const fieldErrors = error.errors[0].extensions.fields
+            if (fieldErrors)
+              fieldErrors.map(
+                ({ path, message }: { path: string; message: string }) =>
+                  formApi.fieldInfo[
+                    path as keyof typeof formApi.fieldInfo
+                  ].instance?.setErrorMap({
+                    onSubmit: { message },
+                  })
+              )
+          }
         }
       }),
   })
@@ -468,7 +471,7 @@ const FormDialog = (props: Props) => {
                   })()}
                 </TabsList>
                 <TabsContent value="details">
-                  <FieldSet className="flex flex-col gap-3 h-[48vh] overflow-y-auto">
+                  <FieldSet className="flex flex-col gap-3 h-[52vh] overflow-y-auto">
                     <form.Field
                       name="tournament"
                       children={(field) => {
@@ -510,7 +513,19 @@ const FormDialog = (props: Props) => {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-full p-0">
-                                <Command>
+                                <Command
+                                  filter={(value, search) =>
+                                    tournaments
+                                      .find(
+                                        (t: { value: string; label: string }) =>
+                                          t.value === value
+                                      )
+                                      ?.label.toLowerCase()
+                                      .includes(search.toLowerCase())
+                                      ? 1
+                                      : 0
+                                  }
+                                >
                                   <CommandInput placeholder="Select Tournament" />
                                   <CommandList className="max-h-72 overflow-y-auto">
                                     <CommandEmpty>
@@ -618,7 +633,19 @@ const FormDialog = (props: Props) => {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-full p-0">
-                                <Command>
+                                <Command
+                                  filter={(value, search) =>
+                                    events
+                                      .find(
+                                        (t: { value: string; label: string }) =>
+                                          t.value === value
+                                      )
+                                      ?.label.toLowerCase()
+                                      .includes(search.toLowerCase())
+                                      ? 1
+                                      : 0
+                                  }
+                                >
                                   <CommandInput placeholder="Select Event" />
                                   <CommandList className="max-h-72 overflow-y-auto">
                                     <CommandEmpty>No event found.</CommandEmpty>
@@ -750,7 +777,168 @@ const FormDialog = (props: Props) => {
                   </FieldSet>
                 </TabsContent>
                 <TabsContent value="player1">
-                  <FieldSet className="flex flex-col gap-3 h-[48vh] overflow-y-auto">
+                  <FieldSet className="grid grid-cols-2 place-content-start justify-start gap-3 h-[52vh] overflow-y-auto">
+                    <div className="col-span-2 p-3 flex flex-col gap-2.5 border rounded-md">
+                      <form.Field
+                        name="isPlayer1New"
+                        children={(field) => {
+                          const isInvalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <div className="flex items-center">
+                                <Checkbox
+                                  id={field.name}
+                                  name={field.name}
+                                  checked={field.state.value}
+                                  onBlur={field.handleBlur}
+                                  onCheckedChange={(checked) =>
+                                    field.handleChange(checked === true)
+                                  }
+                                  className="mr-2"
+                                  aria-invalid={isInvalid}
+                                  disabled={loading}
+                                />
+                                <div className="grid">
+                                  <FieldLabel htmlFor={field.name}>
+                                    Is New Player? (Player 1)
+                                  </FieldLabel>
+                                  <span className="text-muted-foreground text-xs">
+                                    Checking this will create a new player
+                                    profile.
+                                  </span>
+                                </div>
+                              </div>
+                              {isInvalid && (
+                                <FieldError errors={field.state.meta.errors} />
+                              )}
+                            </Field>
+                          )
+                        }}
+                      />
+                      {!state.isPlayer1New && (
+                        <>
+                          <Separator />
+
+                          <form.Field
+                            name="connectedPlayer1"
+                            children={(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <FieldLabel htmlFor={field.name}>
+                                    Connected Player 1
+                                  </FieldLabel>
+                                  <Popover
+                                    open={openPlayers}
+                                    onOpenChange={setOpenPlayers}
+                                  >
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        id={field.name}
+                                        name={field.name}
+                                        disabled={tournamentOptionsLoading}
+                                        aria-expanded={openPlayers}
+                                        onBlur={field.handleBlur}
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-invalid={isInvalid}
+                                        className={cn(
+                                          "w-full justify-between font-normal capitalize -mt-2",
+                                          !field.state.value &&
+                                            "text-muted-foreground"
+                                        )}
+                                        type="button"
+                                      >
+                                        {field.state.value
+                                          ? players.find(
+                                              (o: {
+                                                value: string
+                                                label: string
+                                                hasEarlyBird: boolean
+                                              }) =>
+                                                o.value === field.state.value
+                                            )?.label
+                                          : "Select Player"}
+                                        <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-full p-0">
+                                      <Command
+                                        filter={(value, search) =>
+                                          players
+                                            .find(
+                                              (t: {
+                                                value: string
+                                                label: string
+                                              }) => t.value === value
+                                            )
+                                            ?.label.toLowerCase()
+                                            .includes(search.toLowerCase())
+                                            ? 1
+                                            : 0
+                                        }
+                                      >
+                                        <CommandInput placeholder="Select Player" />
+                                        <CommandList className="max-h-72 overflow-y-auto">
+                                          <CommandEmpty>
+                                            No player found.
+                                          </CommandEmpty>
+                                          <CommandGroup>
+                                            <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
+                                              Players
+                                            </Label>
+                                            {players?.map(
+                                              (o: {
+                                                value: string
+                                                label: string
+                                                hasEarlyBird: boolean
+                                              }) => (
+                                                <CommandItem
+                                                  key={o.value}
+                                                  value={o.value}
+                                                  onSelect={(v) => {
+                                                    field.handleChange(
+                                                      v.toString()
+                                                    )
+                                                    setOpenPlayers(false)
+                                                  }}
+                                                  className="capitalize"
+                                                >
+                                                  <CheckIcon
+                                                    className={cn(
+                                                      "h-4 w-4",
+                                                      field.state.value ===
+                                                        o.value
+                                                        ? "opacity-100"
+                                                        : "opacity-0"
+                                                    )}
+                                                  />
+                                                  {o.label}
+                                                </CommandItem>
+                                              )
+                                            )}
+                                          </CommandGroup>
+                                        </CommandList>
+                                      </Command>
+                                    </PopoverContent>
+                                  </Popover>
+                                  {isInvalid && (
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                    />
+                                  )}
+                                </Field>
+                              )
+                            }}
+                          />
+                        </>
+                      )}
+                    </div>
+
                     <form.Field
                       name="player1Entry.firstName"
                       children={(field) => {
@@ -881,31 +1069,47 @@ const FormDialog = (props: Props) => {
                       />
                     </div>
                     <form.Field
-                      name="player1Entry.email"
+                      name="player1Entry.birthDate"
                       children={(field) => {
                         const isInvalid =
                           field.state.meta.isTouched &&
                           !field.state.meta.isValid
                         return (
                           <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>
-                              Email Address
+                            <FieldLabel
+                              id="p1-birth-date"
+                              htmlFor="p1-birth-date"
+                            >
+                              Birth Date
                             </FieldLabel>
-                            <InputGroup className="-mt-1.5">
-                              <InputGroupInput
-                                placeholder="Email Address"
-                                disabled={loading}
-                                id={field.name}
-                                name={field.name}
-                                value={field.state.value}
-                                onBlur={field.handleBlur}
-                                onChange={(e) =>
-                                  field.handleChange(e.target.value)
-                                }
-                                aria-invalid={isInvalid}
-                                type="email"
-                              />
-                            </InputGroup>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  id="p1-birth-date"
+                                  name="p1-birth-date"
+                                  variant="outline"
+                                  data-empty={!field.state.value}
+                                  className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -my-1.5"
+                                  disabled={loading}
+                                >
+                                  <CalendarIcon className="size-3.5" />
+                                  {field.state.value ? (
+                                    format(field.state.value, "PP")
+                                  ) : (
+                                    <span>Select Birth Date</span>
+                                  )}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  captionLayout="dropdown"
+                                  required
+                                  selected={field.state.value}
+                                  onSelect={field.handleChange}
+                                />
+                              </PopoverContent>
+                            </Popover>
                             {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                             )}
@@ -913,6 +1117,98 @@ const FormDialog = (props: Props) => {
                         )
                       }}
                     />
+                    <form.Field
+                      name="player1Entry.gender"
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Gender</FieldLabel>
+                            <Popover
+                              open={openGenders}
+                              onOpenChange={setOpenGenders}
+                              modal
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  id={field.name}
+                                  name={field.name}
+                                  disabled={loading}
+                                  aria-expanded={openGenders}
+                                  onBlur={field.handleBlur}
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-invalid={isInvalid}
+                                  className="w-full justify-between font-normal capitalize -mt-2"
+                                  type="button"
+                                >
+                                  {field.state.value
+                                    ? genders.find(
+                                        (o) => o.value === field.state.value
+                                      )?.label
+                                    : "Select Gender"}
+                                  <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0">
+                                <Command
+                                  filter={(value, search) =>
+                                    genders
+                                      .find(
+                                        (t: { value: string; label: string }) =>
+                                          t.value === value
+                                      )
+                                      ?.label.toLowerCase()
+                                      .includes(search.toLowerCase())
+                                      ? 1
+                                      : 0
+                                  }
+                                >
+                                  <CommandInput placeholder="Select Role" />
+                                  <CommandList className="max-h-72 overflow-y-auto">
+                                    <CommandEmpty>
+                                      No gennder found.
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                      <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
+                                        Gender
+                                      </Label>
+                                      {genders?.map((o) => (
+                                        <CommandItem
+                                          key={o.value}
+                                          value={o.value}
+                                          onSelect={(v) => {
+                                            field.handleChange(v as Gender)
+                                            setOpenGenders(false)
+                                          }}
+                                          className="capitalize"
+                                        >
+                                          <CheckIcon
+                                            className={cn(
+                                              "h-4 w-4",
+                                              field.state.value === o.value
+                                                ? "opacity-100"
+                                                : "opacity-0"
+                                            )}
+                                          />
+                                          {o.label}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+
                     <form.Field
                       name="player1Entry.phoneNumber"
                       children={(field) => {
@@ -953,7 +1249,9 @@ const FormDialog = (props: Props) => {
                           !field.state.meta.isValid
                         return (
                           <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>Role</FieldLabel>
+                            <FieldLabel htmlFor={field.name}>
+                              Jersey Size
+                            </FieldLabel>
                             <Popover
                               open={openJerseySizes}
                               onOpenChange={setOpenJerseySizes}
@@ -981,10 +1279,24 @@ const FormDialog = (props: Props) => {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-full p-0">
-                                <Command>
+                                <Command
+                                  filter={(value, search) =>
+                                    jerseySizes
+                                      .find(
+                                        (t: { value: string; label: string }) =>
+                                          t.value === value
+                                      )
+                                      ?.label.toLowerCase()
+                                      .includes(search.toLowerCase())
+                                      ? 1
+                                      : 0
+                                  }
+                                >
                                   <CommandInput placeholder="Select Role" />
                                   <CommandList className="max-h-72 overflow-y-auto">
-                                    <CommandEmpty>No role found.</CommandEmpty>
+                                    <CommandEmpty>
+                                      No jersey size found.
+                                    </CommandEmpty>
                                     <CommandGroup>
                                       <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
                                         Jersey Sizes
@@ -1022,10 +1334,205 @@ const FormDialog = (props: Props) => {
                         )
                       }}
                     />
+                    <form.Field
+                      name="player1Entry.email"
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field
+                            className="col-span-2"
+                            data-invalid={isInvalid}
+                          >
+                            <FieldLabel htmlFor={field.name}>
+                              Email Address
+                            </FieldLabel>
+                            <InputGroup className="-mt-1.5">
+                              <InputGroupInput
+                                placeholder="Email Address"
+                                disabled={loading}
+                                id={field.name}
+                                name={field.name}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                                aria-invalid={isInvalid}
+                                type="email"
+                              />
+                            </InputGroup>
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
                   </FieldSet>
                 </TabsContent>
                 <TabsContent value="player2">
-                  <FieldSet className="flex flex-col gap-3 h-[48vh] overflow-y-auto">
+                  <FieldSet className="grid grid-cols-2 place-content-start justify-start gap-3 h-[52vh] overflow-y-auto">
+                    <div className="col-span-2 p-3 flex flex-col gap-2.5 border rounded-md">
+                      <form.Field
+                        name="isPlayer2New"
+                        children={(field) => {
+                          const isInvalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <div className="flex items-center">
+                                <Checkbox
+                                  id={field.name}
+                                  name={field.name}
+                                  checked={field.state.value}
+                                  onBlur={field.handleBlur}
+                                  onCheckedChange={(checked) =>
+                                    field.handleChange(checked === true)
+                                  }
+                                  className="mr-2"
+                                  aria-invalid={isInvalid}
+                                  disabled={loading}
+                                />
+                                <div className="grid">
+                                  <FieldLabel htmlFor={field.name}>
+                                    Is New Player? (Player 2)
+                                  </FieldLabel>
+                                  <span className="text-muted-foreground text-xs">
+                                    Checking this will create a new player
+                                    profile.
+                                  </span>
+                                </div>
+                              </div>
+                              {isInvalid && (
+                                <FieldError errors={field.state.meta.errors} />
+                              )}
+                            </Field>
+                          )
+                        }}
+                      />
+                      {!state.isPlayer2New && (
+                        <>
+                          <Separator />
+                          <form.Field
+                            name="connectedPlayer2"
+                            children={(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <FieldLabel htmlFor={field.name}>
+                                    Connected Player 2
+                                  </FieldLabel>
+                                  <Popover
+                                    open={openPlayers}
+                                    onOpenChange={setOpenPlayers}
+                                  >
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        id={field.name}
+                                        name={field.name}
+                                        disabled={tournamentOptionsLoading}
+                                        aria-expanded={openPlayers}
+                                        onBlur={field.handleBlur}
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-invalid={isInvalid}
+                                        className={cn(
+                                          "w-full justify-between font-normal capitalize -mt-2",
+                                          !field.state.value &&
+                                            "text-muted-foreground"
+                                        )}
+                                        type="button"
+                                      >
+                                        {field.state.value
+                                          ? players.find(
+                                              (o: {
+                                                value: string
+                                                label: string
+                                                hasEarlyBird: boolean
+                                              }) =>
+                                                o.value === field.state.value
+                                            )?.label
+                                          : "Select Player"}
+                                        <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-full p-0">
+                                      <Command
+                                        filter={(value, search) =>
+                                          players
+                                            .find(
+                                              (t: {
+                                                value: string
+                                                label: string
+                                              }) => t.value === value
+                                            )
+                                            ?.label.toLowerCase()
+                                            .includes(search.toLowerCase())
+                                            ? 1
+                                            : 0
+                                        }
+                                      >
+                                        <CommandInput placeholder="Select Player" />
+                                        <CommandList className="max-h-72 overflow-y-auto">
+                                          <CommandEmpty>
+                                            No player found.
+                                          </CommandEmpty>
+                                          <CommandGroup>
+                                            <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
+                                              Players
+                                            </Label>
+                                            {players?.map(
+                                              (o: {
+                                                value: string
+                                                label: string
+                                                hasEarlyBird: boolean
+                                              }) => (
+                                                <CommandItem
+                                                  key={o.value}
+                                                  value={o.value}
+                                                  onSelect={(v) => {
+                                                    field.handleChange(
+                                                      v.toString()
+                                                    )
+                                                    setOpenPlayers(false)
+                                                  }}
+                                                  className="capitalize"
+                                                >
+                                                  <CheckIcon
+                                                    className={cn(
+                                                      "h-4 w-4",
+                                                      field.state.value ===
+                                                        o.value
+                                                        ? "opacity-100"
+                                                        : "opacity-0"
+                                                    )}
+                                                  />
+                                                  {o.label}
+                                                </CommandItem>
+                                              )
+                                            )}
+                                          </CommandGroup>
+                                        </CommandList>
+                                      </Command>
+                                    </PopoverContent>
+                                  </Popover>
+                                  {isInvalid && (
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                    />
+                                  )}
+                                </Field>
+                              )
+                            }}
+                          />
+                        </>
+                      )}
+                    </div>
                     <form.Field
                       name="player2Entry.firstName"
                       children={(field) => {
@@ -1156,31 +1663,47 @@ const FormDialog = (props: Props) => {
                       />
                     </div>
                     <form.Field
-                      name="player2Entry.email"
+                      name="player2Entry.birthDate"
                       children={(field) => {
                         const isInvalid =
                           field.state.meta.isTouched &&
                           !field.state.meta.isValid
                         return (
                           <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>
-                              Email Address
+                            <FieldLabel
+                              id="p1-birth-date"
+                              htmlFor="p1-birth-date"
+                            >
+                              Birth Date
                             </FieldLabel>
-                            <InputGroup className="-mt-1.5">
-                              <InputGroupInput
-                                placeholder="Email Address"
-                                disabled={loading}
-                                id={field.name}
-                                name={field.name}
-                                value={field.state.value}
-                                onBlur={field.handleBlur}
-                                onChange={(e) =>
-                                  field.handleChange(e.target.value)
-                                }
-                                aria-invalid={isInvalid}
-                                type="email"
-                              />
-                            </InputGroup>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  id="p1-birth-date"
+                                  name="p1-birth-date"
+                                  variant="outline"
+                                  data-empty={!field.state.value}
+                                  className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -my-1.5"
+                                  disabled={loading}
+                                >
+                                  <CalendarIcon className="size-3.5" />
+                                  {field.state.value ? (
+                                    format(field.state.value, "PP")
+                                  ) : (
+                                    <span>Select Birth Date</span>
+                                  )}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  captionLayout="dropdown"
+                                  required
+                                  selected={field.state.value}
+                                  onSelect={field.handleChange}
+                                />
+                              </PopoverContent>
+                            </Popover>
                             {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                             )}
@@ -1188,6 +1711,98 @@ const FormDialog = (props: Props) => {
                         )
                       }}
                     />
+                    <form.Field
+                      name="player2Entry.gender"
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Gender</FieldLabel>
+                            <Popover
+                              open={openGenders}
+                              onOpenChange={setOpenGenders}
+                              modal
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  id={field.name}
+                                  name={field.name}
+                                  disabled={loading}
+                                  aria-expanded={openGenders}
+                                  onBlur={field.handleBlur}
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-invalid={isInvalid}
+                                  className="w-full justify-between font-normal capitalize -mt-2"
+                                  type="button"
+                                >
+                                  {field.state.value
+                                    ? genders.find(
+                                        (o) => o.value === field.state.value
+                                      )?.label
+                                    : "Select Gender"}
+                                  <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0">
+                                <Command
+                                  filter={(value, search) =>
+                                    genders
+                                      .find(
+                                        (t: { value: string; label: string }) =>
+                                          t.value === value
+                                      )
+                                      ?.label.toLowerCase()
+                                      .includes(search.toLowerCase())
+                                      ? 1
+                                      : 0
+                                  }
+                                >
+                                  <CommandInput placeholder="Select Role" />
+                                  <CommandList className="max-h-72 overflow-y-auto">
+                                    <CommandEmpty>
+                                      No gender found.
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                      <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
+                                        Gender
+                                      </Label>
+                                      {genders?.map((o) => (
+                                        <CommandItem
+                                          key={o.value}
+                                          value={o.value}
+                                          onSelect={(v) => {
+                                            field.handleChange(v as Gender)
+                                            setOpenGenders(false)
+                                          }}
+                                          className="capitalize"
+                                        >
+                                          <CheckIcon
+                                            className={cn(
+                                              "h-4 w-4",
+                                              field.state.value === o.value
+                                                ? "opacity-100"
+                                                : "opacity-0"
+                                            )}
+                                          />
+                                          {o.label}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+
                     <form.Field
                       name="player2Entry.phoneNumber"
                       children={(field) => {
@@ -1228,7 +1843,9 @@ const FormDialog = (props: Props) => {
                           !field.state.meta.isValid
                         return (
                           <Field data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>Role</FieldLabel>
+                            <FieldLabel htmlFor={field.name}>
+                              Jersey Size
+                            </FieldLabel>
                             <Popover
                               open={openJerseySizes}
                               onOpenChange={setOpenJerseySizes}
@@ -1256,10 +1873,24 @@ const FormDialog = (props: Props) => {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-full p-0">
-                                <Command>
+                                <Command
+                                  filter={(value, search) =>
+                                    jerseySizes
+                                      .find(
+                                        (t: { value: string; label: string }) =>
+                                          t.value === value
+                                      )
+                                      ?.label.toLowerCase()
+                                      .includes(search.toLowerCase())
+                                      ? 1
+                                      : 0
+                                  }
+                                >
                                   <CommandInput placeholder="Select Role" />
                                   <CommandList className="max-h-72 overflow-y-auto">
-                                    <CommandEmpty>No role found.</CommandEmpty>
+                                    <CommandEmpty>
+                                      No jersey size found.
+                                    </CommandEmpty>
                                     <CommandGroup>
                                       <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
                                         Jersey Sizes
@@ -1290,6 +1921,42 @@ const FormDialog = (props: Props) => {
                                 </Command>
                               </PopoverContent>
                             </Popover>
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+                    <form.Field
+                      name="player2Entry.email"
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field
+                            className="col-span-2"
+                            data-invalid={isInvalid}
+                          >
+                            <FieldLabel htmlFor={field.name}>
+                              Email Address
+                            </FieldLabel>
+                            <InputGroup className="-mt-1.5">
+                              <InputGroupInput
+                                placeholder="Email Address"
+                                disabled={loading}
+                                id={field.name}
+                                name={field.name}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                                aria-invalid={isInvalid}
+                                type="email"
+                              />
+                            </InputGroup>
                             {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                             )}
