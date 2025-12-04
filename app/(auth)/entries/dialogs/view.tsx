@@ -21,12 +21,7 @@ import { format, formatDistanceToNowStrict } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import {
-  CheckCircle,
-  CheckCircle2,
-  CircleAlert,
-  Copy,
-} from "lucide-react"
+import { CheckCircle, CheckCircle2, CircleAlert, Copy } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import PlayerViewDialog from "@/app/(auth)/players/dialogs/view"
 
@@ -324,7 +319,7 @@ const ViewDialog = (props: Props) => {
                         <span className="block text-sm">
                           {entry?.player1Entry.firstName}{" "}
                           {entry?.player1Entry.middleName}{" "}
-                          {entry?.player1Entry.lastName}
+                          {entry?.player1Entry.lastName}{" "}
                           {entry?.player1Entry.suffix}
                         </span>
                       )}
@@ -403,7 +398,7 @@ const ViewDialog = (props: Props) => {
                             <span className="block text-sm">
                               {entry?.player2Entry.firstName}{" "}
                               {entry?.player2Entry.middleName}{" "}
-                              {entry?.player2Entry.lastName}
+                              {entry?.player2Entry.lastName}{" "}
                               {entry?.player2Entry.suffix}
                             </span>
                           )}

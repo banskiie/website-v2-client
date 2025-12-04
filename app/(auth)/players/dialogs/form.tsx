@@ -387,6 +387,7 @@ const FormDialog = (props: Props) => {
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
+                        maxLength={11}
                       />
                     </InputGroup>
                     {isInvalid && (

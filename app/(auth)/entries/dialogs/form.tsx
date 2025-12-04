@@ -1172,6 +1172,7 @@ const FormDialog = (props: Props) => {
                                   field.handleChange(e.target.value)
                                 }
                                 aria-invalid={isInvalid}
+                                maxLength={11}
                               />
                             </InputGroup>
                             {isInvalid && (
@@ -1767,6 +1768,7 @@ const FormDialog = (props: Props) => {
                                   field.handleChange(e.target.value)
                                 }
                                 aria-invalid={isInvalid}
+                                maxLength={11}
                               />
                             </InputGroup>
                             {isInvalid && (
