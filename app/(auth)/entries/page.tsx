@@ -47,10 +47,9 @@ import BatchMenu from "./dialogs/batch"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns/format"
-import StatusDialog from "./dialogs/status"
-import ActiveBadge from "@/components/badges/active-badge"
 import EntryStatusBadge from "@/components/badges/entry-status-badge"
 import EntryTable from "@/components/table/entry-table"
+import AssignDialog from "./dialogs/assign"
 
 const ENTRIES = gql`
   query Entries(
@@ -139,6 +138,7 @@ const ENTRY_CHANGED = gql`
 const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
   const entry = useMemo(() => data, [data])
   const [menuOpen, setMenuOpen] = useState(false)
+  const status = useMemo(() => entry?.currentStatus, [entry])
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
@@ -153,6 +153,15 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
           <ViewDialog _id={entry?._id} />
           <FormDialog _id={entry?._id} onClose={() => setMenuOpen(false)} />
           <DropdownMenuSeparator />
+          <AssignDialog
+            _id={entry?._id}
+            onClose={() => setMenuOpen(false)}
+            title={
+              status === EntryStatus.PENDING
+                ? "Assign"
+                : "Reassign"
+            }
+          />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

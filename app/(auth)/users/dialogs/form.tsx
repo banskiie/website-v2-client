@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Role } from "@/types/user.interface"
+import { IUser, Role } from "@/types/user.interface"
 import { UserSchema } from "@/validators/user.validator"
 import { gql } from "@apollo/client"
 import { useMutation, useQuery } from "@apollo/client/react"
@@ -83,6 +83,7 @@ const FormDialog = (props: Props) => {
     skip: !open || !isUpdate,
     fetchPolicy: "no-cache",
   })
+  const user = data?.user as IUser
   // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
   // Combined loading state
@@ -98,11 +99,11 @@ const FormDialog = (props: Props) => {
 
   const form = useForm({
     defaultValues: {
-      name: "",
-      email: "",
-      contactNumber: "",
-      username: "",
-      role: Role.SUPPORT,
+      name: user?.name || "",
+      email: user?.email || "",
+      contactNumber: user?.contactNumber || "",
+      username: user?.username || "",
+      role: user?.role || Role.SUPPORT,
     },
     validators: {
       onSubmit: ({ formApi, value }) => {
@@ -152,18 +153,6 @@ const FormDialog = (props: Props) => {
         }
       }),
   })
-
-  useEffect(() => {
-    if (data) {
-      const { name, email, contactNumber, username, role } = data.user
-      form.setFieldValue("name", name)
-      form.setFieldValue("email", email)
-      form.setFieldValue("contactNumber", contactNumber)
-      form.setFieldValue("username", username)
-      form.setFieldValue("role", role)
-      // form.reset({ name, email, contactNumber, username, role })
-    }
-  }, [isUpdate, data])
 
   const onClose = () => {
     setOpen(false)

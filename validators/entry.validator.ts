@@ -46,3 +46,29 @@ export const CreateEntrySchema = z.object({
   isInSoftware: z.boolean().default(false),
   isEarlyBird: z.boolean().default(false),
 })
+
+export const AssignPlayersSchema = z.object({
+  entry: z.string().nonempty("Entry ID is required"),
+  isPlayer1New: z.boolean().default(false),
+  isPlayer2New: z.boolean().default(false),
+  connectedPlayer1: z.string().optional().nullable(),
+  connectedPlayer2: z.string().optional().nullable(),
+  migratePlayer1Data: z.object({
+    firstName: z.boolean().default(false),
+    middleName: z.boolean().default(false),
+    lastName: z.boolean().default(false),
+    suffix: z.boolean().default(false),
+    birthDate: z.boolean().default(false),
+    phoneNumber: z.boolean().default(false),
+    email: z.boolean().default(false),
+  }),
+  migratePlayer2Data: z.object({
+    firstName: z.boolean().default(false),
+    middleName: z.boolean().default(false),
+    lastName: z.boolean().default(false),
+    suffix: z.boolean().default(false),
+    birthDate: z.boolean().default(false),
+    phoneNumber: z.boolean().default(false),
+    email: z.boolean().default(false),
+  }),
+})
