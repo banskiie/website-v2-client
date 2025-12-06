@@ -223,7 +223,7 @@ const Page = () => {
             )
             if (newEntryExists || search || sort || filter.length > 0)
               return prev // Skip updating during search/sort/filter
-            toast.success(`Entry (${newEntry?.name}) has been created.`)
+            toast.success(`Entry (${newEntry?.entryNumber}) has been created.`)
             return Object.assign({}, prev, {
               entries: {
                 ...prev.entries,

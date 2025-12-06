@@ -491,9 +491,6 @@ const AssignDialog = (props: Props) => {
                                       >
                                         <CommandInput placeholder="Select Player 1" />
                                         <CommandList className="max-h-72 overflow-y-auto">
-                                          <CommandEmpty>
-                                            No player found.
-                                          </CommandEmpty>
                                           <CommandGroup>
                                             <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
                                               Players
@@ -529,6 +526,9 @@ const AssignDialog = (props: Props) => {
                                               )
                                             )}
                                           </CommandGroup>
+                                          <CommandEmpty>
+                                            No players found.
+                                          </CommandEmpty>
                                         </CommandList>
                                       </Command>
                                     </PopoverContent>
@@ -543,13 +543,56 @@ const AssignDialog = (props: Props) => {
                             }}
                           />
                           <Separator />
-                          <div className="flex flex-col gap-2">
-                            <div>
+                          <div className="flex flex-col">
+                            <div className="col-span-2">
                               <Label>Migrate Data</Label>
                               <span className="text-xs text-muted-foreground">
                                 Checked fields will update the player database
                                 with entry data.
                               </span>
+                            </div>
+                            <div className="flex items-center w-full gap-2">
+                              <div className="h-full flex items-center justify-center">
+                                <Checkbox
+                                  disabled={
+                                    isLoading || !state.connectedPlayer1
+                                  }
+                                  onCheckedChange={(checked) => {
+                                    form.setFieldValue("migratePlayer1Data", {
+                                      firstName: checked === true,
+                                      middleName: checked === true,
+                                      lastName: checked === true,
+                                      suffix: checked === true,
+                                      birthDate: checked === true,
+                                      phoneNumber: checked === true,
+                                      email: checked === true,
+                                    })
+                                  }}
+                                />
+                              </div>
+                              <div className="text-xs grid grid-cols-5 col-span-2 h-full w-full">
+                                <div className="px-2 h-full border w-full flex items-center justify-center min-h-8"></div>
+                                <span
+                                  className={cn(
+                                    "px-2 h-full border w-full flex items-center justify-center",
+                                    state.connectedPlayer1
+                                      ? "col-span-2"
+                                      : "hidden"
+                                  )}
+                                >
+                                  From Database (Current)
+                                </span>{" "}
+                                <span
+                                  className={cn(
+                                    "px-2 h-full border w-full flex items-center justify-center",
+                                    state.connectedPlayer1
+                                      ? "col-span-2"
+                                      : "col-span-4"
+                                  )}
+                                >
+                                  From Entry (New)
+                                </span>
+                              </div>
                             </div>
                             <div>
                               <form.Field
@@ -560,56 +603,61 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer1
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="h-full flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer1
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 min-h-8 w-full">
+                                          <span className="px-2 h-full border w-full flex items-center justify-center py-1 text-center">
                                             First Name
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer1 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player1?.firstName}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {
-                                                          entry?.player1Entry
-                                                            .firstName
-                                                        }
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
-                                              </span>
-                                            ) : (
-                                              <span>
+                                          </span>
+                                          {state.connectedPlayer1 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1"
+                                                )}
+                                              >
+                                                {player1?.firstName}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1"
+                                                )}
+                                              >
                                                 {entry?.player1Entry.firstName}
                                               </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 h-full border w-full flex items-center justify-start"
+                                              )}
+                                            >
+                                              {entry?.player1Entry.firstName}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -626,61 +674,68 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer1
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="h-full flex items-center justify-center text-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer1
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
                                             Middle Name
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer1 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player1?.middleName || (
-                                                      <span>None</span>
-                                                    )}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {entry?.player1Entry
-                                                          .middleName || (
-                                                          <span>None</span>
-                                                        )}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
-                                              </span>
-                                            ) : (
-                                              <span>
-                                                {entry?.player1Entry
-                                                  .middleName || (
-                                                  <span>None</span>
+                                          </span>
+                                          {state.connectedPlayer1 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                                  !player1?.middleName &&
+                                                    "italic"
                                                 )}
+                                              >
+                                                {player1?.middleName || "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                                  !player1?.middleName &&
+                                                    "italic"
+                                                )}
+                                              >
+                                                {entry?.player1Entry
+                                                  .middleName || "N/A"}
                                               </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center justify-start py-1",
+                                                !player1?.middleName && "italic"
+                                              )}
+                                            >
+                                              {entry?.player1Entry.middleName ||
+                                                "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -697,56 +752,66 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer1
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer1
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
                                             Last Name
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer1 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player1?.lastName}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {
-                                                          entry?.player1Entry
-                                                            .lastName
-                                                        }
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
+                                          </span>
+                                          {state.connectedPlayer1 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                                  !player1?.lastName && "italic"
+                                                )}
+                                              >
+                                                {player1?.lastName || "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                                  !player1?.lastName && "italic"
+                                                )}
+                                              >
+                                                {entry?.player1Entry.lastName ||
+                                                  "N/A"}
                                               </span>
-                                            ) : (
-                                              <span>
-                                                {entry?.player1Entry.lastName}
-                                              </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center justify-start py-1",
+                                                !player1?.lastName && "italic"
+                                              )}
+                                            >
+                                              {entry?.player1Entry.lastName ||
+                                                "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -763,60 +828,66 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer1
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer1
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center py-1 justify-center text-center">
                                             Ext.
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer1 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player1?.suffix || (
-                                                      <span>None</span>
-                                                    )}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {entry?.player1Entry
-                                                          .suffix || (
-                                                          <span>None</span>
-                                                        )}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
-                                              </span>
-                                            ) : (
-                                              <span>
-                                                {entry?.player1Entry.suffix || (
-                                                  <span>None</span>
+                                          </span>
+                                          {state.connectedPlayer1 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player1?.suffix && "italic"
                                                 )}
+                                              >
+                                                {player1?.suffix || "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player1?.suffix && "italic"
+                                                )}
+                                              >
+                                                {entry?.player1Entry.suffix ||
+                                                  "N/A"}
                                               </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
+                                                !player1?.suffix && "italic"
+                                              )}
+                                            >
+                                              {entry?.player1Entry.suffix ||
+                                                "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -833,60 +904,66 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer1
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
-                                            Email Address
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer1 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player1?.email || (
-                                                      <span>None</span>
-                                                    )}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {entry?.player1Entry
-                                                          .email || (
-                                                          <span>None</span>
-                                                        )}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
-                                              </span>
-                                            ) : (
-                                              <span>
-                                                {entry?.player1Entry?.email || (
-                                                  <span>None</span>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer1
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                            Email
+                                          </span>
+                                          {state.connectedPlayer1 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player1?.email && "italic"
                                                 )}
+                                              >
+                                                {player1?.email || "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player1?.email && "italic"
+                                                )}
+                                              >
+                                                {entry?.player1Entry.email ||
+                                                  "N/A"}
                                               </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
+                                                !player1?.email && "italic"
+                                              )}
+                                            >
+                                              {entry?.player1Entry.email ||
+                                                "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -903,61 +980,69 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer1
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
-                                            Phone Number
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer1 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player1?.phoneNumber || (
-                                                      <span>None</span>
-                                                    )}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {entry?.player1Entry
-                                                          .phoneNumber || (
-                                                          <span>None</span>
-                                                        )}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
-                                              </span>
-                                            ) : (
-                                              <span>
-                                                {entry?.player1Entry
-                                                  ?.phoneNumber || (
-                                                  <span>None</span>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer1
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                            Phone No.
+                                          </span>
+                                          {state.connectedPlayer1 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player1?.phoneNumber &&
+                                                    "italic"
                                                 )}
+                                              >
+                                                {player1?.phoneNumber || "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player1?.phoneNumber &&
+                                                    "italic"
+                                                )}
+                                              >
+                                                {entry?.player1Entry
+                                                  .phoneNumber || "N/A"}
                                               </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
+                                                !player1?.phoneNumber &&
+                                                  "italic"
+                                              )}
+                                            >
+                                              {entry?.player1Entry
+                                                .phoneNumber || "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -974,73 +1059,87 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer1
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
-                                            Birth Date
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer1 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player1?.birthDate &&
-                                                      format(
-                                                        new Date(
-                                                          player1?.birthDate
-                                                        ),
-                                                        "PP"
-                                                      )}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {entry?.player1Entry
-                                                          ?.birthDate &&
-                                                          format(
-                                                            new Date(
-                                                              entry.player1Entry.birthDate
-                                                            ),
-                                                            "PP"
-                                                          )}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer1
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                            Birthday
+                                          </span>
+                                          {state.connectedPlayer1 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player1?.birthDate &&
+                                                    "italic"
+                                                )}
+                                              >
+                                                {player1?.birthDate
+                                                  ? format(
+                                                      new Date(
+                                                        player1.birthDate
+                                                      ),
+                                                      "PP"
+                                                    )
+                                                  : "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player1?.birthDate &&
+                                                    "italic"
+                                                )}
+                                              >
+                                                {entry?.player1Entry.birthDate
+                                                  ? format(
+                                                      new Date(
+                                                        entry.player1Entry.birthDate
+                                                      ),
+                                                      "PP"
+                                                    )
+                                                  : "N/A"}
                                               </span>
-                                            ) : (
-                                              <span>
-                                                {entry?.player1Entry
-                                                  ?.birthDate &&
-                                                  format(
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
+                                                !player1?.birthDate && "italic"
+                                              )}
+                                            >
+                                              {entry?.player1Entry.birthDate
+                                                ? format(
                                                     new Date(
                                                       entry.player1Entry.birthDate
                                                     ),
                                                     "PP"
-                                                  )}
-                                              </span>
-                                            )}
-                                          </FieldDescription>
+                                                  )
+                                                : "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -1209,13 +1308,56 @@ const AssignDialog = (props: Props) => {
                             }}
                           />
                           <Separator />
-                          <div className="flex flex-col gap-2">
-                            <div>
+                          <div className="flex flex-col">
+                            <div className="col-span-2">
                               <Label>Migrate Data</Label>
                               <span className="text-xs text-muted-foreground">
                                 Checked fields will update the player database
                                 with entry data.
                               </span>
+                            </div>
+                            <div className="flex items-center w-full gap-2">
+                              <div className="h-full flex items-center justify-center">
+                                <Checkbox
+                                  disabled={
+                                    isLoading || !state.connectedPlayer2
+                                  }
+                                  onCheckedChange={(checked) => {
+                                    form.setFieldValue("migratePlayer2Data", {
+                                      firstName: checked === true,
+                                      middleName: checked === true,
+                                      lastName: checked === true,
+                                      suffix: checked === true,
+                                      birthDate: checked === true,
+                                      phoneNumber: checked === true,
+                                      email: checked === true,
+                                    })
+                                  }}
+                                />
+                              </div>
+                              <div className="text-xs grid grid-cols-5 col-span-2 h-full w-full">
+                                <div className="px-2 h-full border w-full flex items-center justify-center min-h-8"></div>
+                                <span
+                                  className={cn(
+                                    "px-2 h-full border w-full flex items-center justify-center",
+                                    state.connectedPlayer2
+                                      ? "col-span-2"
+                                      : "hidden"
+                                  )}
+                                >
+                                  From Database (Current)
+                                </span>{" "}
+                                <span
+                                  className={cn(
+                                    "px-2 h-full border w-full flex items-center justify-center",
+                                    state.connectedPlayer2
+                                      ? "col-span-2"
+                                      : "col-span-4"
+                                  )}
+                                >
+                                  From Entry (New)
+                                </span>
+                              </div>
                             </div>
                             <div>
                               <form.Field
@@ -1226,56 +1368,63 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer2
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="h-full flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer2
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 min-h-8 w-full">
+                                          <span className="px-2 h-full border w-full flex items-center justify-center py-1 text-center">
                                             First Name
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer2 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player2?.firstName}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {entry?.player2Entry &&
-                                                          entry?.player2Entry
-                                                            .firstName}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
-                                              </span>
-                                            ) : (
-                                              <span>
+                                          </span>
+                                          {state.connectedPlayer2 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1"
+                                                )}
+                                              >
+                                                {player2?.firstName}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1"
+                                                )}
+                                              >
                                                 {entry?.player2Entry &&
                                                   entry?.player2Entry.firstName}
                                               </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 h-full border w-full flex items-center justify-start"
+                                              )}
+                                            >
+                                              {entry?.player2Entry &&
+                                                entry?.player2Entry.firstName}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -1292,63 +1441,71 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer2
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="h-full flex items-center justify-center text-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer2
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
                                             Middle Name
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer2 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player2?.middleName || (
-                                                      <span>None</span>
-                                                    )}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {(entry?.player2Entry &&
-                                                          entry?.player2Entry
-                                                            .middleName) || (
-                                                          <span>None</span>
-                                                        )}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
-                                              </span>
-                                            ) : (
-                                              <span>
-                                                {(entry?.player2Entry &&
-                                                  entry?.player2Entry
-                                                    .middleName) || (
-                                                  <span>None</span>
+                                          </span>
+                                          {state.connectedPlayer2 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                                  !player2?.middleName &&
+                                                    "italic"
                                                 )}
+                                              >
+                                                {player2?.middleName || "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                                  !player2?.middleName &&
+                                                    "italic"
+                                                )}
+                                              >
+                                                {entry?.player2Entry
+                                                  ? entry?.player2Entry
+                                                      .middleName
+                                                  : "N/A"}
                                               </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center justify-start py-1",
+                                                !player2?.middleName && "italic"
+                                              )}
+                                            >
+                                              {entry?.player2Entry
+                                                ? entry?.player2Entry.middleName
+                                                : "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -1365,56 +1522,68 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer2
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer2
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
                                             Last Name
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer2 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player2?.lastName}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {entry?.player2Entry &&
-                                                          entry?.player2Entry
-                                                            .lastName}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
+                                          </span>
+                                          {state.connectedPlayer2 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                                  !player2?.lastName && "italic"
+                                                )}
+                                              >
+                                                {player2?.lastName || "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                                  !player2?.lastName && "italic"
+                                                )}
+                                              >
+                                                {entry?.player2Entry
+                                                  ? entry?.player2Entry.lastName
+                                                  : "N/A"}
                                               </span>
-                                            ) : (
-                                              <span>
-                                                {entry?.player2Entry &&
-                                                  entry?.player2Entry.lastName}
-                                              </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center justify-start py-1",
+                                                !player2?.lastName && "italic"
+                                              )}
+                                            >
+                                              {entry?.player2Entry
+                                                ? entry?.player2Entry.lastName
+                                                : "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -1431,63 +1600,68 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer2
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer2
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center py-1 justify-center text-center">
                                             Ext.
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer2 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player2?.suffix || (
-                                                      <span>None</span>
-                                                    )}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {(entry?.player2Entry &&
-                                                          entry?.player2Entry
-                                                            .suffix) || (
-                                                          <span>None</span>
-                                                        )}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
-                                              </span>
-                                            ) : (
-                                              <span>
-                                                {(entry?.player2Entry &&
-                                                  entry?.player2Entry
-                                                    .suffix) || (
-                                                  <span>None</span>
+                                          </span>
+                                          {state.connectedPlayer2 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player2?.suffix && "italic"
                                                 )}
+                                              >
+                                                {player2?.suffix || "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player2?.suffix && "italic"
+                                                )}
+                                              >
+                                                {entry?.player2Entry
+                                                  ? entry?.player2Entry.suffix
+                                                  : "N/A"}
                                               </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
+                                                !player2?.suffix && "italic"
+                                              )}
+                                            >
+                                              {entry?.player2Entry
+                                                ? entry?.player2Entry.suffix
+                                                : "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -1504,63 +1678,68 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer2
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
-                                            Email Address
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer2 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player2?.email || (
-                                                      <span>None</span>
-                                                    )}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {(entry?.player2Entry &&
-                                                          entry?.player2Entry
-                                                            .email) || (
-                                                          <span>None</span>
-                                                        )}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
-                                              </span>
-                                            ) : (
-                                              <span>
-                                                {(entry?.player2Entry &&
-                                                  entry?.player2Entry
-                                                    .email) || (
-                                                  <span>None</span>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer2
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                            Email
+                                          </span>
+                                          {state.connectedPlayer2 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player2?.email && "italic"
                                                 )}
+                                              >
+                                                {player2?.email || "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player2?.email && "italic"
+                                                )}
+                                              >
+                                                {entry?.player2Entry
+                                                  ? entry?.player2Entry.email
+                                                  : "N/A"}
                                               </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
+                                                !player2?.email && "italic"
+                                              )}
+                                            >
+                                              {entry?.player2Entry
+                                                ? entry?.player2Entry.email
+                                                : "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -1577,63 +1756,73 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer2
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
-                                            Phone Number
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer2 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player2?.phoneNumber || (
-                                                      <span>None</span>
-                                                    )}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {(entry?.player2Entry &&
-                                                          entry?.player2Entry
-                                                            .phoneNumber) || (
-                                                          <span>None</span>
-                                                        )}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
-                                              </span>
-                                            ) : (
-                                              <span>
-                                                {(entry?.player2Entry &&
-                                                  entry?.player2Entry
-                                                    .phoneNumber) || (
-                                                  <span>None</span>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer2
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                            Phone No.
+                                          </span>
+                                          {state.connectedPlayer2 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player2?.phoneNumber &&
+                                                    "italic"
                                                 )}
+                                              >
+                                                {player2?.phoneNumber || "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player2?.phoneNumber &&
+                                                    "italic"
+                                                )}
+                                              >
+                                                {entry?.player2Entry
+                                                  ? entry?.player2Entry
+                                                      .phoneNumber
+                                                  : "N/A"}
                                               </span>
-                                            )}
-                                          </FieldDescription>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
+                                                !player2?.phoneNumber &&
+                                                  "italic"
+                                              )}
+                                            >
+                                              {entry?.player2Entry
+                                                ? entry?.player2Entry
+                                                    .phoneNumber
+                                                : "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
@@ -1650,73 +1839,89 @@ const AssignDialog = (props: Props) => {
                                     !field.state.meta.isValid
                                   return (
                                     <Field>
-                                      <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={field.name}
-                                          name={field.name}
-                                          checked={field.state.value}
-                                          onBlur={field.handleBlur}
-                                          onCheckedChange={(checked) =>
-                                            field.handleChange(checked === true)
-                                          }
-                                          className="mr-2"
-                                          aria-invalid={isInvalid}
-                                          disabled={
-                                            isLoading || !state.connectedPlayer2
-                                          }
-                                        />
-                                        <div className="grid">
-                                          <FieldLabel htmlFor={field.name}>
-                                            Birth Date
-                                          </FieldLabel>
-                                          <FieldDescription className="text-xs">
-                                            {state.connectedPlayer2 ? (
-                                              <span>
-                                                <span>
-                                                  <span
-                                                    className={cn(
-                                                      !field.state.value &&
-                                                        "text-success"
-                                                    )}
-                                                  >
-                                                    {player2?.birthDate &&
-                                                      format(
-                                                        new Date(
-                                                          player2?.birthDate
-                                                        ),
-                                                        "PP"
-                                                      )}
-                                                  </span>{" "}
-                                                  {field.state.value && (
-                                                    <>
-                                                      ➜{" "}
-                                                      <span className="text-success">
-                                                        {entry?.player2Entry
-                                                          ?.birthDate &&
-                                                          format(
-                                                            new Date(
-                                                              entry.player2Entry.birthDate
-                                                            ),
-                                                            "PP"
-                                                          )}
-                                                      </span>
-                                                    </>
-                                                  )}
-                                                </span>
+                                      <div className="flex items-center w-full gap-2">
+                                        <div className="flex items-center justify-center">
+                                          <Checkbox
+                                            id={field.name}
+                                            name={field.name}
+                                            checked={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onCheckedChange={(checked) =>
+                                              field.handleChange(
+                                                checked === true
+                                              )
+                                            }
+                                            aria-invalid={isInvalid}
+                                            disabled={
+                                              isLoading ||
+                                              !state.connectedPlayer2
+                                            }
+                                          />
+                                        </div>
+                                        <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                          <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                            Birthday
+                                          </span>
+                                          {state.connectedPlayer2 ? (
+                                            <>
+                                              <span
+                                                className={cn(
+                                                  !field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player2?.birthDate &&
+                                                    "italic"
+                                                )}
+                                              >
+                                                {player2?.birthDate
+                                                  ? format(
+                                                      new Date(
+                                                        player2.birthDate
+                                                      ),
+                                                      "PP"
+                                                    )
+                                                  : "N/A"}
+                                              </span>{" "}
+                                              <span
+                                                className={cn(
+                                                  field.state.value &&
+                                                    "text-success bg-success/5",
+                                                  "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                                  !player2?.birthDate &&
+                                                    "italic"
+                                                )}
+                                              >
+                                                {entry?.player2Entry &&
+                                                entry?.player2Entry.birthDate
+                                                  ? format(
+                                                      new Date(
+                                                        entry.player2Entry.birthDate
+                                                      ),
+                                                      "PP"
+                                                    )
+                                                  : "N/A"}
                                               </span>
-                                            ) : (
-                                              <span>
-                                                {entry?.player2Entry
-                                                  ?.birthDate &&
-                                                  format(
+                                            </>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                field.state.value &&
+                                                  "text-success",
+                                                "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
+                                                !player2?.birthDate && "italic"
+                                              )}
+                                            >
+                                              {entry?.player2Entry &&
+                                              entry?.player2Entry.birthDate
+                                                ? format(
                                                     new Date(
                                                       entry.player2Entry.birthDate
                                                     ),
                                                     "PP"
-                                                  )}
-                                              </span>
-                                            )}
-                                          </FieldDescription>
+                                                  )
+                                                : "N/A"}
+                                            </span>
+                                          )}
                                         </div>
                                       </div>
                                     </Field>
