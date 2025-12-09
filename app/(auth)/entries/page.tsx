@@ -38,7 +38,11 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import ViewDialog from "./dialogs/view"
@@ -50,6 +54,8 @@ import { format } from "date-fns/format"
 import EntryStatusBadge from "@/components/badges/entry-status-badge"
 import EntryTable from "@/components/table/entry-table"
 import AssignDialog from "./dialogs/assign"
+import ApproveDialog from "./dialogs/approve"
+import RejectDialog from "./dialogs/reject"
 
 const ENTRIES = gql`
   query Entries(
@@ -152,15 +158,31 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
         <DropdownMenuGroup>
           <ViewDialog _id={entry?._id} />
           <FormDialog _id={entry?._id} onClose={() => setMenuOpen(false)} />
+          {status === "LEVEL_PENDING" && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Level</DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <ApproveDialog
+                      _id={entry?._id}
+                      onClose={() => setMenuOpen(false)}
+                    />
+                    <RejectDialog
+                      _id={entry?._id}
+                      onClose={() => setMenuOpen(false)}
+                    />
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+            </>
+          )}
           <DropdownMenuSeparator />
           <AssignDialog
             _id={entry?._id}
             onClose={() => setMenuOpen(false)}
-            title={
-              status === EntryStatus.PENDING
-                ? "Assign"
-                : "Reassign"
-            }
+            title={status === EntryStatus.PENDING ? "Assign" : "Reassign"}
           />
         </DropdownMenuGroup>
       </DropdownMenuContent>
@@ -199,7 +221,10 @@ const Page = () => {
     variables: {
       first: rows,
       search,
-      sort,
+      sort: sort || {
+        key: "dateUpdated",
+        order: "DESC",
+      }, // Default sort
       filter,
     },
     fetchPolicy: "network-only",
@@ -241,16 +266,92 @@ const Page = () => {
             toast.success(
               `Entry (${updatedEntry?.entryNumber}) has been updated.`
             )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredUpdatedEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== updatedEntry._id
+            )
             return Object.assign({}, prev, {
               entries: {
                 ...prev.entries,
-                edges: prev.entries.edges.map((edge: any) =>
-                  edge.node._id === updatedEntry._id
-                    ? { ...edge, node: updatedEntry }
-                    : edge
-                ),
+                edges: [
+                  {
+                    ...filteredUpdatedEdges.find(() => true),
+                    node: updatedEntry,
+                  },
+                  ...filteredUpdatedEdges,
+                ],
               },
             })
+          case "ASSIGN":
+            // Update the existing entry in the list
+            const assignedEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.info(
+              `Entry (${assignedEntry?.entryNumber}) has updated to have assigned players.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredAssignedEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== assignedEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredAssignedEdges.find(() => true),
+                    node: assignedEntry,
+                  },
+                  ...filteredAssignedEdges,
+                ],
+              },
+            })
+          case "APPROVE":
+            // Update the existing entry in the list
+            const approvedEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Entry (${approvedEntry?.entryNumber}) has been approved.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredApprovedEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== approvedEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredApprovedEdges.find(() => true),
+                    node: approvedEntry,
+                  },
+                  ...filteredApprovedEdges,
+                ],
+              },
+            })
+          case "REJECT":
+            // Update the existing entry in the list
+            const rejectedEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.warning(
+              `Entry (${rejectedEntry?.entryNumber}) has been rejected.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredRejectedEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== rejectedEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredRejectedEdges.find(() => true),
+                    node: rejectedEntry,
+                  },
+                  ...filteredRejectedEdges,
+                ],
+              },
+            })
+
           case "DELETE":
             // Remove the deleted entry from the list
             const deletedEntry = entry

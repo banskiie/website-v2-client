@@ -98,7 +98,9 @@ type Props = {
   row?: boolean
   openFromParent?: boolean
   setOpenFromParent?: (open: boolean) => void
-
+  externalUse?: boolean
+  title?: string
+  titleClassName?: string
   rowSettings?: {
     clearId: () => void
     open: boolean
@@ -138,7 +140,16 @@ const ViewDialog = (props: Props) => {
     <Dialog modal open={isOpen} onOpenChange={setIsOpen}>
       <form>
         <DialogTrigger asChild>
-          {props.row ? null : (
+          {props.row ? null : props.externalUse ? (
+            <span
+              className={cn(
+                "hover:underline hover:cursor-pointer",
+                props.titleClassName
+              )}
+            >
+              {props.title || "View"}
+            </span>
+          ) : (
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               View
             </DropdownMenuItem>
@@ -472,6 +483,15 @@ const ViewDialog = (props: Props) => {
                                     return (
                                       <CheckCircle2 className="size-4 my-2 text-success" />
                                     )
+                                  case "CANCELLED":
+                                  case "REJECTED":
+                                    return (
+                                      <CircleAlert className="size-4 my-2 text-destructive" />
+                                    )
+                                  case "VERIFIED":
+                                    return (
+                                      <CheckCircle className="size-4 my-2 text-success" />
+                                    )
                                 }
                                 return (
                                   <CircleAlert
@@ -518,6 +538,14 @@ const ViewDialog = (props: Props) => {
                             <span className="text-xs text-muted-foreground block">
                               {format(status.date, "PPpp")}
                             </span>
+                            {status.reason && (
+                              <span className="text-xs text-muted-foreground block">
+                                Reason:{" "}
+                                <span className="italic underline">
+                                  {status?.reason}
+                                </span>
+                              </span>
+                            )}
                             <span className="text-xs text-muted-foreground block">
                               {status.by?.name}
                             </span>
