@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import Image from "next/image"
 import { Calendar, Users } from "lucide-react"
 import { CLOUD } from "./main-faq"
+import Link from "next/link"
 
 const events = [
   {
@@ -117,15 +118,15 @@ export default function EventsSection() {
                   <Users size={16} /> <span>{event.participants} participants</span>
                 </div>
               </div>
-              <a
-                href={event.link}
+              <Link
+                href="/sports-center/courts/categories"
                 className={`mt-auto inline-block text-center px-4 py-2 rounded-md font-medium text-white ${event.type === "Upcoming"
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-gray-600 hover:bg-gray-700"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-gray-600 hover:bg-gray-700"
                   } transition`}
               >
                 {event.type === "Upcoming" ? "Register Now" : "View Results"}
-              </a>
+              </Link>
             </div>
           </motion.div>
         ))}

@@ -68,19 +68,19 @@ const categories = [
     title: "Steel Products",
     image: `${CLOUD}/v1764048783/category1_yoc2vi.png`,
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Producing High Quality Steel products since 2013. One of the Leading Steel Manufacturers in Mindanao. C-ONE Steel has been committed to Provide High Quality Products with Affordable cost.",
   },
   {
     title: "Roofing Access",
     image: `${CLOUD}/v1764048786/category2_vqmsvd.png`,
     description:
-      "Roofing accessories are essential for durability and style. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Producing High Quality Steel products since 2013. One of the Leading Steel Manufacturers in Mindanao. C-ONE Steel has been committed to Provide High Quality Products with Affordable cost.",
   },
   {
     title: "Metal Roofing",
     image: `${CLOUD}/v1764048790/category3_ktqtae.png`,
     description:
-      "Metal roofing provides protection and longevity. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Producing High Quality Steel products since 2013. One of the Leading Steel Manufacturers in Mindanao. C-ONE Steel has been committed to Provide High Quality Products with Affordable cost.",
   },
 ]
 
@@ -169,12 +169,19 @@ export default function Page() {
             C-ONE STEEL
           </h1>
           <p className="text-white text-sm lg:text-xl mb-8 leading-relaxed">
-            Looking for reliable steel products at great value? You’ve found it
+            {/* Looking for reliable steel products at great value? You’ve found it
             with C-ONE! Browse a wide selection of premium-quality
             steel—available in many stunning colors and customizable in size—
             designed to bring your vision to life while keeping your budget
-            intact.
+            intact. */}
+            Searching for Steel Products? We have your back. <span className="font-bold text-green-300">
+              C-ONE</span> Offers the Best Pricing and STEELS of the
+            Highest Quality for All your Demands. You havve Access to a Large
+            Assortment of Steel Prodfucts. You can choose from a Variety of
+            Colors to Suit your Preferences.
           </p>
+          <p className="text-white text-sm lg:text-lg mb-6 leaeding-relaxed tracking-wide">
+            "The <span className="font-bold">BEST STEEL</span> Builds more than Structures — <span className="font-bold text-green-300">IT BUILDS LEGACIES</span>"</p>
           <button className="px-5 py-2 text-sm lg:px-8 lg:py-3 rounded-[25px] border border-white bg-[#211A1A]/80 text-white font-medium hover:bg-[#211A1A]/90 transition">
             Explore Steel
           </button>
@@ -226,7 +233,6 @@ export default function Page() {
         id="steel-products"
         className="relative w-full min-h-screen lg:h-screen flex items-center justify-center py-16 lg:py-0"
       >
-        {/* Background Image with overlay */}
         <motion.div
           className="absolute inset-0 w-full h-full"
           initial={{ opacity: 0, scale: 0.95 }}
@@ -280,7 +286,6 @@ export default function Page() {
           ))}
         </motion.div>
 
-        {/* Left Arrow */}
         <button
           onClick={() =>
             setActiveCategory(
@@ -292,7 +297,6 @@ export default function Page() {
           <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
         </button>
 
-        {/* Right Arrow */}
         <button
           onClick={() => setActiveCategory((prev) => (prev + 1) % categories.length)}
           className="absolute right-0 md:right-6 z-20 bg-white text-black px-2 py-3 md:p-3 lg:p-4 md:rounded-full shadow-lg rounded-l-full lg:rounded-full hover:bg-gray-100 transition transform hover:scale-110"
@@ -300,9 +304,8 @@ export default function Page() {
           <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
         </button>
 
-        {/* Content */}
         <motion.div
-          className="relative z-10 text-center max-w-lg md:max-w-3xl px-4 md:px-6"
+          className="relative z-10 text-center max-w-lg md:max-w-3xl lg:max-w-3xl px-4 md:px-6"
           initial={{ opacity: 0, y: 30, scale: 0.95 }}
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true, amount: 0.3 }}
@@ -313,7 +316,7 @@ export default function Page() {
           </h2>
           <p
             className="
-    text-white 
+    text-white tracking-wide
     text-xs sm:text-sm md:text-base lg:text-lg 
     mb-4 sm:mb-6 md:mb-8 
     leading-relaxed 
@@ -439,7 +442,6 @@ export default function Page() {
                 },
               }}
             >
-              {/* Main image wrapper */}
               <div className="w-full max-w-[900px] h-[220px] sm:h-[350px] md:h-[450px] lg:h-[528px] overflow-hidden rounded-xl shadow-md">
                 <Image
                   src={`${CLOUD}/v1764048783/category1_yoc2vi.png`}
@@ -452,9 +454,7 @@ export default function Page() {
                 />
               </div>
 
-              {/* Stats boxes */}
               <div className="absolute flex gap-3 sm:gap-4 right-1/2 translate-x-1/2 md:translate-x-0 md:right-0 top-full -mt-10 sm:-mt-12 md:-mt-16">
-                {/* Box 1 */}
                 <motion.div
                   className="w-[100px] h-[120px] sm:w-[110px] sm:h-[130px] md:w-[124px] md:h-[145px] bg-black flex flex-col items-start justify-center shadow-lg rounded-md p-3"
                   variants={{
@@ -666,11 +666,12 @@ export default function Page() {
             Steel Quality Without Compromise.
           </motion.h2>
           <motion.p
-            className="text-white text-base md:text-lg max-w-3xl mb-12"
+            className="text-white text-base md:text-lg max-w-3xl mb-12 tracking-wider"
             variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.2 } } }}
           >
-            At C-ONE, we deliver durable, reliable, and precisely crafted steel
-            products—giving you the strength and value your projects deserve.
+            {/* At C-ONE, we deliver durable, reliable, and precisely crafted steel
+            products—giving you the strength and value your projects deserve. */}
+            Handmade with precision, our customized steel air vents combine durability and style for any space. Inquire now and experience quality craftsmanship!
           </motion.p>
 
           <motion.div

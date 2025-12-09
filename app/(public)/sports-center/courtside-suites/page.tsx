@@ -876,7 +876,7 @@ export default function Page() {
           }}
           className="absolute inset-x-0 -top-[25%] -bottom-[20%]"
         />
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center px-4 text-center">
+        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center px-4 text-center gap-10">
           <motion.h1
             className="text-white text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold"
             initial={{ opacity: 0, y: 20 }}
@@ -885,7 +885,15 @@ export default function Page() {
           >
             Courtside Suites
           </motion.h1>
+
+          <p className="text-white text-sm lg:text-xl leading-relaxed max-w-3xl">
+            A Stylish Container House Accommodation beside C-ONE Sports Center near the action.{" "}
+            <span className="font-bold text-amber-400">Courtside Suites</span> offers a modern
+            container house experience - perfect for athletes, sports enthusiasts, and a coffee lovers who
+            wants convenience and relaxation in one place!
+          </p>
         </div>
+
       </div>
 
       <div className="relative bg-[#181818] py-20 md:py-32">

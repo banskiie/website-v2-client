@@ -109,14 +109,16 @@ const createBaseSchema = (hasFreeJersey: boolean, eventData?: any) => {
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            if (eventData?.minAge !== undefined && age < eventData.minAge) {
+            // Only validate minAge if it's not null/undefined
+            if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Age ${age} is below minimum age of ${eventData.minAge}`,
                     path: ["player1Birthday"],
                 });
             }
-            if (eventData?.maxAge !== undefined && age > eventData.maxAge) {
+            // Only validate maxAge if it's not 0/undefined
+            if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Age ${age} is above maximum age of ${eventData.maxAge}`,
@@ -147,14 +149,16 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            if (eventData?.minAge !== undefined && age < eventData.minAge) {
+            // Only validate if minAge is explicitly set (not 0/undefined)
+            if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Player 1: Age ${age} is below minimum age of ${eventData.minAge}`,
                     path: ["player1Birthday"],
                 });
             }
-            if (eventData?.maxAge !== undefined && age > eventData.maxAge) {
+            // Only validate if maxAge is explicitly set (not 0/undefined)
+            if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Player 1: Age ${age} is above maximum age of ${eventData.maxAge}`,
@@ -169,14 +173,16 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            if (eventData?.minAge !== undefined && age < eventData.minAge) {
+            // Only validate if minAge is explicitly set (not 0/undefined)
+            if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Player 2: Age ${age} is below minimum age of ${eventData.minAge}`,
                     path: ["player2Birthday"],
                 });
             }
-            if (eventData?.maxAge !== undefined && age > eventData.maxAge) {
+            // Only validate if maxAge is explicitly set (not 0/undefined)
+            if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Player 2: Age ${age} is above maximum age of ${eventData.maxAge}`,
@@ -210,21 +216,20 @@ const createSinglesSchema = (hasFreeJersey: boolean, eventData?: any) => {
 
     const schema = z.object(allFields);
 
-    // Add age validation for player 1 using superRefine
     return schema.superRefine((data, ctx) => {
         if (eventData?.tournamentStart && data.player1Birthday) {
             const birthDate = new Date(data.player1Birthday);
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            if (eventData?.minAge !== undefined && age < eventData.minAge) {
+            if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Age ${age} is below minimum age of ${eventData.minAge}`,
                     path: ["player1Birthday"],
                 });
             }
-            if (eventData?.maxAge !== undefined && age > eventData.maxAge) {
+            if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Age ${age} is above maximum age of ${eventData.maxAge}`,

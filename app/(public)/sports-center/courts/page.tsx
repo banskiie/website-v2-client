@@ -151,7 +151,8 @@ function page() {
 
             <section className="w-full bg-[#F9F9F9] pt-20 relative overflow-hidden">
                 <motion.div
-                    className="absolute inset-0 -top-10 left-0 w-full h-82 bg-gradient-to-r from-yellow-300 via-green-300 to-green-500 opacity-30 z-0 rounded-xl"
+                    // className="absolute inset-0 -top-10 left-0 w-full h-82 bg-gradient-to-r from-yellow-300 via-green-300 to-green-500 opacity-30 z-0 rounded-xl"
+                    className="absolute inset-0 -top-10 left-0 w-full h-82 z-0 rounded-xl"
                     animate={{ x: [-10, 10, -10] }}
                     transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
                 ></motion.div>

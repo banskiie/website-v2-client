@@ -42,9 +42,153 @@ import { REGISTRY_ENTRY } from "@/graphql/registration/resolver"
 import { PublicTournamentsData } from "@/components/custom/category-selection"
 import { RegisterEntryResponse, RegisterEntryVariables } from "@/app/(public)/types/entry.interface"
 import FloatingTicketing from "@/components/custom/ticket"
+import { any } from "zod"
 
 interface RegistrationPageProps {
     params: Promise<{ slug: string[] }>
+}
+
+const RegistrationFeeModal = ({
+    isOpen,
+    onClose,
+    event,
+    tournament
+}: {
+    isOpen: boolean,
+    onClose: () => void,
+    event: any,
+    tournament: any
+}) => {
+    if (!isOpen || !event || !tournament) return null
+
+    const pricePerPlayer = tournament.settings?.hasEarlyBird && event.earlyBirdPricePerPlayer ?
+        event.earlyBirdPricePerPlayer :
+        event.pricePerPlayer
+
+    const totalPrice = event.type === "DOUBLES"
+        ? pricePerPlayer * 2
+        : pricePerPlayer
+
+    const isDoubles = event.type === "DOUBLES"
+    const isEarlyBird = tournament.settings?.hasEarlyBird
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="animate-in fade-in-90 zoom-in-90 duration-300 w-full max-w-md">
+                <div className="bg-white rounded-2xl shadow-2xl p-6 text-center transform transition-all duration-300 scale-100 border border-green-200">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2 text-green-800">
+                            <div className="p-2 bg-linear-to-r bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-600 rounded-lg">
+                                <span className="text-white font-bold text-xl">💰</span>
+                            </div>
+                            <span className="text-xl font-semibold">Registration Fee</span>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            aria-label="Close"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {/* Event Info */}
+                    <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-green-50 rounded-xl border border-teal-200">
+                        <div className="text-sm text-green-700 mb-1">Event Category</div>
+                        <div className="font-bold text-green-800 text-lg">
+                            {event.name} ({event.type.charAt(0).toUpperCase() + event.type.slice(1).toLowerCase()})
+                        </div>
+                        {isEarlyBird && (
+                            <div className="inline-block mt-2">
+                                <Badge className="bg-linear-to-r from-yellow-100 to-orange-100 text-orange-800 border-orange-200">
+                                    ⚡ Early Bird Discount Applied
+                                </Badge>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mb-6">
+                        <h3 className="text-left text-sm font-semibold text-gray-700 mb-3">Fee Breakdown</h3>
+
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-green-100">
+                                <div className="flex items-center gap-1 text-left">
+                                    <User className="w-4 h-4 text-green-600" />
+                                    <div className="font-medium text-green-800">Per Player Fee</div>
+                                </div>
+                                <div className="font-bold text-green-700">
+                                    ₱{pricePerPlayer?.toLocaleString()}
+                                </div>
+                            </div>
+
+                            {/* {isDoubles && (
+                                <>
+                                    <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-green-100">
+                                        <div className="text-left">
+                                            <div className="font-medium text-green-800">Doubles Partner Fee</div>
+                                        </div>
+                                        <div className="font-bold text-green-700">
+                                            ₱{pricePerPlayer?.toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-gray-500 text-left pl-3">
+                                        <Users2 className="inline w-3 h-3 mr-1" />
+                                        Each player pays the same fee
+                                    </div>
+                                </>
+                            )} */}
+                        </div>
+
+                        <div className="mt-4 p-4 bg-linear-to-r from-green-50 to-teal-50 rounded-xl border border-green-300">
+                            <div className="flex justify-between items-center">
+                                <div className="text-left">
+                                    <div className="font-semibold text-green-800 text-[15px] ">{isDoubles ? "Doubles" : "Single"} Category Total Amount</div>
+                                    <div className="text-sm text-gray-600">
+                                        {isDoubles ? "For both players" : "For single player"}
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xl font-bold text-green-700">
+                                        ₱{totalPrice.toLocaleString()}
+                                    </div>
+                                    {isDoubles && (
+                                        <div className="text-xs text-green-600 mt-1">
+                                            (₱{pricePerPlayer?.toLocaleString()} × 2)
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-green-50 text-green-800 rounded-xl border border-green-200 text-left mb-6">
+                        <h4 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                            <Mail className="w-4 h-4" />
+                            Payment Instructions
+                        </h4>
+                        <p className="text-green-700 text-xs">
+                            After submitting this registration, you will receive payment instructions via email.
+                            Please complete your payment within 24 hours to secure your spot.
+                        </p>
+                    </div>
+
+                    <Button
+                        onClick={onClose}
+                        className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white py-3 rounded-lg font-semibold transition-all duration-300 shadow-md"
+                    >
+                        Continue Registration
+                    </Button>
+
+                    <p className="text-xs text-gray-500 mt-4">
+                        You can view this information anytime during registration
+                    </p>
+                </div>
+            </div>
+        </div>
+    )
 }
 
 const SuccessModal = ({ isOpen, onClose, message }: {
@@ -136,6 +280,7 @@ const showValidationToast = (errors: string[], title?: string) => {
 export default function Page({ params }: RegistrationPageProps) {
     const paramData = use(params)
     const [tournamentId, eventId] = paramData.slug ?? []
+    const [showFeeModal, setShowFeeModal] = useState(false)
 
     const { data, loading, error } = useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS, {
         variables: { id: eventId ?? "" },
@@ -180,6 +325,16 @@ export default function Page({ params }: RegistrationPageProps) {
 
         }
     }, [event, tournament])
+
+    useEffect(() => {
+        if (event && tournament && !showSuccessModal) {
+            const timer = setTimeout(() => {
+                setShowFeeModal(true)
+            }, 500)
+
+            return () => clearTimeout(timer)
+        }
+    }, [event, tournament, showSuccessModal])
 
     const isMixed = /mixed/i.test(event?.gender || "")
     const autoGender = event ? (
@@ -263,8 +418,8 @@ export default function Page({ params }: RegistrationPageProps) {
                         hasAgeError = true;
                         ageErrorMessages.push(err.message);
                     }
-                    
-                    if (backendPath.includes('gender') || 
+
+                    if (backendPath.includes('gender') ||
                         err.message.toLowerCase().includes('gender') ||
                         err.message.toLowerCase().includes('mixed') ||
                         err.message.toLowerCase().includes('different')) {
@@ -283,7 +438,7 @@ export default function Page({ params }: RegistrationPageProps) {
             if (hasAgeError && ageErrorMessages.length > 0) {
                 showValidationToast(ageErrorMessages, "Age Validation Failed");
             }
-            
+
             if (hasGenderError && genderErrorMessages.length > 0) {
                 showValidationToast(genderErrorMessages, "Gender Validation Failed");
             }
@@ -341,35 +496,35 @@ export default function Page({ params }: RegistrationPageProps) {
 
                     const schema = createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation);
                     const validationResult = schema.safeParse(value);
-                    
+
                     if (!validationResult.success) {
-                        const ageErrors = validationResult.error.issues.filter((err: any) => 
-                            err.path.includes('Birthday') || 
+                        const ageErrors = validationResult.error.issues.filter((err: any) =>
+                            err.path.includes('Birthday') ||
                             err.message.toLowerCase().includes('age')
                         );
-                        
-                        const genderErrors = validationResult.error.issues.filter((err: any) => 
-                            err.path.includes('Gender') || 
+
+                        const genderErrors = validationResult.error.issues.filter((err: any) =>
+                            err.path.includes('Gender') ||
                             err.message.toLowerCase().includes('gender') ||
                             err.message.toLowerCase().includes('mixed')
                         );
-                        
+
                         if (ageErrors.length > 0) {
                             const ageErrorMessages = ageErrors.map((err: any) => err.message);
                             showValidationToast(ageErrorMessages, "Age Validation Failed");
-                            
+
                             console.log("Age validation failed, stopping submission");
                             return;
                         }
-                        
+
                         if (genderErrors.length > 0) {
                             const genderErrorMessages = genderErrors.map((err: any) => err.message);
                             showValidationToast(genderErrorMessages, "Gender Validation Failed");
-                            
+
                             console.log("Gender validation failed, stopping submission");
                             return;
                         }
-                        
+
                         console.log("Form validation failed:", validationResult.error);
                         toast.error("Validation Error", {
                             description: "Please check all required fields.",
@@ -399,6 +554,8 @@ export default function Page({ params }: RegistrationPageProps) {
                             email: playerData[`player${playerNum}Email`],
                             phoneNumber: playerData[`player${playerNum}ContactNumber`],
                             gender: playerData[`player${playerNum}Gender`],
+                            // isEarlyBird: tournament?.settings?.hasEarlyBird || false,
+                            // isInSoftware: true, // or false, depending on your logic
                         };
 
                         if (hasFreeJersey && playerData[`player${playerNum}JerseySize`]) {
@@ -618,17 +775,17 @@ export default function Page({ params }: RegistrationPageProps) {
 
     const EnhancedFieldError = ({ errors }: { errors: any[] }) => {
         if (!errors || errors.length === 0) return null;
-        
+
         return (
             <div className="mt-2 space-y-1">
                 {errors.map((error, index) => {
-                    const errorMessage = typeof error === 'object' && error.message 
-                        ? error.message 
+                    const errorMessage = typeof error === 'object' && error.message
+                        ? error.message
                         : String(error);
-                    
+
                     return (
-                        <div 
-                            key={index} 
+                        <div
+                            key={index}
                             className="flex items-start gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200"
                         >
                             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -662,13 +819,20 @@ export default function Page({ params }: RegistrationPageProps) {
         <div className="bg-linear-to-br from-green-50 to-emerald-100">
             <Header />
 
+            <RegistrationFeeModal
+                isOpen={showFeeModal}
+                onClose={() => setShowFeeModal(false)}
+                event={event}
+                tournament={tournament}
+            />
+
             <SuccessModal
                 isOpen={showSuccessModal}
                 onClose={handleModalClose}
                 message={successMessage}
             />
 
-            {submitError && (
+            {/* {submitError && (
                 <div className="max-w-4xl mx-auto mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
                     <div className="flex items-start gap-2">
                         <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
@@ -677,9 +841,9 @@ export default function Page({ params }: RegistrationPageProps) {
                         </div>
                     </div>
                 </div>
-            )}
+            )} */}
 
-            <Card className="w-full max-w-6xl mx-auto mt-16">
+            <Card className="w-full max-w-6xl mx-auto mt-20 mb-20 shadow-xl border border-green-200">
                 <CardHeader className="mx-auto w-full max-w-md text-center px-4 sm:px-6">
                     <CardTitle className="text-xl sm:text-2xl font-semibold">
                         {tournament.name}
@@ -889,13 +1053,13 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                 <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200 max-w-2xl mx-auto">
                                     <p className="text-green-700 text-sm text-left">
-                                        💡 <strong>Tip:</strong> Use the switches in player contact sections below to automatically fill their contact information with these club details.
+                                        💡 <strong>Tip:</strong> Use the <span className="font-medium">SWITCH</span> in <span className="font-bold">PLAYER CONTACT INFORMATION</span> below to automatically fill their contact information with these club details.
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="text-start space-y-4 max-w-5xl mx-auto px-4 sm:px-0">
+                        {/* <div className="text-start space-y-4 max-w-5xl mx-auto px-4 sm:px-0">
                             <CardTitle className="flex items-center gap-2 text-green-800 justify-start">
                                 <div className="p-2 bg-linear-to-r from-yellow-400 to-orange-500 rounded-lg">
                                     <span className="text-white font-bold">💰</span>
@@ -950,24 +1114,47 @@ export default function Page({ params }: RegistrationPageProps) {
                                     </div>
                                 </div>
                             )}
-                        </div>
+                        </div> */}
 
-                        <div className="max-w-5xl mx-auto mt-6 p-4 sm:p-6 bg-white rounded-xl shadow-md border border-green-200">
+                        <div className="max-w-5xl mx-auto mt-6 p-4 bg-white rounded-xl shadow-md">
                             <div className="text-start space-y-4">
                                 <CardTitle className="flex flex-col items-center gap-2 text-green-800 justify-center">
                                     <p className="text-green-700 text-sm">
                                         You are registering for this category
                                     </p>
-                                    <div className="mx-auto p-3 bg-linear-to-r from-teal-100 to-teal-200 border border-teal-200 rounded-xl shadow-md w-max">
+
+                                    <div className="flex flex-col sm:flex-row items-center justify-center">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-linear-to-r from-teal-200 to-teal-300 rounded-full shadow-inner"></div>
-                                            <span className="text-lg sm:text-xl font-semibold">
-                                                {event?.name}
-                                                {event?.type
-                                                    ? ` (${event.type.charAt(0).toUpperCase()}${event.type.slice(1).toLowerCase()})`
-                                                    : ""}
-                                            </span>
+                                            <div className="p-3 bg-linear-to-r from-teal-100 to-teal-200 border border-teal-200 rounded-xl shadow-md">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-3 h-3 sm:w-4 sm:h-4 bg-linear-to-r from-teal-200 to-teal-300 rounded-full shadow-inner"></div>
+                                                    <span className="text-md font-semibold">
+                                                        {event?.name}
+                                                        {event?.type
+                                                            ? ` (${event.type.charAt(0).toUpperCase()}${event.type.slice(1).toLowerCase()})`
+                                                            : ""}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        {event && tournament && !showFeeModal && (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        onClick={() => setShowFeeModal(true)}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-10 w-10 rounded-full bg-white/80 hover:bg-green-50 cursor-pointer"
+                                                    >
+                                                        <InfoIcon className="w-5 h-5 text-green-700" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p className="text-sm">View registration fee details</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
                                     </div>
                                 </CardTitle>
 
@@ -977,10 +1164,10 @@ export default function Page({ params }: RegistrationPageProps) {
                                     return (
                                         <div key={playerNum} className="pt-4">
                                             <div className="flex items-start gap-2 justify-start text-lime-800">
-                                                <div className="p-2 rounded-lg bg-linear-to-r from-lime-400 to-emerald-500 mb-4">
-                                                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                                <div className="p-1.5 rounded-lg bg-linear-to-r from-lime-400 to-emerald-500 mb-4">
+                                                    <User className="w-4 h-4 md:w-5 lg:h-5 text-white" />
                                                 </div>
-                                                <span className="text-lg sm:text-xl font-semibold">
+                                                <span className="text-md md:text-xl lg:text-xl font-semibold">
                                                     Personal Information for Player {playerNum}
                                                 </span>
                                             </div>
@@ -1029,11 +1216,11 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                         {name.includes("Birthday") && birthdayString && tournament?.dates?.tournamentStart && (
                                                                             <div className="flex items-center gap-1">
                                                                                 <span className={`text-xs font-medium px-2 py-0.5 rounded ${minAge !== undefined && maxAge !== undefined &&
-                                                                                        calculatedAge !== null &&
-                                                                                        calculatedAge >= minAge &&
-                                                                                        calculatedAge <= maxAge
-                                                                                        ? 'text-green-600 bg-green-50 border border-green-200'
-                                                                                        : 'text-red-600 bg-red-50 border border-red-200'
+                                                                                    calculatedAge !== null &&
+                                                                                    calculatedAge >= minAge &&
+                                                                                    calculatedAge <= maxAge
+                                                                                    ? 'text-green-600 bg-green-50 border border-green-200'
+                                                                                    : 'text-red-600 bg-red-50 border border-red-200'
                                                                                     }`}>
                                                                                     Age: {calculatedAge}
                                                                                 </span>

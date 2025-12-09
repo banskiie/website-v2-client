@@ -92,7 +92,9 @@ export default function RentalsSection() {
                                         {item.units.map((u, idx) => (
                                             <div key={idx} className="border border-gray-200 rounded px-2 py-1">
                                                 <p>
-                                                    {u.quantity} {u.quantity > 1 ? "units" : "unit"} | {u.capacity}
+                                                    ({u.quantity} {u.quantity > 1 ? "units" : "unit"}) 
+                                                    <br/>
+                                                    <span className="font-bold text-xs">{u.capacity}</span>
                                                     {'stages' in u && u.stages && ` (${u.stages})`}
                                                 </p>
                                             </div>

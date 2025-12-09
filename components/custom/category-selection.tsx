@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Trophy, ExternalLink, Users, User, X, Search, UploadIcon, Clock, CheckCircle, Mail, Wallet2Icon, AlertTriangle, Trash, GripVertical, Loader2, Paperclip, XCircle } from "lucide-react"
+import { Trophy, ExternalLink, Users, User, X, Search, UploadIcon, Clock, CheckCircle, Mail, Wallet2Icon, AlertTriangle, Trash, GripVertical, Loader2, Paperclip, XCircle, TrendingUp, Sparkles } from "lucide-react"
 import { categories, Gender } from "./data/items"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -94,7 +94,7 @@ export function CategoryCard({
     Beginners: "bg-yellow-100 text-yellow-800",
     Advanced: "bg-orange-100 text-orange-800",
     Open: "bg-red-100 text-red-800",
-    Legend: "bg-purple-100 text-purple-800",
+    Legend: "bg-green-100 text-green-800",
     G: "bg-green-100 text-green-800",
     F: "bg-yellow-100 text-yellow-800",
     E: "bg-blue-100 text-blue-800",
@@ -110,7 +110,7 @@ export function CategoryCard({
           ? <Users className="w-4 h-4 text-gray-600" />
           : <User className="w-4 h-4 text-gray-600" />}
         <Badge className={`text-xs px-2 ${levelColor}`}>{level}</Badge>
-        <Badge className={`text-xs px-2 ${gender === 'Male' ? 'bg-blue-100 text-blue-800' : gender === 'Women' ? 'bg-pink-100 text-pink-800' : 'bg-purple-100 text-purple-800'}`}>
+        <Badge className={`text-xs px-2 ${gender === 'Male' ? 'bg-blue-100 text-blue-800' : gender === 'Women' ? 'bg-pink-100 text-pink-800' : 'bg-green-100 text-green-800'}`}>
           {gender}
         </Badge>
       </div>
@@ -145,7 +145,7 @@ export function CategoryModal({
   if (loading) return <p>Loading...</p>
   if (error) return <p>Error loading tournaments: {error.message}</p>
 
-  const activeTournament = data?.publicTournaments?.find((t: any) => t.isActive)
+  const activeTournament = data?.publicTournaments?.find((t: ITournament) => t.isActive)
   const tournament = activeTournament || data?.publicTournaments?.[0]
 
   const hasEarlyBird = category.hasEarlyBird || tournament?.settings.hasEarlyBird
@@ -177,13 +177,22 @@ export function CategoryModal({
       ? `${symbol}${(category.earlyBirdPricePerPlayer * 2).toLocaleString()}`
       : null
 
+  // Calculate savings if early bird is active
+  const savingsPerPlayer = hasEarlyBird && category.earlyBirdPricePerPlayer && category.pricePerPlayer
+    ? category.pricePerPlayer - category.earlyBirdPricePerPlayer
+    : 0
+
+  const savingsPerPair = category.type === "Doubles" && savingsPerPlayer
+    ? savingsPerPlayer * 2
+    : 0
+
   return (
     <div
       className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 relative"
+        className="bg-white rounded-xl shadow-xl w-full max-w-[400px] p-6 relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -217,14 +226,6 @@ export function CategoryModal({
             >
               {category.level || category.name.split(" ")[1]}
             </Badge>
-            {hasEarlyBird && (
-              <Badge
-                variant="outline"
-                className="bg-green-100 text-green-800 text-xs"
-              >
-                Early Bird
-              </Badge>
-            )}
           </div>
 
           <p className="text-sm text-gray-500">
@@ -234,36 +235,101 @@ export function CategoryModal({
           </p>
         </div>
 
-        <div className="bg-green-50/50 p-4 rounded-md mb-6 text-left">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-semibold text-gray-700 text-md">💰</span>
-            <span className="font-semibold text-gray-800 text-md">
-              Registration Fee
-              {hasEarlyBird && " (Early Bird Active)"}
-            </span>
-          </div>
+        <div className="relative mb-6">
+          <div className="absolute -inset-2 bg-linear-to-r from-green-100 to-emerald-100 rounded-2xl blur opacity-60" />
+          <div className="relative bg-white rounded-2xl p-5 border-2 border-green-200 shadow-md">
+            <div className="flex items-center gap-1 mb-2">
+              <Sparkles className="size-4 text-yellow-500" />
+              <span className="text-gray-900 text-[12px] font-semibold">Registration Fee</span>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-green-700">👤</span>
-              <p className="text-green-700 font-medium text-sm">
-                Per Player: {perPlayerPrice}
-                {!hasEarlyBird && earlyBirdPerPlayer && ` (Early Bird: ${earlyBirdPerPlayer})`}
-              </p>
+              {hasEarlyBird && tournament?.dates?.earlyBirdRegistrationEnd && (
+                <>
+                  <Badge className="bg-linear-to-r rounded-sm! from-green-500 to-emerald-500 text-white border-0 shadow-sm text-[10px]">
+                    Early Bird
+                  </Badge>
+
+                  <div className="flex items-center gap-1 text-gray-600 ml-4.5">
+                    <Clock className="size-3" />
+                    <span className="text-xs">Ends in</span>
+                  </div>
+                </>
+              )}
             </div>
 
-            {perPairPrice && (
-              <div className="flex items-center gap-2">
-                <span className="text-green-700">👥</span>
-                <p className="text-green-700 font-medium text-sm">
-                  Per Pair: {perPairPrice}
-                  {!hasEarlyBird && earlyBirdPerPair && ` (Early Bird: ${earlyBirdPerPair})`}
-                </p>
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1">
+                    <User className="size-4 text-green-600" />
+                    <span className="text-gray-700 text-[13px]">
+                      Per Player Fee
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-md text-green-700 font-bold">
+                      {perPlayerPrice}
+                    </span>
+                    {hasEarlyBird && category.pricePerPlayer && category.earlyBirdPricePerPlayer && (
+                      <span className="text-gray-400 line-through text-xs">
+                        {symbol}{category.pricePerPlayer.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                  {savingsPerPlayer > 0 && (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <TrendingUp className="size-3" />
+                      <span className="text-xs font-medium">Save {symbol}{savingsPerPlayer.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+
+                {hasEarlyBird && tournament?.dates?.earlyBirdRegistrationEnd && (
+                  <div className="bg-green-50 border border-green-400 text-green-700 text-[12px] font-bold px-3 py-2 rounded-md">
+                    {format(new Date(tournament.dates.earlyBirdRegistrationEnd), "MMM dd, yyyy")}
+                  </div>
+                )}
               </div>
-            )}
+
+              {perPairPrice && category.type === "Doubles" && (
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Users className="size-4 text-blue-600" />
+                      <span className="text-gray-700 text-sm">Per Pair Fee</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl text-blue-700 font-bold">
+                        {perPairPrice}
+                      </span>
+                      {hasEarlyBird && category.pricePerPlayer && category.earlyBirdPricePerPlayer && (
+                        <span className="text-gray-400 line-through text-xs">
+                          {symbol}{(category.pricePerPlayer * 2).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                    {savingsPerPair > 0 && (
+                      <div className="flex items-center gap-1 text-green-600">
+                        <TrendingUp className="size-3" />
+                        <span className="text-xs font-medium">Save {symbol}{savingsPerPair.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Early Bird note when not active */}
+              {!hasEarlyBird && earlyBirdPerPlayer && (
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="text-xs text-gray-500 italic">
+                    Early Bird was available at {earlyBirdPerPlayer}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* Tournament Details */}
         <div className="bg-blue-50 p-4 rounded-md mb-6 text-left">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-semibold text-gray-700 text-sm">📅</span>
@@ -274,9 +340,9 @@ export function CategoryModal({
           <p className="text-gray-700 text-xs font-medium mb-1">
             {tournament?.name || "Tournament TBA"}
           </p>
-            <p className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"}`}>
+          <p className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"}`}>
             {tournament?.isActive ? "Active" : "Inactive"}
-            </p>
+          </p>
           <p className="text-gray-700 text-xs font-medium">
             {tournament
               ? `${format(new Date(tournament.dates.tournamentStart), "MMM dd, yyyy")} - ${format(
@@ -315,7 +381,6 @@ export function CategoryModal({
     </div>
   )
 }
-
 
 function SubmissionSuccessModal({ isOpen, onClose }: {
   isOpen: boolean
@@ -428,14 +493,15 @@ export function UploadProofMergedModal({
       const fileName = `payment-${Date.now()}.${fileExt}`
       formData.append("file", file, fileName)
 
-      console.log('Uploading file:', {
+      console.log('Uploading file to PAYMENTS folder:', {
         name: file.name,
         size: file.size,
         type: file.type,
         fileName: fileName
       })
-      // /api/upload/payments
-      const response = await fetch("/api/upload/attachment", {
+
+      // CHANGE THIS LINE: Use payment endpoint instead of attachment
+      const response = await fetch("/api/upload/payment", {
         method: "POST",
         body: formData,
       })
@@ -445,18 +511,17 @@ export function UploadProofMergedModal({
       }
 
       const data = await response.json()
-      console.log('Upload API response:', data)
+      console.log('Upload to PAYMENTS response:', data)
 
       return data.url
     } catch (error) {
-      console.error("Error Uploading file:", error)
+      console.error("Error Uploading file to payments folder:", error)
       toast.error("Error uploading file. Please try again.")
       return null
     } finally {
       setIsUploading(false)
     }
   }
-
   const getPayerNames = (): string => {
     if (payerName.trim()) {
       return payerName.trim()
@@ -2049,7 +2114,7 @@ export default function App() {
         ? "bg-blue-500"
         : group === "Women's"
           ? "bg-pink-500"
-          : "bg-purple-500"
+          : "bg-green-500"
 
     return (
       <div key={group} className="mb-8">
@@ -2173,11 +2238,11 @@ export default function App() {
         {/* ✅ SINGLES CATEGORIES */}
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-6">
-            <User className="w-6 h-6 text-purple-600" />
+            <User className="w-6 h-6 text-green-600" />
             <h2 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-900">
               Singles Categories
             </h2>
-            <Badge variant="outline" className="bg-purple-50 text-purple-700">
+            <Badge variant="outline" className="bg-green-50 text-green-700">
               {singlesCategories.length} categories
             </Badge>
           </div>

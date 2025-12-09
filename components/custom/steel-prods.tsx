@@ -19,6 +19,16 @@ const steelProductsMap: Record<string, string> = {
     "Spandrel": `${CLOUD}/v1764049634/SPANDREL_m3i1x3.png`,
 }
 
+// Material thickness options for each steel product
+const materialThicknessMap: Record<string, string[]> = {
+    "Galvanized C-Purlins": ["0.8mm", "1.0mm", "1.2mm", "1.5mm", "1.8mm", "2.0mm"],
+    "Metal Studs": ["0.8mm", "1.0mm", "1.2mm", "1.5mm", "1.8mm", "2.0mm"],
+    "Metal Furring": ["0.35mm"],
+    "Floor Deck": ["0.75mm", "0.8mm", "1.0mm", "1.2mm"],
+    "Metal Cladding": ["0.35mm", "0.40mm", "0.50mm"],
+    "Spandrel": ["0.35mm", "0.40mm", "0.50mm"]
+}
+
 function SteelProducts() {
     const [isOpen, setIsOpen] = useState(false)
     const searchParams = useSearchParams()
@@ -48,6 +58,8 @@ function SteelProducts() {
             })
         }
     }, [activeTab])
+
+    const currentThicknessOptions = materialThicknessMap[activeTab] || []
 
     if (loading) {
         return (
@@ -191,9 +203,9 @@ function SteelProducts() {
                                     key={name}
                                     onClick={() => setActiveTab(name)}
                                     className={`w-20 h-20 lg:w-28 lg:h-28 rounded shadow border 
-        ${activeTab === name ? "border-green-500" : "border-gray-200"}
-        bg-white flex items-center justify-center cursor-pointer 
-        hover:scale-105 transition`}
+                                        ${activeTab === name ? "border-green-500" : "border-gray-200"}
+                                        bg-white flex items-center justify-center cursor-pointer 
+                                        hover:scale-105 transition`}
                                     title={name}
                                 >
                                     <Image
@@ -207,10 +219,36 @@ function SteelProducts() {
                             ))}
                         </div>
 
+                        {currentThicknessOptions.length > 0 && (
+                            <div className="mt-6 lg:mt-8 mx-4 lg:mx-0">
+                                <h3 className="text-lg lg:text-xl font-semibold text-gray-800 mb-3 text-center lg:text-left">
+                                    Material Thickness
+                                </h3>
+                                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                                    {currentThicknessOptions.map((thickness) => (
+                                        <div
+                                            key={thickness}
+                                            className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 text-gray-700"
+                                        >
+                                            {thickness}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {currentThicknessOptions.length === 0 && (
+                            <div className="mt-6 lg:mt-8 mx-4 lg:mx-0">
+                                <h3 className="text-lg lg:text-xl font-semibold text-gray-800 mb-3 text-center lg:text-left">
+                                    Material Thickness
+                                </h3>
+                                <p className="text-gray-500 italic">
+                                    Thickness options vary based on product specifications. Contact us for details.
+                                </p>
+                            </div>
+                        )}
+
                         <div className="flex items-center justify-center w-full lg:w-[95%] text-left mt-5 mx-auto px-4 lg:px-0">
-                            <p className="text-sm lg:text-base text-gray-400 text-center lg:text-left">
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                            </p>
                         </div>
                     </div>
                 </div>

@@ -280,7 +280,7 @@ export default function CategoriesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-green-50 via-white to-green-100 relative">
+        <div className="min-h-screen bg-linear-to-b from-green-50/30 to-green-100/30 relative">
             <Header />
             <div className="relative bg-white border-b shadow-sm overflow-hidden mt-16">
                 <div className="absolute top-12 right-[-76px] rotate-45 bg-linear-to-br from-green-600 to-green-800 text-white text-base font-semibold py-5 px-16 shadow-md">
