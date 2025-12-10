@@ -10,12 +10,9 @@ export enum PaymentMethod {
 
 export enum PaymentStatus {
   PENDING = "PENDING",
-  PARTIALLY_PAID = "PARTIALLY_PAID",
-  PAID = "PAID",
   VERIFIED = "VERIFIED",
   DUPLICATE = "DUPLICATE",
   REJECTED = "REJECTED",
-  REFUNDED = "REFUNDED",
 }
 
 export interface IPaymentStatusLog {

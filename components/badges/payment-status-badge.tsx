@@ -13,18 +13,6 @@ const PaymentStatusBadge = (props: Props) => {
           {props.status.toLocaleLowerCase()}
         </Badge>
       )
-    case PaymentStatus.PARTIALLY_PAID:
-      return (
-        <Badge className="pointer-events-none bg-amber-600 capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
-        </Badge>
-      )
-    case PaymentStatus.PAID:
-      return (
-        <Badge className="pointer-events-none bg-amber-700 capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
-        </Badge>
-      )
     case PaymentStatus.VERIFIED:
       return (
         <Badge className="pointer-events-none bg-sky-600 capitalize">
@@ -34,12 +22,6 @@ const PaymentStatusBadge = (props: Props) => {
     case PaymentStatus.REJECTED:
       return (
         <Badge className="pointer-events-none bg-destructive capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
-        </Badge>
-      )
-    case PaymentStatus.REFUNDED:
-      return (
-        <Badge className="pointer-events-none bg-pink-400 capitalize">
           {props.status.toLocaleLowerCase().replace("_", " ")}
         </Badge>
       )
