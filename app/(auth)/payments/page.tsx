@@ -46,9 +46,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import ViewDialog from "./dialogs/view"
-import RoleBadge from "@/components/badges/role-badge"
-import StatusDialog from "./dialogs/status"
-import ActiveBadge from "@/components/badges/active-badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import BatchMenu from "./dialogs/batch"
 import PaymentStatusBadge from "@/components/badges/payment-status-badge"
@@ -360,6 +357,31 @@ const Page = () => {
         size: 10,
       },
       {
+        accessorKey: "entries",
+        header: () => (
+          <SortHeader
+            label="Entries"
+            sortKey="entries"
+            sortState={sort}
+            onSortChange={onSort}
+          />
+        ),
+        footer: () => (
+          <ColumnFilter
+            label="Entries"
+            filterKey="entries"
+            filterType="TEXT"
+            filterValue={filter}
+            onFilterChange={onFilter}
+          />
+        ),
+        cell: ({ row }) => {
+          const entries = (row.original as any).entries as string
+          const entryList = entries.split(",").map((e) => e.trim())
+          return <span>{entryList.join(", ")}</span>
+        },
+      },
+      {
         accessorKey: "payerName",
         header: () => (
           <SortHeader
@@ -424,31 +446,7 @@ const Page = () => {
             maximumFractionDigits: 2,
           })}`,
       },
-      {
-        accessorKey: "entries",
-        header: () => (
-          <SortHeader
-            label="Entries"
-            sortKey="entries"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
-        footer: () => (
-          <ColumnFilter
-            label="Entries"
-            filterKey="entries"
-            filterType="TEXT"
-            filterValue={filter}
-            onFilterChange={onFilter}
-          />
-        ),
-        cell: ({ row }) => {
-          const entries = (row.original as any).entries as string
-          const entryList = entries.split(",").map((e) => e.trim())
-          return <span>{entryList.join(", ")}</span>
-        },
-      },
+
       {
         accessorKey: "currentStatus",
         header: () => (
