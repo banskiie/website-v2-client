@@ -19,13 +19,53 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const USER = gql`
-  query User($_id: ID!) {
-    user(_id: $_id) {
-      name
-      email
-      contactNumber
-      username
-      role
+  query Payment($_id: ID!) {
+    payment(_id: $_id) {
+      _id
+      payerName
+      referenceNumber
+      amount
+      method
+      proofOfPaymentURL
+      paymentDate
+      statuses {
+        status
+        date
+        by {
+          _id
+          name
+          email
+          contactNumber
+          username
+          role
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+      remarks {
+        remark
+        date
+        by {
+          _id
+          name
+          email
+          contactNumber
+          username
+          role
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+      entryList {
+        isFullyPaid
+        entry {
+          _id
+          entryNumber
+          entryKey
+        }
+      }
     }
   }
 `

@@ -7,7 +7,7 @@ type Props = {
 
 const PaymentStatusBadge = (props: Props) => {
   switch (props.status) {
-    case PaymentStatus.PENDING:
+    case PaymentStatus.SENT:
       return (
         <Badge className="pointer-events-none bg-slate-400 capitalize">
           {props.status.toLocaleLowerCase()}

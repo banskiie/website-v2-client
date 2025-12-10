@@ -328,6 +328,52 @@ const Page = () => {
                 ],
               },
             })
+          case "PAID":
+            // Update the existing entry in the list
+            const paidEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Entry (${paidEntry?.entryNumber}) has been paid, and needs verification.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredPaidEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== paidEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredPaidEdges.find(() => true),
+                    node: paidEntry,
+                  },
+                  ...filteredPaidEdges,
+                ],
+              },
+            })
+          case "PARTIALLY_PAID":
+            // Update the existing entry in the list
+            const partiallyPaidEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Entry (${partiallyPaidEntry?.entryNumber}) has been paid, and needs verification.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredPartiallyPaidEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== partiallyPaidEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredPartiallyPaidEdges.find(() => true),
+                    node: partiallyPaidEntry,
+                  },
+                  ...filteredPartiallyPaidEdges,
+                ],
+              },
+            })
           case "REJECT":
             // Update the existing entry in the list
             const rejectedEntry = entry

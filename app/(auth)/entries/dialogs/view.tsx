@@ -540,7 +540,7 @@ const ViewDialog = (props: Props) => {
                             </span>
                             {status.reason && (
                               <span className="text-xs text-muted-foreground block">
-                                Reason:{" "}
+                                Note:{" "}
                                 <span className="italic underline">
                                   {status?.reason}
                                 </span>

@@ -9,7 +9,7 @@ export enum PaymentMethod {
 }
 
 export enum PaymentStatus {
-  PENDING = "PENDING",
+  SENT = "SENT",
   VERIFIED = "VERIFIED",
   DUPLICATE = "DUPLICATE",
   REJECTED = "REJECTED",
