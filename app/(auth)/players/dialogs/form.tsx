@@ -263,7 +263,7 @@ const FormDialog = (props: Props) => {
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid} className="col-span-2">
-                    <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>Middle Name</FieldLabel>
                     <InputGroup className="-my-1">
                       <InputGroupInput
                         placeholder="Middle Name"

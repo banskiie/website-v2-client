@@ -39,6 +39,17 @@ export interface IPayment {
   entryList: IEntryList[]
 }
 
+export interface IPaymentNode {
+  _id: string
+  payerName: string
+  referenceNumber: string
+  amount: number
+  method: PaymentMethod
+  paymentDate: Date
+  currentStatus: PaymentStatus
+  entries: String
+}
+
 export interface IPaymentStatusLogInput {
   status: PaymentStatus
   date: Date

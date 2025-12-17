@@ -28,6 +28,7 @@ import {
 import {
   IPayment,
   IPaymentInput,
+  IPaymentNode,
   PaymentStatus,
 } from "@/types/payment.interface"
 import { gql } from "@apollo/client"
@@ -42,13 +43,18 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import ViewDialog from "./dialogs/view"
 import { Checkbox } from "@/components/ui/checkbox"
 import BatchMenu from "./dialogs/batch"
 import PaymentStatusBadge from "@/components/badges/payment-status-badge"
+import VerifyDialog from "./dialogs/verify"
 
 const PAYMENTS = gql`
   query Payments(
@@ -116,9 +122,11 @@ const PAYMENT_CHANGED = gql`
   }
 `
 
-const ActionsColumn = ({ data }: { data?: IPaymentInput }) => {
+const ActionsColumn = ({ data }: { data?: IPaymentNode }) => {
   const payment = useMemo(() => data, [data])
   const [menuOpen, setMenuOpen] = useState(false)
+  const status = useMemo(() => payment?.currentStatus, [payment])
+
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
@@ -132,7 +140,15 @@ const ActionsColumn = ({ data }: { data?: IPaymentInput }) => {
         <DropdownMenuGroup>
           <ViewDialog _id={payment?._id} />
           <FormDialog _id={payment?._id} onClose={() => setMenuOpen(false)} />
-          <DropdownMenuSeparator />
+          {status === "SENT" && (
+            <>
+              <DropdownMenuSeparator />
+              <VerifyDialog
+                _id={payment?._id}
+                onClose={() => setMenuOpen(false)}
+              />
+            </>
+          )}
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

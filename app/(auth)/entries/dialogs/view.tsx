@@ -120,12 +120,14 @@ const ViewDialog = (props: Props) => {
       setOpen(value)
     }
   }
-  const { data, loading }: any = useQuery(ENTRY, {
+  const { data, loading, error }: any = useQuery(ENTRY, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
     fetchPolicy: "network-only",
   })
   const entry = data?.entry as IEntry
+
+  if (error) console.error(error)
 
   const onClose = () => {
     if (props.row) {

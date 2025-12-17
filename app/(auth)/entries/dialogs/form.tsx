@@ -342,6 +342,7 @@ const FormDialog = (props: Props) => {
             } else {
               formApi.resetField("connectedPlayer1")
             }
+            break
           case "connectedPlayer2":
             if (fieldValue) {
               await fetchPlayer({
@@ -380,6 +381,7 @@ const FormDialog = (props: Props) => {
             } else {
               formApi.resetField("connectedPlayer2")
             }
+            break
         }
       },
     }, // this is just for demo purposes
