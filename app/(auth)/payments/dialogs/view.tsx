@@ -56,21 +56,7 @@ const PAYMENT = gql`
           updatedAt
         }
       }
-      remarks {
-        remark
-        date
-        by {
-          _id
-          name
-          email
-          contactNumber
-          username
-          role
-          isActive
-          createdAt
-          updatedAt
-        }
-      }
+
       entryList {
         isFullyPaid
         entry {
@@ -110,10 +96,12 @@ const ViewDialog = (props: Props) => {
       setOpen(value)
     }
   }
-  const { data, loading }: any = useQuery(PAYMENT, {
+  const { data, loading, error }: any = useQuery(PAYMENT, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
   })
+
+  if (error) console.error(error)
 
   const onClose = () => {
     if (props.row) {
@@ -151,7 +139,7 @@ const ViewDialog = (props: Props) => {
           <DialogHeader>
             <DialogTitle>View Payment</DialogTitle>
             <DialogDescription>
-              View the details of this user below.
+              View the details of this payment below.
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="details" className="">
