@@ -281,7 +281,7 @@ const Home = () => {
                 ex ea commodo consequat.
               </motion.p>
 
-              <div className="grid grid-cols-2 gap-x-8 sm:gap-x-16 gap-y-10 sm:gap-y-14 md:gap-y-16 max-w-md sm:max-w-lg md:max-w-4xl mx-auto lg:mx-0 mt-10 sm:mt-14 md:mt-20">
+              <div ref={ref} className="grid grid-cols-2 gap-x-8 sm:gap-x-16 gap-y-10 sm:gap-y-14 md:gap-y-16 max-w-md sm:max-w-lg md:max-w-4xl mx-auto lg:mx-0 mt-10 sm:mt-14 md:mt-20">
                 {[
                   { icon: "/pages-interface-symbol-of-black-squares-svgrepo-com.svg", label: "Happy Clients", value: clientDisplay },
                   { icon: "/graph-chart-2-svgrepo-com.svg", label: "Projects Done", value: projectDisplay },

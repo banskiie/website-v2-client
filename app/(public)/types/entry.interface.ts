@@ -93,8 +93,16 @@ export interface IEntryAmountDetails {
   amount: number
   deadline: string
   isEarlyBird: boolean
-  entryId: string
-  eventType: 'SINGLES' | 'DOUBLES'
+  entry: {
+    _id: string
+    entryNumber: string
+    entryKey: string
+    isEarlyBird: boolean
+    statuses: IEntryStatus[]
+    event: {
+      type: string
+    }
+  }
 }
 
 export interface EntryAmountDetailsData {

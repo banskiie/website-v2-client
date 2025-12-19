@@ -44,7 +44,14 @@ export default function OTPStep({
           className="text-gray-500 hover:text-green-700 flex items-center gap-1 text-sm bg-green-100 hover:bg-green-200 p-2 rounded-md cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">Back</span>
         </button>
+      </div>
+
+      <div className="mb-2 pl-12 lg:pl-0 md:pl-0">
+        <p className="text-[14px] text-gray-600">
+          <span className=" font-medium"> Code Sent: </span><span className="text-green-600 italic font-normal underline tracking-wide">{email}</span>
+        </p>
       </div>
 
       <p className="text-gray-600 mb-6 md:mb-6 text-base">

@@ -1401,7 +1401,7 @@ export default function ChatStep({
                   initial={{ opacity: 0, scale: 0.8, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                  className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border p-2 z-10 min-w-[200px]"
+                  className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border p-2 z-10 min-w-[60px]"
                 >
                   <div className="flex gap-2">
                     <div {...getRootProps({ className: "dropzone" })}>

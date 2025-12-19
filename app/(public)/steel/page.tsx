@@ -100,6 +100,7 @@ export default function Page() {
   const [openItem, setOpenItem] = useState<string | undefined>(undefined)
   const [activeAd, setActiveAd] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [hoveredPanel, setHoveredPanel] = useState<'left' | 'right' | null>(null)
   // const [isCompanyOpen, setIsCompanyOpen] = useState(false)
 
   useEffect(() => {
@@ -165,10 +166,10 @@ export default function Page() {
           transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
           className="relative z-10 text-center max-w-2xl px-4"
         >
-          <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4">
+          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
             C-ONE STEEL
           </h1>
-          <p className="text-white text-sm lg:text-xl mb-8 leading-relaxed">
+          <p className="text-white text-sm lg:text-lg mb-8 leading-relaxed">
             {/* Looking for reliable steel products at great value? You’ve found it
             with C-ONE! Browse a wide selection of premium-quality
             steel—available in many stunning colors and customizable in size—
@@ -182,15 +183,46 @@ export default function Page() {
           </p>
           <p className="text-white text-sm lg:text-lg mb-6 leaeding-relaxed tracking-wide">
             "The <span className="font-bold">BEST STEEL</span> Builds more than Structures — <span className="font-bold text-green-300">IT BUILDS LEGACIES</span>"</p>
-          <button className="px-5 py-2 text-sm lg:px-8 lg:py-3 rounded-[25px] border border-white bg-[#211A1A]/80 text-white font-medium hover:bg-[#211A1A]/90 transition">
+          <Button
+            onClick={() =>
+              window.scrollTo({ top: window.innerHeight, behavior: "smooth" })
+            }
+            className="
+    px-5 py-2
+    text-sm
+    lg:px-8 lg:py-3
+    rounded-[25px]
+    border border-white
+    bg-[#211A1A]/80
+    text-white font-medium
+    cursor-pointer
+    transition-transform duration-300 ease-in-out
+    hover:scale-105
+  "
+          >
             Explore Steel
-          </button>
+          </Button>
         </motion.div>
 
-        <button
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-[#2FB44D] cursor-pointer flex items-center justify-center shadow-lg hover:bg-[#25993E] transition animate-bounce"
+        <Button
+          className="
+    absolute bottom-6 left-1/2 -translate-x-1/2
+    w-12 h-12
+    rounded-full
+    bg-[#2FB44D]!
+    cursor-pointer
+    flex items-center justify-center
+    shadow-lg
+
+    hover:bg-[#25993E]
+
+    transition-transform duration-300 ease-in-out
+    hover:scale-110
+
+    animate-bounce
+  "
           onClick={() =>
-            window.scrollTo({ top: window.innerHeight, behavior: "smooth" })
+            window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })
           }
         >
           <svg
@@ -207,7 +239,7 @@ export default function Page() {
               d="M19 9l-7 7-7-7"
             />
           </svg>
-        </button>
+        </Button>
       </div>
 
       <div className="w-full h-[77px] overflow-hidden bg-white flex items-center">
@@ -229,112 +261,203 @@ export default function Page() {
         </div>
       </div>
 
+
       <div
         id="steel-products"
-        className="relative w-full min-h-screen lg:h-screen flex items-center justify-center py-16 lg:py-0"
+        className="relative w-full min-h-screen lg:h-screen flex overflow-hidden"
       >
-        <motion.div
-          className="absolute inset-0 w-full h-full"
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
-          <Image
-            src={categories[activeCategory].image}
-            alt={categories[activeCategory].title}
-            fill
-            className="object-cover"
-            loading="lazy"
-            blurDataURL={categories[activeCategory].image}
-          />
-          <div className="absolute inset-0 bg-[#1A1A1A]/50"></div>
-        </motion.div>
-
-        <motion.div
-          className="absolute top-4 md:top-8 flex flex-wrap justify-center z-10"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={{
-            hidden: {},
-            visible: { transition: { staggerChildren: 0.15 } },
-          }}
-        >
-          {categories.map((cat, idx) => (
-            <motion.button
-              key={idx}
-              onClick={() => setActiveCategory(idx)}
-              className={`px-3 py-2 md:px-6 md:py-3 text-xs md:text-sm font-medium cursor-pointer text-black bg-white transition relative
-          ${idx === 0 ? "rounded-l-[10px]" : ""}
-          ${idx === categories.length - 1 ? "rounded-r-[10px]" : ""}`}
-              variants={{
-                hidden: { opacity: 0, y: -20, scale: 0.9 },
-                visible: {
-                  opacity: 1,
-                  y: 0,
-                  scale: 1,
-                  transition: { duration: 0.5, ease: "easeOut" },
-                },
+        <div className="flex h-full w-full">
+          <motion.div
+            className="relative cursor-pointer overflow-hidden"
+            initial={{ width: "50%" }}
+            animate={{
+              width: hoveredPanel === "left" ? "60%" : hoveredPanel === "right" ? "40%" : "50%"
+            }}
+            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+            onMouseEnter={() => setHoveredPanel("left")}
+            onMouseLeave={() => setHoveredPanel(null)}
+            onClick={() => {
+              const roofingAccessIndex = categories.findIndex(cat =>
+                cat.title === "Roofing Access"
+              );
+              if (roofingAccessIndex !== -1) setActiveCategory(roofingAccessIndex);
+            }}
+          >
+            <motion.div
+              className="absolute inset-0"
+              animate={{
+                scale: hoveredPanel === "left" ? 1.1 : 1
               }}
+              transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
             >
-              {cat.title}
-              {activeCategory === idx && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 rounded-full w-[60%] bg-green-500"></span>
-              )}
-            </motion.button>
-          ))}
-        </motion.div>
+              <Image
+                src={categories[1]?.image || "/default-roofing-access.jpg"}
+                alt="Roofing Access"
+                fill
+                className="object-cover"
+                loading="lazy"
+                sizes="50vw"
+              />
+            </motion.div>
 
-        <button
-          onClick={() =>
-            setActiveCategory(
-              (prev) => (prev - 1 + categories.length) % categories.length
-            )
-          }
-          className="absolute left-0 md:left-6 z-20 bg-white text-black px-2 py-3 md:p-3 lg:p-4 md:rounded-full rounded-r-full lg:rounded-full shadow-lg hover:bg-gray-100 transition transform hover:scale-110"
-        >
-          <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
-        </button>
+            <div className={`absolute inset-0 bg-gradient-to-br from-slate-700/90 to-slate-900/90 transition-opacity duration-500 ${hoveredPanel === "left" ? "opacity-70" : "opacity-80"
+              }`} />
 
-        <button
-          onClick={() => setActiveCategory((prev) => (prev + 1) % categories.length)}
-          className="absolute right-0 md:right-6 z-20 bg-white text-black px-2 py-3 md:p-3 lg:p-4 md:rounded-full shadow-lg rounded-l-full lg:rounded-full hover:bg-gray-100 transition transform hover:scale-110"
-        >
-          <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
-        </button>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20">
+              <motion.div
+                className="text-center max-w-md px-4"
+                animate={{
+                  y: hoveredPanel === "left" ? 0 : 20
+                }}
+                transition={{ duration: 0.4 }}
+              >
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2">
+                  <span className="block">STEEL</span>
+                  <span className="block">PRODUCTS</span>
+                </h2>
+                <motion.p
+                  className="text-white/85 mb-4 text-sm md:text-base"
+                  animate={{
+                    opacity: hoveredPanel === "left" ? 1 : 0.7
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {categories[1]?.description || "Producing High Quality Steel products since 2013."}
+                </motion.p>
+                <motion.div
+                  animate={{
+                    opacity: hoveredPanel === "left" ? 1 : 0,
+                    y: hoveredPanel === "left" ? 0 : 10
+                  }}
+                  transition={{ duration: 0.3, delay: hoveredPanel === "left" ? 0.1 : 0 }}
+                >
+                  <Link
+                    href={`${categoryRoutes["Steel Products"] || "/products"}?category=Steel+Products`}
+                  >
+                    <motion.button
+                      className="group inline-flex items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full transition-all duration-300 hover:gap-3 hover:bg-white/95 text-sm"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Explore Products
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </motion.button>
+                  </Link>
+                </motion.div>
+              </motion.div>
+            </div>
+          </motion.div>
 
-        <motion.div
-          className="relative z-10 text-center max-w-lg md:max-w-3xl lg:max-w-3xl px-4 md:px-6"
-          initial={{ opacity: 0, y: 30, scale: 0.95 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
-          <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-4 md:mb-6">
-            {categories[activeCategory].title.toUpperCase()}
-          </h2>
-          <p
-            className="
-    text-white tracking-wide
-    text-xs sm:text-sm md:text-base lg:text-lg 
-    mb-4 sm:mb-6 md:mb-8 
-    leading-relaxed 
-    max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto
-  "
+          <motion.div
+            className="relative cursor-pointer overflow-hidden"
+            initial={{ width: "50%" }}
+            animate={{
+              width: hoveredPanel === "right" ? "60%" : hoveredPanel === "left" ? "40%" : "50%"
+            }}
+            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+            onMouseEnter={() => setHoveredPanel("right")}
+            onMouseLeave={() => setHoveredPanel(null)}
+            onClick={() => {
+              const metalRoofingIndex = categories.findIndex(cat =>
+                cat.title === "Metal Roofing"
+              );
+              if (metalRoofingIndex !== -1) setActiveCategory(metalRoofingIndex);
+            }}
           >
-            {categories[activeCategory].description}
-          </p>
-          <Link
-            href={`${categoryRoutes[categories[activeCategory].title]}?category=${encodeURIComponent(
-              categories[activeCategory].title
-            )}`}
+            <motion.div
+              className="absolute inset-0"
+              animate={{
+                scale: hoveredPanel === "right" ? 1.1 : 1
+              }}
+              transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <Image
+                src={categories[2]?.image || "/default-metal-roofing.jpg"}
+                alt="Metal Roofing"
+                fill
+                className="object-cover"
+                loading="lazy"
+                sizes="50vw"
+              />
+            </motion.div>
+
+            <div className={`absolute inset-0 bg-gradient-to-br from-slate-700/90 to-slate-900/90 transition-opacity duration-500 ${hoveredPanel === "right" ? "opacity-70" : "opacity-80"
+              }`} />
+
+            {/* CENTERED CONTENT - Right Panel */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20">
+              <motion.div
+                className="text-center max-w-md px-4"
+                animate={{
+                  y: hoveredPanel === "right" ? 0 : 20
+                }}
+                transition={{ duration: 0.4 }}
+              >
+                <h2 className="text-3xl lg:text-5xl font-bold mb-2">
+                  <span className="block">PPGL</span>
+                  <span className="block">PRODUCTS</span>
+                </h2>
+                <motion.p
+                  className="text-white/85 mb-4 text-sm md:text-base"
+                  animate={{
+                    opacity: hoveredPanel === "right" ? 1 : 0.7
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {categories[2]?.description || "Producing High Quality Steel products since 2013."}
+                </motion.p>
+                <motion.div
+                  animate={{
+                    opacity: hoveredPanel === "right" ? 1 : 0,
+                    y: hoveredPanel === "right" ? 0 : 10
+                  }}
+                  transition={{ duration: 0.3, delay: hoveredPanel === "right" ? 0.1 : 0 }}
+                >
+                  <Link
+                    href={`${categoryRoutes["Metal Roofing"] || "/products"}?category=Metal+Roofing`}
+                  >
+                    <motion.button
+                      className="group inline-flex items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full transition-all duration-300 hover:gap-3 hover:bg-white/95 text-sm"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Explore Products
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </motion.button>
+                  </Link>
+                </motion.div>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="absolute top-8 md:top-12 lg:top-16 left-1/2 transform -translate-x-1/2 z-30 text-center w-full max-w-3xl px-6 pointer-events-none">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
           >
-            <Button className="px-6! py-6! md:px-8 md:py-3 rounded-[25px] border border-white bg-black text-white text-sm md:text-base font-medium hover:bg-[#111]/90 transition cursor-pointer">
-              Check <ArrowRight className="inline-block w-4 h-4 md:w-5 md:h-5" />
-            </Button>
-          </Link>
-        </motion.div>
+            <h1 className="text-lg lg:text-[34px] font-medium tracking-wide text-white">
+              {categories[0]?.title || "Steel Products"}
+            </h1>
+            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-white to-transparent mx-auto opacity-50"></div>
+            <p className="text-white/90 mt-4 max-w-2xl mx-auto text-sm">
+              {categories[0]?.description.split(". ")[0] || "Premium quality steel solutions for every industrial need"}
+            </p>
+          </motion.div>
+        </div>
+
+        <div className="absolute bottom-6 left-1/4 transform -translate-x-1/2 z-30">
+          {activeCategory === 1 && (
+            <div className="h-1 w-24 md:w-32 bg-green-500 rounded-full"></div>
+          )}
+        </div>
+
+        <div className="absolute bottom-6 right-1/4 transform translate-x-1/2 z-30">
+          {activeCategory === 2 && (
+            <div className="h-1 w-24 md:w-32 bg-green-500 rounded-full"></div>
+          )}
+        </div>
       </div>
 
       <div className="w-full bg-[#F4F3EE] py-20 px-6 md:px-12">
@@ -671,7 +794,7 @@ export default function Page() {
           >
             {/* At C-ONE, we deliver durable, reliable, and precisely crafted steel
             products—giving you the strength and value your projects deserve. */}
-            Handmade with precision, our customized steel air vents combine durability and style for any space. Inquire now and experience quality craftsmanship!
+            One of the leading Steel Manufacturers in Mindanao. Has Been committed to provide High Quality Products with Affordable Cost.
           </motion.p>
 
           <motion.div

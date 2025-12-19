@@ -10,7 +10,7 @@ import { motion } from 'framer-motion'
 import Header from '@/components/custom/header'
 import FloatingTicketing from "@/components/custom/ticket"
 import useSmoothScroll from '@/hooks/useSmoothScroll'
-import { CheckCircle2, Clock, Gift, MapPin, Phone, Plus, ShieldCheck } from 'lucide-react'
+import { BadgePercent, CheckCircle2, Clock, Gift, GiftIcon, MapPin, Phone, Plus, PlusCircle, ShieldCheck } from 'lucide-react'
 import VisitUsSection from '@/components/custom/visit-us-main'
 import { CLOUD } from '@/components/custom/main-faq'
 
@@ -158,7 +158,7 @@ function page() {
             Trucks & Equipment
           </motion.div>
 
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
@@ -166,6 +166,17 @@ function page() {
           >
             Looking for reliable steel products at great value?
             You&apos;ve found it with C-ONE! Browse a wide selection of premium-quality steel—available in many stunning colors and customizable in size—designed to bring your vision to life while keeping your budget intact.
+          </motion.div> */}
+
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-4 text-white/90 text-lg text-center md:text-xl leading-relaxed tracking-wide"
+          >
+            Find the Best High-Quality Trucks and Equipments from us at C-ONE! We have a Variety of Selections of reconditioned Cargo Trucks, Vans,
+            and Tractor Heads for you to choose from. We also have a Wide Range of Light and Medium Trucks, Heavy Equipment for Industrial Building,
+            and Generators.
           </motion.div>
 
           <motion.button
@@ -220,56 +231,59 @@ function page() {
           <h2 className="text-3xl md:text-4xl font-semibold text-white mb-4">
             What We Offer
           </h2>
-          <p className="max-w-3xl mx-auto text-gray-300 leading-relaxed">
-            Power up your projects with C-ONE’s top-quality trucks and equipment
+          <p className="max-w-3xl mx-auto text-gray-300 leading-relaxed tracking-wide">
+            {/* Power up your projects with C-ONE’s top-quality trucks and equipment
             rentals. Whether you need hauling, lifting, or moving heavy loads, our
             reliable fleet and expert support ensure you get the job done faster,
             safer, and smarter. With us, you don’t just rent machines—you gain a
-            partner committed to your success.
+            partner committed to your success. */}
+            All our Secondhand Products have also undergone a through Quality Check to ensure that they are Fully Functional and Worth
+            your Money.
           </p>
         </motion.div>
 
         <div className="relative z-10 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 px-6 mb-20">
           {[
             {
-              img: "/forklift-1-svgrepo-com.svg",
-              title: "Brand New Heavy Equipment",
-              desc: "Top-quality heavy equipment for construction and industrial projects",
+              icon: GiftIcon,
+              title: "Free",
+              desc: "Offers TPL Insurance, 1 Year LTO Registration, Early Warning Device, and Hydraulic Jack",
             },
             {
-              img: "/factory-svgrepo-com.svg",
-              title: "Industrial Equipment",
-              desc: "Comprehensive industrial machinery for all your operational needs",
+              icon: ShieldCheck,
+              title: "Warranty",
+              desc: "Offers 1 Year Warranty for Brand New Heavy Equipment. 1 Month Warranty for Truck Parts and Labor.",
             },
             {
-              img: "/trucks-moving-svgrepo-com.svg",
-              title: "Japan Reconditioned Trucks",
-              desc: "Reliable reconditioned trucks imported from Japan",
+              icon: PlusCircle,
+              title: "Add Ons",
+              desc: "New Battery, Brand New Tires and Brand New Steel Plates",
             },
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              className="bg-white rounded-xl p-8 flex flex-col items-center text-center transition-all hover:shadow-lg shadow-[inset_0_4px_10px_rgba(0,0,0,0.1)]"
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: i * 0.2 }}
-            >
-              <div className="bg-green-600 rounded-2xl p-6 mb-4 flex items-center justify-center w-28 h-28 shadow-md">
-                <Image
-                  src={item.img}
-                  alt={item.title}
-                  width={80}
-                  height={80}
-                  className="mb-4"
-                />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {item.title}
-              </h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
-            </motion.div>
-          ))}
+          ].map((item, i) => {
+            const Icon = item.icon
+
+            return (
+              <motion.div
+                key={i}
+                className="bg-white rounded-xl p-8 flex flex-col items-center text-center transition-all hover:shadow-lg shadow-[inset_0_4px_10px_rgba(0,0,0,0.1)]"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.6, delay: i * 0.2 }}
+              >
+                <div className="bg-green-600 rounded-2xl p-6 mb-4 flex items-center justify-center w-28 h-28 shadow-md">
+                  <Icon className="h-16 w-16 text-white" />
+                </div>
+
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {item.desc}
+                </p>
+              </motion.div>
+            )
+          })}
         </div>
 
         <motion.div
@@ -346,7 +360,7 @@ function page() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-23 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-23 mb-10 font-medium text-gray-800">
             {products.map((product, idx) => {
               const variants = [
                 {
@@ -437,27 +451,19 @@ function page() {
             </p>
           </motion.div>
 
-          <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 px-6">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 px-6">
             {[
               {
                 icon: "ShieldCheck",
-                title: "Quality Assurance",
-                desc: "All equipment undergoes rigorous inspection and testing before delivery.",
+                title: "DTI Accredited",
               },
               {
                 icon: "BadgeCheck",
-                title: "Industry Certified",
-                desc: "ISO certified operations with industry-leading safety standards.",
+                title: "High Quality Products",
               },
               {
-                icon: "Users",
-                title: "Expert Support",
-                desc: "24/7 technical support and dedicated account management.",
-              },
-              {
-                icon: "CheckCircle",
-                title: "Warranty Coverage",
-                desc: "Comprehensive warranty packages on all equipment and parts.",
+                icon: "Award",
+                title: "TESDA Certified",
               },
             ].map((item, i) => {
               const Icon = require("lucide-react")[item.icon]
@@ -470,15 +476,12 @@ function page() {
                   viewport={{ once: true, amount: 0.3 }}
                   transition={{ duration: 0.6, delay: i * 0.1 }}
                 >
-                  <div className="bg-[#DCFCE7] rounded-full p-6 flex items-center justify-center w-20 h-20 mb-6">
-                    <Icon className="w-10 h-10 text-[#00BF63]" strokeWidth={2} />
+                  <div className="bg-[#DCFCE7] rounded-full p-6 flex items-center justify-center w-24 h-24 mb-6">
+                    <Icon className="w-20! h-20! text-[#00BF63]" strokeWidth={2} />
                   </div>
                   <h3 className="text-lg font-semibold text-white mb-2">
                     {item.title}
                   </h3>
-                  <p className="text-gray-100 text-sm leading-relaxed max-w-xs">
-                    {item.desc}
-                  </p>
                 </motion.div>
               )
             })}

@@ -320,7 +320,6 @@ function MetalRoofingContent() {
                             />
                         </div>
 
-
                         <div className="mt-6 lg:mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 px-4 lg:px-6">
                             <div className="flex flex-col">
                                 <h3 className="text-lg text-center font-semibold mb-4">Thickness</h3>

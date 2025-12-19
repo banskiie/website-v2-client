@@ -20,7 +20,7 @@ const ProductGallery: FC<ProductGalleryProps> = ({ images, description }) => {
                     height={400}
                     className="object-cover w-full h-auto rounded-md"
                 />
-                <p className="mt-4 text-black text-sm">{description}</p>
+                <p className="mt-4 text-black font-medium text-md tracking-wider">{description}</p>
             </div>
 
             <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-x-visible">

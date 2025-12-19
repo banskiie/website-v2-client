@@ -3,6 +3,7 @@ export interface CreatePaymentInput {
     amount: number
     paymentDate: string
     proofOfPaymentURL: string
+    method: string
     payerName: string
     entryList: Array<{
         entry: string

@@ -133,7 +133,7 @@ export default function Header() {
 
                         {/* Company Dropdown */}
                         <div className="relative group">
-                            <button
+                            {/* <button
                                 className={`text-sm font-medium flex items-center transition-colors duration-200 whitespace-nowrap ${
                                     scrolled 
                                         ? "text-gray-800 hover:text-green-600" 
@@ -142,7 +142,7 @@ export default function Header() {
                             >
                                 Company 
                                 <ChevronDown className="ml-1 w-3 h-3 transform group-hover:rotate-180 transition-transform duration-200" />
-                            </button>
+                            </button> */}
                             <div className="absolute hidden group-hover:block bg-white shadow-lg rounded-md w-48 py-2 mt-2 left-1/2 transform -translate-x-1/2 border border-gray-100">
                                 <a 
                                     href="/about" 

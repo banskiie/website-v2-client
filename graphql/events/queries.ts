@@ -88,11 +88,23 @@ export const FETCH_EVENT_WITH_TOURNAMENT = gql`
 export const ENTRY_EVENT_AMOUNT_DETAILS = gql`
   query EntryEventAmountDetails($referenceNumber: String!) {
     entryEventAmountDetails(referenceNumber: $referenceNumber) {
-        amount
-        deadline
+      amount
+      deadline
+      isEarlyBird
+      entry {
+        _id
+        entryNumber
+        entryKey
         isEarlyBird
-        entryId
-        eventType
+        statuses {
+          status
+          date
+          reason
+        }
+        event {
+          type
+        }
+      }
     }
   }
 `

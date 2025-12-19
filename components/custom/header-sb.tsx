@@ -70,12 +70,12 @@ export default function Header() {
                         ))}
 
                         <div className="relative group">
-                            <button
+                            {/* <button
                                 className={`text-sm font-medium flex items-center cursor-pointer transition ${scrolled ? "text-white bg-clip-text hover:text-[#FFBC52]" : "text-white hover:text-[#FFBC52]"
                                     }`}
                             >
                                 Company <span className="ml-1">▼</span>
-                            </button>
+                            </button> */}
                             <div className="absolute hidden group-hover:block bg-white shadow-md mt-2 rounded-md w-40">
                                 <a href="/about" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     About
