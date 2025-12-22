@@ -22,55 +22,50 @@ const EntryStatusBadge = (props: Props) => {
     case EntryStatus.LEVEL_PENDING:
       return (
         <Badge className="pointer-events-none bg-green-500 capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
+          {props.status.toLocaleLowerCase().replaceAll("_", " ")}
         </Badge>
       )
     case EntryStatus.LEVEL_APPROVED:
       return (
         <Badge className="pointer-events-none bg-green-700/70 capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
+          {props.status.toLocaleLowerCase().replaceAll("_", " ")}
         </Badge>
       )
-    case EntryStatus.LEVEL_VERIFIED:
-      return (
-        <Badge className="pointer-events-none bg-green-800 capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
-        </Badge>
-      )
+
     case EntryStatus.PAYMENT_PENDING:
       return (
         <Badge className="pointer-events-none bg-amber-500 capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
+          {props.status.toLocaleLowerCase().replaceAll("_", " ")}
         </Badge>
       )
     case EntryStatus.PAYMENT_PARTIALLY_PAID:
       return (
         <Badge className="pointer-events-none bg-amber-600 capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
+          {props.status.toLocaleLowerCase().replaceAll("_", " ")}
         </Badge>
       )
     case EntryStatus.PAYMENT_PAID:
       return (
         <Badge className="pointer-events-none bg-amber-700 capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
+          {props.status.toLocaleLowerCase().replaceAll("_", " ")}
         </Badge>
       )
     case EntryStatus.VERIFIED:
       return (
         <Badge className="pointer-events-none bg-sky-600 capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
+          {props.status.toLocaleLowerCase().replaceAll("_", " ")}
         </Badge>
       )
     case EntryStatus.REJECTED:
       return (
         <Badge className="pointer-events-none bg-destructive capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
+          {props.status.toLocaleLowerCase().replaceAll("_", " ")}
         </Badge>
       )
     case EntryStatus.CANCELLED:
       return (
         <Badge className="pointer-events-none bg-pink-400 capitalize">
-          {props.status.toLocaleLowerCase().replace("_", " ")}
+          {props.status.toLocaleLowerCase().replaceAll("_", " ")}
         </Badge>
       )
     default:

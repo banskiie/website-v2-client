@@ -38,7 +38,11 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import ViewDialog from "./dialogs/view"
@@ -47,10 +51,11 @@ import BatchMenu from "./dialogs/batch"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns/format"
-import StatusDialog from "./dialogs/status"
-import ActiveBadge from "@/components/badges/active-badge"
 import EntryStatusBadge from "@/components/badges/entry-status-badge"
 import EntryTable from "@/components/table/entry-table"
+import AssignDialog from "./dialogs/assign"
+import ApproveDialog from "./dialogs/approve"
+import RejectDialog from "./dialogs/reject"
 
 const ENTRIES = gql`
   query Entries(
@@ -96,45 +101,50 @@ const ENTRIES = gql`
   }
 `
 
-// const ENTRY_CHANGED = gql`
-//   subscription EntryChanged {
-//     entryChanged {
-//       type
-//       entry {
-//         _id
-//         entryNumber
-//         eventName
-//         tournamentName
-//         club
-//         isInSoftware
-//         isEarlyBird
-//         currentStatus
-//         playerList {
-//           player1Name
-//           player2Name
-//         }
-//       }
-//       entries {
-//         _id
-//         entryNumber
-//         eventName
-//         tournamentName
-//         club
-//         isInSoftware
-//         isEarlyBird
-//         currentStatus
-//         playerList {
-//           player1Name
-//           player2Name
-//         }
-//       }
-//     }
-//   }
-// `
+const ENTRY_CHANGED = gql`
+  subscription EntryChanged {
+    entryChanged {
+      type
+      entry {
+        _id
+        dateUpdated
+        entryNumber
+        entryKey
+        eventName
+        tournamentName
+        club
+        isInSoftware
+        isEarlyBird
+        currentStatus
+        playerList {
+          player1Name
+          player2Name
+        }
+      }
+      entries {
+        _id
+        dateUpdated
+        entryNumber
+        entryKey
+        eventName
+        tournamentName
+        club
+        isInSoftware
+        isEarlyBird
+        currentStatus
+        playerList {
+          player1Name
+          player2Name
+        }
+      }
+    }
+  }
+`
 
 const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
   const entry = useMemo(() => data, [data])
   const [menuOpen, setMenuOpen] = useState(false)
+  const status = useMemo(() => entry?.currentStatus, [entry])
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
@@ -148,7 +158,32 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
         <DropdownMenuGroup>
           <ViewDialog _id={entry?._id} />
           <FormDialog _id={entry?._id} onClose={() => setMenuOpen(false)} />
+          {status === "LEVEL_PENDING" && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Level</DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <ApproveDialog
+                      _id={entry?._id}
+                      onClose={() => setMenuOpen(false)}
+                    />
+                    <RejectDialog
+                      _id={entry?._id}
+                      onClose={() => setMenuOpen(false)}
+                    />
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+            </>
+          )}
           <DropdownMenuSeparator />
+          <AssignDialog
+            _id={entry?._id}
+            onClose={() => setMenuOpen(false)}
+            title={status === EntryStatus.PENDING ? "Assign" : "Reassign"}
+          />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -186,7 +221,10 @@ const Page = () => {
     variables: {
       first: rows,
       search,
-      sort,
+      sort: sort || {
+        key: "dateUpdated",
+        order: "DESC",
+      }, // Default sort
       filter,
     },
     fetchPolicy: "network-only",
@@ -194,94 +232,218 @@ const Page = () => {
   })
 
   // // Subscription to Entry Changes
-  // useEffect(() => {
-  //   const unsubscribe = subscribeToMore({
-  //     document: ENTRY_CHANGED,
-  //     updateQuery: (prev: any, { subscriptionData }: any) => {
-  //       if (!subscriptionData.data) return prev
-  //       const { type, entry, entries } = subscriptionData.data.entryChanged
-  //       // Update the entries list based on the type of change
-  //       switch (type) {
-  //         case "CREATE":
-  //           // Add the new entry to the top of the list
-  //           const newEntry = entry
-  //           const newEntryExists = prev.entries.edges.find(
-  //             (edge: any) => edge.node._id === newEntry?._id
-  //           )
-  //           if (newEntryExists || search || sort || filter.length > 0)
-  //             return prev // Skip updating during search/sort/filter
-  //           toast.success(`Entry (${newEntry?.name}) has been created.`)
-  //           return Object.assign({}, prev, {
-  //             entries: {
-  //               ...prev.entries,
-  //               total: prev.entries.total + 1,
-  //               edges: [
-  //                 { cursor: newEntry?._id, node: newEntry },
-  //                 ...prev.entries.edges,
-  //               ],
-  //             },
-  //           })
-  //         case "UPDATE":
-  //           // Update the existing entry in the list
-  //           const updatedEntry = entry
-  //           if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-  //           toast.success(`Entry (${updatedEntry?.name}) has been updated.`)
-  //           return Object.assign({}, prev, {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: prev.entries.edges.map((edge: any) =>
-  //                 edge.node._id === updatedEntry._id
-  //                   ? { ...edge, node: updatedEntry }
-  //                   : edge
-  //               ),
-  //             },
-  //           })
-  //         case "DELETE":
-  //           // Remove the deleted entry from the list
-  //           const deletedEntry = entry
-  //           if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-  //           toast.success(`Entry (${deletedEntry?.name}) has been deleted.`)
-  //           return Object.assign({}, prev, {
-  //             entries: {
-  //               ...prev.entries,
-  //               total: prev.entries.total - 1,
-  //               edges: prev.entries.edges.filter(
-  //                 (edge: any) => edge.node._id !== deletedEntry._id
-  //               ),
-  //             },
-  //           })
-  //         case "BATCH_UPDATE":
-  //           const updatedEntries = entries
-  //           if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-  //           toast.success(
-  //             `Batch update successful for ${updatedEntries.length} entries.`
-  //           )
-  //           const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
-  //           return Object.assign({}, prev, {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: prev.entries.edges.map((edge: any) =>
-  //                 updatedIds.has(edge.node._id)
-  //                   ? {
-  //                       ...edge,
-  //                       node: {
-  //                         ...edge.node,
-  //                         ...updatedEntries.find(
-  //                           (u: any) => u._id === edge.node._id
-  //                         ),
-  //                       },
-  //                     }
-  //                   : edge
-  //               ),
-  //             },
-  //           })
-  //         default:
-  //           return prev
-  //       }
-  //     },
-  //   })
-  //   return () => unsubscribe()
-  // }, [subscribeToMore, search, sort, filter])
+  useEffect(() => {
+    const unsubscribe = subscribeToMore({
+      document: ENTRY_CHANGED,
+      updateQuery: (prev: any, { subscriptionData }: any) => {
+        if (!subscriptionData.data) return prev
+        const { type, entry, entries } = subscriptionData.data.entryChanged
+        // Update the entries list based on the type of change
+        switch (type) {
+          case "CREATE":
+            // Add the new entry to the top of the list
+            const newEntry = entry
+            const newEntryExists = prev.entries.edges.find(
+              (edge: any) => edge.node._id === newEntry?._id
+            )
+            if (newEntryExists || search || sort || filter.length > 0)
+              return prev // Skip updating during search/sort/filter
+            toast.success(`Entry (${newEntry?.entryNumber}) has been created.`)
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                total: prev.entries.total + 1,
+                edges: [
+                  { cursor: newEntry?._id, node: newEntry },
+                  ...prev.entries.edges,
+                ],
+              },
+            })
+          case "UPDATE":
+            // Update the existing entry in the list
+            const updatedEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Entry (${updatedEntry?.entryNumber}) has been updated.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredUpdatedEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== updatedEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredUpdatedEdges.find(() => true),
+                    node: updatedEntry,
+                  },
+                  ...filteredUpdatedEdges,
+                ],
+              },
+            })
+          case "ASSIGN":
+            // Update the existing entry in the list
+            const assignedEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.info(
+              `Entry (${assignedEntry?.entryNumber}) has updated to have assigned players.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredAssignedEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== assignedEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredAssignedEdges.find(() => true),
+                    node: assignedEntry,
+                  },
+                  ...filteredAssignedEdges,
+                ],
+              },
+            })
+          case "APPROVE":
+            // Update the existing entry in the list
+            const approvedEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Entry (${approvedEntry?.entryNumber}) has been approved.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredApprovedEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== approvedEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredApprovedEdges.find(() => true),
+                    node: approvedEntry,
+                  },
+                  ...filteredApprovedEdges,
+                ],
+              },
+            })
+          case "PAID":
+            // Update the existing entry in the list
+            const paidEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Entry (${paidEntry?.entryNumber}) has been paid, and needs verification.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredPaidEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== paidEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredPaidEdges.find(() => true),
+                    node: paidEntry,
+                  },
+                  ...filteredPaidEdges,
+                ],
+              },
+            })
+          case "PARTIALLY_PAID":
+            // Update the existing entry in the list
+            const partiallyPaidEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Entry (${partiallyPaidEntry?.entryNumber}) has been paid, and needs verification.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredPartiallyPaidEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== partiallyPaidEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredPartiallyPaidEdges.find(() => true),
+                    node: partiallyPaidEntry,
+                  },
+                  ...filteredPartiallyPaidEdges,
+                ],
+              },
+            })
+          case "REJECT":
+            // Update the existing entry in the list
+            const rejectedEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.warning(
+              `Entry (${rejectedEntry?.entryNumber}) has been rejected.`
+            )
+            // Remove the updated entry from its current position and add it to the top
+            const filteredRejectedEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== rejectedEntry._id
+            )
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: [
+                  {
+                    ...filteredRejectedEdges.find(() => true),
+                    node: rejectedEntry,
+                  },
+                  ...filteredRejectedEdges,
+                ],
+              },
+            })
+
+          case "DELETE":
+            // Remove the deleted entry from the list
+            const deletedEntry = entry
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(`Entry (${deletedEntry?.name}) has been deleted.`)
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                total: prev.entries.total - 1,
+                edges: prev.entries.edges.filter(
+                  (edge: any) => edge.node._id !== deletedEntry._id
+                ),
+              },
+            })
+          case "BATCH_UPDATE":
+            const updatedEntries = entries
+            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            toast.success(
+              `Batch update successful for ${updatedEntries.length} entries.`
+            )
+            const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
+            return Object.assign({}, prev, {
+              entries: {
+                ...prev.entries,
+                edges: prev.entries.edges.map((edge: any) =>
+                  updatedIds.has(edge.node._id)
+                    ? {
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedEntries.find(
+                            (u: any) => u._id === edge.node._id
+                          ),
+                        },
+                      }
+                    : edge
+                ),
+              },
+            })
+          default:
+            return prev
+        }
+      },
+    })
+    return () => unsubscribe()
+  }, [subscribeToMore, search, sort, filter])
 
   // Memoized Data Processing
   const { total, nodes, pageInfo } = useMemo(() => {
@@ -389,7 +551,7 @@ const Page = () => {
           />
         ),
         cell: ({ row }) => (
-          <div className="h-full flex items-center">
+          <div className="h-full flex flex-col items-start">
             <span className="block">
               {format(new Date((row.original as any).dateUpdated), "MMM dd, p")}{" "}
             </span>
@@ -467,7 +629,9 @@ const Page = () => {
           const { eventName, tournamentName } = row.original as any
           return (
             <div className="h-full flex flex-col justify-center">
-              <span className="block capitalize">{eventName.toLocaleLowerCase()}</span>
+              <span className="block capitalize">
+                {eventName.toLocaleLowerCase()}
+              </span>
               <span className="block text-xs text-muted-foreground">
                 {tournamentName}
               </span>
@@ -652,7 +816,7 @@ const Page = () => {
               Clear Filtering
             </Button>
           )}
-          {<FormDialog />}
+          <FormDialog />
         </div>
       </div>
       <div className="w-full flex justify-between">

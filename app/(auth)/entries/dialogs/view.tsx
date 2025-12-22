@@ -16,40 +16,79 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { IPlayer } from "@/types/player.interface"
-import { format } from "date-fns"
+import { IEntry } from "@/types/entry.interface"
+import { format, formatDistanceToNowStrict } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Link from "next/link"
+import { toast } from "sonner"
+import { CheckCircle, CheckCircle2, CircleAlert, Copy } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import PlayerViewDialog from "@/app/(auth)/players/dialogs/view"
 
-const PLAYER = gql`
-  query Player($_id: ID!) {
-    player(_id: $_id) {
+const ENTRY = gql`
+  query Entry($_id: ID!) {
+    entry(_id: $_id) {
       _id
-      firstName
-      middleName
-      lastName
-      suffix
-      gender
-      birthDate
-      email
-      phoneNumber
-      levels {
-        level
-        dateLevelled
+      entryNumber
+      entryKey
+      club
+      isInSoftware
+      isEarlyBird
+      statuses {
+        status
+        date
+        reason
+        by {
+          name
+        }
       }
-      validDocuments {
-        documentURL
-        documentType
-        dateUploaded
+      event {
+        name
+        type
+        pricePerPlayer
+        earlyBirdPricePerPlayer
+        currency
+        isDissolved
+        tournament {
+          name
+        }
       }
-      videos {
+      player1Entry {
+        firstName
+        middleName
+        lastName
+        suffix
+        gender
+        birthDate
+        email
+        phoneNumber
+        jerseySize
+      }
+      connectedPlayer1 {
         _id
-        title
-        dateUploaded
-        youtubeId
+        firstName
+        middleName
+        lastName
+        suffix
       }
-      isActive
+      player2Entry {
+        firstName
+        middleName
+        lastName
+        suffix
+        gender
+        birthDate
+        email
+        phoneNumber
+        jerseySize
+      }
+      connectedPlayer2 {
+        _id
+        firstName
+        middleName
+        lastName
+        suffix
+      }
     }
   }
 `
@@ -59,8 +98,9 @@ type Props = {
   row?: boolean
   openFromParent?: boolean
   setOpenFromParent?: (open: boolean) => void
-  fromVideos?: boolean
+  externalUse?: boolean
   title?: string
+  titleClassName?: string
   rowSettings?: {
     clearId: () => void
     open: boolean
@@ -80,12 +120,14 @@ const ViewDialog = (props: Props) => {
       setOpen(value)
     }
   }
-  const { data, loading }: any = useQuery(PLAYER, {
+  const { data, loading, error }: any = useQuery(ENTRY, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
     fetchPolicy: "network-only",
   })
-  const player = data?.player as IPlayer
+  const entry = data?.entry as IEntry
+
+  if (error) console.error(error)
 
   const onClose = () => {
     if (props.row) {
@@ -100,8 +142,13 @@ const ViewDialog = (props: Props) => {
     <Dialog modal open={isOpen} onOpenChange={setIsOpen}>
       <form>
         <DialogTrigger asChild>
-          {props.row ? null : props.fromVideos ? (
-            <span className="hover:underline hover:cursor-pointer">
+          {props.row ? null : props.externalUse ? (
+            <span
+              className={cn(
+                "hover:underline hover:cursor-pointer",
+                props.titleClassName
+              )}
+            >
               {props.title || "View"}
             </span>
           ) : (
@@ -116,155 +163,402 @@ const ViewDialog = (props: Props) => {
           showCloseButton={false}
         >
           <DialogHeader>
-            <DialogTitle>View Player</DialogTitle>
+            <DialogTitle className="flex items-center justify-start gap-1.5">
+              <span>Entry: {entry?.entryNumber} </span>
+              {entry?.isEarlyBird && (
+                <Badge variant="outline-info" className="text-xs py-px -my-px">
+                  Early Bird
+                </Badge>
+              )}
+              {entry?.isInSoftware && (
+                <Badge
+                  variant="outline-warning"
+                  className="text-xs py-px -my-px"
+                >
+                  In Software
+                </Badge>
+              )}
+            </DialogTitle>
             <DialogDescription>
-              View the details of this player below.
+              View the details of this entry below.
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="details" className="">
-            <TabsList className="w-full grid grid-cols-4 -mt-2 mb-1">
+            <TabsList className="w-full grid grid-cols-3 -mt-2 mb-1">
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="levels">Levels</TabsTrigger>
-              <TabsTrigger value="requirements">Requirements</TabsTrigger>
-              <TabsTrigger value="videos">Videos</TabsTrigger>
+              <TabsTrigger value="players">Players</TabsTrigger>
+              <TabsTrigger value="status">Status</TabsTrigger>
             </TabsList>
             <TabsContent value="details">
-              <div className="grid grid-cols-2 gap-2 -mt-2 h-[36vh] overflow-y-auto place-content-start">
-                <div className="col-span-2">
-                  <Label>Name</Label>
+              <div className="grid grid-cols-2 gap-2 h-[50vh] overflow-y-auto place-content-start">
+                <div
+                  className="col-span-2 hover:cursor-pointer"
+                  onClick={(e) => {
+                    toast.success(
+                      `${entry.entryNumber}_${entry.entryKey}` +
+                        " copied to clipboard!"
+                    )
+                    e.stopPropagation()
+                    navigator.clipboard.writeText(
+                      `${entry.entryNumber}_${entry.entryKey}`
+                    )
+                  }}
+                  title="Click to copy to clipboard"
+                >
+                  <Label>
+                    Reference No. <Copy className="size-3 -ml-1" />
+                  </Label>
                   {loading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">
-                      {player?.firstName} {player?.middleName}{" "}
-                      {player?.lastName} {player?.suffix}
+                      {entry?.entryNumber}_{entry?.entryKey}
                     </span>
                   )}
                 </div>
-                <div className="col-span-2">
-                  <Label>Gender</Label>
+                <div>
+                  <Label>Entry Number</Label>
                   {loading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
-                    <span className="block text-sm capitalize">
-                      {player?.gender.toLocaleLowerCase()}
-                    </span>
+                    <span className="block text-sm">{entry?.entryNumber}</span>
+                  )}
+                </div>
+                <div>
+                  <Label>Entry Key</Label>
+                  {loading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : (
+                    <span className="block text-sm">{entry?.entryKey}</span>
                   )}
                 </div>
                 <div className="col-span-2">
-                  <Label>Birthday</Label>
+                  <Label>Event</Label>
                   {loading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
-                    <span className="block text-sm capitalize">
-                      {format(
-                        player?.birthDate
-                          ? new Date(player?.birthDate)
-                          : new Date(),
-                        "PP"
-                      )}{" "}
-                      <span className="text-muted-foreground lowercase">
-                        (
-                        {player?.birthDate
-                          ? `${Math.floor(
-                              (Date.now() -
-                                new Date(player?.birthDate).getTime()) /
-                                (1000 * 60 * 60 * 24 * 365.25)
-                            )} y.o.`
-                          : "N/A"}
+                    <span className="block text-sm">
+                      <span
+                        className={cn(
+                          entry?.event?.isDissolved && "line-through"
+                        )}
+                      >
+                        {entry?.event?.name} (
+                        <span className="capitalize">
+                          {entry?.event?.type.toLocaleLowerCase()}
+                        </span>
                         )
                       </span>
+                      {entry?.event?.isDissolved && (
+                        <span className="text-destructive ml-1">
+                          (Dissolved)
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>
                 <div className="col-span-2">
-                  <Label>Email Address</Label>
+                  <Label>Tournament</Label>
                   {loading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">
-                      {player?.email || "N/A"}
+                      {entry?.event?.tournament.name}
                     </span>
                   )}
                 </div>
                 <div className="col-span-2">
-                  <Label>Phone No.</Label>
+                  <Label>Total Event Fee</Label>
                   {loading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
-                    <span
-                      className={cn(
-                        "block text-sm",
-                        !player?.phoneNumber && "text-muted-foreground"
+                    <span className="block text-sm">
+                      {(
+                        ((entry?.isEarlyBird
+                          ? entry?.event?.earlyBirdPricePerPlayer
+                          : entry?.event?.pricePerPlayer) || 0) *
+                        (entry?.event?.type === "DOUBLES" ? 2 : 1)
+                      )?.toLocaleString("en-PH", {
+                        style: "currency",
+                        currency: entry?.event?.currency || "PHP",
+                        minimumFractionDigits: 2,
+                      })}{" "}
+                      {entry?.event?.type === "DOUBLES" ? (
+                        <span className="text-muted-foreground">
+                          (
+                          {(entry?.isEarlyBird
+                            ? entry?.event?.earlyBirdPricePerPlayer
+                            : entry?.event?.pricePerPlayer
+                          )?.toLocaleString("en-PH", {
+                            style: "currency",
+                            currency: entry?.event?.currency || "PHP",
+                            minimumFractionDigits: 2,
+                          })}{" "}
+                          per player)
+                        </span>
+                      ) : (
+                        ""
                       )}
-                    >
-                      {player?.phoneNumber || "N/A"}
                     </span>
                   )}
                 </div>
-                <div className="col-span-2">
-                  <Label>Active</Label>
-                  {loading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span
-                      className={cn(
-                        "block text-sm",
-                        !player?.isActive && "text-muted-foreground"
-                      )}
-                    >
-                      {player?.isActive ? "Yes" : "No"}
-                    </span>
-                  )}
-                </div>
               </div>
             </TabsContent>
-            <TabsContent value="levels">
-              <div className="grid grid-cols-2 gap-2 -mt-2 h-[36vh] overflow-y-auto place-content-start">
-                {player?.levels && player.levels?.length > 0 ? (
-                  player?.levels.length
-                ) : (
-                  <div className="text-muted-foreground text-sm text-center col-span-2 h-[36vh] flex items-center justify-center">
-                    Unlevelled. 😿
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-            <TabsContent value="requirements">
-              <div className="grid grid-cols-2 gap-2 -mt-2 h-[36vh] overflow-y-auto place-content-start">
-                {player?.validDocuments && player.validDocuments?.length > 0 ? (
-                  player?.validDocuments.length
-                ) : (
-                  <div className="text-muted-foreground text-sm text-center col-span-2 h-[36vh] flex items-center justify-center">
-                    No documents submitted.
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-            <TabsContent value="videos">
-              <div className="flex flex-col gap-2 -mt-2 h-[36vh] overflow-y-auto place-content-start">
-                {player?.videos && player.videos?.length > 0 ? (
-                  <div className="flex flex-col gap-px">
-                    <Label>Links</Label>
-                    {player?.videos.map((video, index) => (
-                      <div key={video._id}>
-                        <Link
-                          href={`/videos/${video._id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:underline w-full"
-                        >
-                          <span className="block text-sm">
-                            {index + 1}. {video.title}
-                          </span>
-                        </Link>
+            <TabsContent value="players">
+              <div className="grid grid-cols-2 gap-2 h-[50vh] overflow-y-auto place-content-start">
+                {entry?.player1Entry && (
+                  <div className="col-span-2 grid grid-cols-2 gap-2 bg-info/10 p-2">
+                    <Label className="font-medium col-span-2">Player 1</Label>
+                    {entry?.connectedPlayer1 && (
+                      <div className="col-span-2">
+                        <Label>Connected Player</Label>
+                        {loading ? (
+                          <Skeleton className="w-full my-1 h-3" />
+                        ) : (
+                          <PlayerViewDialog
+                            externalUse
+                            _id={entry?.connectedPlayer1?._id}
+                            title={`${entry?.connectedPlayer1.firstName} ${entry?.connectedPlayer1.middleName} ${entry?.connectedPlayer1.lastName} ${entry?.connectedPlayer1.suffix}`}
+                            titleClassName="block text-sm text-blue-600"
+                          />
+                        )}
                       </div>
-                    ))}
+                    )}
+                    <div className="col-span-2">
+                      <Label>Entry Name</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-sm">
+                          {entry?.player1Entry.firstName}{" "}
+                          {entry?.player1Entry.middleName}{" "}
+                          {entry?.player1Entry.lastName}{" "}
+                          {entry?.player1Entry.suffix}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Jersey Size</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-sm">
+                          {entry?.player1Entry.jerseySize || "N/A"}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-sm">
+                          {entry?.player1Entry.email || "N/A"}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Contact No.</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-sm">
+                          {entry?.player1Entry.phoneNumber || "N/A"}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Birthday (Age)</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-sm">
+                          {format(entry?.player1Entry.birthDate, "PP")} (
+                          {`${formatDistanceToNowStrict(
+                            entry?.player1Entry.birthDate
+                          )} old`}
+                          )
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {entry?.event?.type === "DOUBLES" && (
+                  <div className="col-span-2 grid grid-cols-2 gap-2 bg-destructive/10 p-2">
+                    <Label className="font-medium col-span-2">Player 2</Label>
+                    {entry?.player2Entry && (
+                      <>
+                        {entry?.connectedPlayer2 && (
+                          <div className="col-span-2">
+                            <Label>Connected Player</Label>
+                            {loading ? (
+                              <Skeleton className="w-full my-1 h-3" />
+                            ) : (
+                              <PlayerViewDialog
+                                externalUse
+                                _id={entry?.connectedPlayer2?._id}
+                                title={`${entry?.connectedPlayer2.firstName} ${entry?.connectedPlayer2.middleName} ${entry?.connectedPlayer2.lastName} ${entry?.connectedPlayer2.suffix}`}
+                                titleClassName="block text-sm text-blue-600"
+                              />
+                            )}
+                          </div>
+                        )}
+                        <div className="col-span-2">
+                          <Label>Entry Name</Label>
+                          {loading ? (
+                            <Skeleton className="w-full my-1 h-3" />
+                          ) : (
+                            <span className="block text-sm">
+                              {entry?.player2Entry.firstName}{" "}
+                              {entry?.player2Entry.middleName}{" "}
+                              {entry?.player2Entry.lastName}{" "}
+                              {entry?.player2Entry.suffix}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <Label>Jersey Size</Label>
+                          {loading ? (
+                            <Skeleton className="w-full my-1 h-3" />
+                          ) : (
+                            <span className="block text-sm">
+                              {entry?.player2Entry.jerseySize || "N/A"}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <Label>Email</Label>
+                          {loading ? (
+                            <Skeleton className="w-full my-1 h-3" />
+                          ) : (
+                            <span className="block text-sm">
+                              {entry?.player2Entry.email || "N/A"}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <Label>Contact No.</Label>
+                          {loading ? (
+                            <Skeleton className="w-full my-1 h-3" />
+                          ) : (
+                            <span className="block text-sm">
+                              {entry?.player2Entry.phoneNumber || "N/A"}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <Label>Birthday (Age)</Label>
+                          {loading ? (
+                            <Skeleton className="w-full my-1 h-3" />
+                          ) : (
+                            <span className="block text-sm">
+                              {format(entry?.player2Entry.birthDate, "PP")} (
+                              {`${formatDistanceToNowStrict(
+                                entry?.player2Entry.birthDate
+                              )} old`}
+                              )
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            <TabsContent value="status">
+              <div className="flex flex-col gap-2 h-[50vh] overflow-y-auto place-content-start">
+                {loading ? (
+                  <Skeleton className="w-full my-1 h-3" />
+                ) : entry?.statuses && entry?.statuses.length ? (
+                  <div className="h-full">
+                    {entry.statuses
+                      .slice()
+                      .reverse()
+                      .map((status, index) => (
+                        <div key={index} className="flex gap-2">
+                          <div className="flex flex-col justify-start items-center">
+                            {(() => {
+                              if (index === 0) {
+                                switch (status.status) {
+                                  case "PENDING":
+                                    return (
+                                      <CheckCircle2 className="size-4 my-2 text-success" />
+                                    )
+                                  case "CANCELLED":
+                                  case "REJECTED":
+                                    return (
+                                      <CircleAlert className="size-4 my-2 text-destructive" />
+                                    )
+                                  case "VERIFIED":
+                                    return (
+                                      <CheckCircle className="size-4 my-2 text-success" />
+                                    )
+                                }
+                                return (
+                                  <CircleAlert
+                                    className={cn(
+                                      "size-4 my-2",
+                                      index > 0
+                                        ? "text-muted-foreground/50"
+                                        : "text-info"
+                                    )}
+                                  />
+                                )
+                              } else {
+                                return (
+                                  <CheckCircle
+                                    className={cn(
+                                      "size-4 my-2",
+                                      index > 0
+                                        ? "text-muted-foreground/50"
+                                        : "text-success"
+                                    )}
+                                  />
+                                )
+                              }
+                            })()}
+
+                            {index < entry.statuses.length - 1 && (
+                              <div className="min-h-11 w-px bg-gray-200"></div>
+                            )}
+                          </div>
+                          <div className="mt-1">
+                            <span
+                              className={cn(
+                                "capitalize block -mb-0.5",
+                                index === 0
+                                  ? "font-mono"
+                                  : "text-muted-foreground"
+                              )}
+                            >
+                              {status.status
+                                .split("_")
+                                .join(" ")
+                                .toLocaleLowerCase()}
+                            </span>
+                            <span className="text-xs text-muted-foreground block">
+                              {format(status.date, "PPpp")}
+                            </span>
+                            {status.reason && (
+                              <span className="text-xs text-muted-foreground block">
+                                Note:{" "}
+                                <span className="italic underline">
+                                  {status?.reason}
+                                </span>
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground block">
+                              {status.by?.name}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                   </div>
                 ) : (
-                  <div className="text-muted-foreground text-sm text-center col-span-2 h-[36vh] flex items-center justify-center">
-                    No documents submitted.
-                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    No status history available.
+                  </span>
                 )}
               </div>
             </TabsContent>

@@ -17,19 +17,17 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-const PLAYER = gql`
-  query Player($_id: ID!) {
-    player(_id: $_id) {
-      firstName
-      lastName
-      isActive
+const USER = gql`
+  query User($_id: ID!) {
+    user(_id: $_id) {
+      name
     }
   }
 `
 
 const CHANGE_STATUS = gql`
-  mutation ChangePlayerStatus($_id: ID!) {
-    changePlayerStatus(_id: $_id) {
+  mutation ChangeUserStatus($_id: ID!) {
+    changeUserStatus(_id: $_id) {
       ok
       message
     }
@@ -46,7 +44,7 @@ const StatusDialog = (props: Props) => {
   // Dialog open state
   const [open, setOpen] = useState(false)
   // Fetch existing date if updating
-  const { data, loading: playerLoading }: any = useQuery(PLAYER, {
+  const { data, loading: userLoading }: any = useQuery(USER, {
     variables: { _id: props._id },
     skip: !open || !Boolean(props._id),
     fetchPolicy: "network-only",
@@ -59,15 +57,15 @@ const StatusDialog = (props: Props) => {
     }
   )
   // Loading State
-  const loading = playerLoading || changeStatusLoading
+  const loading = userLoading || changeStatusLoading
 
   const onSubmit = async () => {
     try {
       const result: any = await changeStatus()
       if (result) onClose()
     } catch (error: any) {
-      console.error("Error changing player status:", error)
-      toast.error(error.message || "Failed to change player status.")
+      console.error("Error changing user status:", error)
+      toast.error(error.message || "Failed to change user status.")
     }
   }
 
@@ -92,8 +90,8 @@ const StatusDialog = (props: Props) => {
         <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {props?.isActive ? "Deactivate" : "Activate"} Player:{" "}
-              {data?.player?.firstName} {data?.player?.lastName}
+              {props?.isActive ? "Deactivate" : "Activate"} User:{" "}
+              {data?.user?.name}
             </AlertDialogTitle>
             <AlertDialogDescription>
               <span className="block text-foreground">
@@ -106,7 +104,7 @@ const StatusDialog = (props: Props) => {
                 >
                   {props?.isActive ? "deactivate" : "activate"}
                 </span>{" "}
-                this player?
+                this user?
               </span>
               <span className="block text-xs">
                 (This may have unintended consequences on their access to the

@@ -153,7 +153,6 @@ const UploadDialog = () => {
             return uploadResponse
           })
           if (response) {
-            console.log(response)
             toast.success("Video uploaded successfully!")
             onClose()
           }
@@ -306,7 +305,19 @@ const UploadDialog = () => {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-full p-0">
-                                <Command>
+                                <Command
+                                  filter={(value, search) =>
+                                    players
+                                      .find(
+                                        (t: { value: string; label: string }) =>
+                                          t.value === value
+                                      )
+                                      ?.label.toLowerCase()
+                                      .includes(search.toLowerCase())
+                                      ? 1
+                                      : 0
+                                  }
+                                >
                                   <CommandInput placeholder="Select Player/s" />
                                   <CommandList className="max-h-72 overflow-y-auto">
                                     <CommandEmpty>
@@ -377,7 +388,9 @@ const UploadDialog = () => {
                 {...getRootProps({
                   className: cn(
                     "dropzone",
-                    isPending ? "opacity-50 cursor-wait pointer-events-none" : ""
+                    isPending
+                      ? "opacity-50 cursor-wait pointer-events-none"
+                      : ""
                   ),
                 })}
                 className={cn(

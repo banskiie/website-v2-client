@@ -1,8 +1,8 @@
-import { z } from "zod"
+import z from "zod"
 import { Gender } from "@/types/shared.interface"
 import { JerseySize } from "@/types/jersey.interface"
 
-export const NewPlayerEntrySchema = z.object({
+const NewPlayerEntrySchema = z.object({
   firstName: z
     .string()
     .nonempty("First name is required")
@@ -34,13 +34,41 @@ export const NewPlayerEntrySchema = z.object({
   jerseySize: z.enum(Object.values(JerseySize)).optional().nullable(),
 })
 
-export const PlayerSchema = z.object({
+export const CreateEntrySchema = z.object({
   event: z.string().nonempty("Event ID is required"),
   club: z.string().optional(),
   player1Entry: NewPlayerEntrySchema,
   player2Entry: NewPlayerEntrySchema.optional().nullable(),
   connectedPlayer1: z.string().optional().nullable(),
   connectedPlayer2: z.string().optional().nullable(),
+  isPlayer1New: z.boolean().default(false),
+  isPlayer2New: z.boolean().default(false),
   isInSoftware: z.boolean().default(false),
   isEarlyBird: z.boolean().default(false),
+})
+
+export const AssignPlayersSchema = z.object({
+  entry: z.string().nonempty("Entry ID is required"),
+  isPlayer1New: z.boolean().default(false),
+  isPlayer2New: z.boolean().default(false),
+  connectedPlayer1: z.string().optional().nullable(),
+  connectedPlayer2: z.string().optional().nullable(),
+  migratePlayer1Data: z.object({
+    firstName: z.boolean().default(false),
+    middleName: z.boolean().default(false),
+    lastName: z.boolean().default(false),
+    suffix: z.boolean().default(false),
+    birthDate: z.boolean().default(false),
+    phoneNumber: z.boolean().default(false),
+    email: z.boolean().default(false),
+  }),
+  migratePlayer2Data: z.object({
+    firstName: z.boolean().default(false),
+    middleName: z.boolean().default(false),
+    lastName: z.boolean().default(false),
+    suffix: z.boolean().default(false),
+    birthDate: z.boolean().default(false),
+    phoneNumber: z.boolean().default(false),
+    email: z.boolean().default(false),
+  }),
 })

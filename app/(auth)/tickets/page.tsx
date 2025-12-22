@@ -148,8 +148,6 @@ const Page = () => {
     pollInterval: 30000,
   })
 
-  console.log(error)
-
   // Subscription to Ticket Changes
   useEffect(() => {
     const unsubscribe = subscribeToMore({

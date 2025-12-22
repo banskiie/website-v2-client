@@ -80,7 +80,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                   <div className="inline-flex gap-2">
                     {data.video.players.map((player: any) => (
                       <ViewDialog
-                        fromVideos
+                        externalUse
                         _id={player._id}
                         key={player._id}
                         title={player.firstName + " " + player.lastName}

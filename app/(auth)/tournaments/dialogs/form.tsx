@@ -169,43 +169,56 @@ const FormDialog = (props: Props) => {
   useEffect(() => {
     if (data) {
       const { name, settings, banks, dates } = data.tournament
-      form.reset({
-        name,
-        settings: {
-          hasEarlyBird: settings.hasEarlyBird,
-          hasFreeJersey: settings.hasFreeJersey,
-          ticket: settings.ticket,
-          maxEntriesPerPlayer: settings.maxEntriesPerPlayer,
-        },
-        banks: banks.map((bank: any) => ({
+      form.setFieldValue("name", name)
+      form.setFieldValue("settings.hasEarlyBird", settings.hasEarlyBird)
+      form.setFieldValue("settings.hasFreeJersey", settings.hasFreeJersey)
+      form.setFieldValue("settings.ticket", settings.ticket)
+      form.setFieldValue(
+        "settings.maxEntriesPerPlayer",
+        settings.maxEntriesPerPlayer
+      )
+      form.setFieldValue(
+        "banks",
+        banks.map((bank: any) => ({
           name: bank.name,
           accountNumber: bank.accountNumber,
           imageURL: bank.imageURL,
-        })),
-        dates: {
-          registrationStart: dates.registrationStart
-            ? new Date(dates.registrationStart)
-            : undefined,
-          registrationEnd: dates.registrationEnd
-            ? new Date(dates.registrationEnd)
-            : undefined,
-          earlyBirdRegistrationEnd: dates.earlyBirdRegistrationEnd
-            ? new Date(dates.earlyBirdRegistrationEnd)
-            : undefined,
-          earlyBirdPaymentEnd: dates.earlyBirdPaymentEnd
-            ? new Date(dates.earlyBirdPaymentEnd)
-            : undefined,
-          registrationPaymentEnd: dates.registrationPaymentEnd
-            ? new Date(dates.registrationPaymentEnd)
-            : undefined,
-          tournamentStart: dates.tournamentStart
-            ? new Date(dates.tournamentStart)
-            : undefined,
-          tournamentEnd: dates.tournamentEnd
-            ? new Date(dates.tournamentEnd)
-            : undefined,
-        },
-      })
+        }))
+      )
+      form.setFieldValue(
+        "dates.registrationStart",
+        dates.registrationStart ? new Date(dates.registrationStart) : undefined
+      )
+      form.setFieldValue(
+        "dates.registrationEnd",
+        dates.registrationEnd ? new Date(dates.registrationEnd) : undefined
+      )
+      form.setFieldValue(
+        "dates.earlyBirdRegistrationEnd",
+        dates.earlyBirdRegistrationEnd
+          ? new Date(dates.earlyBirdRegistrationEnd)
+          : undefined
+      )
+      form.setFieldValue(
+        "dates.earlyBirdPaymentEnd",
+        dates.earlyBirdPaymentEnd
+          ? new Date(dates.earlyBirdPaymentEnd)
+          : undefined
+      )
+      form.setFieldValue(
+        "dates.registrationPaymentEnd",
+        dates.registrationPaymentEnd
+          ? new Date(dates.registrationPaymentEnd)
+          : undefined
+      )
+      form.setFieldValue(
+        "dates.tournamentStart",
+        dates.tournamentStart ? new Date(dates.tournamentStart) : undefined
+      )
+      form.setFieldValue(
+        "dates.tournamentEnd",
+        dates.tournamentEnd ? new Date(dates.tournamentEnd) : undefined
+      )
     }
   }, [isUpdate, data])
 
