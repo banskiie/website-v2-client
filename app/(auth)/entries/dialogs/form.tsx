@@ -127,6 +127,8 @@ const OPTIONS = gql`
     tournamentOptions {
       label
       value
+      hasEarlyBird
+      earlyBirdRegistrationEnd
     }
     playerOptions {
       label
@@ -301,6 +303,20 @@ const FormDialog = (props: Props) => {
               formApi.resetField("event")
             } else {
               setTournamentId(fieldValue as string)
+              const { hasEarlyBird, earlyBirdRegistrationEnd } =
+                tournaments.find(
+                  (t: {
+                    value: string
+                    label: string
+                    hasEarlyBird: boolean
+                    earlyBirdRegistrationEnd: Date
+                  }) => t.value === fieldValue
+                )
+              const isEarlyBird =
+                hasEarlyBird &&
+                earlyBirdRegistrationEnd &&
+                new Date() <= new Date(earlyBirdRegistrationEnd)
+              formApi.setFieldValue("isEarlyBird", isEarlyBird)
               formApi.resetField("event")
             }
             break

@@ -223,7 +223,10 @@ const Page = () => {
           case "UPDATE":
             const updatedPayment = payment
             if (search || sort || filter.length > 0) return prev
-            toast.success(`Payment (${updatedPayment?.payerName}) has been updated.`)
+            console.log("test")
+            toast.success(
+              `Payment (${updatedPayment?.payerName}) has been updated.`
+            )
             return Object.assign({}, prev, {
               payments: {
                 ...prev.payments,
@@ -260,14 +263,14 @@ const Page = () => {
                 edges: prev.payments.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...updatedPayments.find(
-                          (u: any) => u._id === edge.node._id
-                        ),
-                      },
-                    }
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedPayments.find(
+                            (u: any) => u._id === edge.node._id
+                          ),
+                        },
+                      }
                     : edge
                 ),
               },

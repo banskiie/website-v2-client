@@ -11,11 +11,19 @@ export enum EntryStatus {
   LEVEL_APPROVED = "LEVEL_APPROVED",
   PAYMENT_PENDING = "PAYMENT_PENDING",
   PAYMENT_PARTIALLY_PAID = "PAYMENT_PARTIALLY_PAID",
+  PAYMENT_REJECTED = "PAYMENT_REJECTED",
   PAYMENT_PAID = "PAYMENT_PAID",
   PAYMENT_VERIFIED = "PAYMENT_VERIFIED",
   VERIFIED = "VERIFIED",
   REJECTED = "REJECTED",
   CANCELLED = "CANCELLED",
+}
+
+export enum TransactionType {
+  INITIAL_FEE = "INITIAL_FEE",
+  BALANCE_PAYMENT = "BALANCE_PAYMENT",
+  REVERT_TRANSACTION = "REVERT_TRANSACTION",
+  REFUND_PAYMENT = "REFUND_PAYMENT",
 }
 
 export interface IPlayerEntry {
@@ -37,6 +45,14 @@ export interface IEntryStatusLog {
   by?: IUser
 }
 
+export interface ITransactions {
+  transactionId: string
+  transactionType: TransactionType
+  pendingAmount: number
+  amountChanged: number
+  transactionDate: Date
+}
+
 export interface IEntry {
   _id: string
   entryNumber: string
@@ -50,6 +66,7 @@ export interface IEntry {
   isInSoftware: boolean
   isEarlyBird: boolean
   statuses: IEntryStatusLog[]
+  transactions: ITransactions[]
   remarks?: IRemark[]
 }
 
