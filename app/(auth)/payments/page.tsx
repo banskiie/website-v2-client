@@ -55,6 +55,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import BatchMenu from "./dialogs/batch"
 import PaymentStatusBadge from "@/components/badges/payment-status-badge"
 import VerifyDialog from "./dialogs/verify"
+import RejectDialog from "./dialogs/reject"
 
 const PAYMENTS = gql`
   query Payments(
@@ -147,6 +148,10 @@ const ActionsColumn = ({ data }: { data?: IPaymentNode }) => {
                 _id={payment?._id}
                 onClose={() => setMenuOpen(false)}
               />
+              <RejectDialog
+                _id={payment?._id}
+                onClose={() => setMenuOpen(false)}
+              />
             </>
           )}
         </DropdownMenuGroup>
@@ -156,7 +161,6 @@ const ActionsColumn = ({ data }: { data?: IPaymentNode }) => {
 }
 
 const Page = () => {
-  // Pagination
   const [rows, setRows] = useState<number>(10)
   const [page, setPage] = useState<{
     current: number
@@ -167,21 +171,16 @@ const Page = () => {
     loaded: 1,
     max: 1,
   })
-  // Global Search
   const [search, setSearch] = useState<string>("")
   const [searchTerm, setSearchTerm] = useState("")
-  // Column Sorting
   const [sort, setSort] = useState<{
     key: string
     order: "ASC" | "DESC"
   } | null>(null)
-  // Column Filtering
   const [filter, setFilter] = useState<
     { key: string; value: string; type: string }[]
   >([])
-  // Selected Rows
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  // Table Data Fetching
   const { data, loading, fetchMore, subscribeToMore, error }: any = useQuery(
     PAYMENTS,
     {
@@ -196,23 +195,20 @@ const Page = () => {
     }
   )
 
-  // Subscription to Payment Changes
   useEffect(() => {
     const unsubscribe = subscribeToMore({
       document: PAYMENT_CHANGED,
       updateQuery: (prev: any, { subscriptionData }: any) => {
         if (!subscriptionData.data) return prev
         const { type, payment, payments } = subscriptionData.data.paymentChanged
-        // Update the payments list based on the type of change
         switch (type) {
           case "CREATE":
-            // Add the new payment to the top of the list
             const newPayment = payment
             const newPaymentExists = prev.payments.edges.find(
               (edge: any) => edge.node._id === newPayment?._id
             )
             if (newPaymentExists || search || sort || filter.length > 0)
-              return prev // Skip updating during search/sort/filter
+              return prev
             toast.success(`Payment (${newPayment?.name}) has been created.`)
             return Object.assign({}, prev, {
               payments: {
@@ -225,10 +221,9 @@ const Page = () => {
               },
             })
           case "UPDATE":
-            // Update the existing payment in the list
             const updatedPayment = payment
-            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
-            toast.success(`Payment (${updatedPayment?.name}) has been updated.`)
+            if (search || sort || filter.length > 0) return prev
+            toast.success(`Payment (${updatedPayment?.payerName}) has been updated.`)
             return Object.assign({}, prev, {
               payments: {
                 ...prev.payments,
@@ -240,9 +235,8 @@ const Page = () => {
               },
             })
           case "DELETE":
-            // Remove the deleted payment from the list
             const deletedPayment = payment
-            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            if (search || sort || filter.length > 0) return prev
             toast.success(`Payment (${deletedPayment?.name}) has been deleted.`)
             return Object.assign({}, prev, {
               payments: {
@@ -255,7 +249,7 @@ const Page = () => {
             })
           case "BATCH_UPDATE":
             const updatedPayments = payments
-            if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
+            if (search || sort || filter.length > 0) return prev
             toast.success(
               `Batch update successful for ${updatedPayments.length} payments.`
             )
@@ -266,14 +260,14 @@ const Page = () => {
                 edges: prev.payments.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                        ...edge,
-                        node: {
-                          ...edge.node,
-                          ...updatedPayments.find(
-                            (u: any) => u._id === edge.node._id
-                          ),
-                        },
-                      }
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...updatedPayments.find(
+                          (u: any) => u._id === edge.node._id
+                        ),
+                      },
+                    }
                     : edge
                 ),
               },
@@ -286,7 +280,6 @@ const Page = () => {
     return () => unsubscribe()
   }, [subscribeToMore, search, sort, filter])
 
-  // Memoized Data Processing
   const { total, nodes, pageInfo } = useMemo(() => {
     const nodes = data?.payments.edges.map((edge: any) => edge.node) || []
     const pageInfo = data?.payments.pageInfo
@@ -303,28 +296,23 @@ const Page = () => {
     }
   }, [data])
 
-  // Reset to First Page
   const resetPage = () => setPage({ current: 1, loaded: 1, max: 1 })
 
-  // On Search
   const onSearch = (value: string) => {
     setSearch(value)
     resetPage()
   }
 
-  // On Filter
   const onFilter = useCallback((value: any) => {
     setFilter(value)
     resetPage()
   }, [])
 
-  // On Sort
   const onSort = useCallback((value: any) => {
     setSort(value)
     resetPage()
   }, [])
 
-  // Table Columns
   const columns: ColumnDef<IPayment>[] = useMemo(
     () => [
       {
@@ -497,11 +485,8 @@ const Page = () => {
     [sort, onSort, filter, onFilter, selectedIds, data?.payments]
   )
 
-  // Next Page
   const goNext = async () => {
-    // Next Page only works when page
     if (page.current === page.max) return
-    // Fetch More only when the current page is the same as loaded page
     if (page.current === page.loaded) {
       await fetchMore({
         variables: {
@@ -528,7 +513,6 @@ const Page = () => {
       }))
     }
 
-    // Go to Next Page
     setPage((prev) => ({
       ...prev,
       current: prev.current + 1,
@@ -536,9 +520,7 @@ const Page = () => {
   }
 
   const goPrev = () => {
-    // Current Page is the First Page
     if (page.current === 1) return
-    // Go to Prev Page
     setPage((prev) => ({
       ...prev,
       current: prev.current - 1,
