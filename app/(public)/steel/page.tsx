@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import Image from "next/image"
-import { ArrowRight, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react"
+import { ArrowRight, Minus, Plus } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import ScrollIndicator from "@/components/custom/scroll-indicator"
 import {
@@ -88,7 +88,10 @@ const categoryRoutes: Record<string, string> = {
   "Steel Products": "/steel/products/steelProducts",
   "Roofing Access": "/steel/products/RoofingAccess",
   "Metal Roofing": "/steel/products/metalRoofing",
+  "PPGL Products": "/steel/products/ppglProducts",
 }
+
+
 
 const infinteLocations = [...locations, ...locations, ...locations, ...locations]
 export default function Page() {
@@ -102,6 +105,60 @@ export default function Page() {
   const [loading, setLoading] = useState(true)
   const [hoveredPanel, setHoveredPanel] = useState<'left' | 'right' | null>(null)
   // const [isCompanyOpen, setIsCompanyOpen] = useState(false)
+
+  // Enhanced scroll to hash function
+  const scrollToHashOnPageLoad = () => {
+    useEffect(() => {
+      // Wait a bit longer for everything to render
+      const timeoutId = setTimeout(() => {
+        const hash = window.location.hash;
+        if (hash) {
+          const elementId = hash.replace('#', '');
+          const element = document.getElementById(elementId);
+
+          if (element) {
+            // Calculate position with header offset
+            const headerOffset = 80;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          } else {
+            // If element not found immediately, try a few more times
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            const tryToFindElement = () => {
+              attempts++;
+              const retryElement = document.getElementById(elementId);
+
+              if (retryElement) {
+                const elementPosition = retryElement.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - 80;
+
+                window.scrollTo({
+                  top: offsetPosition,
+                  behavior: 'smooth'
+                });
+              } else if (attempts < maxAttempts) {
+                setTimeout(tryToFindElement, 100);
+              }
+            };
+
+            setTimeout(tryToFindElement, 100);
+          }
+        }
+      }, 800); // Increased delay to ensure page is fully loaded
+
+      return () => clearTimeout(timeoutId);
+    }, []);
+  };
+
+  // Call the scroll hook
+  scrollToHashOnPageLoad();
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1000)
@@ -170,7 +227,7 @@ export default function Page() {
             C-ONE STEEL
           </h1>
           <p className="text-white text-sm lg:text-lg mb-8 leading-relaxed">
-            {/* Looking for reliable steel products at great value? You’ve found it
+            {/* Looking for reliable steel products at great value? You've found it
             with C-ONE! Browse a wide selection of premium-quality
             steel—available in many stunning colors and customizable in size—
             designed to bring your vision to life while keeping your budget
@@ -263,7 +320,7 @@ export default function Page() {
 
 
       <div
-        id="steel-products"
+        id="steel-products-head"
         className="relative w-full min-h-screen lg:h-screen flex overflow-hidden"
       >
         <div className="flex h-full w-full">
@@ -343,6 +400,7 @@ export default function Page() {
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </motion.button>
                   </Link>
+
                 </motion.div>
               </motion.div>
             </div>
@@ -414,7 +472,7 @@ export default function Page() {
                   transition={{ duration: 0.3, delay: hoveredPanel === "right" ? 0.1 : 0 }}
                 >
                   <Link
-                    href={`${categoryRoutes["Metal Roofing"] || "/products"}?category=Metal+Roofing`}
+                    href={`${categoryRoutes["PPGL Products"] || "/products"}?category=PPGL+Products`}
                   >
                     <motion.button
                       className="group inline-flex items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full transition-all duration-300 hover:gap-3 hover:bg-white/95 text-sm"
@@ -431,7 +489,8 @@ export default function Page() {
           </motion.div>
         </div>
 
-        <div className="absolute top-8 md:top-12 lg:top-16 left-1/2 transform -translate-x-1/2 z-30 text-center w-full max-w-3xl px-6 pointer-events-none">
+        <div
+          className="absolute top-8 md:top-12 lg:top-16 left-1/2 transform -translate-x-1/2 z-30 text-center w-full max-w-3xl px-6 pointer-events-none">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}

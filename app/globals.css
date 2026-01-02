@@ -122,7 +122,64 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Para sa swipe na animation */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateX(100px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateX(-100px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Swipe hint animation */
+@keyframes swipeHint {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(10px);
+  }
+}
+
+.swipe-hint-right {
+  animation: swipeHint 1.5s ease-in-out infinite;
+}
+
+@keyframes swipeHintLeft {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(-10px);
+  }
+}
+
+.swipe-hint-left {
+  animation: swipeHintLeft 1.5s ease-in-out infinite;
 }

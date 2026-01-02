@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowRight, Home, FileText, X, Layers, Ruler, Sparkles, Palette, Gauge, Weight } from 'lucide-react';
 import Footer from '@/components/custom/footer';
 import { CLOUD } from './main-faq';
@@ -93,6 +93,7 @@ const tabs = ["Galvanized C-Purlins", "Metal Furring", "Floor Deck", "Metal Clad
 
 function SteelProducts() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const category = searchParams.get("category") || "Products";
     const [activeTab, setActiveTab] = useState('Galvanized C-Purlins');
     const [selectedSize, setSelectedSize] = useState('2x3');
@@ -114,25 +115,42 @@ function SteelProducts() {
 
     const blueprintUrl = getBlueprintUrl();
 
+    const handleHomeClick = () => {
+        // Navigate to home page with hash
+        router.push('/steel#steel-products-head');
+
+        // If somehow we're already on the steel page (edge case), scroll directly
+        if (window.location.pathname === '/steel') {
+            setTimeout(() => {
+                const element = document.getElementById('steel-products-head');
+                if (element) {
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }, 100);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-white">
             <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50 border-b border-gray-100">
-                <div className="container mx-auto px-5 py-4">
+                <div className="container mx-auto px-4 sm:px-5 py-3 sm:py-4">
                     <div className="flex items-center justify-between">
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-green-600 transition-colors rounded-lg hover:bg-green-50"
+                            onClick={handleHomeClick}
+                            className="flex items-center gap-2 px-3 sm:px-4 py-2 text-gray-700 hover:text-green-600 transition-colors rounded-lg hover:bg-green-50"
                         >
-                            <Home className="w-5 h-5" />
-                            <Link href="/">
-                                <span className="text-base">Home</span>
-                            </Link>
+                            <Home className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <span className="text-sm sm:text-base">Home</span>
                         </motion.button>
 
                         <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-green-600" />
-                            <h2 className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                            <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                                 Steel Products
                             </h2>
                         </div>
@@ -140,34 +158,35 @@ function SteelProducts() {
                         <motion.button
                             whileHover={{ scale: 1.05, x: 5 }}
                             whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
+                            onClick={() => router.push('/steel/products/ppglProducts?category=PPGL+Products')}
+                            className="hidden sm:flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
                         >
-                            <span className="text-base">Contact Us</span>
-                            <ArrowRight className="w-4 h-4" />
+                            <span className="text-sm sm:text-base">PPGL Products</span>
+                            <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
                         </motion.button>
 
                         <button
-                            className="md:hidden text-gray-700"
+                            className="sm:hidden text-gray-700"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                         >
-                            {isMenuOpen ? <X size={24} /> : <span className="text-xl">☰</span>}
+                            {isMenuOpen ? <X size={20} /> : <span className="text-xl">☰</span>}
                         </button>
                     </div>
                 </div>
 
                 {isMenuOpen && (
-                    <div className="md:hidden bg-white border-t border-gray-100 px-5 py-4">
+                    <div className="sm:hidden bg-white border-t border-gray-100 px-4 py-3">
                         <div className="flex flex-col space-y-3">
-                            <Link href="/steel" className="text-base text-gray-700 hover:text-green-600 transition-colors">
+                            <Link href="/steel#steel-products-head" className="text-sm text-gray-700 hover:text-green-600 transition-colors">
                                 Steel
                             </Link>
-                            <Link href="/trucks" className="text-base text-gray-700 hover:text-green-600 transition-colors">
+                            <Link href="/trucks" className="text-sm text-gray-700 hover:text-green-600 transition-colors">
                                 Trucks & Equipment
                             </Link>
-                            <Link href="/sports-center" className="text-base text-gray-700 hover:text-green-600 transition-colors">
+                            <Link href="/sports-center" className="text-sm text-gray-700 hover:text-green-600 transition-colors">
                                 Sports Center
                             </Link>
-                            <Link href="/rentals" className="text-base text-gray-700 hover:text-green-600 transition-colors">
+                            <Link href="/rentals" className="text-sm text-gray-700 hover:text-green-600 transition-colors">
                                 Rentals
                             </Link>
                         </div>
@@ -175,49 +194,52 @@ function SteelProducts() {
                 )}
             </header>
 
-            <div className="relative pt-24 px-6 lg:px-20">
+            <div className="relative pt-20 sm:pt-24 px-4 sm:px-6 lg:px-8 xl:px-20">
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="mt-6"
+                    className="mt-4 sm:mt-6"
                 >
-                    <div className="tracking-widest mb-2 text-gray-800 text-base">
+                    <div className="tracking-widest mb-1 sm:mb-2 text-gray-800 text-xs sm:text-sm md:text-base">
                         C-ONE STEEL
                     </div>
-                    <div className="text-gray-500 flex items-center gap-2 text-base">
-                        <Link href="/" className="hover:text-green-600 transition-colors">
+                    <div className="text-gray-500 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base">
+                        <button
+                            onClick={handleHomeClick}
+                            className="hover:text-green-600 transition-colors"
+                        >
                             Home
-                        </Link>
+                        </button>
                         <span>/</span>
                         <span className="text-green-600">Steel Products</span>
                     </div>
                 </motion.div>
             </div>
 
-            <div className="relative flex flex-col lg:flex-row gap-8 my-4 px-6 lg:px-20">
-                <div className="flex flex-col w-full lg:w-[800px] gap-6">
+            <div className="relative flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8 my-4 sm:my-6 md:my-8 px-4 sm:px-6 lg:px-8 xl:px-20">
+                <div className="flex flex-col w-full lg:w-[70%] xl:w-[800px] gap-4 sm:gap-6">
                     <motion.div
                         initial={{ opacity: 0, x: -50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.8 }}
                         className="relative"
                     >
-                        <div className="relative h-[450px] lg:h-[590px] bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                        <div className="relative h-[300px] xs:h-[350px] sm:h-[400px] md:h-[450px] lg:h-[480px] xl:h-[590px] bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
                             <motion.div
                                 animate={{
                                     scale: zoomed ? 1.2 : 1,
                                     rotate: zoomed ? 15.4 : 0,
                                 }}
                                 transition={{ duration: 0.5, ease: "easeOut" }}
-                                className="absolute inset-0 flex items-center justify-center z-0 p-8"
+                                className="absolute inset-0 flex items-center justify-center z-0 p-4 sm:p-6 md:p-6 lg:p-8 xl:p-8"
                             >
                                 <Image
                                     src={currentProduct.images?.[selectedSize] || currentProduct.image}
                                     alt={activeTab}
                                     fill
                                     className="object-contain max-h-full"
-                                    sizes="(max-width: 768px) 100vw, 800px"
+                                    sizes="(max-width: 425px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 100vw, 800px"
                                     quality={100}
                                 />
                             </motion.div>
@@ -233,7 +255,7 @@ function SteelProducts() {
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.8 }}
                                         transition={{ duration: 0.5 }}
-                                        className="absolute z-20 flex items-center justify-center w-full h-full p-8"
+                                        className="absolute z-20 flex items-center justify-center w-full h-full p-4 sm:p-6 md:p-6 lg:p-8 xl:p-8"
                                     >
                                         <div className="relative w-full h-full">
                                             <Image
@@ -241,7 +263,7 @@ function SteelProducts() {
                                                 alt={`${activeTab} Blueprint`}
                                                 fill
                                                 className="object-contain"
-                                                sizes="(max-width: 768px) 100vw, 800px"
+                                                sizes="(max-width: 425px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 100vw, 800px"
                                                 quality={100}
                                             />
                                         </div>
@@ -253,11 +275,11 @@ function SteelProducts() {
                                 <motion.div
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    className="absolute top-4 left-4 z-30"
+                                    className="absolute top-3 left-3 sm:top-4 sm:left-4 lg:top-3 lg:left-3 xl:top-4 xl:left-4 z-30"
                                 >
-                                    <div className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full shadow-lg flex items-center gap-2">
-                                        <Ruler className="w-4 h-4" />
-                                        <span className="font-semibold text-sm">{selectedSize}</span>
+                                    <div className="px-3 py-1.5 sm:px-4 sm:py-2 md:px-3 md:py-1.5 lg:px-3 lg:py-1.5 xl:px-4 xl:py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full shadow-lg flex items-center gap-1 sm:gap-2">
+                                        <Ruler className="w-3 h-3 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4" />
+                                        <span className="font-semibold text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm">{selectedSize}</span>
                                     </div>
                                 </motion.div>
                             )}
@@ -266,11 +288,11 @@ function SteelProducts() {
                                 <motion.div
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="absolute top-4 left-4 z-30"
+                                    className="absolute top-3 left-3 sm:top-4 sm:left-4 lg:top-3 lg:left-3 xl:top-4 xl:left-4 z-30"
                                 >
-                                    <div className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-lg flex items-center gap-2">
-                                        <FileText className="w-4 h-4" />
-                                        <span className="font-semibold text-sm">
+                                    <div className="px-3 py-1.5 sm:px-4 sm:py-2 md:px-3 md:py-1.5 lg:px-3 lg:py-1.5 xl:px-4 xl:py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-lg flex items-center gap-1 sm:gap-2">
+                                        <FileText className="w-3 h-3 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4" />
+                                        <span className="font-semibold text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm">
                                             {activeTab === 'Galvanized C-Purlins'
                                                 ? `Blueprint (${selectedSize})`
                                                 : `${activeTab} Blueprint`
@@ -284,21 +306,21 @@ function SteelProducts() {
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="absolute bottom-2 left-4 right-4 z-30"
+                                    className="absolute bottom-2 left-2 right-2 sm:bottom-2 sm:left-4 sm:right-4 lg:bottom-2 lg:left-5 lg:right-3 xl:bottom-2 xl:left-4 xl:right-4 z-30"
                                 >
                                     <div className="">
-                                        <div className="flex items-center justify-center gap-1.5 mb-2">
-                                            <Ruler className="w-4 h-4 text-white" />
-                                            <h3 className="text-white font-semibold text-lg">See Sizes</h3>
+                                        <div className="flex items-center justify-center gap-1 sm:gap-1.5 lg:gap-1 xl:gap-1.5 mb-1 sm:mb-2 lg:mb-1 xl:mb-2">
+                                            <Ruler className="w-3 h-3 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 text-white" />
+                                            <h3 className="text-white font-semibold text-sm sm:text-lg lg:text-sm xl:text-lg">See Sizes</h3>
                                         </div>
-                                        <div className="flex justify-center gap-1.5">
+                                        <div className="flex justify-center gap-1 sm:gap-1.5 lg:gap-1 xl:gap-1.5">
                                             {currentProduct.sizes.map((size: string) => (
                                                 <motion.button
                                                     key={size}
                                                     whileHover={{ scale: 1.03, y: -1 }}
                                                     whileTap={{ scale: 0.97 }}
                                                     onClick={() => setSelectedSize(size)}
-                                                    className={`px-5 py-3 cursor-pointer rounded-md transition-all text-sm font-medium ${selectedSize === size
+                                                    className={`px-3 py-2 sm:px-4 md:px-3 md:py-1.5 lg:px-3 lg:py-2 xl:px-4 xl:py-3 cursor-pointer rounded-md transition-all text-xs sm:text-sm md:text-sm lg:text-xs xl:text-sm font-medium ${selectedSize === size
                                                         ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-sm'
                                                         : 'bg-gray-50 hover:bg-green-50 text-gray-700 border border-gray-200 hover:border-green-300'
                                                         }`}
@@ -316,25 +338,39 @@ function SteelProducts() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setZoomed(!zoomed)}
-                                    className={`absolute top-4 right-4 flex items-center gap-2 px-3 py-2 rounded-lg transition-all shadow-md hover:shadow-lg z-30 border ${zoomed
+                                    className={`absolute top-3 right-3 sm:top-4 sm:right-4 md:top-3 md:right-3 lg:top-3 lg:right-3 xl:top-4 xl:right-4 flex items-center gap-1 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 lg:px-2.5 lg:py-1.5 xl:px-3 xl:py-2 rounded-lg transition-all shadow-md hover:shadow-lg z-30 border ${zoomed
                                         ? 'bg-red-500 text-white border-red-200 hover:bg-red-600'
                                         : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white border-green-200 hover:from-green-700 hover:to-emerald-700'
                                         }`}
                                 >
                                     {zoomed ? (
                                         <>
-                                            <X size={16} />
-                                            <span className="text-sm cursor-pointer font-medium">Close Blueprint</span>
+                                            <X size={14} className="sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4" />
+                                            <span className="text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm cursor-pointer font-medium">Close Blueprint</span>
                                         </>
                                     ) : (
                                         <>
-                                            <FileText size={16} />
-                                            <span className="text-sm cursor-pointer font-medium">View Blueprint</span>
+                                            <FileText size={14} className="sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4" />
+                                            <span className="text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm cursor-pointer font-medium">View Blueprint</span>
                                         </>
                                     )}
                                 </motion.button>
                             )}
                         </div>
+                    </motion.div>
+
+                    {/* DUPLICATE DESCRIPTION - Visible ONLY at 1024px (lg) */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100 shadow-md p-4 sm:p-6 hidden lg:block xl:hidden"
+                    >
+                        <p className="text-gray-700 leading-relaxed text-sm sm:text-[15px] lg:text-sm">
+                            Premium quality <span className="text-green-600 font-medium">{activeTab.toLowerCase()}</span> manufactured to the highest standards.
+                            Ideal for construction and industrial applications, offering excellent durability
+                            and performance. All products are quality tested and meet industry specifications.
+                        </p>
                     </motion.div>
                 </div>
 
@@ -342,10 +378,10 @@ function SteelProducts() {
                     initial={{ opacity: 0, x: 50 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.8 }}
-                    className="flex flex-col flex-1 gap-6"
+                    className="flex flex-col flex-1 gap-4 sm:gap-6"
                 >
                     <div className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent text-center">
-                        <h1 className="text-xl lg:text-2xl font-bold">
+                        <h1 className="text-lg sm:text-xl lg:text-xl xl:text-2xl font-bold">
                             {activeTab.toUpperCase()}
                             {activeTab === 'Galvanized C-Purlins' && ` (${selectedSize})`}
                             {activeTab === 'PPGL Plain Sheets' && selectedColor && ` (${selectedColor})`}
@@ -356,9 +392,9 @@ function SteelProducts() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6 }}
-                        className="bg-white rounded-lg shadow-md border border-gray-100 p-3"
+                        className="bg-white rounded-lg shadow-md border border-gray-100 p-2 sm:p-3"
                     >
-                        <div className="grid grid-cols-3 lg:grid-cols-7 gap-2">
+                        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-3 xl:grid-cols-7 gap-1 sm:gap-2">
                             {tabs.map((tab, index) => (
                                 <motion.div
                                     key={tab}
@@ -375,7 +411,7 @@ function SteelProducts() {
                                             setZoomed(false);
                                             setSelectedColor(null);
                                         }}
-                                        className={`w-12 h-12 lg:w-16 lg:h-14 rounded-md cursor-pointer transition-all shadow-sm border ${activeTab === tab
+                                        className={`w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 xl:w-14 xl:h-14 rounded-md cursor-pointer transition-all shadow-sm border ${activeTab === tab
                                             ? 'border-green-500 ring-1 ring-green-500/20 shadow-green-500/10'
                                             : 'border-gray-200 hover:border-green-300'
                                             }`}
@@ -386,12 +422,17 @@ function SteelProducts() {
                                                 alt={tab}
                                                 fill
                                                 className="object-contain p-0.5"
-                                                sizes="(max-width: 780px) 50px, 58px"
+                                                sizes="(max-width: 425px) 40px, (max-width: 768px) 48px, (max-width: 1024px) 56px, 56px"
                                             />
                                         </div>
                                     </motion.div>
-                                    <span className="text-xs text-center text-gray-600 mt-1 truncate w-full px-0.5">
-                                        {tab}
+                                    <span className="text-[10px] xs:text-xs lg:text-[10px] xl:text-xs text-center text-gray-600 mt-1 truncate w-full px-0.5">
+                                        {tab.split(' ').map((word, i) => (
+                                            <span key={i}>
+                                                {i > 0 ? ' ' : ''}
+                                                {i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word}
+                                            </span>
+                                        ))}
                                     </span>
                                 </motion.div>
                             ))}
@@ -403,14 +444,14 @@ function SteelProducts() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
-                            className="bg-white rounded-lg shadow-md border border-gray-100 p-6"
+                            className="bg-white rounded-lg shadow-md border border-gray-100 p-4 sm:p-6"
                         >
-                            <div className="flex items-center justify-center gap-2 mb-4">
-                                <Palette className="w-5 h-5 text-green-600" />
-                                <h3 className="text-gray-800 font-semibold text-lg">Available Colors</h3>
+                            <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
+                                <Palette className="w-4 h-4 sm:w-5 sm:h-5 lg:w-4 lg:h-4 xl:w-5 xl:h-5 text-green-600" />
+                                <h3 className="text-gray-800 font-semibold text-base sm:text-lg lg:text-base xl:text-lg">Available Colors</h3>
                             </div>
 
-                            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2">
+                            <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-1.5 sm:gap-2">
                                 {currentProduct.colorSwatches.map((colorItem: any, index: number) => (
                                     <motion.div
                                         key={index}
@@ -423,15 +464,15 @@ function SteelProducts() {
                                             whileHover={{ scale: 1.1 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => setSelectedColor(colorItem.name)}
-                                            className={`w-10 h-10 rounded-md border-2 cursor-pointer transition-all ${selectedColor === colorItem.name
+                                            className={`w-8 h-8 sm:w-10 sm:h-10 lg:w-9 lg:h-9 xl:w-10 xl:h-10 rounded-md border-2 cursor-pointer transition-all ${selectedColor === colorItem.name
                                                 ? 'border-green-600 ring-2 ring-green-600/20 shadow-md'
                                                 : 'border-gray-300 hover:border-green-400'
                                                 }`}
                                             style={{ backgroundColor: colorItem.color }}
                                             aria-label={`Select ${colorItem.name} color`}
                                         />
-                                        <span className="text-[12px] text-gray-600 text-center mt-1 truncate w-full px-1">
-                                            {colorItem.name}
+                                        <span className="text-[10px] xs:text-[11px] sm:text-[12px] lg:text-[10px] xl:text-[12px] text-gray-600 text-center mt-1 truncate w-full px-0.5">
+                                            {colorItem.name.split(' ')[0]}
                                         </span>
                                     </motion.div>
                                 ))}
@@ -441,17 +482,17 @@ function SteelProducts() {
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200"
+                                    className="mt-3 sm:mt-4 p-2 sm:p-3 bg-green-50 rounded-lg border border-green-200"
                                 >
                                     <div className="flex items-center justify-center gap-2">
                                         <div
-                                            className="w-6 h-6 rounded border border-gray-300"
+                                            className="w-5 h-5 sm:w-6 sm:h-6 lg:w-5 lg:h-5 xl:w-6 xl:h-6 rounded border border-gray-300"
                                             style={{
                                                 backgroundColor: currentProduct.colorSwatches.find((c: any) => c.name === selectedColor)?.color
                                             }}
                                         />
-                                        <span className="text-sm font-medium text-gray-700">
-                                            Selected Color: <span className="text-green-600 font-semibold">{selectedColor}</span>
+                                        <span className="text-xs sm:text-sm lg:text-xs xl:text-sm font-medium text-gray-700">
+                                            Selected: <span className="text-green-600 font-semibold">{selectedColor}</span>
                                         </span>
                                     </div>
                                 </motion.div>
@@ -463,17 +504,17 @@ function SteelProducts() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="bg-gray-50 rounded-lg shadow-lg border border-gray-200 p-6"
+                        className="bg-gray-50 rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6"
                     >
-                        <div className="flex items-center justify-center gap-2 mb-4">
+                        <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
                             {activeTab === 'Hollow Blocks' ? (
-                                <Gauge className="w-5 h-5 text-green-600" />
+                                <Gauge className="w-4 h-4 sm:w-5 sm:h-5 lg:w-4 lg:h-4 xl:w-5 xl:h-5 text-green-600" />
                             ) : activeTab === 'Metal Cylinder' ? (
-                                <Weight className="w-5 h-5 text-green-600" />
+                                <Weight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-4 lg:h-4 xl:w-5 xl:h-5 text-green-600" />
                             ) : (
-                                <Layers className="w-5 h-5 text-green-600" />
+                                <Layers className="w-4 h-4 sm:w-5 sm:h-5 lg:w-4 lg:h-4 xl:w-5 xl:h-5 text-green-600" />
                             )}
-                            <h3 className="text-gray-800 font-semibold text-lg">
+                            <h3 className="text-gray-800 font-semibold text-base sm:text-lg lg:text-base xl:text-lg">
                                 {activeTab === 'Hollow Blocks'
                                     ? 'PSI Specifications'
                                     : activeTab === 'Metal Cylinder'
@@ -483,7 +524,7 @@ function SteelProducts() {
                             </h3>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-2 sm:gap-3">
                             {activeTab === 'Hollow Blocks' ? (
                                 currentProduct.psiVariations.map((item: string, i: number) => (
                                     <motion.div
@@ -491,13 +532,13 @@ function SteelProducts() {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: i * 0.1 }}
-                                        className="flex items-center justify-between gap-3 bg-white px-4 py-3 rounded-lg shadow-sm border border-gray-200"
+                                        className="flex items-center justify-between gap-2 sm:gap-3 bg-white px-3 py-2 sm:px-4 sm:py-3 rounded-lg shadow-sm border border-gray-200"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-2 h-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full group-hover:scale-125 transition-transform" />
-                                            <span className="text-gray-700 font-medium">{item}</span>
+                                        <div className="flex items-center gap-2 sm:gap-3">
+                                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full group-hover:scale-125 transition-transform" />
+                                            <span className="text-sm sm:text-base lg:text-sm xl:text-base text-gray-700 font-medium">{item}</span>
                                         </div>
-                                        <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                                        <div className="hidden xl:flex px-2 py-0.5 sm:px-3 sm:py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                                             Strength
                                         </div>
                                     </motion.div>
@@ -509,13 +550,13 @@ function SteelProducts() {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: i * 0.1 }}
-                                        className="flex items-center justify-between gap-3 bg-white px-4 py-3 rounded-lg shadow-sm border border-gray-200"
+                                        className="flex items-center justify-between gap-2 sm:gap-3 bg-white px-3 py-2 sm:px-4 sm:py-3 rounded-lg shadow-sm border border-gray-200"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-2 h-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full group-hover:scale-125 transition-transform" />
-                                            <span className="text-gray-700 font-medium">{item}</span>
+                                        <div className="flex items-center gap-2 sm:gap-3">
+                                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full group-hover:scale-125 transition-transform" />
+                                            <span className="text-sm sm:text-base lg:text-sm xl:text-base text-gray-700 font-medium">{item}</span>
                                         </div>
-                                        <div className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+                                        <div className="hidden xl:flex px-2 py-0.5 sm:px-3 sm:py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
                                             Weight
                                         </div>
                                     </motion.div>
@@ -527,13 +568,13 @@ function SteelProducts() {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: i * 0.1 }}
-                                        className="flex items-center justify-between gap-3 bg-white px-4 py-3 rounded-lg shadow-sm border border-gray-200"
+                                        className="flex items-center justify-between gap-2 sm:gap-3 bg-white px-3 py-2 sm:px-4 sm:py-3 rounded-lg shadow-sm border border-gray-200"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-2 h-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full group-hover:scale-125 transition-transform" />
-                                            <span className="text-gray-700 font-medium">{item}</span>
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full group-hover:scale-125 transition-transform" />
+                                            <span className="text-sm sm:text-base lg:text-sm xl:text-base text-gray-700 font-medium">{item}</span>
                                         </div>
-                                        <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                                        <div className="hidden xl:flex px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                                             Thickness
                                         </div>
                                     </motion.div>
@@ -541,13 +582,14 @@ function SteelProducts() {
                             )}
                         </div>
                     </motion.div>
+
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 }}
-                        className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100 shadow-md p-6"
+                        className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100 shadow-md p-4 sm:p-6 lg:hidden xl:block"
                     >
-                        <p className="text-gray-700 leading-relaxed text-[15px]">
+                        <p className="text-gray-700 leading-relaxed text-sm sm:text-[15px] lg:text-sm xl:text-[15px]">
                             Premium quality <span className="text-green-600 font-medium">{activeTab.toLowerCase()}</span> manufactured to the highest standards.
                             Ideal for construction and industrial applications, offering excellent durability
                             and performance. All products are quality tested and meet industry specifications.

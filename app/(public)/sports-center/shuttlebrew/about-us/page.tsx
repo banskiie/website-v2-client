@@ -8,7 +8,6 @@ import Image from 'next/image'
 import ShimmerSkeleton from '@/components/custom/shimmer-skeleton'
 import { CLOUD } from '@/components/custom/main-faq'
 
-const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
 const galleryImages = [
   { src: `${CLOUD}/v1764116604/_ALP6549-51_dc4yte.png`, alt: "Cafe 1", caption: "Spacious Cafe Vibe" },
   { src: `${CLOUD}/v1764116640/_ALP6551-52_wkc7ji.jpg`, alt: "Cafe 2", caption: "Spacious Cafe Vibe" },
@@ -148,7 +147,7 @@ function Page() {
           <div className="flex items-center justify-between px-6 md:px-8 py-4 border-b border-gray-300 min-w-[300px]">
             <Link
               href="/sports-center/shuttlebrew/#about-us" className="flex items-center gap-2 text-lg font-bold px-2 py-2 bg-white rounded-full shadow hover:bg-gray-100 transition">
-              <ArrowBigLeft/>
+              <ArrowBigLeft />
             </Link>
             <div className="flex-1 flex justify-center">
               <Image src={`${CLOUD}/v1764038540/c-one-logo2_y4elbf.png`} alt="C-One Logo" width={160} height={100} className="object-contain" />
@@ -227,7 +226,7 @@ function Page() {
 
         <div className="flex flex-col flex-1">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            
+
             {galleryImages.slice(0, 6).map((img, i) => (
               <div key={i} className="relative w-full h-24 sm:h-32 cursor-pointer" onClick={() => setModalImage({ src: img.src, alt: img.alt })}>
                 <Image src={img.src} alt={img.alt} fill className="object-cover rounded-md" loading='lazy' />
@@ -248,9 +247,9 @@ function Page() {
         {viewGallery && (
           <motion.div
             key="gallery-page"
-            initial={{ y: "100%" }}       
-            animate={{ y: 0 }}             
-            exit={{ y: "100%" }}           
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 120, damping: 20 }}
             className="fixed inset-0 z-50 flex justify-center items-end overflow-hidden"
           >

@@ -2258,7 +2258,6 @@ export function CheckEntryModal({
         )}
       </AnimatePresence>
 
-      {/* ✳️ Result Modal - Now shows even when statuses is empty */}
       <AnimatePresence>
         {showResult && (
           <motion.div
@@ -2329,11 +2328,11 @@ export function CheckEntryModal({
                             Reason: {statusItem.reason}
                           </p>
                         )}
-                        {statusItem.by && (
+                        {/* {statusItem.by && (
                           <p className="text-xs text-gray-400 italic">
                             by {statusItem.by.name} ({statusItem.by.role})
                           </p>
-                        )}
+                        )} */}
                       </div>
                     </motion.div>
                   ))}

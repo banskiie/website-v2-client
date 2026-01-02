@@ -23,14 +23,12 @@ export interface IEvent {
 export interface IEntryRemark {
   remark: string
   date: Date
-  by: IUser
 }
 
 export interface IEntryStatus {
   status: string
   date: Date
   reason?: string
-  by: IUser
 }
 
 export interface EntryStatusHistoryData {

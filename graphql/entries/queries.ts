@@ -6,17 +6,6 @@ export const ENTRY_STATUS_HISTORY = gql`
       status
       date
       reason
-      by {
-        _id
-        name
-        email
-        contactNumber
-        username
-        role
-        isActive
-        createdAt
-        updatedAt
-      }
     }
   }
 `

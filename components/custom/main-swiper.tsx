@@ -92,8 +92,6 @@ import {
 } from "@/components/ui/carousel"
 import { CLOUD } from "./main-faq"
 
-const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
-
 const images = [
   { src: `${CLOUD}/v1764039904/swiper1_rhirnr.png`, alt: "Featured Product 1" },
   // { src: "/assets/img/contents/swiper2.png", alt: "Featured Product 2" },
