@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, TouchEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -100,6 +100,53 @@ function SteelProducts() {
     const [zoomed, setZoomed] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
+    const [touchStart, setTouchStart] = useState<number | null>(null)
+    const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+    const minSwipeDistance = 50 // Minimum distance pag swipe
+
+    const [isTransitioning, setIsTransitioning] = useState(false)
+
+    const onTouchStart = (e: TouchEvent) => {
+        setTouchEnd(null)
+        setTouchStart(e.targetTouches[0].clientX)
+    }
+
+    const onTouchMove = (e: TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX)
+    }
+
+    // const onTouchEnd = () => {
+    //     if (!touchStart || !touchEnd) return
+    //     const distance = touchStart - touchEnd
+    //     if (distance > minSwipeDistance) {
+    //         setActiveTab(tabs[(tabs.indexOf(activeTab) - 1 + tabs.length) % tabs.length])
+    //     } else if (distance < -minSwipeDistance) {
+    //         setActiveTab(tabs[(tabs.indexOf(activeTab) + 1 + tabs.length) % tabs.length])
+    //     }
+    // }
+
+    const onTouchEnd = useCallback(() => {
+        if (!touchStart || !touchEnd) return
+
+        const distance = touchStart - touchEnd
+        const isLeftSwipe = distance > minSwipeDistance
+        const isRightSwipe = distance < -minSwipeDistance
+
+        if (isLeftSwipe) {
+            setIsTransitioning(true)
+            setTimeout(() => {
+                router.push('/steel/products/ppglProducts?category=PPGL+Products')
+            }, 300)
+        }
+    }, [touchStart, touchEnd, router])
+
+    const handlePPGLClick = () => {
+        setIsTransitioning(true)
+        setTimeout(() => {
+            router.push('/steel/products/ppglProducts?category=PPGL+Products')
+        }, 300)
+    }
 
     const currentProduct = productData[activeTab];
 
@@ -134,7 +181,11 @@ function SteelProducts() {
     };
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className={`min-h-screen bg-white ${isTransitioning ? 'opacity-0 transition-opacity duration-300' : 'opacity-100 transition-opacity duration-300'}`}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
             <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50 border-b border-gray-100">
                 <div className="container mx-auto px-4 sm:px-5 py-3 sm:py-4">
                     <div className="flex items-center justify-between">
@@ -158,19 +209,26 @@ function SteelProducts() {
                         <motion.button
                             whileHover={{ scale: 1.05, x: 5 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => router.push('/steel/products/ppglProducts?category=PPGL+Products')}
-                            className="hidden sm:flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
+                            onClick={handlePPGLClick}
+                            className="hidden sm:flex cursor-pointer items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
                         >
-                            <span className="text-sm sm:text-base">PPGL Products</span>
+                            <span className="text-sm">PPGL Products</span>
                             <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
                         </motion.button>
 
-                        <button
+                        {/* <button
                             className="sm:hidden text-gray-700"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                         >
                             {isMenuOpen ? <X size={20} /> : <span className="text-xl">☰</span>}
-                        </button>
+                        </button> */}
+                        {/* For mobile */}
+                        <div className="sm:hidden fixed bottom-4 right-4 z-40">
+                            <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg border border-gray-200">
+                                <span className="text-xs text-gray-600">Swipe left for PPGL</span>
+                                <ArrowRight className="w-3 h-3 text-green-600" />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -245,7 +303,8 @@ function SteelProducts() {
                             </motion.div>
 
                             {zoomed && (
-                                <div className="absolute inset-0 bg-[#B1B1B1]/70 z-10" />
+                                // <div className="absolute inset-0 bg-[#B1B1B1]/90 z-10" />
+                                <div className="absolute inset-0 bg-white/90 z-10" />
                             )}
 
                             <AnimatePresence>
@@ -304,25 +363,26 @@ function SteelProducts() {
 
                             {activeTab === 'Galvanized C-Purlins' && !zoomed && (
                                 <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
+                                    initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="absolute bottom-2 left-2 right-2 sm:bottom-2 sm:left-4 sm:right-4 lg:bottom-2 lg:left-5 lg:right-3 xl:bottom-2 xl:left-4 xl:right-4 z-30"
+                                    className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20"
                                 >
-                                    <div className="">
-                                        <div className="flex items-center justify-center gap-1 sm:gap-1.5 lg:gap-1 xl:gap-1.5 mb-1 sm:mb-2 lg:mb-1 xl:mb-2">
-                                            <Ruler className="w-3 h-3 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 text-white" />
-                                            <h3 className="text-white font-semibold text-sm sm:text-lg lg:text-sm xl:text-lg">See Sizes</h3>
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
+                                            <Ruler className="w-3.5 h-3.5 text-green-600" />
+                                            <span className="text-xs font-medium text-gray-700">Select Size</span>
                                         </div>
-                                        <div className="flex justify-center gap-1 sm:gap-1.5 lg:gap-1 xl:gap-1.5">
+
+                                        <div className="flex gap-1.5 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md border border-gray-200">
                                             {currentProduct.sizes.map((size: string) => (
                                                 <motion.button
                                                     key={size}
-                                                    whileHover={{ scale: 1.03, y: -1 }}
-                                                    whileTap={{ scale: 0.97 }}
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
                                                     onClick={() => setSelectedSize(size)}
-                                                    className={`px-3 py-2 sm:px-4 md:px-3 md:py-1.5 lg:px-3 lg:py-2 xl:px-4 xl:py-3 cursor-pointer rounded-md transition-all text-xs sm:text-sm md:text-sm lg:text-xs xl:text-sm font-medium ${selectedSize === size
-                                                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-sm'
-                                                        : 'bg-gray-50 hover:bg-green-50 text-gray-700 border border-gray-200 hover:border-green-300'
+                                                    className={`px-3 py-1.5 text-sm cursor-pointer rounded-md transition-all font-medium ${selectedSize === size
+                                                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
+                                                        : 'bg-gray-200 hover:bg-green-50 text-gray-700 hover:text-green-700'
                                                         }`}
                                                 >
                                                     {size}

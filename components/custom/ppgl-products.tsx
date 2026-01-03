@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, TouchEvent, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +9,9 @@ import {
     ArrowRight, Home, FileText, X, Layers, Ruler, Sparkles, Palette,
     Gauge, CheckCircle2, Search, Package, ThermometerSun, Shield,
     Waves, InspectionPanel, Leaf, Wrench, Thermometer, Grid3X3, House,
-    Building, Zap, Award
+    Building, Zap, Award, Droplets, Building2, RollerCoaster,
+    CornerUpLeft, Square, FoldVertical, CornerDownRight, CornerUpRight,
+    CornerDownLeft, CornerRightUp, Box, Grid
 } from 'lucide-react';
 import Footer from '@/components/custom/footer';
 import { CLOUD } from './main-faq';
@@ -108,6 +110,96 @@ const roofingSubTabs = [
     }
 ];
 
+// Clickable Accessory Tabs (only shown when accessories is active)
+const clickableAccessoryTabs = [
+    {
+        id: "gutter",
+        name: "Gutter",
+        icon: House,
+        color: "bg-gradient-to-r from-blue-500 to-cyan-600",
+        image: "/assets/Products/Gutter.png",
+        description: "High-quality gutters and downpipes for efficient water drainage.",
+        features: [
+            "Precision engineered for optimal water flow",
+            "Durable weather-resistant coating",
+            "Easy installation with standard tools",
+            "Available in various sizes and colors"
+        ]
+    },
+    {
+        id: "ridge_cap",
+        name: "Ridge Cap",
+        icon: Building2,
+        color: "bg-gradient-to-r from-green-500 to-emerald-600",
+        image: "/assets/Products/ridge_cap.png",
+        description: "Premium ridge caps for perfect roof sealing and finishing.",
+        features: [
+            "Provides excellent weather protection",
+            "Aesthetic finishing touch",
+            "Easy to install and maintain",
+            "Available in matching colors"
+        ]
+    },
+    {
+        id: "fascia_mouldings",
+        name: "Fascia Mouldings",
+        icon: CornerUpLeft,
+        color: "bg-gradient-to-r from-purple-500 to-pink-600",
+        image: "",
+        description: "Fascia mouldings for elegant roof edges and finishing.",
+        features: [
+            "Precision manufactured fittings",
+            "Weather resistant coating",
+            "Easy installation with standard tools",
+            "Perfect match with roofing profiles"
+        ]
+    },
+    {
+        id: "ridge_roll",
+        name: "Ridge Roll",
+        icon: RollerCoaster,
+        color: "bg-gradient-to-r from-orange-500 to-amber-600",
+        image: "",
+        description: "Ridge rolls for enhanced roof protection and sealing.",
+        features: [
+            "Excellent weather sealing",
+            "Enhanced durability",
+            "Easy installation",
+            "Available in various sizes"
+        ]
+    }
+];
+
+// Original accessories list (not clickable, just displayed)
+const originalAccessoriesList = [
+    { name: "Ridge Rolls", icon: RollerCoaster },
+    { name: "Gutter", icon: House },
+    { name: "Ridge Caps", icon: Building2 },
+    { name: "Fascia Boards", icon: Square },
+    { name: "Wall Angles", icon: CornerDownRight },
+    { name: "Corner Flashing", icon: CornerUpRight },
+    { name: "Valley Gutters", icon: CornerDownLeft },
+    { name: "End Flashing", icon: CornerRightUp }
+];
+
+// Foam Insulator Variants
+const foamVariants = [
+    {
+        id: "9mm_double",
+        name: "1.00 W X 50 M 9.00MM Double Sided",
+        thickness: "9.00mm",
+        type: "Double Sided Foil",
+        image: "/assets/Products/foil_insulator_9mm.png"
+    },
+    {
+        id: "5mm_single",
+        name: "1.00 W X 50 M 5.00 MM Single Side",
+        thickness: "5.00mm",
+        type: "Single Sided Foil",
+        image: "/assets/Products/foil_insulator_5mm.png"
+    }
+];
+
 // Product data for all categories
 const productData: Record<string, any> = {
     // PPGL Roofing Products
@@ -116,7 +208,8 @@ const productData: Record<string, any> = {
         category: "PPGL Roofing",
         icon: Waves,
         thickness: ["0.30mm", "0.35mm", "0.40mm", "0.50mm"],
-        image: `${CLOUD}/rib_type_roofing.jpg`,
+        image: "/assets/Products/rib_type.png",
+        blueprint: "/assets/blueprint/rib_type.png",
         colorSwatches: colorSwatches,
         features: [
             "Premium Nippon Paint or AKZO Nobel Paint",
@@ -133,7 +226,8 @@ const productData: Record<string, any> = {
         category: "PPGL Roofing",
         icon: Waves,
         thickness: ["0.30mm", "0.35mm", "0.40mm", "0.50mm"],
-        image: `${CLOUD}/corrugated_roofing.jpg`,
+        image: `/assets/Products/corrugated_type.jpg`,
+        blueprint: `/assets/blueprint/corrugated_type.png`,
         colorSwatches: colorSwatches,
         features: [
             "Classic corrugated profile design",
@@ -144,11 +238,12 @@ const productData: Record<string, any> = {
         description: "Traditional corrugated PPGL roofing sheets offering robust durability and efficient water drainage."
     },
     "roof_tile": {
-        name: "Roof Tile Sheets",
+        name: "Roof Tile",
         category: "PPGL Roofing",
         icon: InspectionPanel,
         thickness: ["0.35mm", "0.40mm", "0.50mm"],
-        image: `${CLOUD}/roof_tile.jpg`,
+        image: `/assets/Products/rooftile.png`,
+        blueprint: `/assets/blueprint/roof_tile.png`,
         colorSwatches: colorSwatches,
         features: [
             "Aesthetic tile-like appearance",
@@ -163,7 +258,8 @@ const productData: Record<string, any> = {
         category: "PPGL Roofing",
         icon: Leaf,
         thickness: ["1.20mm"],
-        image: `${CLOUD}/frp_roofing.jpg`,
+        image: `/assets/Products/frp.png`,
+        blueprint: `/assets/blueprint/frp.png`,
         colorSwatches: colorSwatches,
         features: [
             "Fiber-Reinforced Polymer construction",
@@ -179,16 +275,6 @@ const productData: Record<string, any> = {
         icon: Wrench,
         thickness: ["0.30mm", "0.35mm", "0.40mm", "0.50mm"],
         image: `${CLOUD}/roofing_accessories.jpg`,
-        accessories: [
-            "Ridge Rolls",
-            "Gutters & Downpipes",
-            "Ridge Caps",
-            "Fascia Boards",
-            "Wall Angles",
-            "Corner Flashing",
-            "Valley Gutters",
-            "End Flashing"
-        ],
         features: [
             "Precision manufactured fittings",
             "Weather resistant coating",
@@ -197,25 +283,77 @@ const productData: Record<string, any> = {
         ],
         description: "Complete range of high-quality roofing accessories designed to complement PPGL roofing systems."
     },
+    // Individual Clickable Accessories
+    "gutter": {
+        name: "Gutter",
+        category: "Roofing Accessories",
+        icon: Droplets,
+        thickness: ["0.30mm", "0.35mm", "0.40mm", "0.50mm"],
+        image: "/assets/Products/Gutter.png",
+        colorSwatches: colorSwatches,
+        features: [
+            "Precision engineered for optimal water flow",
+            "Durable weather-resistant coating",
+            "Easy installation with standard tools",
+            "Available in various sizes and colors"
+        ],
+        description: "High-quality gutters and downpipes for efficient water drainage."
+    },
+    "ridge_cap": {
+        name: "Ridge Cap",
+        category: "Roofing Accessories",
+        icon: Building2,
+        thickness: ["0.30mm", "0.35mm", "0.40mm", "0.50mm"],
+        image: "/assets/Products/ridge_cap.png",
+        colorSwatches: colorSwatches,
+        features: [
+            "Provides excellent weather protection",
+            "Aesthetic finishing touch",
+            "Easy to install and maintain",
+            "Available in matching colors"
+        ],
+        description: "Premium ridge caps for perfect roof sealing and finishing."
+    },
+    "fascia_mouldings": {
+        name: "Fascia Mouldings",
+        category: "Roofing Accessories",
+        icon: CornerUpLeft,
+        thickness: ["0.30mm", "0.35mm", "0.40mm", "0.50mm"],
+        image: `${CLOUD}/v1764120746/no_img_hsdism.png`,
+        features: [
+            "Precision manufactured fittings",
+            "Weather resistant coating",
+            "Easy installation with standard tools",
+            "Perfect match with roofing profiles"
+        ],
+        description: "Fascia mouldings for elegant roof edges and finishing."
+    },
+    "ridge_roll": {
+        name: "Ridge Roll",
+        category: "Roofing Accessories",
+        icon: RollerCoaster,
+        thickness: ["0.30mm", "0.35mm", "0.40mm", "0.50mm"],
+        image: `${CLOUD}/v1764120746/no_img_hsdism.png`,
+        features: [
+            "Excellent weather sealing",
+            "Enhanced durability",
+            "Easy installation",
+            "Available in various sizes"
+        ],
+        description: "Ridge rolls for enhanced roof protection and sealing."
+    },
     "foam": {
         name: "Foam Insulator",
         category: "PPGL Roofing",
         icon: ThermometerSun,
         specs: "1.00m Width x 50m Length",
-        variants: [
-            "9.0mm Double Sided Foil",
-            "5.0mm Single Sided Foil",
-            "7.0mm Double Sided Non-foil",
-            "10.0mm Premium Double Sided"
-        ],
-        image: `${CLOUD}/foam_insulator.jpg`,
+        description: "High-performance foam insulation for thermal and acoustic insulation in roofing systems.",
         features: [
             "Excellent thermal insulation properties",
             "Effective moisture barrier",
             "Reflective surface for heat reduction",
             "Easy installation with adhesive backing"
-        ],
-        description: "High-performance foam insulation for thermal and acoustic insulation in roofing systems."
+        ]
     },
 
     // PPGL Spandrel
@@ -223,8 +361,9 @@ const productData: Record<string, any> = {
         name: "PPGL Spandrel",
         category: "Architectural",
         icon: Building,
-        thickness: ["0.35mm", "0.40mm", "0.50mm", "0.60mm"],
-        image: `${CLOUD}/spandrel.jpg`,
+        thickness: ["0.35mm", "0.40mm", "0.50mm"],
+        image: `/assets/Products/spandrel.png`,
+        blueprint: `/assets/blueprint/spandrel.png`,
         colorSwatches: colorSwatches,
         features: [
             "Architectural spandrel panels",
@@ -242,7 +381,8 @@ const productData: Record<string, any> = {
         category: "Architectural",
         icon: Zap,
         thickness: ["0.35mm", "0.40mm", "0.50mm"],
-        image: `${CLOUD}/wall_cladding.jpg`,
+        image: `/assets/Products/cladding.png`,
+        blueprint: `/assets/blueprint/metal_cladding.png`,
         colorSwatches: colorSwatches,
         features: [
             "Aesthetic wall cladding panels",
@@ -260,7 +400,8 @@ const productData: Record<string, any> = {
         category: "Structural",
         icon: Award,
         thickness: ["0.75mm", "0.80mm", "1.00mm", "1.20mm"],
-        image: `${CLOUD}/floor_deck.jpg`,
+        image: `/assets/Products/floor_deck.png`,
+        blueprint: `/assets/blueprint/floor_deck.png`,
         features: [
             "High load-bearing capacity",
             "Composite action with concrete",
@@ -277,14 +418,74 @@ function PpglProducts() {
     const router = useRouter();
     const [activeMainTab, setActiveMainTab] = useState("ppgl_roofing");
     const [activeSubTab, setActiveSubTab] = useState("rib_type");
+    const [activeAccessoryTab, setActiveAccessoryTab] = useState<string | null>(null);
+    const [activeFoamVariant, setActiveFoamVariant] = useState<string>("9mm_double"); // Default to 9mm
     const [zoomed, setZoomed] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [selectedColor, setSelectedColor] = useState<string | null>("Gray White");
+    const [touchStart, setTouchStart] = useState<number | null>(null)
+    const [touchEnd, setTouchEnd] = useState<number | null>(null)
+    const [isTransitioning, setIsTransitioning] = useState(false)
+    const minSwipeDistance = 50
+
+    const onTouchStart = (e: TouchEvent) => {
+        setTouchEnd(null)
+        setTouchStart(e.targetTouches[0].clientX)
+    }
+
+    const onTouchMove = (e: TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX)
+    }
+
+    const onTouchEnd = useCallback(() => {
+        if (!touchStart || !touchEnd) return
+
+        const distance = touchStart - touchEnd
+        const isLeftSwipe = distance > minSwipeDistance
+        const isRightSwipe = distance < -minSwipeDistance
+
+        if (isRightSwipe) {
+            setIsTransitioning(true)
+            setTimeout(() => {
+                router.push('/steel/products/steelProducts?category=Steel+Products')
+            }, 300)
+        }
+    }, [touchStart, touchEnd, router])
 
     const currentMainCategory = mainCategories.find(cat => cat.id === activeMainTab);
-    const currentProduct = activeMainTab === "ppgl_roofing"
-        ? productData[activeSubTab]
-        : productData[activeMainTab];
+    const isAccessoriesActive = activeSubTab === "accessories";
+    const isFoamActive = activeSubTab === "foam";
+
+    // Get current foam variant
+    const currentFoamVariant = foamVariants.find(v => v.id === activeFoamVariant);
+
+    // Get foam variant image
+    const getFoamImage = () => {
+        if (isFoamActive && currentFoamVariant) {
+            return currentFoamVariant.image;
+        }
+        return null;
+    };
+
+    // Determine which product data to show
+    let currentProduct;
+    if (isAccessoriesActive && activeAccessoryTab) {
+        // Show accessory-specific product if accessory tab is selected
+        currentProduct = productData[activeAccessoryTab];
+    } else {
+        // Show regular product data
+        currentProduct = activeMainTab === "ppgl_roofing"
+            ? productData[activeSubTab]
+            : productData[activeMainTab];
+    }
+
+    // Get the actual image to display
+    const getDisplayImage = () => {
+        if (isFoamActive && currentFoamVariant) {
+            return currentFoamVariant.image;
+        }
+        return currentProduct?.image || '/assets/placeholder.jpg';
+    };
 
     const handleHomeClick = () => {
         router.push('/steel#steel-products-head');
@@ -299,24 +500,59 @@ function PpglProducts() {
         }
     };
 
-    const handleMainTabChange = (tabId: string) => {
-        setActiveMainTab(tabId);
-        // Reset sub tab to default when main tab changes
-        if (tabId === "ppgl_roofing") {
-            setActiveSubTab("rib_type");
-        }
-        setZoomed(false);
-        setSelectedColor("Gray White");
-    };
+    const handleSteelClick = () => {
+        setIsTransitioning(true)
+        setTimeout(() => {
+            router.push('/steel/products/steelProducts?category=Steel+Products')
+        }, 300)
+    }
 
     const handleSubTabChange = (tabId: string) => {
         setActiveSubTab(tabId);
+
+        if (tabId === "accessories") {
+            setActiveAccessoryTab("gutter")
+        } else {
+            setActiveAccessoryTab(null);
+        }
+
+        // Reset foam variant when switching away from foam
+        if (tabId !== "foam") {
+            setActiveFoamVariant("9mm_double");
+        }
+
         setZoomed(false);
         setSelectedColor("Gray White");
     };
 
+    const handleMainTabChange = (tabId: string) => {
+        setActiveMainTab(tabId);
+        if (tabId === "ppgl_roofing") {
+            setActiveSubTab("rib_type");
+            setActiveAccessoryTab(null)
+            setActiveFoamVariant("9mm_double");
+        }
+        setZoomed(false);
+        setSelectedColor("Gray White");
+    }
+
+    const handleAccessoryTabChange = (tabId: string) => {
+        setActiveAccessoryTab(tabId);
+        setZoomed(false);
+        setSelectedColor("Gray White");
+    };
+
+    const handleFoamVariantChange = (variantId: string) => {
+        setActiveFoamVariant(variantId);
+        setZoomed(false);
+    };
+
     return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <div className={`min-h-screen bg-white ${isTransitioning ? 'opacity-0 transition-opacity duration-300' : 'opacity-100 transition-opacity duration-300'}`}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
             {/* Header */}
             <header className="bg-white fixed top-0 left-0 right-0 z-50 border-b border-gray-200">
                 <div className="container mx-auto px-4 py-3">
@@ -341,19 +577,19 @@ function PpglProducts() {
                         <motion.button
                             whileHover={{ scale: 1.05, x: -5 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => router.push('/steel')}
-                            className="hidden sm:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md"
+                            onClick={handleSteelClick}
+                            className="hidden sm:flex cursor-pointer items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
                         >
                             <ArrowRight className="w-3 h-3 rotate-180" />
                             <span className="text-sm font-medium">Steel Products</span>
                         </motion.button>
 
-                        <button
+                        {/* <button
                             className="sm:hidden text-gray-700 p-1 hover:bg-gray-100 rounded-lg transition-colors"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                         >
                             {isMenuOpen ? <X size={18} /> : <span className="text-xl">☰</span>}
-                        </button>
+                        </button> */}
                     </div>
                 </div>
 
@@ -383,6 +619,14 @@ function PpglProducts() {
                     )}
                 </AnimatePresence>
             </header>
+
+            {/* Swipe Hint for Mobile */}
+            <div className="sm:hidden fixed bottom-4 left-4 z-40">
+                <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg border border-gray-200">
+                    <ArrowRight className="w-3 h-3 rotate-180 text-green-600" />
+                    <span className="text-xs text-gray-600">Swipe right for Steel</span>
+                </div>
+            </div>
 
             {/* Main Content */}
             <div className="pt-20 pb-12 px-4 sm:px-6 lg:px-8">
@@ -445,13 +689,19 @@ function PpglProducts() {
                                 <>
                                     <span>/</span>
                                     <span className="font-semibold text-gray-800">{currentProduct?.name}</span>
+                                    {isFoamActive && currentFoamVariant && (
+                                        <>
+                                            <span>/</span>
+                                            <span className="font-semibold text-gray-800">{currentFoamVariant.name}</span>
+                                        </>
+                                    )}
                                 </>
                             )}
                         </div>
 
                         <div className="mb-4">
                             <h1 className="text-xl font-bold text-gray-800 mb-2">
-                                {currentProduct?.name}
+                                {isFoamActive && currentFoamVariant ? currentFoamVariant.name : currentProduct?.name}
                             </h1>
                             <p className="text-gray-600 text-sm">
                                 {currentProduct?.description}
@@ -462,56 +712,154 @@ function PpglProducts() {
                     <div className="grid lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2 space-y-6">
                             <motion.div
-                                key={activeMainTab + activeSubTab}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.5 }}
+                                key={activeMainTab + activeSubTab + (activeAccessoryTab || '') + activeFoamVariant}
+                                initial={{ opacity: 0, x: -50 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.8 }}
                                 className="relative"
                             >
-                                <div className="relative h-[320px] md:h-[400px] bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                                    <div className="absolute inset-0 flex items-center justify-center p-4">
-                                        <Image
-                                            src={currentProduct?.image || '/assets/placeholder.jpg'}
-                                            alt={currentProduct?.name}
-                                            fill
-                                            className="object-contain"
-                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                            quality={100}
-                                        />
-                                    </div>
+                                <div className="relative h-[300px] xs:h-[350px] sm:h-[400px] md:h-[450px] lg:h-[480px] xl:h-[500px] bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                                    {/* Image with transition animation ONLY for foam variants */}
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={activeFoamVariant}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="absolute inset-0 flex items-center justify-center z-0 p-4 sm:p-6 md:p-6 lg:p-8 xl:p-8"
+                                        >
+                                            <Image
+                                                src={getDisplayImage()}
+                                                alt={isFoamActive && currentFoamVariant ? currentFoamVariant.name : currentProduct?.name}
+                                                fill
+                                                className="object-contain max-h-full"
+                                                sizes="(max-width: 425px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 100vw, 800px"
+                                                quality={100}
+                                            />
+                                        </motion.div>
+                                    </AnimatePresence>
 
-                                    <div className="absolute top-3 left-3">
-                                        <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-md shadow-sm">
-                                            <Shield className="w-3 h-3" />
-                                            <span className="text-xs font-medium">Premium</span>
-                                        </div>
-                                    </div>
+                                    {/* Non-foam product image without transition */}
+                                    {!isFoamActive && (
+                                        <motion.div
+                                            animate={{
+                                                scale: zoomed ? 1.2 : 1,
+                                                rotate: zoomed ? 15.4 : 0,
+                                            }}
+                                            transition={{ duration: 0.5, ease: "easeOut" }}
+                                            className="absolute inset-0 flex items-center justify-center z-0 p-4 sm:p-6 md:p-6 lg:p-8 xl:p-8"
+                                        >
+                                            <Image
+                                                src={currentProduct?.image || '/assets/placeholder.jpg'}
+                                                alt={currentProduct?.name}
+                                                fill
+                                                className="object-contain max-h-full"
+                                                sizes="(max-width: 425px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 100vw, 800px"
+                                                quality={100}
+                                            />
+                                        </motion.div>
+                                    )}
 
+                                    {/* Semi-transparent overlay when viewing blueprint */}
+                                    {zoomed && currentProduct?.blueprint && (
+                                        <div className="absolute inset-0 bg-white/90 z-10" />
+                                    )}
+
+                                    {/* Blueprint Overlay */}
+                                    <AnimatePresence>
+                                        {zoomed && currentProduct?.blueprint && (
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.8 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.8 }}
+                                                transition={{ duration: 0.5 }}
+                                                className="absolute z-20 flex items-center justify-center w-full h-full p-4 sm:p-6 md:p-6 lg:p-8 xl:p-8"
+                                            >
+                                                <div className="relative w-full h-full">
+                                                    <Image
+                                                        src={currentProduct.blueprint}
+                                                        alt={`${currentProduct?.name} Blueprint`}
+                                                        fill
+                                                        className="object-contain"
+                                                        sizes="(max-width: 425px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 100vw, 800px"
+                                                        quality={100}
+                                                    />
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    {/* Blueprint Badge when active */}
+                                    {zoomed && currentProduct?.blueprint && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="absolute top-3 left-3 sm:top-4 sm:left-4 lg:top-3 lg:left-3 xl:top-4 xl:left-4 z-30"
+                                        >
+                                            <div className="px-3 py-1.5 sm:px-4 sm:py-2 md:px-3 md:py-1.5 lg:px-3 lg:py-1.5 xl:px-4 xl:py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-lg flex items-center gap-1 sm:gap-2">
+                                                <FileText className="w-3 h-3 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4" />
+                                                <span className="font-semibold text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm">
+                                                    {currentProduct?.name} Blueprint
+                                                </span>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {/* Blueprint Toggle Button */}
                                     {currentProduct?.blueprint && (
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => setZoomed(!zoomed)}
-                                            className={`absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-md transition-all text-xs ${zoomed
-                                                ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white'
-                                                : 'bg-gray-800/80 text-white backdrop-blur-sm'
+                                            className={`absolute top-3 right-3 sm:top-4 sm:right-4 md:top-3 cursor-pointer md:right-3 lg:top-3 lg:right-3 xl:top-4 xl:right-4 flex items-center gap-1 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 lg:px-2.5 lg:py-1.5 xl:px-3 xl:py-2 rounded-lg transition-all shadow-md hover:shadow-lg z-30 border ${zoomed
+                                                ? 'bg-red-500 text-white border-red-200 hover:bg-red-600'
+                                                : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white border-green-200 hover:from-green-700 hover:to-emerald-700'
                                                 }`}
                                         >
                                             {zoomed ? (
                                                 <>
-                                                    <X className="w-3 h-3" />
-                                                    <span>Close</span>
+                                                    <X size={14} className="sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4" />
+                                                    <span className="text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm font-medium">Close Blueprint</span>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Search className="w-3 h-3" />
-                                                    <span>Zoom</span>
+                                                    <FileText size={14} className="sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4" />
+                                                    <span className="text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm font-medium">View Blueprint</span>
                                                 </>
                                             )}
                                         </motion.button>
                                     )}
                                 </div>
+
                             </motion.div>
+                            {/* Foam Insulator Variant Buttons WITHOUT transition */}
+                            {isFoamActive && (
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-sm text-muted-foreground text-center">
+                                        Click on variant to select <span className='text-xs text-red-500'>*</span>
+                                    </span>
+                                    <div className="flex gap-4">
+                                        {foamVariants.map((variant) => (
+                                            <button
+                                                key={variant.id}
+                                                onClick={() => handleFoamVariantChange(variant.id)}
+                                                className={`flex-1 px-3 py-2 rounded-lg transition-all cursor-pointer transform ${activeFoamVariant === variant.id
+                                                    ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-md scale-105'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                                                    }`}
+                                            >
+                                                <div className="text-sm font-medium text-center">
+                                                    {variant.name}
+                                                </div>
+                                                <div className="text-xs opacity-80 text-center mt-1">
+                                                    {variant.thickness} {variant.type}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Product Features */}
                             <motion.div
@@ -566,7 +914,43 @@ function PpglProducts() {
                                                         }`}
                                                     title={tab.name}
                                                 >
-                                                    {/* <Icon className="w-3 h-3 mb-0.5" /> */}
+                                                    <span className="text-xs font-medium text-center leading-relaxed tracking-wide">{tab.name}</span>
+                                                </motion.button>
+                                            );
+                                        })}
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* Clickable Accessory Tabs - ALWAYS shown when accessories is active (regardless of activeAccessoryTab) */}
+                            {isAccessoriesActive && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.15 }}
+                                    className="bg-white rounded-xl shadow-md p-4 border border-gray-200"
+                                >
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Wrench className="w-4 h-4 text-green-600" />
+                                        <h3 className="text-sm font-semibold text-gray-800">Featured Accessories <span className="text-xs text-gray-500">(Click to View Details)</span></h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {clickableAccessoryTabs.map((tab) => {
+                                            const Icon = tab.icon;
+                                            return (
+                                                <motion.button
+                                                    key={tab.id}
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
+                                                    onClick={() => handleAccessoryTabChange(tab.id)}
+                                                    className={`flex flex-col items-center justify-center p-2 rounded-md cursor-pointer transition-all ${activeAccessoryTab === tab.id
+                                                        ? `${tab.color} text-white shadow-md scale-105`
+                                                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm border border-gray-200'
+                                                        }`}
+                                                    title={tab.name}
+                                                >
+                                                    <Icon className="w-4 h-4 mb-1" />
                                                     <span className="text-xs font-medium text-center leading-relaxed tracking-wide">{tab.name}</span>
                                                 </motion.button>
                                             );
@@ -636,31 +1020,31 @@ function PpglProducts() {
                                         {activeMainTab === "ppgl_roofing" && activeSubTab === "foam" ? (
                                             <ThermometerSun className="w-3.5 h-3.5 text-green-600" />
                                         ) : activeMainTab === "ppgl_roofing" && activeSubTab === "accessories" ? (
-                                            <Wrench className="w-3.5 h-3.5 text-green-600" />
+                                            <Grid className="w-3.5 h-3.5 text-green-600" />
                                         ) : (
                                             <Layers className="w-3.5 h-3.5 text-green-600" />
                                         )}
                                     </div>
                                     <h3 className="text-sm font-semibold text-gray-800">
-                                        {activeMainTab === "ppgl_roofing" && activeSubTab === "accessories"
-                                            ? 'Available Accessories'
+                                        {activeMainTab === "ppgl_roofing" && activeSubTab === "accessories" && !activeAccessoryTab
+                                            ? 'All Roofing Accessories'
                                             : activeMainTab === "ppgl_roofing" && activeSubTab === "foam"
-                                                ? 'Available Variants'
+                                                ? 'Available In'
                                                 : 'Thickness Options'
                                         }
                                     </h3>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    {activeMainTab === "ppgl_roofing" && activeSubTab === "accessories" ? (
-                                        currentProduct?.accessories?.map((item: string, i: number) => (
+                                    {activeMainTab === "ppgl_roofing" && activeSubTab === "accessories" && !activeAccessoryTab ? (
+                                        originalAccessoriesList.map((item, i: number) => (
                                             <div
                                                 key={i}
-                                                className="flex items-center justify-between p-1.5 bg-gray-50 rounded border border-gray-100"
+                                                className="flex items-center gap-1.5 p-1.5 bg-gray-50 rounded border border-gray-100"
                                             >
-                                                <div className="flex items-center gap-1.5">
+                                                <div className="flex items-center gap-1.5 flex-1">
                                                     <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
-                                                    <span className="text-sm text-gray-700">{item}</span>
+                                                    <span className="text-sm text-gray-700">{item.name}</span>
                                                 </div>
                                                 <span className="text-xs px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded">
                                                     Acc
@@ -668,17 +1052,26 @@ function PpglProducts() {
                                             </div>
                                         ))
                                     ) : activeMainTab === "ppgl_roofing" && activeSubTab === "foam" ? (
-                                        currentProduct?.variants?.map((item: string, i: number) => (
+                                        foamVariants.map((variant, i: number) => (
                                             <div
                                                 key={i}
-                                                className="flex items-center justify-between p-1.5 bg-gray-50 rounded border border-gray-100"
+                                                className={`flex items-center justify-between p-1.5 rounded border ${activeFoamVariant === variant.id
+                                                    ? 'bg-red-50 border-red-200'
+                                                    : 'bg-gray-50 border-gray-100'
+                                                    }`}
                                             >
                                                 <div className="flex items-center gap-1.5">
-                                                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                                                    <span className="text-sm text-gray-700">{item}</span>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${activeFoamVariant === variant.id
+                                                        ? 'bg-red-500'
+                                                        : 'bg-gray-400'
+                                                        }`}></div>
+                                                    <span className="text-sm text-gray-700">{variant.name}</span>
                                                 </div>
-                                                <span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-700 rounded">
-                                                    Var
+                                                <span className={`text-xs px-1.5 py-0.5 rounded ${activeFoamVariant === variant.id
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                    {variant.thickness}
                                                 </span>
                                             </div>
                                         ))
@@ -700,16 +1093,16 @@ function PpglProducts() {
                                     )}
                                 </div>
 
-                                {activeMainTab === "ppgl_roofing" && activeSubTab === "foam" && (
+                                {/* {activeMainTab === "ppgl_roofing" && activeSubTab === "foam" && (
                                     <div className="mt-2 p-1.5 bg-blue-50 rounded border border-blue-100">
                                         <div className="flex items-center gap-1.5">
                                             <Package className="w-3 h-3 text-blue-600" />
                                             <span className="text-xs text-blue-700 font-medium">
-                                                Standard: {currentProduct?.specs}
+                                                Standard Size: {currentProduct?.specs}
                                             </span>
                                         </div>
                                     </div>
-                                )}
+                                )} */}
                             </motion.div>
 
                             {/* Technical Details */}

@@ -7,6 +7,7 @@ export const metadata: Metadata = {
 };
 
 const Layout = ({ children }: { children: React.ReactNode }) => (
+
   <div className="min-h-screen flex flex-col">{children}</div>
 );
 

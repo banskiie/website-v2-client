@@ -1,5 +1,6 @@
 "use client"
 
+import PageTransitionWrapper from "@/components/custom/page-transition-wrapper"
 import PPGLProducts from "@/components/custom/ppgl-products"
 import React, { Suspense } from "react"
 
@@ -12,7 +13,9 @@ export default function Page() {
         </div>
       }
     >
-      <PPGLProducts />
+      <PageTransitionWrapper>
+        <PPGLProducts />
+      </PageTransitionWrapper>
     </Suspense>
   )
 }

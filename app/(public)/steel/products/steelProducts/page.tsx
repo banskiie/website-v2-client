@@ -1,5 +1,6 @@
 "use client"
 
+import PageTransitionWrapper from "@/components/custom/page-transition-wrapper"
 import SteelProducts from "@/components/custom/steel-prods"
 import React, { Suspense } from "react"
 
@@ -12,7 +13,9 @@ export default function Page() {
         </div>
       }
     >
-      <SteelProducts />
+      <PageTransitionWrapper>
+        <SteelProducts />
+      </PageTransitionWrapper>
     </Suspense>
   )
 }
