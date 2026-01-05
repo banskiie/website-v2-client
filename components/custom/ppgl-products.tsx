@@ -469,23 +469,34 @@ function PpglProducts() {
 
     // Determine which product data to show
     let currentProduct;
-    if (isAccessoriesActive && activeAccessoryTab) {
-        // Show accessory-specific product if accessory tab is selected
-        currentProduct = productData[activeAccessoryTab];
+    if (activeMainTab === "ppgl_roofing") {
+        if (activeSubTab === "accessories" && activeAccessoryTab) {
+            // Show accessory-specific product if accessory tab is selected AND we're in roofing accessories
+            currentProduct = productData[activeAccessoryTab];
+        } else {
+            // Show regular roofing product
+            currentProduct = productData[activeSubTab];
+        }
     } else {
-        // Show regular product data
-        currentProduct = activeMainTab === "ppgl_roofing"
-            ? productData[activeSubTab]
-            : productData[activeMainTab];
+        // Show main category product
+        currentProduct = productData[activeMainTab];
     }
 
     // Get the actual image to display
     const getDisplayImage = () => {
+        // If we're in foam insulator sub-tab
         if (isFoamActive && currentFoamVariant) {
             return currentFoamVariant.image;
         }
+
+        // If we're in roofing accessories with an accessory selected
+        if (isAccessoriesActive && activeAccessoryTab && currentProduct) {
+            return currentProduct.image;
+        }
+
+        // Default: show the current product image
         return currentProduct?.image || '/assets/placeholder.jpg';
-    };
+    }
 
     const handleHomeClick = () => {
         router.push('/steel#steel-products-head');
@@ -527,11 +538,18 @@ function PpglProducts() {
 
     const handleMainTabChange = (tabId: string) => {
         setActiveMainTab(tabId);
+
+        // Reset to default state for this main tab
         if (tabId === "ppgl_roofing") {
-            setActiveSubTab("rib_type");
-            setActiveAccessoryTab(null)
+            setActiveSubTab("rib_type"); // Reset to default roofing sub-tab
+            setActiveAccessoryTab(null); // Clear any accessory selection
             setActiveFoamVariant("9mm_double");
+        } else {
+            // For other main tabs, clear sub-tab and accessory states
+            setActiveSubTab(""); // Clear sub-tab
+            setActiveAccessoryTab(null); // Clear accessory selection
         }
+
         setZoomed(false);
         setSelectedColor("Gray White");
     }
@@ -631,10 +649,10 @@ function PpglProducts() {
             {/* Main Content */}
             <div className="pt-20 pb-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-[1480px] mx-auto mb-6">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-3 mt-5">
                         <div className="flex items-center gap-2">
                             <Grid3X3 className="w-4 h-4 text-green-600" />
-                            <h3 className="text-sm font-semibold text-gray-800">Product Categories <span className="text-muted-foreground text-xs">(Select One to See Products)</span></h3>
+                            <h3 className="text-lg font-semibold text-gray-800">Product Categories <span className="text-muted-foreground font-normal text-xs">(Select One to See Products)</span><span className="text-red-600">*</span></h3>
                         </div>
                     </div>
 
@@ -862,7 +880,7 @@ function PpglProducts() {
                             )}
 
                             {/* Product Features */}
-                            <motion.div
+                            {/* <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
@@ -883,10 +901,48 @@ function PpglProducts() {
                                         </div>
                                     ))}
                                 </div>
-                            </motion.div>
+                            </motion.div> */}
                         </div>
 
                         <div className="space-y-4">
+
+                            {
+                                isAccessoriesActive && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 }}
+                                        className="bg-white rounded-xl shadow-md p-4 border 2xl:hidden xl:hidden lg:hidden md:block border-gray-200"
+                                    >
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Wrench className="w-4 h-4 text-green-600" />
+                                            <h3 className="text-lg font-semibold text-gray-800">Featured Accessories <span className="text-xs font-normal text-gray-500">(Click to View Details)</span></h3>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {clickableAccessoryTabs.map((tab) => {
+                                                const Icon = tab.icon;
+                                                return (
+                                                    <motion.button
+                                                        key={tab.id}
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => handleAccessoryTabChange(tab.id)}
+                                                        className={`flex flex-col items-center justify-center p-2 rounded-md cursor-pointer transition-all ${activeAccessoryTab === tab.id
+                                                            ? `${tab.color} text-white shadow-md scale-105`
+                                                            : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm border border-gray-200'
+                                                            }`}
+                                                        title={tab.name}
+                                                    >
+                                                        <Icon className="w-4 h-4 mb-1" />
+                                                        <span className="text-xs font-medium text-center leading-relaxed tracking-wide">{tab.name}</span>
+                                                    </motion.button>
+                                                );
+                                            })}
+                                        </div>
+                                    </motion.div>
+                                )
+                            }
                             {activeMainTab === "ppgl_roofing" && (
                                 <motion.div
                                     initial={{ opacity: 0, y: -20 }}
@@ -894,9 +950,14 @@ function PpglProducts() {
                                     transition={{ delay: 0.1 }}
                                     className="bg-white rounded-xl shadow-md p-4 border border-gray-200"
                                 >
+                                    {/* Roofing Types sub-tabs */}
                                     <div className="flex items-center gap-2 mb-3">
-                                        <House className="w-4 h-4 text-green-600" />
-                                        <h3 className="text-sm font-semibold text-gray-800">Roofing Types <span className="text-xs text-gray-500">(Select One to See Products)</span> </h3>
+                                        <House className="w-4 h-4 lg:w-6 lg:h-6 lg:mb-4 md:w-5 md:h-5 2xl:mb-0 xl:mb-0 md:mb-0 text-green-600" />
+                                        <h3 className="text-lg font-semibold text-gray-800 lg:text-base">
+                                            Roofing Types
+                                            <span className="text-xs font-normal text-gray-500 ">(Select One to See Products)</span>
+                                            <span className="text-red-600">*</span>
+                                        </h3>
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-2">
@@ -914,7 +975,9 @@ function PpglProducts() {
                                                         }`}
                                                     title={tab.name}
                                                 >
-                                                    <span className="text-xs font-medium text-center leading-relaxed tracking-wide">{tab.name}</span>
+                                                    <span className="text-xs font-medium text-center leading-relaxed tracking-wide lg:tracking-normal lg:text-[11.6px]">
+                                                        {tab.name}
+                                                    </span>
                                                 </motion.button>
                                             );
                                         })}
@@ -922,13 +985,12 @@ function PpglProducts() {
                                 </motion.div>
                             )}
 
-                            {/* Clickable Accessory Tabs - ALWAYS shown when accessories is active (regardless of activeAccessoryTab) */}
                             {isAccessoriesActive && (
                                 <motion.div
                                     initial={{ opacity: 0, y: -20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.15 }}
-                                    className="bg-white rounded-xl shadow-md p-4 border border-gray-200"
+                                    className="bg-white rounded-xl shadow-md p-4 border border-gray-200 2xl:block xl:block lg:block md:hidden hidden"
                                 >
                                     <div className="flex items-center gap-2 mb-3">
                                         <Wrench className="w-4 h-4 text-green-600" />

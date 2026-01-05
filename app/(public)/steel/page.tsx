@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import Image from "next/image"
-import { ArrowRight, Minus, Plus } from "lucide-react"
+import { ArrowRight, CheckCircle2, CreditCard, Minus, Plus, Shield, Smartphone, Zap } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import ScrollIndicator from "@/components/custom/scroll-indicator"
 import {
@@ -92,10 +92,28 @@ const categoryRoutes: Record<string, string> = {
 }
 
 
+const useScreenSize = () => {
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsDesktop(window.innerWidth >= 1024)
+    }
+
+    checkScreenSize()
+
+    window.addEventListener('resize', checkScreenSize)
+
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
+
+  return isDesktop
+}
 
 const infinteLocations = [...locations, ...locations, ...locations, ...locations]
 export default function Page() {
   useSmoothScroll()
+  const isDesktop = useScreenSize()
   // const currentYear = new Date().getFullYear()
   // const [isOpen, setIsOpen] = useState(false)
   const [_scrolled, setScrolled] = useState(false)
@@ -105,6 +123,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true)
   const [hoveredPanel, setHoveredPanel] = useState<'left' | 'right' | null>(null)
   // const [isCompanyOpen, setIsCompanyOpen] = useState(false)
+
 
   // Enhanced scroll to hash function
   const scrollToHashOnPageLoad = () => {
@@ -323,16 +342,20 @@ export default function Page() {
         id="steel-products-head"
         className="relative w-full min-h-screen lg:h-screen flex overflow-hidden"
       >
-        <div className="flex h-full w-full">
+        <div className="flex flex-col lg:flex-row h-full w-full">
           <motion.div
             className="relative cursor-pointer overflow-hidden"
-            initial={{ width: "50%" }}
+            initial={{
+              width: "100%",
+              height: "50vh"
+            }}
             animate={{
-              width: hoveredPanel === "left" ? "60%" : hoveredPanel === "right" ? "40%" : "50%"
+              width: isDesktop ? (hoveredPanel === "left" ? "60%" : hoveredPanel === "right" ? "40%" : "50%") : "100%",
+              height: isDesktop ? "100%" : "50vh"
             }}
             transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-            onMouseEnter={() => setHoveredPanel("left")}
-            onMouseLeave={() => setHoveredPanel(null)}
+            onMouseEnter={() => isDesktop && setHoveredPanel("left")}
+            onMouseLeave={() => isDesktop && setHoveredPanel(null)}
             onClick={() => {
               const roofingAccessIndex = categories.findIndex(cat =>
                 cat.title === "Roofing Access"
@@ -343,7 +366,7 @@ export default function Page() {
             <motion.div
               className="absolute inset-0"
               animate={{
-                scale: hoveredPanel === "left" ? 1.1 : 1
+                scale: isDesktop ? (hoveredPanel === "left" ? 1.1 : 1) : 1
               }}
               transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
             >
@@ -353,29 +376,29 @@ export default function Page() {
                 fill
                 className="object-cover"
                 loading="lazy"
-                sizes="50vw"
+                sizes="(max-width: 1023px) 100vw, 50vw"
               />
             </motion.div>
 
-            <div className={`absolute inset-0 bg-gradient-to-br from-slate-700/90 to-slate-900/90 transition-opacity duration-500 ${hoveredPanel === "left" ? "opacity-70" : "opacity-80"
+            <div className={`absolute inset-0 bg-gradient-to-br from-slate-700/90 to-slate-900/90 transition-opacity duration-500 ${isDesktop ? (hoveredPanel === "left" ? "opacity-70" : "opacity-80") : "opacity-80"
               }`} />
 
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20">
               <motion.div
                 className="text-center max-w-md px-4"
                 animate={{
-                  y: hoveredPanel === "left" ? 0 : 20
+                  y: isDesktop ? (hoveredPanel === "left" ? 0 : 20) : 0
                 }}
                 transition={{ duration: 0.4 }}
               >
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2">
+                <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mt-5">
                   <span className="block">STEEL</span>
                   <span className="block">PRODUCTS</span>
                 </h2>
                 <motion.p
-                  className="text-white/85 mb-4 text-sm md:text-base"
+                  className="text-white/85 mb-4 text-xs md:text-sm lg:text-sm"
                   animate={{
-                    opacity: hoveredPanel === "left" ? 1 : 0.7
+                    opacity: isDesktop ? (hoveredPanel === "left" ? 1 : 0.7) : 1
                   }}
                   transition={{ duration: 0.3 }}
                 >
@@ -383,16 +406,16 @@ export default function Page() {
                 </motion.p>
                 <motion.div
                   animate={{
-                    opacity: hoveredPanel === "left" ? 1 : 0,
-                    y: hoveredPanel === "left" ? 0 : 10
+                    opacity: isDesktop ? (hoveredPanel === "left" ? 1 : 0) : 1,
+                    y: isDesktop ? (hoveredPanel === "left" ? 0 : 10) : 0
                   }}
-                  transition={{ duration: 0.3, delay: hoveredPanel === "left" ? 0.1 : 0 }}
+                  transition={{ duration: 0.3, delay: isDesktop ? (hoveredPanel === "left" ? 0.1 : 0) : 0 }}
                 >
                   <Link
                     href={`${categoryRoutes["Steel Products"] || "/products"}?category=Steel+Products`}
                   >
                     <motion.button
-                      className="group inline-flex items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full transition-all duration-300 hover:gap-3 hover:bg-white/95 text-sm"
+                      className="group inline-flex cursor-pointer items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full transition-all duration-300 hover:gap-3 hover:bg-white/95 text-sm"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -400,21 +423,25 @@ export default function Page() {
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </motion.button>
                   </Link>
-
                 </motion.div>
               </motion.div>
             </div>
           </motion.div>
 
+          {/* Right Panel - PPGL Products */}
           <motion.div
             className="relative cursor-pointer overflow-hidden"
-            initial={{ width: "50%" }}
+            initial={{
+              width: "100%",
+              height: "50vh"
+            }}
             animate={{
-              width: hoveredPanel === "right" ? "60%" : hoveredPanel === "left" ? "40%" : "50%"
+              width: isDesktop ? (hoveredPanel === "right" ? "60%" : hoveredPanel === "left" ? "40%" : "50%") : "100%",
+              height: isDesktop ? "100%" : "50vh"
             }}
             transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-            onMouseEnter={() => setHoveredPanel("right")}
-            onMouseLeave={() => setHoveredPanel(null)}
+            onMouseEnter={() => isDesktop && setHoveredPanel("right")}
+            onMouseLeave={() => isDesktop && setHoveredPanel(null)}
             onClick={() => {
               const metalRoofingIndex = categories.findIndex(cat =>
                 cat.title === "Metal Roofing"
@@ -425,7 +452,7 @@ export default function Page() {
             <motion.div
               className="absolute inset-0"
               animate={{
-                scale: hoveredPanel === "right" ? 1.1 : 1
+                scale: isDesktop ? (hoveredPanel === "right" ? 1.1 : 1) : 1
               }}
               transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
             >
@@ -435,30 +462,29 @@ export default function Page() {
                 fill
                 className="object-cover"
                 loading="lazy"
-                sizes="50vw"
+                sizes="(max-width: 1023px) 100vw, 50vw"
               />
             </motion.div>
 
-            <div className={`absolute inset-0 bg-gradient-to-br from-slate-700/90 to-slate-900/90 transition-opacity duration-500 ${hoveredPanel === "right" ? "opacity-70" : "opacity-80"
+            <div className={`absolute inset-0 bg-gradient-to-br from-slate-700/90 to-slate-900/90 transition-opacity duration-500 ${isDesktop ? (hoveredPanel === "right" ? "opacity-70" : "opacity-80") : "opacity-80"
               }`} />
 
-            {/* CENTERED CONTENT - Right Panel */}
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20">
               <motion.div
                 className="text-center max-w-md px-4"
                 animate={{
-                  y: hoveredPanel === "right" ? 0 : 20
+                  y: isDesktop ? (hoveredPanel === "right" ? 0 : 20) : 0
                 }}
                 transition={{ duration: 0.4 }}
               >
-                <h2 className="text-3xl lg:text-5xl font-bold mb-2">
+                <h2 className="text-2xl lg:text-5xl font-bold mb-2">
                   <span className="block">PPGL</span>
                   <span className="block">PRODUCTS</span>
                 </h2>
                 <motion.p
-                  className="text-white/85 mb-4 text-sm md:text-base"
+                  className="text-white/85 mb-4 text-xs md:text-sm lg:text-sm"
                   animate={{
-                    opacity: hoveredPanel === "right" ? 1 : 0.7
+                    opacity: isDesktop ? (hoveredPanel === "right" ? 1 : 0.7) : 1
                   }}
                   transition={{ duration: 0.3 }}
                 >
@@ -466,16 +492,16 @@ export default function Page() {
                 </motion.p>
                 <motion.div
                   animate={{
-                    opacity: hoveredPanel === "right" ? 1 : 0,
-                    y: hoveredPanel === "right" ? 0 : 10
+                    opacity: isDesktop ? (hoveredPanel === "right" ? 1 : 0) : 1,
+                    y: isDesktop ? (hoveredPanel === "right" ? 0 : 10) : 0
                   }}
-                  transition={{ duration: 0.3, delay: hoveredPanel === "right" ? 0.1 : 0 }}
+                  transition={{ duration: 0.3, delay: isDesktop ? (hoveredPanel === "right" ? 0.1 : 0) : 0 }}
                 >
                   <Link
                     href={`${categoryRoutes["PPGL Products"] || "/products"}?category=PPGL+Products`}
                   >
                     <motion.button
-                      className="group inline-flex items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full transition-all duration-300 hover:gap-3 hover:bg-white/95 text-sm"
+                      className="group inline-flex cursor-pointer items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full transition-all duration-300 hover:gap-3 hover:bg-white/95 text-sm"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -490,35 +516,158 @@ export default function Page() {
         </div>
 
         <div
-          className="absolute top-8 md:top-12 lg:top-16 left-1/2 transform -translate-x-1/2 z-30 text-center w-full max-w-3xl px-6 pointer-events-none">
+          className="absolute top-8 md:top-12 lg:top-16 left-1/2 transform -translate-x-1/2 z-30 text-center w-full max-w-3xl px-6 pointer-events-none"
+        >
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-lg lg:text-[34px] font-medium tracking-wide text-white">
+            <h1 className="text-lg sm:text-md lg:text-[34px] font-medium tracking-wide text-white">
               {categories[0]?.title || "Steel Products"}
             </h1>
             <div className="w-24 h-1 bg-gradient-to-r from-transparent via-white to-transparent mx-auto opacity-50"></div>
-            <p className="text-white/90 mt-4 max-w-2xl mx-auto text-sm">
+            <p className="text-white/90 mt-2 max-w-2xl mx-auto text-sm">
               {categories[0]?.description.split(". ")[0] || "Premium quality steel solutions for every industrial need"}
             </p>
           </motion.div>
         </div>
 
-        <div className="absolute bottom-6 left-1/4 transform -translate-x-1/2 z-30">
+        <div className="sm:hidden md:hidden lg:block xl:block 2xl:block absolute bottom-6 left-1/4 transform -translate-x-1/2 z-30">
           {activeCategory === 1 && (
             <div className="h-1 w-24 md:w-32 bg-green-500 rounded-full"></div>
           )}
         </div>
 
-        <div className="absolute bottom-6 right-1/4 transform translate-x-1/2 z-30">
+        <div className="sm:hidden md:hidden lg:block xl:block 2xl:block absolute bottom-6 right-1/4 transform translate-x-1/2 z-30">
           {activeCategory === 2 && (
             <div className="h-1 w-24 md:w-32 bg-green-500 rounded-full"></div>
           )}
         </div>
       </div>
 
+      {/* Payment Method */}
+
+      <div className="w-full bg-gradient-to-br from-emerald-50 to-green-50 py-12 md:py-16">
+        <div className="w-full max-w-[1920px] mx-auto">
+          <div className="grid lg:grid-cols-5 gap-0 items-stretch h-full">
+            {/* Left Side - 80% */}
+            <div className="lg:col-span-4 bg-gradient-to-r from-white to-emerald-50/50 h-full">
+              <div className="p-8 md:p-12 lg:p-16 xl:p-20">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-full mb-6">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span className="font-medium">C-ONE GOT YOUR BACK</span>
+                </div>
+
+                <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl mb-6 text-gray-900 leading-tight">
+                  Seamless <span className="text-green-600">Digital</span><br />
+                  <span className="text-green-600">Payment</span> Experience
+                </h1>
+
+                <p className="text-gray-600 mb-10 text-lg md:text-xl max-w-3xl">
+                  At C-ONE, we believe in making your transactions as smooth as possible.
+                  Experience the future of payments with our comprehensive digital solutions.
+                </p>
+
+                <div className="grid md:grid-cols-3 gap-6 mb-12">
+                  <div className="bg-white p-6 rounded-2xl shadow-lg border border-green-100 hover:shadow-xl transition-shadow duration-300">
+                    <div className="w-12 h-12 rounded-xl bg-green-600 flex items-center justify-center mb-4">
+                      <Zap className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Instant Processing</h3>
+                    <p className="text-gray-600">Real-time transaction processing with no delays</p>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl shadow-lg border border-green-100 hover:shadow-xl transition-shadow duration-300">
+                    <div className="w-12 h-12 rounded-xl bg-green-600 flex items-center justify-center mb-4">
+                      <Shield className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Bank-Grade Security</h3>
+                    <p className="text-gray-600">256-bit encryption protects every transaction</p>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl shadow-lg border border-green-100 hover:shadow-xl transition-shadow duration-300">
+                    <div className="w-12 h-12 rounded-xl bg-green-600 flex items-center justify-center mb-4">
+                      <Smartphone className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Mobile Friendly</h3>
+                    <p className="text-gray-600">Optimized for all mobile devices and platforms</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-4">
+                  <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl transition-all flex items-center gap-3 shadow-lg shadow-green-600/30 hover:shadow-xl hover:shadow-green-600/40 transform hover:-translate-y-1 duration-300">
+                    <CreditCard className="w-6 h-6" />
+                    <span className="font-semibold text-lg">Explore Payment Options</span>
+                  </button>
+
+                  <button className="bg-white hover:bg-gray-50 text-green-600 border-2 border-green-600 px-8 py-4 rounded-xl transition-all flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1 duration-300">
+                    <span className="font-semibold text-lg">View Transaction Guide</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side - 20% */}
+            <div className="lg:col-span-1 bg-gradient-to-b from-green-700 to-emerald-800 relative h-full min-h-[500px] lg:min-h-auto">
+              <div className="h-full p-6 md:p-8 lg:p-10 xl:p-12 flex flex-col justify-center items-center lg:items-start">
+                <div className="text-center lg:text-left mb-8 max-w-xs">
+                  <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 mx-auto lg:mx-0">
+                    <CreditCard className="w-8 h-8 text-white" />
+                  </div>
+
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 leading-tight">
+                    Credit Cards<br />
+                    <span className="text-green-200">Now Accepted</span>
+                  </h2>
+
+                  <p className="text-green-100 mb-8 text-sm md:text-base">
+                    To better serve you, we are now accepting all major credit cards. Enjoy a faster and more convenient payment experience.
+                  </p>
+                </div>
+
+                {/* Image Container */}
+                <div className="relative w-full max-w-[300px] h-64 md:h-72 lg:h-80 xl:h-96 rounded-2xl overflow-hidden mx-auto">
+                  <Image
+                    src="/assets/payment_method/meiji2.png"
+                    alt="Credit card payment"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 300px, 20vw"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-green-900/60 to-transparent" />
+                </div>
+
+                {/* Accepted Cards */}
+                <div className="mt-8 w-full">
+                  <p className="text-green-200 text-sm font-medium text-center mb-4">We Accept:</p>
+                  <div className="flex justify-center items-center gap-3 flex-wrap">
+                    <div className="w-12 h-8 bg-white rounded-md flex items-center justify-center shadow-sm">
+                      <span className="text-xs font-bold text-blue-600">VISA</span>
+                    </div>
+                    <div className="w-12 h-8 bg-white rounded-md flex items-center justify-center shadow-sm">
+                      <span className="text-xs font-bold text-blue-400">MasterCard</span>
+                    </div>
+                    <div className="w-12 h-8 bg-white rounded-md flex items-center justify-center shadow-sm">
+                      <span className="text-xs font-bold text-yellow-500">Amex</span>
+                    </div>
+                    <div className="w-12 h-8 bg-white rounded-md flex items-center justify-center shadow-sm">
+                      <span className="text-xs font-bold text-gray-700">JCB</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-6 right-6 w-3 h-3 rounded-full bg-green-400 animate-pulse hidden lg:block" />
+                <div className="absolute top-6 left-6 w-2 h-2 rounded-full bg-green-300 animate-pulse hidden lg:block" style={{ animationDelay: '0.5s' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      {/* FAQ */}
       <div className="w-full bg-[#F4F3EE] py-20 px-6 md:px-12">
         <motion.div
           className="w-full bg-[#F4F3EE] py-20 px-6 md:px-12"
