@@ -262,8 +262,6 @@ type FeatureSectionProps = {
   setActiveIndex: (index: number) => void;
 };
 
-const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
-
 export default function FeatureSection({
   items,
   activeIndex,
@@ -307,8 +305,8 @@ export default function FeatureSection({
               key={item.id}
               onClick={() => setActiveIndex(index)}
               className={`w-6 h-1 rounded transition-all duration-300 ${activeIndex === index
-                  ? "bg-yellow-500"
-                  : "bg-white/90 hover:bg-white/80"
+                ? "bg-yellow-500"
+                : "bg-white/90 hover:bg-white/80"
                 }`}
               aria-label={`Go to ${item.title}`}
             />

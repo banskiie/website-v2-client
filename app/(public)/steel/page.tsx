@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import Image from "next/image"
-import { ArrowRight, CheckCircle2, CreditCard, Minus, Plus, Shield, Smartphone, Zap } from "lucide-react"
+import { ArrowRight, Building, CheckCircle2, Clock, CreditCard, Fingerprint, Globe, History, Home, ImageIcon, Lock, Mail, Minus, MousePointerClick, Phone, Plus, Shield, Smartphone, User, Zap } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import ScrollIndicator from "@/components/custom/scroll-indicator"
 import {
@@ -19,6 +19,7 @@ import useSmoothScroll from "@/hooks/useSmoothScroll"
 import VisitUsSection from "@/components/custom/visit-us-main"
 import { Button } from "@/components/ui/button"
 import { CLOUD } from "@/components/custom/main-faq"
+import PaymentSection from "@/components/custom/payment-section"
 
 const locations = [
   {
@@ -37,29 +38,29 @@ const ads = [
 
 const faqs = [
   {
-    title: "Uncompromising Quality",
+    title: "What type of Properties of Materials are being Used?",
     content:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   },
   {
-    title: "Customized Services",
+    title: "How long it takes to fade or deteriorate, or its service life?",
     content:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   },
   {
-    title: "Reliable Delivery",
+    title: "What is PPGL",
     content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "PPGL stands for Pre-Painted Galvalume Steel, a durable building material where steel is coated with an aluminum-zinc alloy for superior corrosion resistance, then painted for color and extra protection, making it ideal for roofing, siding, and harsh environments, unlike its counterpart PPGI (Pre-Painted Galvanized Iron) which uses only zinc.",
   },
   {
-    title: "Customer-Centric Approach",
+    title: "What is C-Purlins",
     content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "C-purlins are C-shaped, cold-formed steel beams used as lightweight, strong structural supports for roofs and walls in steel-framed buildings, offering a cost-effective alternative to wood, often made from galvanized steel for corrosion resistance. They are essential for supporting roof sheeting, wall cladding, and floor joists, providing a stable frame for industrial, commercial, and agricultural structures.",
   },
   {
-    title: "Industry Expertise",
+    title: "What is Bended Accessories",
     content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "Bended accessories are custom-formed metal pieces, like flashing, gutters, and ridge caps, used in roofing and construction to seal joints, direct water, and finish edges, ensuring a watertight and aesthetically pleasing structure. These components are bent to fit specific angles and intersections, preventing leaks and protecting vulnerable areas like roof peaks, valleys, and wall transitions from moisture damage. ",
   },
 ];
 
@@ -547,128 +548,9 @@ export default function Page() {
       </div>
 
       {/* Payment Method */}
-
-      <div className="w-full bg-gradient-to-br from-emerald-50 to-green-50 py-12 md:py-16">
-        <div className="w-full max-w-[1920px] mx-auto">
-          <div className="grid lg:grid-cols-5 gap-0 items-stretch h-full">
-            {/* Left Side - 80% */}
-            <div className="lg:col-span-4 bg-gradient-to-r from-white to-emerald-50/50 h-full">
-              <div className="p-8 md:p-12 lg:p-16 xl:p-20">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-full mb-6">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span className="font-medium">C-ONE GOT YOUR BACK</span>
-                </div>
-
-                <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl mb-6 text-gray-900 leading-tight">
-                  Seamless <span className="text-green-600">Digital</span><br />
-                  <span className="text-green-600">Payment</span> Experience
-                </h1>
-
-                <p className="text-gray-600 mb-10 text-lg md:text-xl max-w-3xl">
-                  At C-ONE, we believe in making your transactions as smooth as possible.
-                  Experience the future of payments with our comprehensive digital solutions.
-                </p>
-
-                <div className="grid md:grid-cols-3 gap-6 mb-12">
-                  <div className="bg-white p-6 rounded-2xl shadow-lg border border-green-100 hover:shadow-xl transition-shadow duration-300">
-                    <div className="w-12 h-12 rounded-xl bg-green-600 flex items-center justify-center mb-4">
-                      <Zap className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Instant Processing</h3>
-                    <p className="text-gray-600">Real-time transaction processing with no delays</p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl shadow-lg border border-green-100 hover:shadow-xl transition-shadow duration-300">
-                    <div className="w-12 h-12 rounded-xl bg-green-600 flex items-center justify-center mb-4">
-                      <Shield className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Bank-Grade Security</h3>
-                    <p className="text-gray-600">256-bit encryption protects every transaction</p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl shadow-lg border border-green-100 hover:shadow-xl transition-shadow duration-300">
-                    <div className="w-12 h-12 rounded-xl bg-green-600 flex items-center justify-center mb-4">
-                      <Smartphone className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Mobile Friendly</h3>
-                    <p className="text-gray-600">Optimized for all mobile devices and platforms</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-4">
-                  <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl transition-all flex items-center gap-3 shadow-lg shadow-green-600/30 hover:shadow-xl hover:shadow-green-600/40 transform hover:-translate-y-1 duration-300">
-                    <CreditCard className="w-6 h-6" />
-                    <span className="font-semibold text-lg">Explore Payment Options</span>
-                  </button>
-
-                  <button className="bg-white hover:bg-gray-50 text-green-600 border-2 border-green-600 px-8 py-4 rounded-xl transition-all flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1 duration-300">
-                    <span className="font-semibold text-lg">View Transaction Guide</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Side - 20% */}
-            <div className="lg:col-span-1 bg-gradient-to-b from-green-700 to-emerald-800 relative h-full min-h-[500px] lg:min-h-auto">
-              <div className="h-full p-6 md:p-8 lg:p-10 xl:p-12 flex flex-col justify-center items-center lg:items-start">
-                <div className="text-center lg:text-left mb-8 max-w-xs">
-                  <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mb-6 mx-auto lg:mx-0">
-                    <CreditCard className="w-8 h-8 text-white" />
-                  </div>
-
-                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 leading-tight">
-                    Credit Cards<br />
-                    <span className="text-green-200">Now Accepted</span>
-                  </h2>
-
-                  <p className="text-green-100 mb-8 text-sm md:text-base">
-                    To better serve you, we are now accepting all major credit cards. Enjoy a faster and more convenient payment experience.
-                  </p>
-                </div>
-
-                {/* Image Container */}
-                <div className="relative w-full max-w-[300px] h-64 md:h-72 lg:h-80 xl:h-96 rounded-2xl overflow-hidden mx-auto">
-                  <Image
-                    src="/assets/payment_method/meiji2.png"
-                    alt="Credit card payment"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 300px, 20vw"
-                    priority
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-green-900/60 to-transparent" />
-                </div>
-
-                {/* Accepted Cards */}
-                <div className="mt-8 w-full">
-                  <p className="text-green-200 text-sm font-medium text-center mb-4">We Accept:</p>
-                  <div className="flex justify-center items-center gap-3 flex-wrap">
-                    <div className="w-12 h-8 bg-white rounded-md flex items-center justify-center shadow-sm">
-                      <span className="text-xs font-bold text-blue-600">VISA</span>
-                    </div>
-                    <div className="w-12 h-8 bg-white rounded-md flex items-center justify-center shadow-sm">
-                      <span className="text-xs font-bold text-blue-400">MasterCard</span>
-                    </div>
-                    <div className="w-12 h-8 bg-white rounded-md flex items-center justify-center shadow-sm">
-                      <span className="text-xs font-bold text-yellow-500">Amex</span>
-                    </div>
-                    <div className="w-12 h-8 bg-white rounded-md flex items-center justify-center shadow-sm">
-                      <span className="text-xs font-bold text-gray-700">JCB</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="absolute bottom-6 right-6 w-3 h-3 rounded-full bg-green-400 animate-pulse hidden lg:block" />
-                <div className="absolute top-6 left-6 w-2 h-2 rounded-full bg-green-300 animate-pulse hidden lg:block" style={{ animationDelay: '0.5s' }} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
+      <PaymentSection />
       {/* FAQ */}
-      <div className="w-full bg-[#F4F3EE] py-20 px-6 md:px-12">
+      <div className="w-full bg-[#F4F3EE] py-0 md:py-0 lg:py-20 xl:py-20 2xl:py-20 px-6 md:px-12">
         <motion.div
           className="w-full bg-[#F4F3EE] py-20 px-6 md:px-12"
           initial="hidden"
