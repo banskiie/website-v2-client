@@ -12,13 +12,25 @@ import {
 import { IUser, Role } from "@/types/user.interface"
 import { UserSchema } from "@/validators/user.validator"
 import { gql } from "@apollo/client"
-import { useMutation, useQuery } from "@apollo/client/react"
+import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
 import React, { useEffect, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, ChevronsUpDownIcon, CirclePlus, Eraser } from "lucide-react"
+import {
+  CalendarIcon,
+  Check,
+  CheckIcon,
+  ChevronsUpDown,
+  ChevronsUpDownIcon,
+  CirclePlus,
+  Eraser,
+} from "lucide-react"
 import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
-import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import {
   Popover,
   PopoverContent,
@@ -35,22 +47,31 @@ import {
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { IRefund } from "@/types/refund.interface"
+import { format } from "date-fns"
+import { Calendar } from "@/components/ui/calendar"
 
 const USER = gql`
-  query User($_id: ID!) {
-    user(_id: $_id) {
-      name
-      email
-      contactNumber
-      username
-      role
+  query Refund($_id: ID!) {
+    refund(_id: $_id) {
+      _id
+      payerName
+      referenceNumber
+      amount
+      method
+      proofOfRefundURL
+      refundDate
+      entryList {
+        _id
+        entryNumber
+      }
     }
   }
 `
 
 const CREATE = gql`
-  mutation CreateUser($input: CreateUserInput!) {
-    createUser(input: $input) {
+  mutation CreateRefund($input: CreateRefundInput!) {
+    createRefund(input: $input) {
       ok
       message
     }
@@ -58,10 +79,24 @@ const CREATE = gql`
 `
 
 const UPDATE = gql`
-  mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input) {
+  mutation UpdateRefund($input: UpdateRefundInput!) {
+    updateRefund(input: $input) {
       ok
       message
+    }
+  }
+`
+
+const SEARCH_ENTRY = gql`
+  query SearchEntryOptionsByKeyword($keyword: String!) {
+    searchEntryOptionsByKeyword(keyword: $keyword) {
+      label
+      value
+      players {
+        firstName
+        lastName
+      }
+      event
     }
   }
 `
@@ -83,27 +118,49 @@ const FormDialog = (props: Props) => {
     skip: !open || !isUpdate,
     fetchPolicy: "no-cache",
   })
-  const user = data?.user as IUser
+  const refund = data?.refund as IRefund
   // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
   // Combined loading state
   const isLoading = isUpdate ? isPending || fetchLoading : false
-  // Role Options
-  const [openRoles, setOpenRoles] = useState(false)
-  const Roles = Object.values(Role).map((role) => ({
-    label: role.toLocaleLowerCase().replaceAll("_", " "),
-    value: role,
-  }))
+
   // Combined loading state
   const loading = isPending || fetchLoading
 
+  // // Entry Auto Search
+  const [search, { data: entryOptionsData, loading: optionsLoading }] =
+    useLazyQuery(SEARCH_ENTRY, {
+      fetchPolicy: "no-cache",
+    })
+  const [openFilteredEntries, setOpenFilteredEntries] = useState(false)
+  const [entryKeyword, setEntryKeyword] = useState<string>("")
+  const entryOptions =
+    (entryOptionsData as any)?.searchEntryOptionsByKeyword || []
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (entryKeyword) search({ variables: { keyword: entryKeyword } })
+    }, 350)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [entryKeyword, search])
+
+  // FIXME: Entry search bug when v9-0001 is typed it wont work
+  useEffect(() => {
+    console.log(entryOptions)
+  }, [entryOptions])
+
   const form = useForm({
     defaultValues: {
-      name: user?.name || "",
-      email: user?.email || "",
-      contactNumber: user?.contactNumber || "",
-      username: user?.username || "",
-      role: user?.role || Role.SUPPORT,
+      payerName: refund?.payerName || "",
+      referenceNumber: refund?.referenceNumber || "",
+      amount: refund?.amount || 0,
+      method: refund?.method || "",
+      proofOfRefundURL: refund?.proofOfRefundURL || "",
+      refundDate: refund?.refundDate || new Date(),
+      entryList: refund?.entryList[0] || "",
     },
     validators: {
       onSubmit: ({ formApi, value }) => {
@@ -113,7 +170,7 @@ const FormDialog = (props: Props) => {
           const formErrors = JSON.parse(error)
           formErrors.map(
             ({ path, message }: { path: string; message: string }) =>
-              formApi.fieldInfo[
+              (formApi.fieldInfo as Record<string, any>)[
                 path as keyof typeof formApi.fieldInfo
               ].instance?.setErrorMap({
                 onSubmit: { message },
@@ -168,9 +225,9 @@ const FormDialog = (props: Props) => {
             Edit
           </DropdownMenuItem>
         ) : (
-          <Button variant="outline-success">
-            <CirclePlus className="size-3.5" />
-            Add User
+          <Button variant="outline-warning">
+            <CirclePlus className="size-3.5 -mx-0.5" />
+            Create Refund
           </Button>
         )}
       </DialogTrigger>
@@ -180,33 +237,36 @@ const FormDialog = (props: Props) => {
         showCloseButton={false}
       >
         <DialogHeader>
-          <DialogTitle>{isUpdate ? "Edit User" : "Create User"}</DialogTitle>
+          <DialogTitle>
+            {isUpdate ? "Edit Refund" : "Create Refund"}
+          </DialogTitle>
           <DialogDescription>
             {isUpdate
-              ? "Update existing user details."
-              : "Create a new user in the system."}
+              ? "Update existing refund details."
+              : "Create a new refund in the system."}
           </DialogDescription>
         </DialogHeader>
         <form
           className="-mt-2 mb-2"
-          id="user-form"
+          id="refund-form"
           onSubmit={(e) => {
             e.preventDefault()
             form.handleSubmit()
           }}
         >
-          <FieldSet>
+          <FieldSet className="grid grid-cols-2">
             <form.Field
-              name="name"
+              name="payerName"
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                  <Field data-invalid={isInvalid} className="col-span-2">
+                    <FieldLabel htmlFor={field.name}>Payer Name</FieldLabel>
                     <InputGroup className="-my-1">
                       <InputGroupInput
-                        placeholder="Name"
+                        required
+                        placeholder="Payer Name"
                         disabled={loading}
                         id={field.name}
                         name={field.name}
@@ -224,15 +284,16 @@ const FormDialog = (props: Props) => {
               }}
             />
             <form.Field
-              name="username"
+              name="referenceNumber"
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Username</FieldLabel>
+                  <Field data-invalid={isInvalid} className="col-span-2">
+                    <FieldLabel htmlFor={field.name}>Reference No.</FieldLabel>
                     <InputGroup className="-my-1.5">
                       <InputGroupInput
+                        placeholder="Reference No."
                         disabled={loading}
                         id={field.name}
                         name={field.name}
@@ -240,7 +301,6 @@ const FormDialog = (props: Props) => {
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
-                        placeholder="Username"
                       />
                     </InputGroup>
                     {isInvalid && (
@@ -251,23 +311,31 @@ const FormDialog = (props: Props) => {
               }}
             />
             <form.Field
-              name="contactNumber"
+              name="amount"
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Contact No.</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>Amount</FieldLabel>
                     <InputGroup className="-my-1.5">
+                      <InputGroupAddon>
+                        <span className="font-thin">₱</span>
+                      </InputGroupAddon>
                       <InputGroupInput
+                        placeholder="Amount"
                         disabled={loading}
                         id={field.name}
                         name={field.name}
                         value={field.state.value}
                         onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        onChange={(e) =>
+                          field.handleChange(parseFloat(e.target.value))
+                        }
                         aria-invalid={isInvalid}
-                        placeholder="Contact No."
+                        type="number"
+                        step={0.01}
+                        min={0}
                       />
                     </InputGroup>
                     {isInvalid && (
@@ -278,26 +346,40 @@ const FormDialog = (props: Props) => {
               }}
             />
             <form.Field
-              name="email"
+              name="refundDate"
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Email Address</FieldLabel>
-                    <InputGroup className="-my-1.5">
-                      <InputGroupInput
-                        disabled={loading}
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="Email Address"
-                        type="email"
-                      />
-                    </InputGroup>
+                    <FieldLabel id="refund-date">Refund Date</FieldLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="refund-date"
+                          name="refund-date"
+                          variant="outline"
+                          data-empty={!field.state.value}
+                          className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -mt-1"
+                          disabled={loading}
+                        >
+                          <CalendarIcon className="size-3.5" />
+                          {field.state.value ? (
+                            format(field.state.value, "PP")
+                          ) : (
+                            <span>Select Refund Date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          required={true}
+                          selected={field.state.value}
+                          onSelect={field.handleChange}
+                        />
+                      </PopoverContent>
+                    </Popover>
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}
@@ -306,73 +388,70 @@ const FormDialog = (props: Props) => {
               }}
             />
             <form.Field
-              name="role"
+              name="entryList"
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Role</FieldLabel>
-                    <Popover open={openRoles} onOpenChange={setOpenRoles}>
+                  <Field data-invalid={isInvalid} className="col-span-2">
+                    <FieldLabel id="Entry">Entries Involved</FieldLabel>
+                    <Popover
+                      open={openFilteredEntries}
+                      onOpenChange={setOpenFilteredEntries}
+                    >
                       <PopoverTrigger asChild>
                         <Button
                           id={field.name}
                           name={field.name}
-                          disabled={loading}
-                          aria-expanded={openRoles}
+                          aria-expanded={openFilteredEntries}
                           onBlur={field.handleBlur}
                           variant="outline"
                           role="combobox"
                           aria-invalid={isInvalid}
-                          className="w-full justify-between font-normal capitalize -mt-2"
+                          className={cn(
+                            "w-full justify-between font-normal capitalize -mt-2",
+                            !field.state.value && "text-muted-foreground"
+                          )}
                           type="button"
                         >
                           {field.state.value
-                            ? Roles.find((o) => o.value === field.state.value)
-                                ?.label
-                            : "Select Role"}
-                          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            ? entryOptions.find(
+                                (entry: any) =>
+                                  entry.value === field.state.value
+                              )?.label
+                            : "Select entry..."}
+                          <ChevronsUpDown className="opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command
-                          filter={(value, search) =>
-                            Roles.find(
-                              (t: { value: string; label: string }) =>
-                                t.value === value
-                            )
-                              ?.label.toLowerCase()
-                              .includes(search.toLowerCase())
-                              ? 1
-                              : 0
-                          }
-                        >
-                          <CommandInput placeholder="Select Role" />
-                          <CommandList className="max-h-72 overflow-y-auto">
-                            <CommandEmpty>No role found.</CommandEmpty>
+                      <PopoverContent className="w-50 p-0">
+                        <Command>
+                          <CommandInput
+                            placeholder="Search entry..."
+                            onValueChange={(value) => setEntryKeyword(value)}
+                            className="h-9"
+                          />
+                          <CommandList>
+                            <CommandEmpty>No entry found.</CommandEmpty>
                             <CommandGroup>
-                              <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
-                                Roles
-                              </Label>
-                              {Roles?.map((o) => (
+                              {entryOptions.map((entry: any) => (
                                 <CommandItem
-                                  key={o.value}
-                                  value={o.value}
-                                  onSelect={(v) => {
-                                    field.handleChange(v as Role)
-                                    setOpenRoles(false)
+                                  key={entry.value}
+                                  value={entry.value}
+                                  onSelect={(currentValue: any) => {
+                                    field.handleChange(currentValue)
+                                    setOpenFilteredEntries(false)
+                                    setEntryKeyword("")
                                   }}
-                                  className="capitalize"
                                 >
-                                  <CheckIcon
+                                  {entry.label}
+                                  <Check
                                     className={cn(
-                                      "h-4 w-4",
-                                      field.state.value === o.value
+                                      "ml-auto",
+                                      field.state.value === entry.value
                                         ? "opacity-100"
                                         : "opacity-0"
                                     )}
                                   />
-                                  {o.label}
                                 </CommandItem>
                               ))}
                             </CommandGroup>
@@ -399,7 +478,7 @@ const FormDialog = (props: Props) => {
             className="w-20"
             loading={isLoading}
             type="submit"
-            form="user-form"
+            form="refund-form"
           >
             Submit
           </Button>

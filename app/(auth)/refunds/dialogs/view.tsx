@@ -30,18 +30,22 @@ import {
 import { CheckCircle, CheckCircle2, CircleAlert, Paperclip } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const PAYMENT = gql`
-  query Payment($_id: ID!) {
-    payment(_id: $_id) {
+const REFUND = gql`
+  query Refund($_id: ID!) {
+    refund(_id: $_id) {
       _id
       payerName
       referenceNumber
       amount
       method
-      proofOfPaymentURL
-      paymentDate
-      statuses {
-        status
+      proofOfRefundURL
+      refundDate
+      entryList {
+        _id
+        entryNumber
+      }
+      remarks {
+        remark
         date
         by {
           _id
@@ -55,14 +59,16 @@ const PAYMENT = gql`
           updatedAt
         }
       }
-
-      entryList {
-        isFullyPaid
-        entry {
-          _id
-          entryNumber
-          entryKey
-        }
+      uploadedBy {
+        _id
+        name
+        email
+        contactNumber
+        username
+        role
+        isActive
+        createdAt
+        updatedAt
       }
     }
   }
@@ -95,12 +101,10 @@ const ViewDialog = (props: Props) => {
       setOpen(value)
     }
   }
-  const { data, loading, error }: any = useQuery(PAYMENT, {
+  const { data, loading, error }: any = useQuery(REFUND, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
   })
-
-  if (error) console.error(error)
 
   const onClose = () => {
     if (props.row) {
@@ -136,16 +140,15 @@ const ViewDialog = (props: Props) => {
           showCloseButton={false}
         >
           <DialogHeader>
-            <DialogTitle>View Payment</DialogTitle>
+            <DialogTitle>View Refund</DialogTitle>
             <DialogDescription>
-              View the details of this payment below.
+              View the details of this refund below.
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="details" className="">
-            <TabsList className="w-full grid grid-cols-3 -mt-2 mb-1">
+            <TabsList className="w-full grid grid-cols-2 -mt-2 mb-1">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="proof">Proof</TabsTrigger>
-              <TabsTrigger value="status">Status</TabsTrigger>
             </TabsList>
             <TabsContent value="details">
               <div className="grid grid-cols-2 gap-2 place-content-start h-[60vh] overflow-y-auto">
@@ -155,7 +158,7 @@ const ViewDialog = (props: Props) => {
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">
-                      {data?.payment?.referenceNumber}
+                      {data?.refund?.referenceNumber}
                     </span>
                   )}
                 </div>
@@ -165,7 +168,7 @@ const ViewDialog = (props: Props) => {
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">
-                      {data?.payment?.payerName}
+                      {data?.refund?.payerName}
                     </span>
                   )}
                 </div>
@@ -180,7 +183,7 @@ const ViewDialog = (props: Props) => {
                         : new Intl.NumberFormat("en-US", {
                             style: "currency",
                             currency: "PHP",
-                          }).format(data?.payment?.amount)}
+                          }).format(data?.refund?.amount)}
                     </span>
                   )}
                 </div>
@@ -190,52 +193,53 @@ const ViewDialog = (props: Props) => {
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm capitalize">
-                      {data?.payment?.method.toLowerCase().replaceAll("_", " ")}
+                      {data?.refund?.method.toLowerCase().replaceAll("_", " ")}
                     </span>
                   )}
                 </div>
                 <div>
-                  <Label>Payment Date</Label>
+                  <Label>Refund Date</Label>
                   {loading ? (
                     <Skeleton className="my-1 w-20 h-4.25" />
                   ) : (
                     <span className="block text-sm capitalize">
-                      {data?.payment?.paymentDate &&
-                        format(new Date(data?.payment?.paymentDate), "PP")}
+                      {data?.refund?.refundDate &&
+                        format(new Date(data?.refund?.refundDate), "PP")}
                     </span>
                   )}
                 </div>
-                <div>
-                  <Label>Entries Involved</Label>
-                  {loading ? (
-                    <Skeleton className="my-1 w-20 h-4.25" />
-                  ) : (
-                    <ol className="text-sm">
-                      {data?.payment?.entryList.map((s: any, index: number) => (
-                        <li key={index}>
-                          {s.entry.entryNumber}{" "}
-                          {s.isFullyPaid && " (Fully Paid)"}
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </div>
+                {data?.refund?.entryList && (
+                  <div>
+                    <Label>Entries Involved</Label>
+                    {loading ? (
+                      <Skeleton className="my-1 w-20 h-4.25" />
+                    ) : (
+                      <ol className="text-sm">
+                        {data?.refund?.entryList.map(
+                          (s: any, index: number) => (
+                            <li key={index}>{s.entryNumber}</li>
+                          )
+                        )}
+                      </ol>
+                    )}
+                  </div>
+                )}
               </div>
             </TabsContent>
             <TabsContent value="proof">
               <div className="h-[60vh]">
-                {!data?.payment?.proofOfPaymentURL && !loading ? (
+                {!data?.refund?.proofOfRefundURL && !loading ? (
                   <span className="text-sm italic text-muted-foreground">
-                    No proof of payment uploaded.
+                    No proof of refund uploaded.
                   </span>
                 ) : (
                   <Sheet>
                     <SheetTrigger className="cursor-pointer w-full flex items-center justify-center">
-                      {data?.payment?.proofOfPaymentURL ? (
+                      {data?.refund?.proofOfRefundURL ? (
                         <Image
                           width={500}
                           height={500}
-                          src={data?.payment?.proofOfPaymentURL}
+                          src={data?.refund?.proofOfRefundURL}
                           alt="Uploaded Image"
                           className="object-contain bg-gray max-h-[60vh] w-full"
                         />
@@ -252,7 +256,7 @@ const ViewDialog = (props: Props) => {
                         <SheetDescription>Description</SheetDescription>
                       </SheetHeader>
                       <Image
-                        src={data?.payment?.proofOfPaymentURL}
+                        src={data?.refund?.proofOfRefundURL}
                         alt="Uploaded Image"
                         width={500}
                         height={500}
@@ -263,105 +267,7 @@ const ViewDialog = (props: Props) => {
                 )}
               </div>
             </TabsContent>
-            <TabsContent value="status">
-              <div className="flex flex-col gap-2 h-[60vh] overflow-y-auto place-content-start">
-                {loading ? (
-                  <Skeleton className="w-full my-1 h-3" />
-                ) : data?.payment?.statuses &&
-                  data?.payment?.statuses.length ? (
-                  <div className="h-full">
-                    {data?.payment.statuses
-                      .slice()
-                      .reverse()
-                      .map((status: any, index: number) => (
-                        <div key={index} className="flex gap-2">
-                          <div className="flex flex-col justify-start items-center">
-                            {(() => {
-                              if (index === 0) {
-                                switch (status.status) {
-                                  case "SENT":
-                                    return (
-                                      <CheckCircle2 className="size-4 my-2 text-success" />
-                                    )
-                                  case "DUPLICATE":
-                                  case "REJECTED":
-                                    return (
-                                      <CircleAlert className="size-4 my-2 text-destructive" />
-                                    )
-                                  case "VERIFIED":
-                                    return (
-                                      <CheckCircle className="size-4 my-2 text-success" />
-                                    )
-                                }
-                                return (
-                                  <CircleAlert
-                                    className={cn(
-                                      "size-4 my-2",
-                                      index > 0
-                                        ? "text-muted-foreground/50"
-                                        : "text-info"
-                                    )}
-                                  />
-                                )
-                              } else {
-                                return (
-                                  <CheckCircle
-                                    className={cn(
-                                      "size-4 my-2",
-                                      index > 0
-                                        ? "text-muted-foreground/50"
-                                        : "text-success"
-                                    )}
-                                  />
-                                )
-                              }
-                            })()}
-
-                            {index < data?.payment.statuses.length - 1 && (
-                              <div className="min-h-11 w-px bg-gray-200"></div>
-                            )}
-                          </div>
-                          <div className="mt-1">
-                            <span
-                              className={cn(
-                                "capitalize block -mb-0.5",
-                                index === 0
-                                  ? "font-mono"
-                                  : "text-muted-foreground"
-                              )}
-                            >
-                              {status.status
-                                .split("_")
-                                .join(" ")
-                                .toLocaleLowerCase()}
-                            </span>
-                            <span className="text-xs text-muted-foreground block">
-                              {format(status.date, "PPpp")}
-                            </span>
-                            {status.reason && (
-                              <span className="text-xs text-muted-foreground block">
-                                Note:{" "}
-                                <span className="italic underline">
-                                  {status?.reason}
-                                </span>
-                              </span>
-                            )}
-                            <span className="text-xs text-muted-foreground block">
-                              {status.by?.name}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground">
-                    No status history available.
-                  </span>
-                )}
-              </div>
-            </TabsContent>
           </Tabs>
-
           <DialogFooter>
             <DialogClose asChild>
               <Button className="w-20" onClick={onClose} variant="outline">

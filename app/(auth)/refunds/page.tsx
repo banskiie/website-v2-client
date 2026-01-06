@@ -48,8 +48,6 @@ import {
 import ViewDialog from "./dialogs/view"
 import { Checkbox } from "@/components/ui/checkbox"
 import BatchMenu from "./dialogs/batch"
-import VerifyDialog from "./dialogs/verify"
-import RejectDialog from "./dialogs/reject"
 
 const REFUNDS = gql`
   query Refunds(
