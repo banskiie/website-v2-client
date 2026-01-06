@@ -198,6 +198,7 @@ export default function PaymentSection() {
                                             <div className={`absolute left-1/2 -translate-x-1/2 top-full mt-2 transform transition-all duration-1000 ease-out delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                                                 <div className="bg-white text-black px-4 py-2 rounded-lg shadow-lg whitespace-nowrap">
                                                     <div className="text-xs font-bold tracking-wide">NOW AVAILABLE</div>
+                                                    <div className="text-xs font-bold tracking-wide">PAYMENT METHOD</div>
                                                 </div>
 
                                                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-green-600"></div>
