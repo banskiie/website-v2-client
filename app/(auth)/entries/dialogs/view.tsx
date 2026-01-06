@@ -21,9 +21,16 @@ import { format, formatDistanceToNowStrict } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { CheckCircle, CheckCircle2, CircleAlert, Copy } from "lucide-react"
+import {
+  CheckCircle,
+  CheckCircle2,
+  CircleAlert,
+  CircleQuestionMark,
+  Copy,
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import PlayerViewDialog from "@/app/(auth)/players/dialogs/view"
+import PaymentViewDialog from "@/app/(auth)/payments/dialogs/view"
 
 const ENTRY = gql`
   query Entry($_id: ID!) {
@@ -88,6 +95,13 @@ const ENTRY = gql`
         middleName
         lastName
         suffix
+      }
+      transactions {
+        transactionId
+        transactionType
+        pendingAmount
+        amountChanged
+        transactionDate
       }
     }
   }
@@ -184,10 +198,11 @@ const ViewDialog = (props: Props) => {
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="details" className="">
-            <TabsList className="w-full grid grid-cols-3 -mt-2 mb-1">
+            <TabsList className="w-full grid grid-cols-4 -mt-2 mb-1">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="players">Players</TabsTrigger>
               <TabsTrigger value="status">Status</TabsTrigger>
+              <TabsTrigger value="transactions">Trans.</TabsTrigger>
             </TabsList>
             <TabsContent value="details">
               <div className="grid grid-cols-2 gap-2 h-[50vh] overflow-y-auto place-content-start">
@@ -550,6 +565,130 @@ const ViewDialog = (props: Props) => {
                             )}
                             <span className="text-xs text-muted-foreground block">
                               {status.by?.name}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    No status history available.
+                  </span>
+                )}
+              </div>
+            </TabsContent>
+            <TabsContent value="transactions">
+              <div className="flex flex-col gap-2 h-[50vh] overflow-y-auto place-content-start">
+                {loading ? (
+                  <Skeleton className="w-full my-1 h-3" />
+                ) : entry?.statuses && entry?.statuses.length ? (
+                  <div className="h-full">
+                    {entry.transactions
+                      .slice()
+                      .reverse()
+                      .map((transaction, index) => (
+                        <div key={index} className="flex gap-2">
+                          <div className="flex flex-col justify-start items-center">
+                            {(() => {
+                              switch (transaction.transactionType) {
+                                case "INITIAL_FEE":
+                                  return (
+                                    <CircleQuestionMark className="size-4 my-2 text-info" />
+                                  )
+                                case "BALANCE_PAYMENT":
+                                  return (
+                                    <CheckCircle2 className="size-4 my-2 text-success" />
+                                  )
+                                case "REVERT_TRANSACTION":
+                                case "REFUND_PAYMENT":
+                                  return (
+                                    <CircleAlert className="size-4 my-2 text-destructive" />
+                                  )
+                              }
+                            })()}
+
+                            {index < entry.transactions.length - 1 && (
+                              <div className="min-h-11 w-px bg-gray-200"></div>
+                            )}
+                          </div>
+                          <div className="mt-1">
+                            <span
+                              className={cn(
+                                "capitalize block -mb-0.5",
+                                index === 0
+                                  ? "font-mono"
+                                  : "text-muted-foreground"
+                              )}
+                            >
+                              {transaction.transactionType
+                                .replaceAll("_", " ")
+                                .toLocaleLowerCase()}
+                            </span>
+
+                            <span
+                              className={cn(
+                                "capitalize block text-xs",
+                                index === 0
+                                  ? "font-mono"
+                                  : "text-muted-foreground",
+                                transaction.pendingAmount == 0
+                                  ? "text-success"
+                                  : transaction.pendingAmount > 0
+                                  ? "text-info"
+                                  : "text-destructive"
+                              )}
+                            >
+                              {transaction.pendingAmount >= 0
+                                ? "Pending"
+                                : "Excess"}{" "}
+                              Amount:{" "}
+                              {Math.abs(
+                                transaction.pendingAmount
+                              ).toLocaleString("en-PH", {
+                                style: "currency",
+                                currency: "PHP",
+                                minimumFractionDigits: 2,
+                              })}
+                            </span>
+                            {transaction.amountChanged !== 0 ? (
+                              <span
+                                className={cn(
+                                  "capitalize block text-xs",
+                                  index === 0
+                                    ? "font-mono"
+                                    : "text-muted-foreground"
+                                )}
+                              >
+                                Amount{" "}
+                                {transaction.transactionType ==
+                                "BALANCE_PAYMENT"
+                                  ? "Paid"
+                                  : "Reverted"}
+                                :{" "}
+                                {`${
+                                  transaction.amountChanged > 0 ? "+" : "-"
+                                }${Math.abs(
+                                  transaction.amountChanged
+                                ).toLocaleString("en-PH", {
+                                  style: "currency",
+                                  currency: "PHP",
+                                  minimumFractionDigits: 2,
+                                })}`}
+                              </span>
+                            ) : null}
+                            {transaction.transactionId &&
+                              transaction.transactionType ===
+                                "BALANCE_PAYMENT" && (
+                                <PaymentViewDialog
+                                  externalUse
+                                  _id={transaction.transactionId}
+                                  title={`Click here for more details 🔍`}
+                                  titleClassName="block text-xs text-muted-foreground hover:text-foreground"
+                                />
+                              )}
+
+                            <span className="text-xs text-muted-foreground block">
+                              {format(transaction.transactionDate, "PPpp")}
                             </span>
                           </div>
                         </div>

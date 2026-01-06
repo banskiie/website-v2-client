@@ -96,8 +96,10 @@ const RejectDialog = (props: Props) => {
   const [open, setOpen] = useState(false)
   const [rejectionReason, setRejectionReason] = useState<string>("")
   const [customReason, setCustomReason] = useState<string>("")
-  const [rejectionType, setRejectionType] = useState<"REJECTED" | "DUPLICATE">("REJECTED")
-  
+  const [rejectionType, setRejectionType] = useState<"REJECTED" | "DUPLICATE">(
+    "REJECTED"
+  )
+
   const {
     data,
     loading: paymentLoading,
@@ -109,7 +111,7 @@ const RejectDialog = (props: Props) => {
   })
 
   const [rejectPayment, { loading: rejectPaymentLoading }] = useMutation(REJECT)
-  
+
   const loading = paymentLoading || rejectPaymentLoading
 
   const predefinedReasons = [
@@ -134,22 +136,23 @@ const RejectDialog = (props: Props) => {
 
   const onSubmit = async () => {
     try {
-      if (!rejectionReason && !customReason) {
-        toast.error("Please provide a rejection reason")
+      if (rejectionType === "REJECTED" && !rejectionReason && !customReason) {
+        toast.error("Please provide a reason for rejection.")
         return
       }
 
-      const reasonToSend = rejectionType === "DUPLICATE" 
-        ? "DUPLICATE" 
-        : customReason || rejectionReason
+      const reasonToSend =
+        rejectionType === "DUPLICATE"
+          ? "DUPLICATE"
+          : customReason || rejectionReason
 
       const result: any = await rejectPayment({
-        variables: { 
+        variables: {
           _id: props._id,
-          reason: reasonToSend
-        }
+          reason: reasonToSend,
+        },
       })
-      
+
       if (result.data?.rejectPayment?.ok) {
         toast.success("Payment has been rejected")
         onClose()
@@ -179,7 +182,10 @@ const RejectDialog = (props: Props) => {
             Reject
           </DropdownMenuItem>
         </DialogTrigger>
-        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-w-md">
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-md"
+        >
           <DialogHeader>
             <DialogTitle>Reject Payment</DialogTitle>
             <DialogDescription>
@@ -188,7 +194,7 @@ const RejectDialog = (props: Props) => {
               </span>
             </DialogDescription>
           </DialogHeader>
-          
+
           <ViewDialog
             externalUse
             _id={data?.payment?._id}
@@ -199,9 +205,11 @@ const RejectDialog = (props: Props) => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="rejection-type">Rejection Type</Label>
-              <Select 
-                value={rejectionType} 
-                onValueChange={(value: "REJECTED" | "DUPLICATE") => setRejectionType(value)}
+              <Select
+                value={rejectionType}
+                onValueChange={(value: "REJECTED" | "DUPLICATE") =>
+                  setRejectionType(value)
+                }
               >
                 <SelectTrigger id="rejection-type">
                   <SelectValue placeholder="Select rejection type" />
@@ -217,10 +225,11 @@ const RejectDialog = (props: Props) => {
               <>
                 <div className="space-y-2">
                   <Label htmlFor="rejection-reason">
-                    Reason for Rejection <span className="text-destructive">*</span>
+                    Reason for Rejection{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
-                  <Select 
-                    value={rejectionReason} 
+                  <Select
+                    value={rejectionReason}
                     onValueChange={handleReasonChange}
                   >
                     <SelectTrigger id="rejection-reason">
@@ -260,18 +269,20 @@ const RejectDialog = (props: Props) => {
                   This will mark the payment as "DUPLICATE" status.
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  This action should only be used when this payment is a duplicate of another payment.
+                  This action should only be used when this payment is a
+                  duplicate of another payment.
                 </p>
               </div>
             )}
 
             <div className="space-y-1">
               <span className="block text-xs">
-                <span className="font-bold text-red-500">* </span>This will send an
-                email notification to the payer about the rejection.
+                <span className="font-bold text-red-500">* </span>This will send
+                an email notification to the payer about the rejection.
               </span>
               <span className="block text-xs">
-                <span className="font-bold text-red-500">* </span>Payment status will be updated to{" "}
+                <span className="font-bold text-red-500">* </span>Payment status
+                will be updated to{" "}
                 <span className="font-semibold">
                   {rejectionType === "DUPLICATE" ? "DUPLICATE" : "REJECTED"}
                 </span>
@@ -280,11 +291,7 @@ const RejectDialog = (props: Props) => {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose}
-            >
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button
@@ -292,9 +299,15 @@ const RejectDialog = (props: Props) => {
               loading={loading}
               variant="destructive"
               onClick={onSubmit}
-              disabled={rejectionType === "REJECTED" && !rejectionReason && !customReason}
+              disabled={
+                rejectionType === "REJECTED" &&
+                !rejectionReason &&
+                !customReason
+              }
             >
-              {rejectionType === "DUPLICATE" ? "Mark as Duplicate" : "Reject Payment"}
+              {rejectionType === "DUPLICATE"
+                ? "Mark as Duplicate"
+                : "Reject Payment"}
             </Button>
           </DialogFooter>
         </DialogContent>
