@@ -1,4 +1,5 @@
 "use client"
+
 import {
   Dialog,
   DialogClose,
@@ -9,404 +10,1585 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { IUser, Role } from "@/types/user.interface"
-import { UserSchema } from "@/validators/user.validator"
 import { gql } from "@apollo/client"
-import { useMutation, useQuery } from "@apollo/client/react"
+import { useMutation, useQuery, useLazyQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
-import React, { useEffect, useState, useTransition } from "react"
+import React, { useState, useTransition, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, ChevronsUpDownIcon, CirclePlus, Eraser } from "lucide-react"
+import { CirclePlus, X, ChevronDown, Check, Loader2, Paperclip, XCircle, UploadIcon, CheckCircle } from "lucide-react"
 import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
 import { Label } from "@/components/ui/label"
+import { Calendar } from "@/components/ui/calendar"
+import { format } from "date-fns"
+import { CalendarIcon } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { AnimatePresence, motion } from "framer-motion"
+import * as Tesseract from 'tesseract.js'
+import { toast } from "sonner"
+import { Input } from "@/components/ui/input"
 
-const USER = gql`
-  query User($_id: ID!) {
-    user(_id: $_id) {
-      name
-      email
-      contactNumber
-      username
-      role
-    }
-  }
-`
-
-const CREATE = gql`
-  mutation CreateUser($input: CreateUserInput!) {
-    createUser(input: $input) {
+// GraphQL Queries & Mutations
+const CREATE_PAYMENT = gql`
+  mutation CreatePayment($input: CreatePaymentInput!) {
+    createPayment(input: $input) {
       ok
       message
     }
   }
 `
 
-const UPDATE = gql`
-  mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input) {
-      ok
-      message
+// Query for entry amount details
+const ENTRY_EVENT_AMOUNT_DETAILS = gql`
+  query EntryEventAmountDetails($referenceNumber: String!) {
+    entryEventAmountDetails(referenceNumber: $referenceNumber) {
+      amount
+      entry {
+        _id
+        entryNumber
+        entryKey
+        statuses {
+          status
+          reason
+          date
+        }
+        event {
+          type
+        }
+      }
     }
   }
 `
 
-type Props = {
-  _id?: string
-  onClose?: () => void
+// Using your existing entries query with filter for payment pending status
+const GET_ENTRIES = gql`
+  query GetEntries($search: String, $first: Int) {
+    entries(
+      first: $first
+      search: $search
+      filter: [
+        {
+          key: "currentStatus"
+          value: "PAYMENT_PENDING"
+          type: TEXT
+        }
+      ]
+    ) {
+      total
+      pages
+      edges {
+        cursor
+        node {
+          _id
+          entryNumber
+          entryKey
+          playerList {
+            player1Name
+            player2Name
+          }
+          eventName
+          tournamentName
+          club
+          currentStatus
+          dateUpdated
+        }
+      }
+    }
+  }
+`
+
+// Payment method enum
+enum PaymentMethod {
+  BANK_TRANSFER = "BANK_TRANSFER",
+  GCASH = "GCASH",
+  OVER_THE_COUNTER = "OVER_THE_COUNTER"
 }
 
-const FormDialog = (props: Props) => {
-  // Dialog open state
+// Interfaces
+interface PlayerList {
+  player1Name: string
+  player2Name: string | null
+}
+
+interface IEntryStatus {
+  status: string
+  reason?: string
+  date: string
+}
+
+interface EntryNode {
+  _id: string
+  entryNumber: string
+  entryKey: string
+  playerList: PlayerList
+  eventName: string
+  tournamentName: string
+  club: string
+  currentStatus: string
+  dateUpdated: string
+}
+
+interface EntryEdge {
+  cursor: string
+  node: EntryNode
+}
+
+interface EntriesResponse {
+  entries: {
+    total: number
+    pages: number
+    edges: EntryEdge[]
+  }
+}
+
+interface EntryAmountDetailsData {
+  entryEventAmountDetails: {
+    amount: number
+    entry: {
+      _id: string
+      entryNumber: string
+      entryKey: string
+      statuses: IEntryStatus[]
+      event: {
+        type: string
+      }
+    }
+  }
+}
+
+// Entry input for form
+interface EntryInput {
+  _id: string
+  entryNumber: string
+  entryKey: string
+  player1Name: string
+  player2Name?: string | null
+  eventName: string
+  tournamentName: string
+  club: string
+  currentStatus: string
+  isFullyPaid: boolean
+  amount?: number
+}
+
+type Props = {
+  onClose?: () => void
+  refetchPayments?: () => void
+}
+
+const PaymentFormDialog = (props: Props) => {
   const [open, setOpen] = useState(false)
-  // Determine if it's an update or create operation
-  const isUpdate = Boolean(props._id)
   const [isPending, startTransition] = useTransition()
-  // Fetch existing date if updating
-  const { data, loading: fetchLoading }: any = useQuery(USER, {
-    variables: { _id: props._id },
-    skip: !open || !isUpdate,
-    fetchPolicy: "no-cache",
+  const [selectedEntries, setSelectedEntries] = useState<EntryInput[]>([])
+  const [entrySearch, setEntrySearch] = useState("")
+  const [entriesPopoverOpen, setEntriesPopoverOpen] = useState(false)
+  const popoverTriggerRef = useRef<HTMLButtonElement>(null)
+  const [popoverWidth, setPopoverWidth] = useState<number | undefined>(undefined)
+  const [activeTab, setActiveTab] = useState("payment-details")
+
+  // OCR Scanning States
+  const [preview, setPreview] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [scannedTotal, setScannedTotal] = useState<string | null>(null)
+  const [reference, setReference] = useState<string | null>(null)
+  const [scannedText, setScannedText] = useState<string>("")
+  const [showConfirmationInput, setShowConfirmationInput] = useState(false)
+  const [confirmationNumber, setConfirmationNumber] = useState<string>("")
+  const [amountLabel, setAmountLabel] = useState("Total")
+  const [referenceLabel, setReferenceLabel] = useState("Reference No.")
+  const [referenceLoading, setReferenceLoading] = useState(false)
+  const [amountLoading, setAmountLoading] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({
+    payerName: '',
+    amount: '',
+    file: '',
+    paymentMethod: '',
   })
-  const user = data?.user as IUser
-  // Mutation hook
-  const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
-  // Combined loading state
-  const isLoading = isUpdate ? isPending || fetchLoading : false
-  // Role Options
-  const [openRoles, setOpenRoles] = useState(false)
-  const Roles = Object.values(Role).map((role) => ({
-    label: role.toLocaleLowerCase().replaceAll("_", " "),
-    value: role,
-  }))
-  // Combined loading state
-  const loading = isPending || fetchLoading
+
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [totalRequired, setTotalRequired] = useState(0)
+  const [priceReminder, setPriceReminder] = useState<string | null>(null)
+
+  // Fetch entries using your existing entries query with filter
+  const { data: entriesData, loading: entriesLoading } = useQuery<EntriesResponse>(GET_ENTRIES, {
+    variables: {
+      search: entrySearch || undefined,
+      first: 50
+    },
+    skip: !open,
+    fetchPolicy: "network-only",
+  })
+
+  const [submitForm] = useMutation(CREATE_PAYMENT)
+  const [fetchEntryAmount, { data: entryAmountData, loading: entryAmountLoading, error: entryAmountError }] = useLazyQuery<EntryAmountDetailsData>(ENTRY_EVENT_AMOUNT_DETAILS)
+
+  const isLoading = isPending || entriesLoading
+
+  useEffect(() => {
+    if (entriesPopoverOpen && popoverTriggerRef.current) {
+      const width = popoverTriggerRef.current.offsetWidth
+      setPopoverWidth(width)
+    }
+  }, [entriesPopoverOpen])
 
   const form = useForm({
     defaultValues: {
-      name: user?.name || "",
-      email: user?.email || "",
-      contactNumber: user?.contactNumber || "",
-      username: user?.username || "",
-      role: user?.role || Role.SUPPORT,
+      payerName: "",
+      referenceNumber: "",
+      amount: 0,
+      method: PaymentMethod.BANK_TRANSFER as PaymentMethod,
+      proofOfPaymentURL: "",
+      paymentDate: new Date(),
     },
     validators: {
-      onSubmit: ({ formApi, value }) => {
-        try {
-          UserSchema.parse(value)
-        } catch (error: any) {
-          const formErrors = JSON.parse(error)
-          formErrors.map(
-            ({ path, message }: { path: string; message: string }) =>
-              formApi.fieldInfo[
-                path as keyof typeof formApi.fieldInfo
-              ].instance?.setErrorMap({
-                onSubmit: { message },
-              })
-          )
+      onChange: ({ value }) => {
+        const errors: Record<string, string> = {}
+
+        if (!value.payerName?.trim()) {
+          errors.payerName = "Payer name is required"
         }
+
+        if (!value.amount || value.amount <= 0) {
+          errors.amount = "Amount must be greater than 0"
+        }
+
+        if (!value.method) {
+          errors.method = "Payment method is required"
+        }
+
+        if (!value.paymentDate) {
+          errors.paymentDate = "Payment date is required"
+        }
+
+        if (selectedEntries.length === 0) {
+          errors._entries = "At least one entry must be selected"
+        }
+
+        return errors
       },
     },
-    listeners: {
-      onChange: ({ formApi, fieldApi }) => {
-        // console.log(fieldApi.name, fieldApi.state.value)
-      },
-    }, // this is just for demo purposes
-    onSubmit: ({ value, formApi }) =>
+    onSubmit: async ({ value, formApi }) => {
       startTransition(async () => {
         try {
+          const entryList = selectedEntries.map(entry => ({
+            entry: [entry._id],
+            isFullyPaid: entry.isFullyPaid
+          }))
+
+          if (entryList.length === 0) {
+            throw new Error("At least one entry must be selected")
+          }
+
+          const finalReferenceNumber = reference && reference !== "Not found" ? reference : confirmationNumber || value.referenceNumber || `ref_${Date.now()}`
+
           const response: any = await submitForm({
             variables: {
-              input: isUpdate ? { _id: props._id, ...value } : { ...value },
+              input: {
+                payerName: value.payerName,
+                referenceNumber: finalReferenceNumber,
+                amount: Math.round(value.amount * 100),
+                method: value.method,
+                proofOfPaymentURL: value.proofOfPaymentURL,
+                paymentDate: value.paymentDate,
+                entryList: entryList,
+              },
             },
           })
-          if (response) onClose()
+
+          if (response.data?.createPayment?.ok) {
+            setSuccess(true)
+            setTimeout(() => {
+              onClose()
+              props.refetchPayments?.()
+            }, 2000)
+          } else {
+            throw new Error(response.data?.createPayment?.message || "Submission failed")
+          }
         } catch (error: any) {
-          console.error(error.errors)
-          if (error.name == "CombinedGraphQLErrors") {
-            const fieldErrors = error.errors[0].extensions.fields
-            if (fieldErrors)
-              fieldErrors.map(
-                ({ path, message }: { path: string; message: string }) =>
-                  formApi.fieldInfo[
-                    path as keyof typeof formApi.fieldInfo
-                  ].instance?.setErrorMap({
+          console.error("Submission error:", error)
+          if (error.name === "CombinedGraphQLErrors") {
+            const fieldErrors = error.errors[0]?.extensions?.fields
+            if (fieldErrors) {
+              fieldErrors.forEach(({ path, message }: { path: string; message: string }) => {
+                const fieldInfo = formApi.fieldInfo as any
+                if (fieldInfo[path]) {
+                  fieldInfo[path].instance?.setErrorMap({
                     onSubmit: { message },
                   })
-              )
+                }
+              })
+            }
+          } else {
+            toast.error(error.message || "An error occurred")
           }
         }
-      }),
+      })
+    },
   })
 
   const onClose = () => {
     setOpen(false)
+    setSelectedEntries([])
+    setEntrySearch("")
+    setEntriesPopoverOpen(false)
+    setActiveTab("payment-details")
+    setPreview(null)
+    setFile(null)
+    setIsUploading(false)
+    setUploadedFileUrl(null)
+    setLoading(false)
+    setScannedTotal(null)
+    setReference(null)
+    setScannedText("")
+    setShowConfirmationInput(false)
+    setConfirmationNumber("")
+    setSuccess(false)
+    setFieldErrors({
+      payerName: '',
+      amount: '',
+      file: '',
+      paymentMethod: '',
+    })
     props.onClose?.()
     form.reset()
   }
 
+  const uploadFile = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploading(true)
+      const formData = new FormData()
+      const fileExt = file.name.split('.').pop() || ''
+
+      const fileName = `payment-${Date.now()}.${fileExt}`
+      formData.append("file", file, fileName)
+
+      const response = await fetch("/api/upload/payment", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Upload Failed")
+      }
+
+      const data = await response.json()
+      return data.url
+    } catch (error) {
+      console.error("Error Uploading file to payments folder:", error)
+      toast.error("Error uploading file. Please try again.")
+      return null
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const preprocessImage = (imageData: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new window.Image()
+      img.src = imageData
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        const ctx = canvas.getContext("2d")!
+        canvas.width = img.width * 2
+        canvas.height = img.height * 2
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+        ctx.fillStyle = "white"
+        ctx.fillRect(canvas.width * 0.8, canvas.height * 0.7, 50, 50)
+
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        for (let i = 0; i < imgData.data.length; i += 4) {
+          const avg = (imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2]) / 3
+          imgData.data[i] = avg
+          imgData.data[i + 1] = avg
+          imgData.data[i + 2] = avg
+        }
+        ctx.putImageData(imgData, 0, 0)
+
+        resolve(canvas.toDataURL("image/png"))
+      }
+    })
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadedFile = event.target.files?.[0]
+    if (!uploadedFile) return
+
+    setFile(uploadedFile)
+    const fileError = validateFile(uploadedFile)
+    setFieldErrors(prev => ({ ...prev, file: fileError }))
+
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const imageData = reader.result as string
+      setPreview(imageData)
+      setLoading(true)
+      setReferenceLoading(true)
+      setScannedTotal(null)
+      setReference(null)
+      setConfirmationNumber("")
+      setScannedText("")
+
+      try {
+        const preprocessedData = await preprocessImage(imageData)
+
+        const result = await Tesseract.recognize(preprocessedData, "eng", {
+          logger: (m) => console.log(m),
+        })
+
+        const text = result.data.text
+        setScannedText(text)
+
+        const confirmationMatch = text.match(/confirmation[\s#:=-]*no\.?\s*([A-Z0-9-]{5,})/i)
+        if (confirmationMatch) {
+          setShowConfirmationInput(true)
+          setConfirmationNumber(confirmationMatch[1])
+        } else {
+          setShowConfirmationInput(false)
+          setConfirmationNumber("")
+        }
+
+        const traceMatch = text.match(/Trace no\.\s*([A-Z0-9-]+)/i)
+        if (traceMatch) {
+          setShowConfirmationInput(true)
+          setConfirmationNumber(traceMatch[1])
+        }
+
+        const landBankTransactionRefMatch = text.match(/Transaction Reference Number\s*([A-Z0-9\/]+)/i)
+        if (landBankTransactionRefMatch) {
+          setShowConfirmationInput(true)
+          setConfirmationNumber(landBankTransactionRefMatch[1])
+        }
+
+        const currencyPattern = "(?:₱|PHP|F|P|£)"
+
+        const bdoAmountMatch = text.match(/PHP\s*([\d,]+\.[\d]{2})/i)
+
+        const paidMatch = text.match(
+          new RegExp(`paid\\s*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i")
+        )
+        const transferMatch = text.match(
+          new RegExp(`transfer\\s*amount[\\s\\S]*?${currencyPattern}\\s?([\\d,]+\\.\\d{2})`, "i")
+        )
+
+        const totalMatch =
+          text.match(new RegExp(`total[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i")) ||
+          text.match(new RegExp(`amount[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i")) ||
+          text.match(new RegExp(`total\\s*amount\\s*sent[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i"))
+
+        let detectedAmount = null
+        if (bdoAmountMatch) {
+          setAmountLabel("Paid Amount")
+          detectedAmount = bdoAmountMatch[1]
+        } else if (paidMatch) {
+          setAmountLabel("Paid Amount")
+          detectedAmount = paidMatch[1]
+        } else if (transferMatch) {
+          setAmountLabel("Transfer Amount")
+          detectedAmount = transferMatch[1]
+        } else if (totalMatch) {
+          setAmountLabel("Total")
+          detectedAmount = totalMatch[1]
+        } else {
+          setAmountLabel("Total")
+          detectedAmount = null
+        }
+
+        if (detectedAmount) {
+          setScannedTotal(`₱${detectedAmount}`)
+          form.setFieldValue("amount", parseFloat(detectedAmount.replace(/,/g, '')))
+          setFieldErrors(prev => ({ ...prev, amount: '' }))
+        } else {
+          setScannedTotal("Not found")
+        }
+
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+
+        let refNumber = "Not found"
+        let refLabel = "Reference No."
+        let foundTransactionRef = false
+
+        const bdoRefMatch = text.match(/Reference no\.\s*([A-Z0-9-]+)/i)
+        if (bdoRefMatch) {
+          refNumber = bdoRefMatch[1]
+        }
+
+        if (refNumber === "Not found") {
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].toLowerCase()
+
+            if (line.includes("transaction reference no") || line.includes("transaction ref")) {
+              refLabel = "Transaction Reference No."
+              foundTransactionRef = true
+            }
+
+            if (
+              line.includes("reference no") ||
+              line.includes("ref no") ||
+              line.includes("ref. no.") ||
+              line.includes("transaction reference no") ||
+              line.includes("transaction ref no")
+            ) {
+              const inlineMatch = lines[i].match(
+                /(?:ref(?:\.|erence)?(?: no\.?)?[:\s]*)\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i
+              )
+
+              if (inlineMatch) {
+                refNumber = inlineMatch[1]
+                  .replace(/\s+/g, ' ')
+                  .trim()
+                break
+              }
+
+              for (let j = i + 1; j < Math.min(i + 3, lines.length); j++) {
+                const candidate = lines[j].trim()
+                if (/^[A-Z0-9\s-]{8,}$/i.test(candidate)) {
+                  refNumber = candidate
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                  break
+                }
+              }
+
+              if (refNumber !== "Not found") break
+            }
+          }
+        }
+
+        if (refNumber === "Not found") {
+          const refPatterns = [
+            /Reference no\.\s*([A-Z0-9-]+)/i,
+            /Ref No\.\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
+            /Reference No\.\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
+            /Ref No[\s:]*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
+            /Transaction Ref\. No\.\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
+            /Transaction Reference No\.\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
+            /Ref\. No\.\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i
+          ]
+
+          for (const pattern of refPatterns) {
+            const match = text.match(pattern)
+            if (match) {
+              refNumber = match[1]
+                .replace(/\s+/g, ' ')
+                .trim()
+              break
+            }
+          }
+        }
+
+        if (refNumber !== "Not found") {
+          refNumber = refNumber.replace(/\s.$/, '')
+          refNumber = refNumber.replace(/(\s.)+$/, '')
+          refNumber = refNumber.trim()
+
+          if (!refNumber.includes('-')) {
+            refNumber = refNumber.replace(/[^\d\s-]/g, '')
+          }
+
+          refNumber = refNumber.replace(/\s+/g, ' ').trim()
+
+          if (refNumber.replace(/[\s-]/g, '').length < 4) {
+            refNumber = "Not found"
+          }
+        }
+
+        if (foundTransactionRef) {
+          refLabel = "Transaction Reference No."
+        }
+
+        setReference(refNumber)
+        setReferenceLabel(refLabel)
+
+      } catch (err) {
+        setScannedText("Error: Could not read text.")
+      } finally {
+        setLoading(false)
+        setReferenceLoading(false)
+      }
+    }
+
+    reader.readAsDataURL(uploadedFile)
+  }
+
+  const handleRemoveFile = () => {
+    setFile(null)
+    setPreview(null)
+    setUploadedFileUrl(null)
+    setReferenceLoading(false)
+    setScannedTotal(null)
+    setReference(null)
+    setFieldErrors(prev => ({ ...prev, file: 'Proof of payment is required' }))
+    form.setFieldValue("proofOfPaymentURL", "")
+  }
+
+  const validateFile = (file: File): string => {
+    if (!file) return 'Proof of payment is required'
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
+    if (!validTypes.includes(file.type)) {
+      return 'Please upload a valid image file (JPEG, PNG, JPG) or PDF'
+    }
+    if (file.size > 10 * 1024 * 1024) { // 10MB
+      return 'File size must be less than 10MB'
+    }
+    return ''
+  }
+
+  const validatePayerName = (name: string): string => {
+    if (!name.trim()) return 'Payer name is required'
+    if (name.trim().length < 2) return 'Payer name must be at least 2 characters'
+    return ''
+  }
+
+  const validateAmount = (amount: string): string => {
+    if (!amount) return 'Amount is required'
+    const numAmount = parseFloat(amount)
+    if (isNaN(numAmount) || numAmount <= 0) return 'Amount must be greater than 0'
+    return ''
+  }
+
+  const validatePaymentMethod = (method: string): string => {
+    if (!method) return 'Payment method is required'
+    return ''
+  }
+
+  const handleEntrySelect = async (entryNode: EntryNode) => {
+    if (!selectedEntries.find(e => e._id === entryNode._id)) {
+      setAmountLoading(true)
+
+      try {
+        const referenceNumber = `${entryNode.entryNumber}_${entryNode.entryKey}`
+        const result = await fetchEntryAmount({
+          variables: { referenceNumber }
+        })
+
+        const newEntry: EntryInput = {
+          _id: entryNode._id,
+          entryNumber: entryNode.entryNumber,
+          entryKey: entryNode.entryKey,
+          player1Name: entryNode.playerList.player1Name,
+          player2Name: entryNode.playerList.player2Name,
+          eventName: entryNode.eventName,
+          tournamentName: entryNode.tournamentName,
+          club: entryNode.club,
+          currentStatus: entryNode.currentStatus,
+          isFullyPaid: false,
+          amount: result.data?.entryEventAmountDetails?.amount || 0
+        }
+        setSelectedEntries([...selectedEntries, newEntry])
+      } catch (error) {
+        console.error("Error fetching entry amount:", error)
+        const newEntry: EntryInput = {
+          _id: entryNode._id,
+          entryNumber: entryNode.entryNumber,
+          entryKey: entryNode.entryKey,
+          player1Name: entryNode.playerList.player1Name,
+          player2Name: entryNode.playerList.player2Name,
+          eventName: entryNode.eventName,
+          tournamentName: entryNode.tournamentName,
+          club: entryNode.club,
+          currentStatus: entryNode.currentStatus,
+          isFullyPaid: false,
+          amount: 0
+        }
+        setSelectedEntries([...selectedEntries, newEntry])
+      } finally {
+        setAmountLoading(false)
+      }
+    }
+    setEntrySearch("")
+    setEntriesPopoverOpen(false)
+  }
+
+  useEffect(() => {
+    const calculateTotal = () => {
+      let total = 0
+      selectedEntries.forEach(entry => {
+        if (entry.amount) {
+          total += entry.amount
+        }
+      })
+      setTotalRequired(total)
+
+      const currentAmount = form.getFieldValue("amount") || 0
+      if (currentAmount === 0 || total === 0) {
+        setPriceReminder(null)
+      } else if (currentAmount >= total) {
+        setPriceReminder(`✅ Amount is enough and matches the total price of ₱${total.toFixed(2)}.`)
+      } else {
+        const diff = total - currentAmount
+        setPriceReminder(`⚠️ Amount is not enough. Missing ₱${diff.toFixed(2)} from ₱${total.toFixed(2)}.`)
+      }
+    }
+
+    calculateTotal()
+  }, [selectedEntries, form.getFieldValue("amount")])
+
+  const handleConfirmPayment = async () => {
+    setShowConfirmationDialog(false)
+
+    try {
+      setIsUploading(true)
+
+      let imageUrl = form.getFieldValue("proofOfPaymentURL")
+
+      if (!imageUrl && file) {
+        const uploadedUrl = await uploadFile(file)
+        if (!uploadedUrl) {
+          toast.error("Failed to upload receipt image. Please try again.")
+          setIsUploading(false)
+          return
+        }
+        imageUrl = uploadedUrl
+        form.setFieldValue("proofOfPaymentURL", imageUrl)
+      }
+
+      if (!imageUrl) {
+        toast.error("Please upload proof of payment or provide a URL")
+        setIsUploading(false)
+        return
+      }
+
+      form.handleSubmit()
+    } catch (err: any) {
+      console.error('Error creating payment:', err)
+      toast.error(`Error creating payment: ${err.message}`)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const SuccessModal = () => (
+    <motion.div
+      className="absolute inset-0 bg-white/95 flex flex-col items-center justify-center rounded-xl z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <CheckCircle className="w-16 h-16 text-green-600 mb-4" />
+      <p className="text-green-600 font-bold text-lg mb-2">Payment Submitted!</p>
+      <p className="text-gray-600 text-sm mb-4 text-center">
+        Your payment has been recorded successfully.
+      </p>
+    </motion.div>
+  )
+
+  const ConfirmationDialog = () => (
+    <motion.div
+      className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+      >
+        <div className="text-center mb-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-2">
+            Confirm Payment Submission
+          </h3>
+          <p className="text-gray-600 text-sm">
+            Please review your payment details before submitting:
+          </p>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="text-sm font-medium text-gray-700 mb-1">Payment Method:</div>
+              <div className="text-base font-bold text-purple-600">
+                {form.getFieldValue("method").replace("_", " ")}
+              </div>
+            </div>
+
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="text-sm font-medium text-gray-700 mb-1">Total Required:</div>
+              <div className="text-base font-bold text-green-600">
+                ₱{totalRequired.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </div>
+            </div>
+          </div>
+
+          {(reference || confirmationNumber) && (
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="text-sm font-medium text-gray-700 mb-1">Reference No.</div>
+              <div className="text-base font-bold text-blue-600 truncate">
+                {reference && reference !== "Not found" ? reference : confirmationNumber}
+              </div>
+            </div>
+          )}
+
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="text-sm font-medium text-gray-700 mb-1">Payer Name</div>
+            <div className="text-base font-medium text-gray-800">
+              {form.getFieldValue("payerName").trim()}
+            </div>
+          </div>
+
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <span className="text-sm font-medium text-gray-700 block mb-2">
+              Payment Distribution:
+            </span>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {selectedEntries.map((entry, index) => {
+                const entryAmount = entry.amount || 0
+                return (
+                  <div key={entry._id} className="flex justify-between items-center text-xs p-2 bg-white rounded border">
+                    <div>
+                      <span className="font-medium">Entry {index + 1}:</span>
+                      <span className="text-gray-600 ml-2">
+                        {entry.entryNumber} ({entry.entryKey})
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium text-green-600">
+                        ₱{entryAmount.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}
+                      </div>
+                      <div className="text-gray-500 text-xs">
+                        {entry.isFullyPaid ? 'Fully Paid' : 'Partial Payment'}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <span className="text-sm font-bold text-blue-700">Payment Amount </span>
+            <span className="text-lg font-bold text-blue-700">
+              ₱{(form.getFieldValue("amount") || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              })}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <Button
+            onClick={() => setShowConfirmationDialog(false)}
+            className="flex-1 bg-gray-300 text-gray-700 hover:bg-gray-400"
+            disabled={isUploading || isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmPayment}
+            className="flex-1 bg-green-600 text-white hover:bg-green-700"
+            disabled={isUploading || isPending}
+          >
+            {isUploading ? "Uploading..." : isPending ? "Submitting..." : "Confirm Payment"}
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PAYMENT_PENDING":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "PAYMENT_PARTIALLY_PAID":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "LEVEL_APPROVED":
+      case "VERIFIED":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "REJECTED":
+        return "bg-red-100 text-red-800 border-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "MMM dd, yyyy")
+    } catch {
+      return dateString
+    }
+  }
+
+  const getSelectedEntriesText = () => {
+    if (selectedEntries.length === 0) {
+      return "Select entries..."
+    }
+    if (selectedEntries.length === 1) {
+      return `${selectedEntries[0].entryNumber} (${selectedEntries[0].player1Name})`
+    }
+    return `${selectedEntries.length} entries selected`
+  }
+
+  const handleRemoveEntry = (entryId: string) => {
+    setSelectedEntries(selectedEntries.filter(e => e._id !== entryId))
+  }
+
+  const updateEntryFullyPaid = (entryId: string, value: boolean) => {
+    setSelectedEntries(selectedEntries.map(entry =>
+      entry._id === entryId ? { ...entry, isFullyPaid: value } : entry
+    ))
+  }
+
+  const entries = entriesData?.entries?.edges?.map(edge => edge.node) || []
+
+  const RequiredLabel = ({ htmlFor, children }: { htmlFor: string; children: string }) => (
+    <div className="flex items-center gap-1">
+      <FieldLabel htmlFor={htmlFor}>{children}</FieldLabel>
+      <span className="text-red-500">*</span>
+    </div>
+  )
+
   return (
-    <Dialog modal open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {isUpdate ? (
-          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-            Edit
-          </DropdownMenuItem>
-        ) : (
+    <>
+      <Dialog modal open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
           <Button variant="outline-success">
             <CirclePlus className="size-3.5" />
-            Add User
+            Add Payment
           </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-        showCloseButton={false}
-      >
-        <DialogHeader>
-          <DialogTitle>{isUpdate ? "Edit User" : "Create User"}</DialogTitle>
-          <DialogDescription>
-            {isUpdate
-              ? "Update existing user details."
-              : "Create a new user in the system."}
-          </DialogDescription>
-        </DialogHeader>
-        <form
-          className="-mt-2 mb-2"
-          id="user-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            form.handleSubmit()
-          }}
+        </DialogTrigger>
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          showCloseButton={false}
+          className="max-w-4xl max-h-[90vh] overflow-y-auto"
         >
-          <FieldSet>
-            <form.Field
-              name="name"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Name</FieldLabel>
-                    <InputGroup className="-my-1">
-                      <InputGroupInput
-                        placeholder="Name"
-                        disabled={loading}
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                      />
-                    </InputGroup>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
+          <DialogHeader>
+            <DialogTitle>Create Payment</DialogTitle>
+            <DialogDescription>
+              Record a new payment for tournament entries
+            </DialogDescription>
+          </DialogHeader>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="payment-details">Payment Details</TabsTrigger>
+              <TabsTrigger value="payment-reference">Upload Receipt</TabsTrigger>
+            </TabsList>
+
+            <form
+              className="space-y-4 mb-4"
+              id="payment-form"
+              onSubmit={(e) => {
+                e.preventDefault()
+                setShowConfirmationDialog(true)
               }}
-            />
-            <form.Field
-              name="username"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Username</FieldLabel>
-                    <InputGroup className="-my-1.5">
-                      <InputGroupInput
-                        disabled={loading}
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="Username"
+            >
+              <div className="min-h-[420px] max-h-[60vh] overflow-y-auto pr-2">
+                <TabsContent value="payment-details" className="space-y-4 mt-4">
+                  <FieldSet>
+                    <form.Field
+                      name="payerName"
+                      children={(field) => {
+                        const isInvalid = field.state.meta.errors.length > 0 || fieldErrors.payerName
+                        return (
+                          <Field data-invalid={!!isInvalid}>
+                            <RequiredLabel htmlFor={field.name}>Payer Name</RequiredLabel>
+                            <Input
+                              placeholder="Enter payer's full name"
+                              disabled={isLoading}
+                              id={field.name}
+                              name={field.name}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) => {
+                                field.handleChange(e.target.value)
+                                const error = validatePayerName(e.target.value)
+                                setFieldErrors(prev => ({ ...prev, payerName: error }))
+                              }}
+                              aria-invalid={!!isInvalid}
+                            />
+                            {(isInvalid || fieldErrors.payerName) && (
+                              <FieldError errors={[...field.state.meta.errors]} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <form.Field
+                        name="method"
+                        children={(field) => {
+                          const isInvalid = field.state.meta.errors.length > 0 || fieldErrors.paymentMethod
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <RequiredLabel htmlFor={field.name}>Payment Method</RequiredLabel>
+                              <Select
+                                value={field.state.value}
+                                onValueChange={(value: PaymentMethod) => {
+                                  field.handleChange(value)
+                                  const error = validatePaymentMethod(value)
+                                  setFieldErrors(prev => ({ ...prev, paymentMethod: error }))
+                                }}
+                                disabled={isLoading}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select method" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.values(PaymentMethod).map((method) => (
+                                    <SelectItem key={method} value={method}>
+                                      {method.replace("_", " ")}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {(isInvalid || fieldErrors.paymentMethod) && (
+                                <FieldError errors={[...field.state.meta.errors]} />
+                              )}
+                            </Field>
+                          )
+                        }}
                       />
-                    </InputGroup>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            />
-            <form.Field
-              name="contactNumber"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Contact No.</FieldLabel>
-                    <InputGroup className="-my-1.5">
-                      <InputGroupInput
-                        disabled={loading}
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="Contact No."
-                      />
-                    </InputGroup>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            />
-            <form.Field
-              name="email"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Email Address</FieldLabel>
-                    <InputGroup className="-my-1.5">
-                      <InputGroupInput
-                        disabled={loading}
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="Email Address"
-                        type="email"
-                      />
-                    </InputGroup>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            />
-            <form.Field
-              name="role"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Role</FieldLabel>
-                    <Popover open={openRoles} onOpenChange={setOpenRoles}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          id={field.name}
-                          name={field.name}
-                          disabled={loading}
-                          aria-expanded={openRoles}
-                          onBlur={field.handleBlur}
-                          variant="outline"
-                          role="combobox"
-                          aria-invalid={isInvalid}
-                          className="w-full justify-between font-normal capitalize -mt-2"
-                          type="button"
-                        >
-                          {field.state.value
-                            ? Roles.find((o) => o.value === field.state.value)
-                                ?.label
-                            : "Select Role"}
-                          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command
-                          filter={(value, search) =>
-                            Roles.find(
-                              (t: { value: string; label: string }) =>
-                                t.value === value
-                            )
-                              ?.label.toLowerCase()
-                              .includes(search.toLowerCase())
-                              ? 1
-                              : 0
-                          }
-                        >
-                          <CommandInput placeholder="Select Role" />
-                          <CommandList className="max-h-72 overflow-y-auto">
-                            <CommandEmpty>No role found.</CommandEmpty>
-                            <CommandGroup>
-                              <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
-                                Roles
-                              </Label>
-                              {Roles?.map((o) => (
-                                <CommandItem
-                                  key={o.value}
-                                  value={o.value}
-                                  onSelect={(v) => {
-                                    field.handleChange(v as Role)
-                                    setOpenRoles(false)
-                                  }}
-                                  className="capitalize"
-                                >
-                                  <CheckIcon
+
+                      <form.Field
+                        name="paymentDate"
+                        children={(field) => {
+                          const isInvalid = field.state.meta.errors.length > 0
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <RequiredLabel htmlFor={field.name}>Payment Date</RequiredLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
                                     className={cn(
-                                      "h-4 w-4",
-                                      field.state.value === o.value
-                                        ? "opacity-100"
-                                        : "opacity-0"
+                                      "w-full justify-start text-left font-normal",
+                                      !field.state.value && "text-muted-foreground"
                                     )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {field.state.value ? (
+                                      format(field.state.value, "PPP")
+                                    ) : (
+                                      <span>Pick a date</span>
+                                    )}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.state.value}
+                                    onSelect={(date) => date && field.handleChange(date)}
+                                    initialFocus
                                   />
-                                  {o.label}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            />
-          </FieldSet>
-        </form>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button className="w-20" onClick={onClose} variant="outline">
-              Cancel
+                                </PopoverContent>
+                              </Popover>
+                              {isInvalid && (
+                                <FieldError errors={field.state.meta.errors} />
+                              )}
+                            </Field>
+                          )
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-1">
+                        <Label className="text-sm font-medium">Select Entries</Label>
+                        <span className="text-red-500">*</span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Popover open={entriesPopoverOpen} onOpenChange={setEntriesPopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              ref={popoverTriggerRef}
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={entriesPopoverOpen}
+                              className="w-full justify-between font-normal"
+                              type="button"
+                              disabled={isLoading}
+                            >
+                              <span className="truncate text-left">
+                                {getSelectedEntriesText()}
+                              </span>
+                              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="p-0"
+                            align="start"
+                            style={{ width: popoverWidth ? `${popoverWidth}px` : '100%' }}
+                          >
+                            <div className="p-2 border-b">
+                              <Input
+                                type="text"
+                                placeholder="Search entries..."
+                                value={entrySearch}
+                                onChange={(e) => setEntrySearch(e.target.value)}
+                                className="w-full text-sm"
+                                autoFocus
+                              />
+                            </div>
+                            <ScrollArea className="h-60">
+                              <div className="p-1">
+                                {entriesLoading ? (
+                                  <div className="py-8 text-center text-sm text-muted-foreground">
+                                    Loading entries...
+                                  </div>
+                                ) : entries.length === 0 ? (
+                                  <div className="py-8 text-center text-sm text-muted-foreground">
+                                    {entrySearch ? "No entries found" : "No entries available"}
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1">
+                                    {entries.map((entry) => {
+                                      const isSelected = selectedEntries.some(e => e._id === entry._id)
+                                      return (
+                                        <button
+                                          key={entry._id}
+                                          type="button"
+                                          onClick={() => handleEntrySelect(entry)}
+                                          className={cn(
+                                            "w-full text-left p-2 rounded hover:bg-gray-50 transition-colors flex items-start gap-2",
+                                            isSelected && "bg-green-50",
+                                          )}
+                                        >
+                                          {isSelected ? (
+                                            <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                          ) : (
+                                            <div className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between">
+                                              <span className="font-medium text-sm truncate">
+                                                {entry.entryNumber} ({entry.entryKey})
+                                              </span>
+                                              <Badge
+                                                variant="outline"
+                                                className={cn("text-xs flex-shrink-0", getStatusColor(entry.currentStatus))}
+                                              >
+                                                {entry.currentStatus.replace("_", " ")}
+                                              </Badge>
+                                            </div>
+                                            <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                                              <div className="truncate">
+                                                <span className="font-medium">Players: </span>
+                                                <span>{entry.playerList.player1Name}</span>
+                                                {entry.playerList.player2Name && (
+                                                  <span>, {entry.playerList.player2Name}</span>
+                                                )}
+                                              </div>
+                                              <div className="truncate">
+                                                <span className="font-medium">Event: </span>
+                                                <span>{entry.eventName}</span>
+                                              </div>
+                                              <div className="truncate">
+                                                <span className="font-medium">Tournament: </span>
+                                                <span>{entry.tournamentName}</span>
+                                              </div>
+                                              {entry.club && (
+                                                <div className="truncate">
+                                                  <span className="font-medium">Club: </span>
+                                                  <span>{entry.club}</span>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </ScrollArea>
+                            {entries.length > 0 && (
+                              <div className="p-2 border-t text-xs text-muted-foreground">
+                                Showing {entries.length} of {entriesData?.entries?.total || 0} entries
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+
+                        {selectedEntries.length > 0 && (
+                          <div className="space-y-2">
+                            <Separator />
+                            <div className="flex items-center justify-between">
+                              <Label className="text-sm font-medium">
+                                Selected Entries ({selectedEntries.length})
+                              </Label>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedEntries([])}
+                                disabled={isLoading}
+                              >
+                                Clear All
+                              </Button>
+                            </div>
+
+                            <ScrollArea className="h-40">
+                              <div className="space-y-2 pr-2">
+                                {selectedEntries.map((entry) => (
+                                  <div
+                                    key={entry._id}
+                                    className="p-3 border rounded-lg space-y-2"
+                                  >
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-medium text-sm">
+                                            {entry.entryNumber} ({entry.entryKey})
+                                          </span>
+                                          <Badge
+                                            variant="outline"
+                                            className={cn("text-xs", getStatusColor(entry.currentStatus))}
+                                          >
+                                            {entry.currentStatus.replace("_", " ")}
+                                          </Badge>
+                                          {entry.amount && entry.amount > 0 && (
+                                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                              ₱{entry.amount.toFixed(2)}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                                          <div><strong>Players:</strong> {entry.player1Name}{entry.player2Name ? `, ${entry.player2Name}` : ''}</div>
+                                          <div><strong>Event:</strong> {entry.eventName}</div>
+                                          <div><strong>Tournament:</strong> {entry.tournamentName}</div>
+                                          {entry.club && <div><strong>Club:</strong> {entry.club}</div>}
+                                        </div>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleRemoveEntry(entry._id)}
+                                        className="h-8 w-8 p-0"
+                                        disabled={isLoading}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`fully-paid-${entry._id}`}
+                                        checked={entry.isFullyPaid}
+                                        onCheckedChange={(checked) =>
+                                          updateEntryFullyPaid(entry._id, checked as boolean)
+                                        }
+                                        disabled={isLoading}
+                                      />
+                                      <Label
+                                        htmlFor={`fully-paid-${entry._id}`}
+                                        className="text-sm font-normal cursor-pointer"
+                                      >
+                                        This entry is fully paid with this payment
+                                      </Label>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </ScrollArea>
+                          </div>
+                        )}
+
+                        {/* {selectedEntries.length === 0 && (
+                          <p className="text-sm text-red-500">Please select at least one entry</p>
+                        )} */}
+                      </div>
+
+                      {/* <p className="text-xs text-muted-foreground">
+                        Only entries with PAYMENT_PENDING status are shown.
+                      </p> */}
+                    </div>
+                  </FieldSet>
+                </TabsContent>
+
+                <TabsContent value="payment-reference" className="space-y-4 mt-4">
+                  <FieldSet>
+                    <div className="grid grid-cols-2 gap-4">
+                      <form.Field
+                        name="amount"
+                        children={(field) => {
+                          const isInvalid = field.state.meta.errors.length > 0 || fieldErrors.amount
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <RequiredLabel htmlFor={field.name}>Amount</RequiredLabel>
+                              <div className="space-y-2">
+                                <div className="relative">
+                                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <span className="text-gray-500 sm:text-sm">₱</span>
+                                  </div>
+                                  <Input
+                                    type="number"
+                                    placeholder="0.00"
+                                    disabled={isLoading}
+                                    id={field.name}
+                                    name={field.name}
+                                    value={field.state.value}
+                                    onBlur={field.handleBlur}
+                                    onChange={(e) => {
+                                      field.handleChange(Number(e.target.value))
+                                      const error = validateAmount(e.target.value)
+                                      setFieldErrors(prev => ({ ...prev, amount: error }))
+                                    }}
+                                    aria-invalid={!!isInvalid}
+                                    className="pl-7"
+                                  />
+                                </div>
+                                {scannedTotal && (
+                                  <p className="text-xs text-green-600">
+                                    {scannedTotal === "Not found"
+                                      ? "No amount detected in receipt"
+                                      : `Scanned amount: ${scannedTotal}`}
+                                  </p>
+                                )}
+                              </div>
+                              {(isInvalid || fieldErrors.amount) && (
+                                <FieldError errors={[...field.state.meta.errors]} />
+                              )}
+                            </Field>
+                          )
+                        }}
+                      />
+
+                      <form.Field
+                        name="referenceNumber"
+                        children={(field) => {
+                          const isInvalid = field.state.meta.errors.length > 0
+                          const inputValue =
+                            (reference && reference !== "Not found") ? reference :
+                              confirmationNumber ? confirmationNumber :
+                                field.state.value;
+
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <div className="flex items-center gap-1">
+                                <Label className="text-sm font-medium">Reference No.</Label>
+                                <span className="text-red-500">*</span>
+                                {referenceLoading && (
+                                  <span className="text-xs font-normal text-blue-500 animate-pulse ml-2">
+                                    Scanning...
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="space-y-2">
+                                {referenceLoading ? (
+                                  <div className="flex items-center gap-3 p-2 border border-gray-200 rounded bg-gray-50">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                                    <span className="text-gray-600">Scanning...</span>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1">
+                                    <Input
+                                      placeholder="e.g., Bank reference, GCash reference"
+                                      disabled={isLoading}
+                                      id={field.name}
+                                      name={field.name}
+                                      value={inputValue}
+                                      onBlur={field.handleBlur}
+                                      onChange={(e) => {
+                                        field.handleChange(e.target.value);
+                                        // Clear the scanned reference if user manually changes it
+                                        if (e.target.value !== reference && e.target.value !== confirmationNumber) {
+                                          setReference(null);
+                                          setConfirmationNumber("");
+                                        }
+                                      }}
+                                    />
+                                    {(reference && reference !== "Not found") && (
+                                      <p className="text-xs text-green-600">
+                                        ✓ Scanned reference auto-filled
+                                      </p>
+                                    )}
+                                    {confirmationNumber && !reference && (
+                                      <p className="text-xs text-yellow-600">
+                                        ⚠️ Using confirmation/trace number
+                                      </p>
+                                    )}
+                                    {(!reference || reference === "Not found") && !confirmationNumber && file && (
+                                      <p className="text-xs text-gray-500">
+                                        No reference detected in receipt
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              {isInvalid && (
+                                <FieldError errors={field.state.meta.errors} />
+                              )}
+                            </Field>
+                          )
+                        }}
+                      />
+                    </div>
+
+                    <div className="border-2 border-dashed border-green-300 rounded-xl p-4 bg-green-50 flex flex-col items-center">
+                      <div className="w-full text-left mb-3">
+                        <div className="text-green-800 font-bold text-sm mb-1">
+                          Upload Proof of Payment <span className="text-red-500">*</span>
+                        </div>
+                        <p className="text-gray-600 text-xs">
+                          Upload your GCash, Maya, or bank receipt to automatically scan the amount and reference number.
+                        </p>
+                      </div>
+
+                      {file && (
+                        <div className="w-full mb-4 p-3 bg-white border rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Paperclip className="w-4 h-4 text-gray-500" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium truncate">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {(file.size / 1024).toFixed(2)} KB
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={handleRemoveFile}
+                              disabled={isUploading}
+                              className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          {isUploading && (
+                            <div className="mt-2">
+                              <div className="w-full bg-gray-200 rounded-full h-1">
+                                <div className="bg-green-600 h-1 rounded-full animate-pulse"></div>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">Uploading...</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="w-full flex justify-center mb-4">
+                        {preview ? (
+                          <img
+                            src={preview}
+                            alt="Uploaded receipt"
+                            className="w-full max-w-[300px] rounded-lg border shadow"
+                          />
+                        ) : (
+                          <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                            <div className="text-center">
+                              <UploadIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-500">Receipt preview will appear here</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <label
+                        htmlFor="proofUpload"
+                        className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${fieldErrors.file ? 'border-red-300 bg-red-50 hover:bg-red-100' : 'border-green-400 hover:bg-green-50'
+                          }`}
+                      >
+                        {loading ? (
+                          <Loader2 className={`w-6 h-6 mb-2 animate-spin ${fieldErrors.file ? 'text-red-500' : 'text-green-600'}`} />
+                        ) : (
+                          <UploadIcon className={`w-6 h-6 mb-2 ${fieldErrors.file ? 'text-red-500' : 'text-green-600'}`} />
+                        )}
+                        <span className={`font-medium text-sm ${fieldErrors.file ? 'text-red-700' : 'text-green-700'}`}>
+                          {loading ? "Scanning..." : "Drag & Drop your receipt or Browse"}
+                        </span>
+                        <input
+                          id="proofUpload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                        />
+                      </label>
+
+                      {fieldErrors.file && (
+                        <p className="text-red-500 text-xs mt-2 text-center">{fieldErrors.file}</p>
+                      )}
+
+                      {/* <div className="w-full mt-4">
+                        <form.Field
+                          name="proofOfPaymentURL"
+                          children={(field) => {
+                            return (
+                              <div className="space-y-1">
+                                <Label className="text-sm font-medium">Proof of Payment URL (Auto-filled)</Label>
+                                <Input
+                                  type="url"
+                                  placeholder="Will be auto-filled after upload"
+                                  disabled={true}
+                                  id={field.name}
+                                  name={field.name}
+                                  value={uploadedFileUrl || field.state.value}
+                                  className="text-sm"
+                                />
+                                {(uploadedFileUrl || field.state.value) && (
+                                  <p className="text-xs text-green-600">
+                                    Proof of payment {uploadedFileUrl ? 'uploaded and' : ''} attached
+                                  </p>
+                                )}
+                              </div>
+                            )
+                          }}
+                        />
+                      </div> */}
+                    </div>
+                  </FieldSet>
+                </TabsContent>
+              </div>
+            </form>
+          </Tabs>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button className="w-20" onClick={onClose} variant="outline">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              className="w-20"
+              loading={isLoading || isUploading}
+              type="submit"
+              form="payment-form"
+              disabled={selectedEntries.length === 0 || !form.getFieldValue("payerName") || !form.getFieldValue("amount") || !form.getFieldValue("method")}
+            >
+              Submit
             </Button>
-          </DialogClose>
-          <Button
-            className="w-20"
-            loading={isLoading}
-            type="submit"
-            form="user-form"
-          >
-            Submit
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </DialogFooter>
+
+          <AnimatePresence>
+            {success && <SuccessModal />}
+            {showConfirmationDialog && <ConfirmationDialog />}
+          </AnimatePresence>
+        </DialogContent>
+      </Dialog >
+    </>
   )
 }
 
-export default FormDialog
+export default PaymentFormDialog
