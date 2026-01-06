@@ -25,41 +25,38 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { IRefund, IRefundInput, IRefundNode } from "@/types/refund.interface"
 import { gql } from "@apollo/client"
 import { useQuery } from "@apollo/client/react"
 import { ColumnDef } from "@tanstack/react-table"
-import { InfoIcon, Settings, Trash2Icon, PhilippinePeso, Eye, Edit, Receipt, Plus, ArrowRight } from "lucide-react"
+import { InfoIcon, Settings, Trash2Icon, PhilippinePeso } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
+import FormDialog from "./dialogs/form"
 import { toast } from "sonner"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import ViewDialog from "./dialogs/view"
 import { Checkbox } from "@/components/ui/checkbox"
-import ViewRefundDialog from "./dialogs/view"
-import { format } from "date-fns"
-import PaymentMethodBadge from "@/components/badges/payment-method-badge"
-import { useRouter } from "next/navigation"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import BatchMenu from "./dialogs/batch"
+import VerifyDialog from "./dialogs/verify"
+import RejectDialog from "./dialogs/reject"
 
 const REFUNDS = gql`
   query Refunds(
     $first: Int
     $after: String
     $search: String
-    $filter: [Filter!]
+    $filter: [Filter]
     $sort: Sort
   ) {
     refunds(
@@ -78,20 +75,9 @@ const REFUNDS = gql`
           payerName
           referenceNumber
           amount
-          entry {
-            _id
-            entryNumber
-            entryKey
-          }
           method
-          paymentDate
-          createdAt
-          uploadedBy {
-            _id
-            firstName
-            lastName
-            email
-          }
+          refundDate
+          entries
         }
       }
       pageInfo {
@@ -103,7 +89,7 @@ const REFUNDS = gql`
 `
 
 const REFUND_CHANGED = gql`
-  subscription OnRefundChanged {
+  subscription RefundChanged {
     refundChanged {
       type
       refund {
@@ -111,25 +97,24 @@ const REFUND_CHANGED = gql`
         payerName
         referenceNumber
         amount
-        entry {
-          _id
-          entryNumber
-          entryKey
-        }
         method
-        paymentDate
-        uploadedBy {
-          _id
-          firstName
-          lastName
-          email
-        }
+        refundDate
+        entries
+      }
+      refunds {
+        _id
+        payerName
+        referenceNumber
+        amount
+        method
+        refundDate
+        entries
       }
     }
   }
 `
 
-const ActionsColumn = ({ data }: { data?: any }) => {
+const ActionsColumn = ({ data }: { data?: IRefundNode }) => {
   const refund = useMemo(() => data, [data])
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -141,23 +126,18 @@ const ActionsColumn = ({ data }: { data?: any }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="left" align="start">
-        <DropdownMenuLabel>Refund Actions</DropdownMenuLabel>
+        <DropdownMenuLabel>Settings</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <ViewRefundDialog _id={refund?._id} />
-          {/* <EditRefundDialog refund={refund} onClose={() => setMenuOpen(false)} /> */}
+          <ViewDialog _id={refund?._id} />
+          <FormDialog _id={refund?._id} onClose={() => setMenuOpen(false)} />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
-const RefundsPage = () => {
-  const router = useRouter()
-  
-  const [createRefundOpen, setCreateRefundOpen] = useState(false)
-  const [paymentReference, setPaymentReference] = useState("")
-  
+const Page = () => {
   const [rows, setRows] = useState<number>(10)
   const [page, setPage] = useState<{
     current: number
@@ -178,8 +158,7 @@ const RefundsPage = () => {
     { key: string; value: string; type: string }[]
   >([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  
-  const { data, loading, fetchMore, subscribeToMore }: any = useQuery(
+  const { data, loading, fetchMore, subscribeToMore, error }: any = useQuery(
     REFUNDS,
     {
       variables: {
@@ -198,44 +177,43 @@ const RefundsPage = () => {
       document: REFUND_CHANGED,
       updateQuery: (prev: any, { subscriptionData }: any) => {
         if (!subscriptionData.data) return prev
-        const { type, refund } = subscriptionData.data.refundChanged
-        
+        const { type, refund, refunds } = subscriptionData.data.refundChanged
         switch (type) {
           case "CREATE":
-            toast.success(`Refund (${refund?.referenceNumber}) has been created.`)
+            const newPayment = refund
+            const newPaymentExists = prev.refunds.edges.find(
+              (edge: any) => edge.node._id === newPayment?._id
+            )
+            if (newPaymentExists || search || sort || filter.length > 0)
+              return prev
+            toast.success(`Payment (${newPayment?.name}) has been created.`)
             return Object.assign({}, prev, {
               refunds: {
                 ...prev.refunds,
                 total: prev.refunds.total + 1,
                 edges: [
-                  { cursor: refund?._id, node: refund },
+                  { cursor: newPayment?._id, node: newPayment },
                   ...prev.refunds.edges,
                 ],
               },
             })
           case "UPDATE":
-            toast.success(`Refund (${refund?.referenceNumber}) has been updated.`)
+            const updatedPayment = refund
+            if (search || sort || filter.length > 0) return prev
+            toast.success(
+              `Payment (${updatedPayment?.payerName}) has been updated.`
+            )
             return Object.assign({}, prev, {
               refunds: {
                 ...prev.refunds,
                 edges: prev.refunds.edges.map((edge: any) =>
-                  edge.node._id === refund._id
-                    ? { ...edge, node: refund }
+                  edge.node._id === updatedPayment._id
+                    ? { ...edge, node: updatedPayment }
                     : edge
                 ),
               },
             })
-          case "DELETE":
-            toast.success(`Refund has been deleted.`)
-            return Object.assign({}, prev, {
-              refunds: {
-                ...prev.refunds,
-                total: prev.refunds.total - 1,
-                edges: prev.refunds.edges.filter(
-                  (edge: any) => edge.node._id !== refund._id
-                ),
-              },
-            })
+
           default:
             return prev
         }
@@ -245,16 +223,16 @@ const RefundsPage = () => {
   }, [subscribeToMore, search, sort, filter])
 
   const { total, nodes, pageInfo } = useMemo(() => {
-    const nodes = data?.refunds?.edges.map((edge: any) => edge.node) || []
-    const pageInfo = data?.refunds?.pageInfo
+    const nodes = data?.refunds.edges.map((edge: any) => edge.node) || []
+    const pageInfo = data?.refunds.pageInfo
 
     setPage((prev) => ({
       ...prev,
-      max: data?.refunds?.pages || 1,
+      max: data?.refunds.pages || 1,
     }))
 
     return {
-      total: data?.refunds?.total || 0,
+      total: data?.refunds.total || 0,
       nodes,
       pageInfo,
     }
@@ -277,17 +255,7 @@ const RefundsPage = () => {
     resetPage()
   }, [])
 
-  const handleCreateRefund = () => {
-    if (paymentReference.trim()) {
-      router.push(`/dashboard/payments?search=${encodeURIComponent(paymentReference)}`)
-    } else {
-      router.push('/dashboard/payments')
-    }
-    setCreateRefundOpen(false)
-    setPaymentReference("")
-  }
-
-  const columns: ColumnDef<any>[] = useMemo(
+  const columns: ColumnDef<IRefund>[] = useMemo(
     () => [
       {
         id: "select",
@@ -295,14 +263,14 @@ const RefundsPage = () => {
           return (
             <Checkbox
               checked={
-                selectedIds.size === data?.refunds?.edges.length &&
-                data?.refunds?.edges.length > 0
+                selectedIds.size === data?.refunds.edges.length &&
+                data?.refunds.edges.length > 0
               }
               className="hover:cursor-pointer"
               onCheckedChange={(value: boolean) => {
                 if (value) {
                   const allIds = new Set<string>(
-                    data?.refunds?.edges.map((edge: any) => edge.node._id)
+                    data?.refunds.edges.map((edge: any) => edge.node._id)
                   )
                   setSelectedIds(allIds)
                 } else {
@@ -338,7 +306,7 @@ const RefundsPage = () => {
         accessorKey: "referenceNumber",
         header: () => (
           <SortHeader
-            label="Reference Number"
+            label="Ref. No."
             sortKey="referenceNumber"
             sortState={sort}
             onSortChange={onSort}
@@ -346,7 +314,7 @@ const RefundsPage = () => {
         ),
         footer: () => (
           <ColumnFilter
-            label="Reference"
+            label="Ref. No."
             filterKey="referenceNumber"
             filterType="TEXT"
             filterValue={filter}
@@ -355,10 +323,35 @@ const RefundsPage = () => {
         ),
       },
       {
+        accessorKey: "entries",
+        header: () => (
+          <SortHeader
+            label="Entries"
+            sortKey="entries"
+            sortState={sort}
+            onSortChange={onSort}
+          />
+        ),
+        footer: () => (
+          <ColumnFilter
+            label="Entries"
+            filterKey="entries"
+            filterType="TEXT"
+            filterValue={filter}
+            onFilterChange={onFilter}
+          />
+        ),
+        cell: ({ row }) => {
+          const entries = (row.original as any).entries as string
+          const entryList = entries.split(",").map((e) => e.trim())
+          return <span>{entryList.join(", ")}</span>
+        },
+      },
+      {
         accessorKey: "payerName",
         header: () => (
           <SortHeader
-            label="Payer Name"
+            label="Paid By"
             sortKey="payerName"
             sortState={sort}
             onSortChange={onSort}
@@ -366,7 +359,7 @@ const RefundsPage = () => {
         ),
         footer: () => (
           <ColumnFilter
-            label="Payer Name"
+            label="Paid By"
             filterKey="payerName"
             filterType="TEXT"
             filterValue={filter}
@@ -374,27 +367,7 @@ const RefundsPage = () => {
           />
         ),
       },
-      {
-        accessorKey: "entry.entryNumber",
-        header: () => (
-          <SortHeader
-            label="Entry Number"
-            sortKey="entry.entryNumber"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
-        footer: () => (
-          <ColumnFilter
-            label="Entry Number"
-            filterKey="entry.entryNumber"
-            filterType="TEXT"
-            filterValue={filter}
-            onFilterChange={onFilter}
-          />
-        ),
-        cell: ({ row }) => row.original.entry?.entryNumber || "N/A",
-      },
+
       {
         accessorKey: "amount",
         header: () => (
@@ -409,85 +382,28 @@ const RefundsPage = () => {
           <ColumnFilter
             label="Amount"
             filterKey="amount"
-            filterType="NUMBER"
+            filterType="TEXT"
             filterValue={filter}
             onFilterChange={onFilter}
           />
         ),
         cell: ({ row }) =>
-          `₱${parseFloat(row.original.amount).toLocaleString("en-PH", {
+          `₱${parseFloat((row.original as any).amount).toLocaleString("en-PH", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}`,
-      },
-      {
-        accessorKey: "method",
-        header: () => (
-          <SortHeader
-            label="Method"
-            sortKey="method"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
-        footer: () => (
-          <ColumnFilter
-            label="Method"
-            filterKey="method"
-            filterType="SELECT"
-            options={[
-              { label: "GCash", value: "GCASH" },
-              { label: "Bank Transfer", value: "BANK_TRANSFER" },
-              { label: "Over the Counter", value: "OVER_THE_COUNTER" },
-            ]}
-            filterValue={filter}
-            onFilterChange={onFilter}
-          />
-        ),
-        cell: ({ row }) => <PaymentMethodBadge method={row.original.method} />,
-      },
-      {
-        accessorKey: "paymentDate",
-        header: () => (
-          <SortHeader
-            label="Payment Date"
-            sortKey="paymentDate"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
-        cell: ({ row }) => format(new Date(row.original.paymentDate), "MMM dd, yyyy"),
-      },
-      {
-        accessorKey: "uploadedBy",
-        header: "Uploaded By",
-        cell: ({ row }) => 
-          `${row.original.uploadedBy?.firstName} ${row.original.uploadedBy?.lastName}`,
-      },
-      {
-        accessorKey: "createdAt",
-        header: () => (
-          <SortHeader
-            label="Created At"
-            sortKey="createdAt"
-            sortState={sort}
-            onSortChange={onSort}
-          />
-        ),
-        cell: ({ row }) => format(new Date(row.original.createdAt), "MMM dd, yyyy HH:mm"),
       },
     ],
     [sort, onSort, filter, onFilter, selectedIds, data?.refunds]
   )
 
-  // Pagination functions
   const goNext = async () => {
     if (page.current === page.max) return
     if (page.current === page.loaded) {
       await fetchMore({
         variables: {
           first: rows,
-          after: pageInfo?.endCursor,
+          after: pageInfo.endCursor,
           search,
           sort,
           filter,
@@ -508,6 +424,7 @@ const RefundsPage = () => {
         loaded: prev.loaded + 1,
       }))
     }
+
     setPage((prev) => ({
       ...prev,
       current: prev.current + 1,
@@ -523,268 +440,200 @@ const RefundsPage = () => {
   }
 
   return (
-    <>
-      <div className="w-full h-full flex-1 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 text-slate-900 -mb-1.5">
-            <Receipt className="size-5" />
-            <Label className="text-2xl">Refunds</Label>
-          </div>
-          <Button
-            onClick={() => setCreateRefundOpen(true)}
-            className="bg-amber-600 hover:bg-amber-700"
-          >
-            <Plus className="size-4 mr-2" />
-            Create Refund
-          </Button>
-        </div>
-        
-        <div className="w-full flex justify-between">
-          <InputGroup className="w-[350px]">
-            <InputGroupInput
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.currentTarget.value)}
-              placeholder="Search by reference, payer name..."
-              onKeyDown={(e) => {
-                if (e.key === "Enter") onSearch(searchTerm)
-                if (e.key === "Escape") {
-                  setSearchTerm("")
+    <div className="w-full h-full flex-1 flex flex-col gap-2">
+      <div className="flex items-center gap-1 text-slate-900 -mb-1.5">
+        <PhilippinePeso className="size-5" />
+        <Label className="text-2xl">Refunds</Label>
+      </div>
+      <div className="w-full flex justify-between">
+        <InputGroup className="w-87.5">
+          <InputGroupInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.currentTarget.value)}
+            placeholder="Type to search..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onSearch(searchTerm)
+              if (e.key === "Escape") {
+                setSearchTerm("")
+                onSearch("")
+              }
+            }}
+          />
+          <InputGroupAddon align="inline-end" className="-mr-1.5">
+            <InputGroupButton onClick={() => onSearch(searchTerm)}>
+              Search
+            </InputGroupButton>
+          </InputGroupAddon>
+          {searchTerm && (
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                onClick={() => {
                   onSearch("")
-                }
-              }}
-            />
-            <InputGroupAddon align="inline-end" className="-mr-1.5">
-              <InputGroupButton onClick={() => onSearch(searchTerm)}>
-                Search
+                  setSearchTerm("")
+                }}
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive hover:border-destructive"
+                variant="outline"
+              >
+                Clear
               </InputGroupButton>
             </InputGroupAddon>
-            {searchTerm && (
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton
-                  onClick={() => {
-                    onSearch("")
-                    setSearchTerm("")
-                  }}
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive hover:border-destructive"
-                  variant="outline"
-                >
-                  Clear
-                </InputGroupButton>
-              </InputGroupAddon>
-            )}
-          </InputGroup>
-          <div className="flex items-center gap-2">
-            {selectedIds.size > 0 && (
-              <>
-                <Button
-                  variant="outline-destructive"
-                  onClick={() => setSelectedIds(new Set())}
-                >
-                  <Trash2Icon className="size-3.5" />
-                  Clear Selection
-                </Button>
-              </>
-            )}
-            {sort && (
-              <Button variant="outline-destructive" onClick={() => onSort(null)}>
-                <Trash2Icon className="size-3.5" />
-                Clear Sorting
-              </Button>
-            )}
-            {filter.length > 0 && (
-              <Button variant="outline-destructive" onClick={() => onFilter([])}>
-                <Trash2Icon className="size-3.5" />
-                Clear Filtering
-              </Button>
-            )}
-          </div>
-        </div>
-        
-        <div className="w-full flex justify-between">
-          <div className="px-1.5 flex items-center justify-center">
-            {loading ? (
-              <span className="text-sm text-muted-foreground">Loading...</span>
-            ) : total === 0 ? (
-              <span className="text-sm text-muted-foreground">No refunds found.</span>
-            ) : (
-              <div className="space-x-0.5">
-                <span className="text-sm text-muted-foreground">
-                  Showing {(page.current - 1) * rows + 1}-
-                  {page.current === page.max ? total : page.current * rows} out of{" "}
-                  {total} refund{total === 1 ? "" : "s"}.{" "}
-                  {selectedIds.size > 0 && (
-                    <span className="text-sm text-muted-foreground">
-                      ({selectedIds.size} row{selectedIds.size > 1 ? "s" : ""}{" "}
-                      selected)
-                    </span>
-                  )}
-                </span>
-                {(sort || filter.length > 0 || search) && (
-                  <Tooltip>
-                    <TooltipTrigger className="hover:cursor-pointer text-muted-foreground">
-                      <InfoIcon className="size-3.25" />
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" align="center">
-                      <div className="flex flex-col">
-                        {search && (
-                          <div>
-                            <span className="block">
-                              Search term:{" "}
-                              <span className="block"> • "{search}"</span>
-                            </span>
-                          </div>
-                        )}
-                        {sort && (
-                          <div>
-                            <span className="block">
-                              Sorted by:
-                              <span className="block">
-                                • {sort.key} → {sort.order}
-                              </span>
-                            </span>
-                          </div>
-                        )}
-                        {filter.length > 0 && (
-                          <div>
-                            <span className="block">
-                              Filtered by:
-                              {filter.map((f, i) => (
-                                <span className="block" key={i}>
-                                  • {f.key} → {f.value}
-                                </span>
-                              ))}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <div className="flex items-center justify-center gap-2">
-              <ButtonGroup>
-                <ButtonGroupText className="font-normal text-muted-foreground">
-                  Rows
-                </ButtonGroupText>
-                <Select
-                  onValueChange={(value) => setRows(parseInt(value))}
-                  value={rows.toString()}
-                >
-                  <SelectTrigger size="sm" className="hover:bg-gray-100">
-                    <SelectValue placeholder="Row Count" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Row Count</SelectLabel>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="25">25</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="100">100</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </ButtonGroup>
-            </div>
-            <div className="flex items-center gap-2">
-              <ButtonGroup>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page.current === 1}
-                  onClick={goPrev}
-                  className="disabled:bg-muted disabled:border-gray-300"
-                >
-                  Prev
-                </Button>
-                <ButtonGroupText className="font-normal text-muted-foreground">
-                  Page {page.current} of {page.max}
-                </ButtonGroupText>
-                <Button
-                  variant="outline"
-                  disabled={page.current === page.max}
-                  onClick={goNext}
-                  size="sm"
-                  className="disabled:bg-muted disabled:border-gray-300"
-                >
-                  Next
-                </Button>
-              </ButtonGroup>
-            </div>
-          </div>
-        </div>
-        
-        <DataTable
-          loading={loading}
-          columns={columns}
-          data={nodes.slice((page.current - 1) * rows, page.current * rows)}
-          actionsColumn={<ActionsColumn />}
-        />
-      </div>
-
-      {/* Create Refund Dialog */}
-      <Dialog open={createRefundOpen} onOpenChange={setCreateRefundOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Refund</DialogTitle>
-            <DialogDescription>
-              Refunds are created from specific payments. Go to the Payments page to create a refund.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-2">
-            <div className="bg-blue-50 border border-blue-200 rounded p-3">
-              <div className="flex items-start gap-2">
-                <ArrowRight className="size-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-blue-800">How to Create a Refund</h4>
-                  <ul className="text-sm text-blue-700 space-y-1 mt-1">
-                    <li>1. Go to the Payments page</li>
-                    <li>2. Find the verified payment you want to refund</li>
-                    <li>3. Click "Settings" on the payment</li>
-                    <li>4. Select "Refund" from the dropdown menu</li>
-                    <li>5. Review and confirm the refund</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="paymentReference">
-                Looking for a specific payment?
-              </Label>
-              <Input
-                id="paymentReference"
-                value={paymentReference}
-                onChange={(e) => setPaymentReference(e.target.value)}
-                placeholder="Enter payment reference number..."
+          )}
+        </InputGroup>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <>
+              <BatchMenu
+                ids={Array.from(selectedIds)}
+                clearSelected={() => setSelectedIds(new Set())}
               />
-              <p className="text-xs text-muted-foreground">
-                Optional: We'll search for this payment on the Payments page
-              </p>
+              <Button
+                variant="outline-destructive"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                <Trash2Icon className="size-3.5" />
+                Clear Selection
+              </Button>
+            </>
+          )}
+          {sort && (
+            <Button variant="outline-destructive" onClick={() => onSort(null)}>
+              <Trash2Icon className="size-3.5" />
+              Clear Sorting
+            </Button>
+          )}
+          {filter.length > 0 && (
+            <Button variant="outline-destructive" onClick={() => onFilter([])}>
+              <Trash2Icon className="size-3.5" />
+              Clear Filtering
+            </Button>
+          )}
+          {<FormDialog />}
+        </div>
+      </div>
+      <div className="w-full flex justify-between">
+        <div className="px-1.5 flex items-center justify-center">
+          {loading ? (
+            <span className="text-sm text-muted-foreground">Loading...</span>
+          ) : total === 0 ? (
+            <span className="text-sm text-muted-foreground">No results.</span>
+          ) : (
+            <div className="space-x-0.5">
+              <span className="text-sm text-muted-foreground">
+                Showing {(page.current - 1) * rows + 1}-
+                {page.current === page.max ? total : page.current * rows} out of{" "}
+                {total} result{total === 1 ? "" : "s"}.{" "}
+                {selectedIds.size > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    ({selectedIds.size} row{selectedIds.size > 1 ? "s" : ""}{" "}
+                    selected)
+                  </span>
+                )}
+              </span>
+              {(sort || filter.length > 0 || search) && (
+                <Tooltip>
+                  <TooltipTrigger className="hover:cursor-pointer text-muted-foreground">
+                    <InfoIcon className="size-3.25" />
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="center">
+                    <div className="flex flex-col">
+                      {search && (
+                        <div>
+                          <span className="block">
+                            Search term:{" "}
+                            <span className="block"> • "{search}"</span>
+                          </span>
+                        </div>
+                      )}
+                      {sort && (
+                        <div>
+                          <span className="block">
+                            Sorted by:
+                            <span className="block">
+                              • {sort.key} → {sort.order}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+                      {filter.length > 0 && (
+                        <div>
+                          <span className="block">
+                            Filtered by:
+                            {filter.map((f, i) => (
+                              <span className="block" key={i}>
+                                • {f.key} → {f.value}
+                              </span>
+                            ))}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <div className="flex items-center justify-center gap-2">
+            <ButtonGroup>
+              <ButtonGroupText className="font-normal text-muted-foreground">
+                Rows
+              </ButtonGroupText>
+              <Select
+                onValueChange={(value) => setRows(parseInt(value))}
+                value={rows.toString()}
+              >
+                <SelectTrigger size="sm" className="hover:bg-gray-100">
+                  <SelectValue placeholder="Row Count" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Row Count</SelectLabel>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </ButtonGroup>
           </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setCreateRefundOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateRefund}
-              className="bg-amber-600 hover:bg-amber-700"
-            >
-              Go to Payments
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+          <div className="flex items-center gap-2">
+            <ButtonGroup>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page.current === 1}
+                onClick={goPrev}
+                className="disabled:bg-muted disabled:border-gray-300"
+              >
+                Prev
+              </Button>
+              <ButtonGroupText className="font-normal text-muted-foreground">
+                Page {page.current} of {page.max}
+              </ButtonGroupText>
+              <Button
+                variant="outline"
+                disabled={page.current === page.max}
+                onClick={goNext}
+                size="sm"
+                className="disabled:bg-muted disabled:border-gray-300"
+              >
+                Next
+              </Button>
+            </ButtonGroup>
+          </div>
+        </div>
+      </div>
+      <DataTable
+        loading={loading}
+        columns={columns}
+        data={nodes.slice((page.current - 1) * rows, page.current * rows)}
+        actionsColumn={<ActionsColumn />}
+        rowView={<ViewDialog row />}
+      />
+    </div>
   )
 }
 
-export default RefundsPage
+export default Page
