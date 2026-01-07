@@ -24,8 +24,17 @@ import {
   ChevronsUpDownIcon,
   CirclePlus,
   Eraser,
+  Paperclip,
+  Video,
+  XIcon,
 } from "lucide-react"
-import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
+import {
+  Field,
+  FieldLabel,
+  FieldError,
+  FieldSet,
+  FieldDescription,
+} from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
@@ -44,12 +53,25 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { IRefund } from "@/types/refund.interface"
 import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
+import { PaymentMethod } from "@/types/payment.interface"
+import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
+import { useDropzone } from "react-dropzone"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import Image from "next/image"
+import { Input } from "@/components/ui/input"
 
 const USER = gql`
   query Refund($_id: ID!) {
@@ -87,16 +109,15 @@ const UPDATE = gql`
   }
 `
 
-const SEARCH_ENTRY = gql`
-  query SearchEntryOptionsByKeyword($keyword: String!) {
-    searchEntryOptionsByKeyword(keyword: $keyword) {
-      label
-      value
+const ALL_ACTIVE_ENTRIES = gql`
+  query AllActiveEntryOptions {
+    allActiveEntryOptions {
+      event
       players {
         firstName
         lastName
       }
-      event
+      entryNumber
     }
   }
 `
@@ -127,40 +148,55 @@ const FormDialog = (props: Props) => {
   // Combined loading state
   const loading = isPending || fetchLoading
 
-  // // Entry Auto Search
-  const [search, { data: entryOptionsData, loading: optionsLoading }] =
-    useLazyQuery(SEARCH_ENTRY, {
+  const { data: entryOptionsData, loading: optionsLoading } = useQuery(
+    ALL_ACTIVE_ENTRIES,
+    {
       fetchPolicy: "no-cache",
-    })
-  const [openFilteredEntries, setOpenFilteredEntries] = useState(false)
-  const [entryKeyword, setEntryKeyword] = useState<string>("")
-  const entryOptions =
-    (entryOptionsData as any)?.searchEntryOptionsByKeyword || []
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      if (entryKeyword) search({ variables: { keyword: entryKeyword } })
-    }, 350)
-
-    return () => {
-      clearTimeout(handler)
     }
-  }, [entryKeyword, search])
-
-  // FIXME: Entry search bug when v9-0001 is typed it wont work
-  useEffect(() => {
-    console.log(entryOptions)
-  }, [entryOptions])
+  )
+  const [openFilteredEntries, setOpenFilteredEntries] = useState(false)
+  const entryOptions = (entryOptionsData as any)?.allActiveEntryOptions || []
+  // Payment Methods
+  const [openMethods, setOpenMethods] = useState(false)
+  const Methods = Object.values(PaymentMethod).map((method) => ({
+    label: method.toLocaleLowerCase().replaceAll("_", " "),
+    value: method,
+  }))
+  // Handle image
+  // Handle Image
+  const [files, setFiles] = useState<any[]>([])
+  const { getRootProps, getInputProps } = useDropzone({
+    accept: {
+      "image/png": [],
+      "image/jpg": [],
+      "image/jpeg": [],
+    },
+    multiple: false,
+    maxSize: 3 * 1024 * 1024, // 30MB
+    onDrop: (acceptedFiles: any, fileRejections: any) => {
+      if (fileRejections.length > 0) {
+        toast.error("File too large or unsupported type. (Max size: 3MB)")
+        return
+      }
+      setFiles(
+        acceptedFiles.map((file: any) =>
+          Object.assign(file, {
+            preview: URL.createObjectURL(file),
+          })
+        )
+      )
+    },
+  })
 
   const form = useForm({
     defaultValues: {
       payerName: refund?.payerName || "",
       referenceNumber: refund?.referenceNumber || "",
       amount: refund?.amount || 0,
-      method: refund?.method || "",
+      method: refund?.method || "BANK_TRANSFER",
       proofOfRefundURL: refund?.proofOfRefundURL || "",
       refundDate: refund?.refundDate || new Date(),
-      entryList: refund?.entryList[0] || "",
+      entryList: refund?.entryList.map((e) => e.entryNumber) || [],
     },
     validators: {
       onSubmit: ({ formApi, value }) => {
@@ -170,8 +206,8 @@ const FormDialog = (props: Props) => {
           const formErrors = JSON.parse(error)
           formErrors.map(
             ({ path, message }: { path: string; message: string }) =>
-              (formApi.fieldInfo as Record<string, any>)[
-                path as keyof typeof formApi.fieldInfo
+              (formApi as any).fieldInfo[
+                path as keyof any
               ].instance?.setErrorMap({
                 onSubmit: { message },
               })
@@ -200,16 +236,55 @@ const FormDialog = (props: Props) => {
             if (fieldErrors)
               fieldErrors.map(
                 ({ path, message }: { path: string; message: string }) =>
-                  formApi.fieldInfo[
-                    path as keyof typeof formApi.fieldInfo
-                  ].instance?.setErrorMap({
-                    onSubmit: { message },
-                  })
+                  (formApi as any).fieldInfo[path as any].instance?.setErrorMap(
+                    {
+                      onSubmit: { message },
+                    }
+                  )
               )
           }
         }
       }),
   })
+
+  const uploadFile = async (file: File): Promise<string | null> => {
+    return new Promise((resolve) => {
+      startTransition(async () => {
+        try {
+          const formData = new FormData()
+          const fileExt = file.name.split(".").pop() || ""
+
+          const fileName = `payment-${Date.now()}.${fileExt}`
+          formData.append("file", file, fileName)
+
+          console.log("Uploading file to PAYMENTS folder:", {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            fileName: fileName,
+          })
+
+          const response = await fetch("/api/upload/payment", {
+            method: "POST",
+            body: formData,
+          })
+
+          if (!response.ok) {
+            throw new Error("Upload Failed")
+          }
+
+          const data = await response.json()
+          console.log("Upload to PAYMENTS response:", data)
+
+          resolve(data.url)
+        } catch (error) {
+          console.error("Error Uploading file to payments folder:", error)
+          toast.error("Error uploading file. Please try again.")
+          resolve(null)
+        }
+      })
+    })
+  }
 
   const onClose = () => {
     setOpen(false)
@@ -257,7 +332,7 @@ const FormDialog = (props: Props) => {
           <FieldSet className="grid grid-cols-2">
             <form.Field
               name="payerName"
-              children={(field) => {
+              children={(field: any) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
@@ -285,7 +360,7 @@ const FormDialog = (props: Props) => {
             />
             <form.Field
               name="referenceNumber"
-              children={(field) => {
+              children={(field: any) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
@@ -312,7 +387,7 @@ const FormDialog = (props: Props) => {
             />
             <form.Field
               name="amount"
-              children={(field) => {
+              children={(field: any) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
@@ -347,7 +422,7 @@ const FormDialog = (props: Props) => {
             />
             <form.Field
               name="refundDate"
-              children={(field) => {
+              children={(field: any) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
@@ -388,10 +463,93 @@ const FormDialog = (props: Props) => {
               }}
             />
             <form.Field
-              name="entryList"
+              name="method"
               children={(field) => {
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Payment Method</FieldLabel>
+                    <Popover open={openMethods} onOpenChange={setOpenMethods}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id={field.name}
+                          name={field.name}
+                          disabled={loading}
+                          aria-expanded={openMethods}
+                          onBlur={field.handleBlur}
+                          variant="outline"
+                          role="combobox"
+                          aria-invalid={isInvalid}
+                          className="w-full justify-between font-normal capitalize -mt-2"
+                          type="button"
+                        >
+                          {field.state.value
+                            ? Methods.find((o) => o.value === field.state.value)
+                                ?.label
+                            : "Select Method"}
+                          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command
+                          filter={(value, search) =>
+                            Methods.find(
+                              (t: { value: string; label: string }) =>
+                                t.value === value
+                            )
+                              ?.label.toLowerCase()
+                              .includes(search.toLowerCase())
+                              ? 1
+                              : 0
+                          }
+                        >
+                          <CommandInput placeholder="Select Method" />
+                          <CommandList className="max-h-72 overflow-y-auto">
+                            <CommandEmpty>No Method found.</CommandEmpty>
+                            <CommandGroup>
+                              <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
+                                Methods
+                              </Label>
+                              {Methods?.map((o, i) => (
+                                <CommandItem
+                                  key={i}
+                                  value={o.value}
+                                  onSelect={(v) => {
+                                    field.handleChange(v as PaymentMethod)
+                                    setOpenMethods(false)
+                                  }}
+                                  className="capitalize"
+                                >
+                                  <CheckIcon
+                                    className={cn(
+                                      "h-4 w-4",
+                                      field.state.value === o.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {o.label}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+            <form.Field
+              name="entryList"
+              children={(field: any) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                const entryList = field.state.value
                 return (
                   <Field data-invalid={isInvalid} className="col-span-2">
                     <FieldLabel id="Entry">Entries Involved</FieldLabel>
@@ -409,25 +567,23 @@ const FormDialog = (props: Props) => {
                           role="combobox"
                           aria-invalid={isInvalid}
                           className={cn(
-                            "w-full justify-between font-normal capitalize -mt-2",
-                            !field.state.value && "text-muted-foreground"
+                            "w-full justify-between font-normal capitalize -mt-2 h-fit",
+                            !entryList && "text-muted-foreground"
                           )}
                           type="button"
                         >
-                          {field.state.value
-                            ? entryOptions.find(
-                                (entry: any) =>
-                                  entry.value === field.state.value
-                              )?.label
-                            : "Select entry..."}
+                          {entryList.length > 0
+                            ? `${entryList.length} selected entr${
+                                entryList.length == 1 ? "y" : "ies"
+                              }`
+                            : "Select entry"}
                           <ChevronsUpDown className="opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-50 p-0">
+                      <PopoverContent className="w-100 p-0">
                         <Command>
                           <CommandInput
                             placeholder="Search entry..."
-                            onValueChange={(value) => setEntryKeyword(value)}
                             className="h-9"
                           />
                           <CommandList>
@@ -435,23 +591,49 @@ const FormDialog = (props: Props) => {
                             <CommandGroup>
                               {entryOptions.map((entry: any) => (
                                 <CommandItem
-                                  key={entry.value}
-                                  value={entry.value}
+                                  key={entry.entryNumber}
+                                  value={entry.entryNumber}
                                   onSelect={(currentValue: any) => {
-                                    field.handleChange(currentValue)
+                                    field.handleChange((prev) => {
+                                      if (prev.includes(currentValue))
+                                        return prev.filter(
+                                          (e) => e != currentValue
+                                        )
+                                      else return [...prev, currentValue]
+                                    })
                                     setOpenFilteredEntries(false)
-                                    setEntryKeyword("")
                                   }}
                                 >
-                                  {entry.label}
-                                  <Check
+                                  <div
                                     className={cn(
-                                      "ml-auto",
-                                      field.state.value === entry.value
-                                        ? "opacity-100"
-                                        : "opacity-0"
+                                      "flex justify-between w-full items-center"
                                     )}
-                                  />
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="block">
+                                        {entry.entryNumber}
+                                      </span>
+                                      <span className="block text-xs">
+                                        {entry.event}
+                                      </span>
+                                      <span className="block text-xs">
+                                        {entry.players
+                                          .map(
+                                            (p) =>
+                                              `${p.firstName} ${p.lastName}`
+                                          )
+                                          .join(", ")}
+                                      </span>
+                                    </div>
+                                    <Check
+                                      className={cn(
+                                        "ml-auto",
+                                        entryList.includes(entry.entryNumber)
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                  </div>
                                 </CommandItem>
                               ))}
                             </CommandGroup>
@@ -462,10 +644,122 @@ const FormDialog = (props: Props) => {
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}
+                    {entryList.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        {entryList.map((e, i) => {
+                          const selectedEntry = entryOptions.find(
+                            (entry) => entry.entryNumber == e
+                          )
+                          return (
+                            <div key={i} className="flex gap-1.5">
+                              <div className="w-4 text-sm">{i + 1}.</div>
+                              <div>
+                                <span className="block text-foreground text-sm">
+                                  {selectedEntry.entryNumber}
+                                </span>
+                                <span className="block text-xs text-muted-foreground">
+                                  {selectedEntry.event}
+                                </span>
+                                <span className="block text-xs text-muted-foreground">
+                                  {selectedEntry.players
+                                    .map((p) => `${p.firstName} ${p.lastName}`)
+                                    .join(", ")}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </Field>
                 )
               }}
             />
+
+            <div className="col-span-2">
+              <div
+                {...getRootProps({ className: "dropzone space-y-1" })}
+              >
+                <Label>Proof of Refund</Label>
+                <Input disabled={files.length > 0} {...getInputProps()} />
+                <div className="flex flex-col items-center justify-center ">
+                  <Button
+                    variant="outline"
+                    title="Attach image/document"
+                    type="button"
+                    disabled={files.length > 0}
+                    className={cn(
+                      "flex flex-col h-fit min-h-32 border-dashed w-full"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        files.length > 0 ? "hidden" : "flex flex-col"
+                      )}
+                    >
+                      <span className="block">Upload attachment here</span>
+                      <span className="text-muted-foreground font-normal">
+                        (Accepted: .png, .jpg, .jpeg)
+                      </span>
+                      <span className="text-muted-foreground font-normal">
+                        (Max: 3MB)
+                      </span>
+                    </div>
+                  </Button>
+                  {files.length > 0 &&
+                    files.map((file: any, idx: number) => (
+                      <div
+                        key={file.name}
+                        className="flex items-start justify-end z-50 absolute"
+                      >
+                        <Sheet>
+                          <SheetTrigger>
+                            <Image
+                              height={150}
+                              width={150}
+                              className="object-contain w-24 h-24 bg-gray-200 cursor-pointer rounded"
+                              src={file.preview}
+                              title={`${file.name}: ${(
+                                file.size / 1024
+                              ).toFixed(2)} KB`}
+                              alt="Preview"
+                            />
+                          </SheetTrigger>
+                          <SheetContent
+                            className="h-screen p-[2%]"
+                            side="bottom"
+                          >
+                            <SheetHeader hidden>
+                              <SheetTitle>Preview</SheetTitle>
+                              <SheetDescription>Description</SheetDescription>
+                            </SheetHeader>
+                            <img
+                              className="object-contain h-full"
+                              src={file.preview}
+                              title={`${file.name}: ${(
+                                file.size / 1024
+                              ).toFixed(2)} KB`}
+                            />
+                          </SheetContent>
+                        </Sheet>
+                        <Button
+                          onClick={() => {
+                            setFiles((prev) => prev.filter((_, i) => i !== idx))
+                          }}
+                          disabled={isPending}
+                          className="absolute -mr-3.5 -mt-3.5 scale-60 rounded-full opacity-70 cursor-pointer"
+                          size="icon-sm"
+                          variant="destructive"
+                          title="Remove image"
+                        >
+                          <XIcon />
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+              <div></div>
+            </div>
           </FieldSet>
         </form>
         <DialogFooter>
