@@ -59,6 +59,24 @@ const UPDATE_PAYMENT = gql`
   }
 `
 
+const GET_PAYMENTS = gql`
+  query Payments {
+    payments {
+      _id
+      payerName
+      referenceNumber
+      amount
+      method
+      paymentDate
+      proofOfPaymentURL
+      entryList {
+        entryNumber
+        isFullyPaid
+      }
+    }
+  }
+`
+
 const GET_PAYMENT = gql`
   query GetPayment($_id: String!) {
     payment(_id: $_id) {
@@ -133,6 +151,10 @@ interface PaymentResponse {
   payment: PaymentData
 }
 
+interface PaymentsResponse {
+  payments: PaymentData[]
+}
+
 interface EntryInput {
   entryNumber: string
   entryKey: string
@@ -198,16 +220,19 @@ const PaymentFormDialog = (props: Props) => {
     fetchPolicy: "network-only",
   })
 
-  const { data: paymentData, loading: paymentLoading } = useQuery<PaymentResponse>(GET_PAYMENT, {
-    variables: { _id },
-    skip: !_id || !open,
-    fetchPolicy: "network-only",
-  })
+  // Using the PAYMENT query you mentioned
+  const { data: paymentsData, loading: paymentsLoading } = useQuery<PaymentsResponse>(
+    GET_PAYMENTS,
+    {
+      skip: !open || !isEditMode,
+      fetchPolicy: "network-only",
+    }
+  )
 
   const [submitForm] = useMutation(CREATE_PAYMENT)
   const [updateForm] = useMutation(UPDATE_PAYMENT)
 
-  const isLoading = isPending || entriesLoading || paymentLoading
+  const isLoading = isPending || entriesLoading || paymentsLoading
 
   useEffect(() => {
     if (entriesPopoverOpen && popoverTriggerRef.current) {
@@ -217,51 +242,61 @@ const PaymentFormDialog = (props: Props) => {
   }, [entriesPopoverOpen])
 
   useEffect(() => {
-    if (paymentData?.payment && open) {
-      const payment = paymentData.payment
-      setExistingPaymentData(payment)
+    if (isEditMode && paymentsData?.payments && open) {
+      // Find the specific payment by _id
+      const payment = paymentsData.payments.find(p => p._id === _id)
+      if (payment) {
+        setExistingPaymentData(payment)
 
-      // Set form values
-      form.setFieldValue("payerName", payment.payerName)
-      form.setFieldValue("referenceNumber", payment.referenceNumber)
-      form.setFieldValue("amount", payment.amount / 100) // Convert from cents
-      form.setFieldValue("method", payment.method as PaymentMethod)
-      form.setFieldValue("paymentDate", new Date(payment.paymentDate))
-      form.setFieldValue("proofOfPaymentURL", payment.proofOfPaymentURL)
+        // Set form values from the fetched payment data
+        form.setFieldValue("payerName", payment.payerName)
+        form.setFieldValue("referenceNumber", payment.referenceNumber)
+        form.setFieldValue("amount", payment.amount / 100) // Convert from cents
+        form.setFieldValue("method", payment.method as PaymentMethod)
+        form.setFieldValue("paymentDate", new Date(payment.paymentDate))
+        form.setFieldValue("proofOfPaymentURL", payment.proofOfPaymentURL)
 
-      // Set selected entries from existing payment
-      const existingEntries = payment.entryList.map(entryItem => {
-        // Find the entry details from activePaymentEntryOptions
-        const entryDetail = entriesData?.activePaymentEntryOptions?.find(
-          e => e.entryNumber === entryItem.entryNumber
-        )
-
-        const entryKey = entryItem.entryNumber.includes('_')
-          ? entryItem.entryNumber.split('_')[1]
-          : '';
-
-        return {
-          entryNumber: entryItem.entryNumber,
-          entryKey: entryKey,
-          player1Name: entryDetail?.players[0]
-            ? `${entryDetail.players[0].firstName} ${entryDetail.players[0].lastName}`
-            : 'Unknown Player',
-          player2Name: entryDetail?.players[1]
-            ? `${entryDetail.players[1].firstName} ${entryDetail.players[1].lastName}`
-            : null,
-          eventName: entryDetail?.eventName || '',
-          tournamentName: entryDetail?.eventName?.split(' - ')[0] || entryDetail?.eventName || '',
-          club: '',
-          currentStatus: entryDetail?.currentStatus || '',
-          isEarlyBird: false,
-          isFullyPaid: entryItem.isFullyPaid,
-          amount: entryDetail?.remainingFee || 0
+        // Set the preview if there's an existing proof of payment URL
+        if (payment.proofOfPaymentURL && !preview) {
+          setPreview(payment.proofOfPaymentURL)
         }
-      })
 
-      setSelectedEntries(existingEntries)
+        // Set selected entries from existing payment
+        if (payment.entryList && payment.entryList.length > 0) {
+          const existingEntries = payment.entryList.map(entryItem => {
+            // Find the entry details from activePaymentEntryOptions
+            const entryDetail = entriesData?.activePaymentEntryOptions?.find(
+              e => e.entryNumber === entryItem.entryNumber
+            )
+
+            const entryKey = entryItem.entryNumber.includes('_')
+              ? entryItem.entryNumber.split('_')[1]
+              : '';
+
+            return {
+              entryNumber: entryItem.entryNumber,
+              entryKey: entryKey,
+              player1Name: entryDetail?.players[0]
+                ? `${entryDetail.players[0].firstName} ${entryDetail.players[0].lastName}`
+                : 'Unknown Player',
+              player2Name: entryDetail?.players[1]
+                ? `${entryDetail.players[1].firstName} ${entryDetail.players[1].lastName}`
+                : null,
+              eventName: entryDetail?.eventName || '',
+              tournamentName: entryDetail?.eventName?.split(' - ')[0] || entryDetail?.eventName || '',
+              club: '',
+              currentStatus: entryDetail?.currentStatus || '',
+              isEarlyBird: false,
+              isFullyPaid: entryItem.isFullyPaid,
+              amount: entryDetail?.remainingFee || 0
+            }
+          })
+
+          setSelectedEntries(existingEntries)
+        }
+      }
     }
-  }, [paymentData, open, entriesData])
+  }, [paymentsData, open, entriesData, isEditMode, _id, preview])
 
   const form = useForm({
     defaultValues: {
@@ -714,7 +749,7 @@ const PaymentFormDialog = (props: Props) => {
     setReferenceLoading(false)
     setScannedTotal(null)
     setReference(null)
-    setFieldErrors(prev => ({ ...prev, file: 'Proof of payment is required' }))
+    setFieldErrors(prev => ({ ...prev, file: isEditMode && existingPaymentData?.proofOfPaymentURL ? '' : 'Proof of payment is required' }))
     form.setFieldValue("proofOfPaymentURL", "")
   }
 
