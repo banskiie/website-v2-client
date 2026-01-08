@@ -506,41 +506,74 @@ export function UploadProofMergedModal({
 
   const uploadFile = async (file: File): Promise<string | null> => {
     try {
-      setIsUploading(true)
-      const formData = new FormData()
-      const fileExt = file.name.split('.').pop() || ''
-
-      const fileName = `payment-${Date.now()}.${fileExt}`
-      formData.append("file", file, fileName)
+      setIsUploading(true);
+      const formData = new FormData();
+      const fileExt = file.name.split('.').pop() || '';
+      const fileName = `payment-${Date.now()}.${fileExt}`;
+      formData.append("file", file, fileName);
 
       console.log('Uploading file to PAYMENTS folder:', {
         name: file.name,
         size: file.size,
         type: file.type,
         fileName: fileName
-      })
+      });
 
       const response = await fetch("/api/upload/payment", {
         method: "POST",
         body: formData,
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Upload Failed")
+        throw new Error("Upload Failed");
       }
 
-      const data = await response.json()
-      console.log('Upload to PAYMENTS response:', data)
+      const data = await response.json();
+      console.log('Upload to PAYMENTS response:', data);
 
-      return data.url
+      toast.success("File uploaded successfully!");
+      return data.url;
     } catch (error) {
-      console.error("Error Uploading file to payments folder:", error)
-      toast.error("Error uploading file. Please try again.")
-      return null
+      console.error("Error Uploading file to payments folder:", error);
+      toast.error("Error uploading file. Please try again.");
+      return null;
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
   }
+
+  const UploadingOverlay = ({ message, progress }: { message?: string; progress?: number }) => (
+    <motion.div
+      className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-lg border">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-4"></div>
+        <p className="text-lg font-medium text-gray-800 mb-2">
+          {message || "Processing..."}
+        </p>
+        {progress !== undefined && (
+          <div className="w-64 mt-4">
+            <div className="flex justify-between text-sm text-gray-600 mb-1">
+              <span>Uploading</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <motion.div
+                className="bg-green-600 h-2 rounded-full"
+                initial={{ width: "0%" }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+          </div>
+        )}
+        <p className="text-sm text-gray-500 mt-4">Please don't close this window</p>
+      </div>
+    </motion.div>
+  )
 
   const checkForRejectedStatus = (entryDetails: any, entryNumber: string): { isRejected: boolean; reason?: string; date?: string } => {
     if (!entryDetails?.entry?.statuses) {
@@ -1445,7 +1478,7 @@ export function UploadProofMergedModal({
 
             <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
               <span className="text-sm font-bold text-blue-700">Payment Amount </span>
-              <span className="text-lg font-bold text-blue-700">
+              <span className="text-lg font-bold text-blue-700 ">
                 ₱{parseFloat(amount).toLocaleString('en-US', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2
@@ -1467,7 +1500,19 @@ export function UploadProofMergedModal({
               className="flex-1 bg-green-600 text-white hover:bg-green-700"
               disabled={createPaymentLoading || isUploading}
             >
-              {isUploading ? "Uploading..." : createPaymentLoading ? "Submitting..." : "Confirm Payment"}
+              {isUploading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Uploading...</span>
+                </div>
+              ) : createPaymentLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Submitting...</span>
+                </div>
+              ) : (
+                "Confirm Payment"
+              )}
             </Button>
           </div>
         </motion.div>
@@ -1591,7 +1636,7 @@ export function UploadProofMergedModal({
                   ) : amount ? (
                     <div className="text-sm font-medium text-green-600">
                       <div className="font-semibold mb-1">Payment Amount</div>
-                      <div className="text-lg">
+                      <div className="text-lg underline tracking-wide">
                         ₱{parseFloat(amount).toLocaleString('en-US', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2
@@ -1895,7 +1940,7 @@ export function UploadProofMergedModal({
                   </p>
                 </div>
 
-                {file && (
+                {/* {file && (
                   <div className="w-full mb-4 p-3 bg-white border rounded-lg">
                     <div className="flex items-center gap-2">
                       <Paperclip className="w-4 h-4 text-gray-500" />
@@ -1925,6 +1970,48 @@ export function UploadProofMergedModal({
                       </div>
                     )}
                   </div>
+                )} */}
+
+                {/* IImprove ang file upload display pag mag upload */}
+                {file && (
+                  <div className="w-full mb-4 p-3 bg-white border rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Paperclip className="w-4 h-4 text-gray-500" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium truncate">
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {(file.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        disabled={isUploading}
+                        className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {isUploading && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                          <span>Uploading to server...</span>
+                          <span>Processing</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <motion.div
+                            className="bg-green-600 h-2 rounded-full"
+                            initial={{ width: "0%" }}
+                            animate={{ width: "100%" }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 text-center">Please wait while we upload your file</p>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <div className="w-full flex justify-center mb-4">
@@ -1950,23 +2037,46 @@ export function UploadProofMergedModal({
                   className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${fieldErrors.file ? 'border-red-300 bg-red-50 hover:bg-red-100' : 'border-green-400 hover:bg-green-50'
                     }`}
                 >
-                  {loading ? (
-                    <Loader2 className={`w-6 h-6 mb-2 animate-spin ${fieldErrors.file ? 'text-red-500' : 'text-green-600'}`} />
+                  {isUploading ? (
+                    <div className="flex flex-col items-center">
+                      <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
+                      <span className="font-medium text-sm text-green-700">Uploading...</span>
+                      <span className="text-xs text-gray-500 mt-1">Please wait</span>
+                    </div>
+                  ) : loading ? (
+                    <div className="flex flex-col items-center">
+                      <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
+                      <span className="font-medium text-sm text-green-700">Scanning receipt...</span>
+                    </div>
                   ) : (
-                    <UploadIcon className={`w-6 h-6 mb-2 ${fieldErrors.file ? 'text-red-500' : 'text-green-600'}`} />
+                    <>
+                      <UploadIcon className={`w-6 h-6 mb-2 ${fieldErrors.file ? 'text-red-500' : 'text-green-600'}`} />
+                      <span className={`font-medium text-sm ${fieldErrors.file ? 'text-red-700' : 'text-green-700'}`}>
+                        Drag & Drop your receipt or Browse
+                      </span>
+                    </>
                   )}
-                  <span className={`font-medium text-sm ${fieldErrors.file ? 'text-red-700' : 'text-green-700'}`}>
-                    {loading ? "Scanning..." : "Drag & Drop your receipt or Browse"}
-                  </span>
                   <input
                     id="proofUpload"
                     type="file"
                     accept="image/*"
                     className="hidden"
                     onChange={handleFileUpload}
+                    disabled={isUploading || loading}
                   />
                 </label>
 
+                {isUploading && (
+                  <div className="w-full mt-3">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent"></div>
+                      <span className="text-sm text-gray-600">Uploading file to server...</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                      <div className="bg-green-600 h-1.5 rounded-full animate-pulse w-3/4"></div>
+                    </div>
+                  </div>
+                )}
                 {fieldErrors.file && (
                   <p className="text-red-500 text-xs mt-2 text-center">{fieldErrors.file}</p>
                 )}
@@ -2099,7 +2209,17 @@ export function UploadProofMergedModal({
                     <X className="w-4 h-4" />
                     <span>Cannot Pay - Entry Rejected</span>
                   </div>
-                ) : isUploading ? "Uploading..." : createPaymentLoading ? "Submitting..." : "Submit Payment"}
+                ) : isUploading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Uploading...</span>
+                  </div>
+                ) : createPaymentLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Submitting...</span>
+                  </div>
+                ) : "Submit Payment"}
               </Button>
             </div>
 
@@ -2107,6 +2227,7 @@ export function UploadProofMergedModal({
               {success && <SuccessModal />}
               {showConfirmationDialog && <ConfirmationDialog />}
               {showRejectedModal && <RejectedEntryModal />}
+              {(isUploading || loading) && <UploadingOverlay message={loading ? "Scanning receipt..." : "Uploading file..."} />}
             </AnimatePresence>
           </motion.div>
         </motion.div>

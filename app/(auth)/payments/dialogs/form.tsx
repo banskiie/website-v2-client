@@ -15,7 +15,7 @@ import { useMutation, useQuery, useLazyQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
 import React, { useState, useTransition, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { CirclePlus, X, ChevronDown, Check, Loader2, Paperclip, XCircle, UploadIcon, CheckCircle } from "lucide-react"
+import { CirclePlus, X, ChevronDown, Check, Loader2, Paperclip, XCircle, UploadIcon, CheckCircle, Edit } from "lucide-react"
 import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"
@@ -41,7 +41,6 @@ import * as Tesseract from 'tesseract.js'
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 
-// GraphQL Queries & Mutations
 const CREATE_PAYMENT = gql`
   mutation CreatePayment($input: CreatePaymentInput!) {
     createPayment(input: $input) {
@@ -51,127 +50,90 @@ const CREATE_PAYMENT = gql`
   }
 `
 
-// Query for entry amount details
-const ENTRY_EVENT_AMOUNT_DETAILS = gql`
-  query EntryEventAmountDetails($referenceNumber: String!) {
-    entryEventAmountDetails(referenceNumber: $referenceNumber) {
+const UPDATE_PAYMENT = gql`
+  mutation UpdatePayment($input: UpdatePaymentInput!) {
+    updatePayment(input: $input) {
+      ok
+      message
+    }
+  }
+`
+
+const GET_PAYMENT = gql`
+  query GetPayment($_id: String!) {
+    payment(_id: $_id) {
+      _id
+      payerName
+      referenceNumber
       amount
-      entry {
-        _id
+      method
+      paymentDate
+      proofOfPaymentURL
+      entryList {
         entryNumber
-        entryKey
-        statuses {
-          status
-          reason
-          date
-        }
-        event {
-          type
-        }
+        isFullyPaid
       }
     }
   }
 `
 
-// Using your existing entries query with filter for payment pending status
-const GET_ENTRIES = gql`
-  query GetEntries($search: String, $first: Int) {
-    entries(
-      first: $first
-      search: $search
-      filter: [
-        {
-          key: "currentStatus"
-          value: "PAYMENT_PENDING"
-          type: TEXT
-        }
-      ]
-    ) {
-      total
-      pages
-      edges {
-        cursor
-        node {
-          _id
-          entryNumber
-          entryKey
-          playerList {
-            player1Name
-            player2Name
-          }
-          eventName
-          tournamentName
-          club
-          currentStatus
-          dateUpdated
-        }
+const ACTIVE_PAYMENT_ENTRY_OPTIONS = gql`
+  query ActivePaymentEntryOptions {
+    activePaymentEntryOptions {
+      entryNumber
+      eventName
+      currentStatus
+      players {
+        firstName
+        lastName
       }
+      remainingFee
     }
   }
 `
 
-// Payment method enum
 enum PaymentMethod {
   BANK_TRANSFER = "BANK_TRANSFER",
   GCASH = "GCASH",
   OVER_THE_COUNTER = "OVER_THE_COUNTER"
 }
 
-// Interfaces
-interface PlayerList {
-  player1Name: string
-  player2Name: string | null
+interface Player {
+  firstName: string
+  lastName: string
 }
 
-interface IEntryStatus {
-  status: string
-  reason?: string
-  date: string
-}
-
-interface EntryNode {
-  _id: string
+interface ActivePaymentEntryOption {
   entryNumber: string
-  entryKey: string
-  playerList: PlayerList
   eventName: string
-  tournamentName: string
-  club: string
   currentStatus: string
-  dateUpdated: string
+  players: Player[]
+  remainingFee: number
 }
 
-interface EntryEdge {
-  cursor: string
-  node: EntryNode
+interface ActivePaymentEntryOptionsResponse {
+  activePaymentEntryOptions: ActivePaymentEntryOption[]
 }
 
-interface EntriesResponse {
-  entries: {
-    total: number
-    pages: number
-    edges: EntryEdge[]
-  }
-}
-
-interface EntryAmountDetailsData {
-  entryEventAmountDetails: {
-    amount: number
-    entry: {
-      _id: string
-      entryNumber: string
-      entryKey: string
-      statuses: IEntryStatus[]
-      event: {
-        type: string
-      }
-    }
-  }
-}
-
-// Entry input for form
-interface EntryInput {
+interface PaymentData {
   _id: string
+  payerName: string
+  referenceNumber: string
+  amount: number
+  method: PaymentMethod
+  paymentDate: string
+  proofOfPaymentURL: string
+  entryList: Array<{
+    entryNumber: string
+    isFullyPaid: boolean
+  }>
+}
+
+interface PaymentResponse {
+  payment: PaymentData
+}
+
+interface EntryInput {
   entryNumber: string
   entryKey: string
   player1Name: string
@@ -182,14 +144,19 @@ interface EntryInput {
   currentStatus: string
   isFullyPaid: boolean
   amount?: number
+  isEarlyBird: boolean
 }
 
-type Props = {
+interface Props {
+  _id?: string
   onClose?: () => void
   refetchPayments?: () => void
 }
 
 const PaymentFormDialog = (props: Props) => {
+  const { _id } = props
+  const isEditMode = !!_id
+
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [selectedEntries, setSelectedEntries] = useState<EntryInput[]>([])
@@ -199,7 +166,6 @@ const PaymentFormDialog = (props: Props) => {
   const [popoverWidth, setPopoverWidth] = useState<number | undefined>(undefined)
   const [activeTab, setActiveTab] = useState("payment-details")
 
-  // OCR Scanning States
   const [preview, setPreview] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -225,21 +191,23 @@ const PaymentFormDialog = (props: Props) => {
   const [success, setSuccess] = useState(false)
   const [totalRequired, setTotalRequired] = useState(0)
   const [priceReminder, setPriceReminder] = useState<string | null>(null)
+  const [existingPaymentData, setExistingPaymentData] = useState<PaymentData | null>(null)
 
-  // Fetch entries using your existing entries query with filter
-  const { data: entriesData, loading: entriesLoading } = useQuery<EntriesResponse>(GET_ENTRIES, {
-    variables: {
-      search: entrySearch || undefined,
-      first: 50
-    },
+  const { data: entriesData, loading: entriesLoading } = useQuery<ActivePaymentEntryOptionsResponse>(ACTIVE_PAYMENT_ENTRY_OPTIONS, {
     skip: !open,
     fetchPolicy: "network-only",
   })
 
-  const [submitForm] = useMutation(CREATE_PAYMENT)
-  const [fetchEntryAmount, { data: entryAmountData, loading: entryAmountLoading, error: entryAmountError }] = useLazyQuery<EntryAmountDetailsData>(ENTRY_EVENT_AMOUNT_DETAILS)
+  const { data: paymentData, loading: paymentLoading } = useQuery<PaymentResponse>(GET_PAYMENT, {
+    variables: { _id },
+    skip: !_id || !open,
+    fetchPolicy: "network-only",
+  })
 
-  const isLoading = isPending || entriesLoading
+  const [submitForm] = useMutation(CREATE_PAYMENT)
+  const [updateForm] = useMutation(UPDATE_PAYMENT)
+
+  const isLoading = isPending || entriesLoading || paymentLoading
 
   useEffect(() => {
     if (entriesPopoverOpen && popoverTriggerRef.current) {
@@ -247,6 +215,53 @@ const PaymentFormDialog = (props: Props) => {
       setPopoverWidth(width)
     }
   }, [entriesPopoverOpen])
+
+  useEffect(() => {
+    if (paymentData?.payment && open) {
+      const payment = paymentData.payment
+      setExistingPaymentData(payment)
+
+      // Set form values
+      form.setFieldValue("payerName", payment.payerName)
+      form.setFieldValue("referenceNumber", payment.referenceNumber)
+      form.setFieldValue("amount", payment.amount / 100) // Convert from cents
+      form.setFieldValue("method", payment.method as PaymentMethod)
+      form.setFieldValue("paymentDate", new Date(payment.paymentDate))
+      form.setFieldValue("proofOfPaymentURL", payment.proofOfPaymentURL)
+
+      // Set selected entries from existing payment
+      const existingEntries = payment.entryList.map(entryItem => {
+        // Find the entry details from activePaymentEntryOptions
+        const entryDetail = entriesData?.activePaymentEntryOptions?.find(
+          e => e.entryNumber === entryItem.entryNumber
+        )
+
+        const entryKey = entryItem.entryNumber.includes('_')
+          ? entryItem.entryNumber.split('_')[1]
+          : '';
+
+        return {
+          entryNumber: entryItem.entryNumber,
+          entryKey: entryKey,
+          player1Name: entryDetail?.players[0]
+            ? `${entryDetail.players[0].firstName} ${entryDetail.players[0].lastName}`
+            : 'Unknown Player',
+          player2Name: entryDetail?.players[1]
+            ? `${entryDetail.players[1].firstName} ${entryDetail.players[1].lastName}`
+            : null,
+          eventName: entryDetail?.eventName || '',
+          tournamentName: entryDetail?.eventName?.split(' - ')[0] || entryDetail?.eventName || '',
+          club: '',
+          currentStatus: entryDetail?.currentStatus || '',
+          isEarlyBird: false,
+          isFullyPaid: entryItem.isFullyPaid,
+          amount: entryDetail?.remainingFee || 0
+        }
+      })
+
+      setSelectedEntries(existingEntries)
+    }
+  }, [paymentData, open, entriesData])
 
   const form = useForm({
     defaultValues: {
@@ -288,7 +303,7 @@ const PaymentFormDialog = (props: Props) => {
       startTransition(async () => {
         try {
           const entryList = selectedEntries.map(entry => ({
-            entry: [entry._id],
+            entryNumber: entry.entryNumber,
             isFullyPaid: entry.isFullyPaid
           }))
 
@@ -298,28 +313,57 @@ const PaymentFormDialog = (props: Props) => {
 
           const finalReferenceNumber = reference && reference !== "Not found" ? reference : confirmationNumber || value.referenceNumber || `ref_${Date.now()}`
 
-          const response: any = await submitForm({
-            variables: {
-              input: {
-                payerName: value.payerName,
-                referenceNumber: finalReferenceNumber,
-                amount: Math.round(value.amount * 100),
-                method: value.method,
-                proofOfPaymentURL: value.proofOfPaymentURL,
-                paymentDate: value.paymentDate,
-                entryList: entryList,
+          if (isEditMode && _id) {
+            // Update existing payment
+            const response: any = await updateForm({
+              variables: {
+                input: {
+                  _id,
+                  payerName: value.payerName,
+                  referenceNumber: finalReferenceNumber,
+                  amount: Math.round(value.amount * 100),
+                  method: value.method,
+                  proofOfPaymentURL: value.proofOfPaymentURL || existingPaymentData?.proofOfPaymentURL,
+                  paymentDate: value.paymentDate,
+                  entryList: entryList,
+                },
               },
-            },
-          })
+            })
 
-          if (response.data?.createPayment?.ok) {
-            setSuccess(true)
-            setTimeout(() => {
-              onClose()
-              props.refetchPayments?.()
-            }, 2000)
+            if (response.data?.updatePayment?.ok) {
+              setSuccess(true)
+              setTimeout(() => {
+                onClose()
+                props.refetchPayments?.()
+              }, 2000)
+            } else {
+              throw new Error(response.data?.updatePayment?.message || "Update failed")
+            }
           } else {
-            throw new Error(response.data?.createPayment?.message || "Submission failed")
+            // Create new payment
+            const response: any = await submitForm({
+              variables: {
+                input: {
+                  payerName: value.payerName,
+                  referenceNumber: finalReferenceNumber,
+                  amount: Math.round(value.amount * 100),
+                  method: value.method,
+                  proofOfPaymentURL: value.proofOfPaymentURL,
+                  paymentDate: value.paymentDate,
+                  entryList: entryList,
+                },
+              },
+            })
+
+            if (response.data?.createPayment?.ok) {
+              setSuccess(true)
+              setTimeout(() => {
+                onClose()
+                props.refetchPayments?.()
+              }, 2000)
+            } else {
+              throw new Error(response.data?.createPayment?.message || "Submission failed")
+            }
           }
         } catch (error: any) {
           console.error("Submission error:", error)
@@ -366,36 +410,37 @@ const PaymentFormDialog = (props: Props) => {
       file: '',
       paymentMethod: '',
     })
+    setExistingPaymentData(null)
     props.onClose?.()
     form.reset()
   }
 
   const uploadFile = async (file: File): Promise<string | null> => {
     try {
-      setIsUploading(true)
-      const formData = new FormData()
-      const fileExt = file.name.split('.').pop() || ''
-
-      const fileName = `payment-${Date.now()}.${fileExt}`
-      formData.append("file", file, fileName)
+      setIsUploading(true);
+      const formData = new FormData();
+      const fileExt = file.name.split('.').pop() || '';
+      const fileName = `payment-${Date.now()}.${fileExt}`;
+      formData.append("file", file, fileName);
 
       const response = await fetch("/api/upload/payment", {
         method: "POST",
         body: formData,
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Upload Failed")
+        throw new Error("Upload Failed");
       }
 
-      const data = await response.json()
-      return data.url
+      const data = await response.json();
+      toast.success("File uploaded successfully!");
+      return data.url;
     } catch (error) {
-      console.error("Error Uploading file to payments folder:", error)
-      toast.error("Error uploading file. Please try again.")
-      return null
+      console.error("Error Uploading file to payments folder:", error);
+      toast.error("Error uploading file. Please try again.");
+      return null;
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
   }
 
@@ -427,6 +472,39 @@ const PaymentFormDialog = (props: Props) => {
       }
     })
   }
+
+  const UploadingOverlay = ({ message, progress }: { message?: string; progress?: number }) => (
+    <motion.div
+      className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-lg border">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-4"></div>
+        <p className="text-lg font-medium text-gray-800 mb-2">
+          {message || "Processing..."}
+        </p>
+        {progress !== undefined && (
+          <div className="w-64 mt-4">
+            <div className="flex justify-between text-sm text-gray-600 mb-1">
+              <span>Uploading</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <motion.div
+                className="bg-green-600 h-2 rounded-full"
+                initial={{ width: "0%" }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+          </div>
+        )}
+        <p className="text-sm text-gray-500 mt-4">Please don't close this window</p>
+      </div>
+    </motion.div>
+  )
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0]
@@ -641,7 +719,13 @@ const PaymentFormDialog = (props: Props) => {
   }
 
   const validateFile = (file: File): string => {
-    if (!file) return 'Proof of payment is required'
+    if (!file) {
+      // For edit mode, file is not required if we already have a URL
+      if (isEditMode && existingPaymentData?.proofOfPaymentURL) {
+        return ''
+      }
+      return 'Proof of payment is required'
+    }
     const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
     if (!validTypes.includes(file.type)) {
       return 'Please upload a valid image file (JPEG, PNG, JPG) or PDF'
@@ -670,52 +754,31 @@ const PaymentFormDialog = (props: Props) => {
     return ''
   }
 
-  const handleEntrySelect = async (entryNode: EntryNode) => {
-    if (!selectedEntries.find(e => e._id === entryNode._id)) {
-      setAmountLoading(true)
+  const handleEntrySelect = (entry: ActivePaymentEntryOption) => {
+    if (!selectedEntries.find(e => e.entryNumber === entry.entryNumber)) {
+      // Extract entryKey from entryNumber format (e.g., "1234_MD")
+      const entryKey = entry.entryNumber.includes('_')
+        ? entry.entryNumber.split('_')[1]
+        : '';
 
-      try {
-        const referenceNumber = `${entryNode.entryNumber}_${entryNode.entryKey}`
-        const result = await fetchEntryAmount({
-          variables: { referenceNumber }
-        })
+      const newEntry: EntryInput = {
+        entryNumber: entry.entryNumber,
+        entryKey: entryKey,
+        player1Name: entry.players[0] ? `${entry.players[0].firstName} ${entry.players[0].lastName}` : 'Unknown Player',
+        player2Name: entry.players[1] ? `${entry.players[1].firstName} ${entry.players[1].lastName}` : null,
+        eventName: entry.eventName,
+        tournamentName: entry.eventName.split(' - ')[0] || entry.eventName,
+        club: '',
+        currentStatus: entry.currentStatus,
+        isEarlyBird: false,
+        isFullyPaid: false,
+        amount: entry.remainingFee
+      };
 
-        const newEntry: EntryInput = {
-          _id: entryNode._id,
-          entryNumber: entryNode.entryNumber,
-          entryKey: entryNode.entryKey,
-          player1Name: entryNode.playerList.player1Name,
-          player2Name: entryNode.playerList.player2Name,
-          eventName: entryNode.eventName,
-          tournamentName: entryNode.tournamentName,
-          club: entryNode.club,
-          currentStatus: entryNode.currentStatus,
-          isFullyPaid: false,
-          amount: result.data?.entryEventAmountDetails?.amount || 0
-        }
-        setSelectedEntries([...selectedEntries, newEntry])
-      } catch (error) {
-        console.error("Error fetching entry amount:", error)
-        const newEntry: EntryInput = {
-          _id: entryNode._id,
-          entryNumber: entryNode.entryNumber,
-          entryKey: entryNode.entryKey,
-          player1Name: entryNode.playerList.player1Name,
-          player2Name: entryNode.playerList.player2Name,
-          eventName: entryNode.eventName,
-          tournamentName: entryNode.tournamentName,
-          club: entryNode.club,
-          currentStatus: entryNode.currentStatus,
-          isFullyPaid: false,
-          amount: 0
-        }
-        setSelectedEntries([...selectedEntries, newEntry])
-      } finally {
-        setAmountLoading(false)
-      }
+      setSelectedEntries([...selectedEntries, newEntry]);
     }
-    setEntrySearch("")
-    setEntriesPopoverOpen(false)
+    setEntrySearch("");
+    setEntriesPopoverOpen(false);
   }
 
   useEffect(() => {
@@ -761,6 +824,12 @@ const PaymentFormDialog = (props: Props) => {
         form.setFieldValue("proofOfPaymentURL", imageUrl)
       }
 
+      // For edit mode, if no new file uploaded, use existing URL
+      if (!imageUrl && isEditMode && existingPaymentData?.proofOfPaymentURL) {
+        imageUrl = existingPaymentData.proofOfPaymentURL
+        form.setFieldValue("proofOfPaymentURL", imageUrl)
+      }
+
       if (!imageUrl) {
         toast.error("Please upload proof of payment or provide a URL")
         setIsUploading(false)
@@ -769,8 +838,8 @@ const PaymentFormDialog = (props: Props) => {
 
       form.handleSubmit()
     } catch (err: any) {
-      console.error('Error creating payment:', err)
-      toast.error(`Error creating payment: ${err.message}`)
+      console.error('Error creating/updating payment:', err)
+      toast.error(`Error: ${err.message}`)
     } finally {
       setIsUploading(false)
     }
@@ -784,9 +853,13 @@ const PaymentFormDialog = (props: Props) => {
       exit={{ opacity: 0 }}
     >
       <CheckCircle className="w-16 h-16 text-green-600 mb-4" />
-      <p className="text-green-600 font-bold text-lg mb-2">Payment Submitted!</p>
+      <p className="text-green-600 font-bold text-lg mb-2">
+        {isEditMode ? "Payment Updated!" : "Payment Submitted!"}
+      </p>
       <p className="text-gray-600 text-sm mb-4 text-center">
-        Your payment has been recorded successfully.
+        {isEditMode
+          ? "Your payment has been updated successfully."
+          : "Your payment has been recorded successfully."}
       </p>
     </motion.div>
   )
@@ -806,10 +879,12 @@ const PaymentFormDialog = (props: Props) => {
       >
         <div className="text-center mb-6">
           <h3 className="text-lg font-bold text-gray-800 mb-2">
-            Confirm Payment Submission
+            {isEditMode ? "Confirm Payment Update" : "Confirm Payment Submission"}
           </h3>
           <p className="text-gray-600 text-sm">
-            Please review your payment details before submitting:
+            {isEditMode
+              ? "Please review your updated payment details before submitting:"
+              : "Please review your payment details before submitting:"}
           </p>
         </div>
 
@@ -833,11 +908,11 @@ const PaymentFormDialog = (props: Props) => {
             </div>
           </div>
 
-          {(reference || confirmationNumber) && (
+          {(reference || confirmationNumber || form.getFieldValue("referenceNumber")) && (
             <div className="p-3 bg-gray-50 rounded-lg">
               <div className="text-sm font-medium text-gray-700 mb-1">Reference No.</div>
               <div className="text-base font-bold text-blue-600 truncate">
-                {reference && reference !== "Not found" ? reference : confirmationNumber}
+                {reference && reference !== "Not found" ? reference : confirmationNumber || form.getFieldValue("referenceNumber")}
               </div>
             </div>
           )}
@@ -857,7 +932,7 @@ const PaymentFormDialog = (props: Props) => {
               {selectedEntries.map((entry, index) => {
                 const entryAmount = entry.amount || 0
                 return (
-                  <div key={entry._id} className="flex justify-between items-center text-xs p-2 bg-white rounded border">
+                  <div key={`${entry.entryNumber}-${index}`} className="flex justify-between items-center text-xs p-2 bg-white rounded border">
                     <div>
                       <span className="font-medium">Entry {index + 1}:</span>
                       <span className="text-gray-600 ml-2">
@@ -905,7 +980,19 @@ const PaymentFormDialog = (props: Props) => {
             className="flex-1 bg-green-600 text-white hover:bg-green-700"
             disabled={isUploading || isPending}
           >
-            {isUploading ? "Uploading..." : isPending ? "Submitting..." : "Confirm Payment"}
+            {isUploading ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Uploading...</span>
+              </div>
+            ) : isPending ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{isEditMode ? "Updating..." : "Submitting..."}</span>
+              </div>
+            ) : (
+              isEditMode ? "Update Payment" : "Confirm Payment"
+            )}
           </Button>
         </div>
       </motion.div>
@@ -946,17 +1033,25 @@ const PaymentFormDialog = (props: Props) => {
     return `${selectedEntries.length} entries selected`
   }
 
-  const handleRemoveEntry = (entryId: string) => {
-    setSelectedEntries(selectedEntries.filter(e => e._id !== entryId))
+  const handleRemoveEntry = (entryNumber: string) => {
+    setSelectedEntries(selectedEntries.filter(e => e.entryNumber !== entryNumber))
   }
 
-  const updateEntryFullyPaid = (entryId: string, value: boolean) => {
-    setSelectedEntries(selectedEntries.map(entry =>
-      entry._id === entryId ? { ...entry, isFullyPaid: value } : entry
-    ))
-  }
+  // Filter entries based on search
+  const filteredEntries = entriesData?.activePaymentEntryOptions?.filter(entry => {
+    if (!entrySearch) return true;
 
-  const entries = entriesData?.entries?.edges?.map(edge => edge.node) || []
+    const searchLower = entrySearch.toLowerCase();
+    return (
+      entry.entryNumber.toLowerCase().includes(searchLower) ||
+      entry.eventName.toLowerCase().includes(searchLower) ||
+      entry.players.some(player =>
+        player.firstName.toLowerCase().includes(searchLower) ||
+        player.lastName.toLowerCase().includes(searchLower) ||
+        `${player.firstName} ${player.lastName}`.toLowerCase().includes(searchLower)
+      )
+    );
+  }) || [];
 
   const RequiredLabel = ({ htmlFor, children }: { htmlFor: string; children: string }) => (
     <div className="flex items-center gap-1">
@@ -969,25 +1064,35 @@ const PaymentFormDialog = (props: Props) => {
     <>
       <Dialog modal open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline-success">
-            <CirclePlus className="size-3.5" />
-            Add Payment
-          </Button>
+          {isEditMode ? (
+            <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs w-full justify-start gap-2">
+              <Edit className="size-3" />
+              Edit
+            </Button>
+          ) : (
+            <Button variant="outline-success">
+              <CirclePlus className="size-3.5" />
+              Add Payment
+            </Button>
+          )}
         </DialogTrigger>
         <DialogContent
           onOpenAutoFocus={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
           showCloseButton={false}
-          className="max-w-4xl max-h-[90vh] overflow-y-auto"
         >
           <DialogHeader>
-            <DialogTitle>Create Payment</DialogTitle>
+            <DialogTitle>
+              {isEditMode ? "Edit Payment" : "Create Payment"}
+            </DialogTitle>
             <DialogDescription>
-              Record a new payment for tournament entries
+              {isEditMode
+                ? "Update payment details for tournament entries"
+                : "Record a new payment for tournament entries"}
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="payment-details">Payment Details</TabsTrigger>
               <TabsTrigger value="payment-reference">Upload Receipt</TabsTrigger>
@@ -1001,7 +1106,7 @@ const PaymentFormDialog = (props: Props) => {
                 setShowConfirmationDialog(true)
               }}
             >
-              <div className="min-h-[420px] max-h-[60vh] overflow-y-auto pr-2">
+              <div className="min-h-[580px] max-h-[60vh] overflow-y-auto pr-2">
                 <TabsContent value="payment-details" className="space-y-4 mt-4">
                   <FieldSet>
                     <form.Field
@@ -1156,17 +1261,17 @@ const PaymentFormDialog = (props: Props) => {
                                   <div className="py-8 text-center text-sm text-muted-foreground">
                                     Loading entries...
                                   </div>
-                                ) : entries.length === 0 ? (
+                                ) : filteredEntries.length === 0 ? (
                                   <div className="py-8 text-center text-sm text-muted-foreground">
                                     {entrySearch ? "No entries found" : "No entries available"}
                                   </div>
                                 ) : (
                                   <div className="space-y-1">
-                                    {entries.map((entry) => {
-                                      const isSelected = selectedEntries.some(e => e._id === entry._id)
+                                    {filteredEntries.map((entry) => {
+                                      const isSelected = selectedEntries.some(e => e.entryNumber === entry.entryNumber)
                                       return (
                                         <button
-                                          key={entry._id}
+                                          key={entry.entryNumber}
                                           type="button"
                                           onClick={() => handleEntrySelect(entry)}
                                           className={cn(
@@ -1182,7 +1287,7 @@ const PaymentFormDialog = (props: Props) => {
                                           <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between">
                                               <span className="font-medium text-sm truncate">
-                                                {entry.entryNumber} ({entry.entryKey})
+                                                {entry.entryNumber}
                                               </span>
                                               <Badge
                                                 variant="outline"
@@ -1194,25 +1299,21 @@ const PaymentFormDialog = (props: Props) => {
                                             <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
                                               <div className="truncate">
                                                 <span className="font-medium">Players: </span>
-                                                <span>{entry.playerList.player1Name}</span>
-                                                {entry.playerList.player2Name && (
-                                                  <span>, {entry.playerList.player2Name}</span>
-                                                )}
+                                                <span>
+                                                  {entry.players.map(player =>
+                                                    `${player.firstName} ${player.lastName}`).join(', ')}
+                                                </span>
                                               </div>
                                               <div className="truncate">
                                                 <span className="font-medium">Event: </span>
                                                 <span>{entry.eventName}</span>
                                               </div>
                                               <div className="truncate">
-                                                <span className="font-medium">Tournament: </span>
-                                                <span>{entry.tournamentName}</span>
+                                                <span className="font-medium">Remaining Fee: </span>
+                                                <span className="font-bold text-green-600">
+                                                  ₱{entry.remainingFee.toFixed(2)}
+                                                </span>
                                               </div>
-                                              {entry.club && (
-                                                <div className="truncate">
-                                                  <span className="font-medium">Club: </span>
-                                                  <span>{entry.club}</span>
-                                                </div>
-                                              )}
                                             </div>
                                           </div>
                                         </button>
@@ -1222,9 +1323,9 @@ const PaymentFormDialog = (props: Props) => {
                                 )}
                               </div>
                             </ScrollArea>
-                            {entries.length > 0 && (
+                            {filteredEntries.length > 0 && entriesData?.activePaymentEntryOptions && (
                               <div className="p-2 border-t text-xs text-muted-foreground">
-                                Showing {entries.length} of {entriesData?.entries?.total || 0} entries
+                                Showing {filteredEntries.length} of {entriesData.activePaymentEntryOptions.length} entries
                               </div>
                             )}
                           </PopoverContent>
@@ -1252,7 +1353,7 @@ const PaymentFormDialog = (props: Props) => {
                               <div className="space-y-2 pr-2">
                                 {selectedEntries.map((entry) => (
                                   <div
-                                    key={entry._id}
+                                    key={entry.entryNumber}
                                     className="p-3 border rounded-lg space-y-2"
                                   >
                                     <div className="flex items-start justify-between">
@@ -1278,34 +1379,19 @@ const PaymentFormDialog = (props: Props) => {
                                           <div><strong>Event:</strong> {entry.eventName}</div>
                                           <div><strong>Tournament:</strong> {entry.tournamentName}</div>
                                           {entry.club && <div><strong>Club:</strong> {entry.club}</div>}
+                                          {entry.isEarlyBird && <div><strong>Early Bird:</strong> {entry.isEarlyBird ? 'Yes' : 'No'}</div>}
                                         </div>
                                       </div>
                                       <Button
                                         type="button"
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => handleRemoveEntry(entry._id)}
+                                        onClick={() => handleRemoveEntry(entry.entryNumber)}
                                         className="h-8 w-8 p-0"
                                         disabled={isLoading}
                                       >
                                         <X className="h-4 w-4" />
                                       </Button>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={`fully-paid-${entry._id}`}
-                                        checked={entry.isFullyPaid}
-                                        onCheckedChange={(checked) =>
-                                          updateEntryFullyPaid(entry._id, checked as boolean)
-                                        }
-                                        disabled={isLoading}
-                                      />
-                                      <Label
-                                        htmlFor={`fully-paid-${entry._id}`}
-                                        className="text-sm font-normal cursor-pointer"
-                                      >
-                                        This entry is fully paid with this payment
-                                      </Label>
                                     </div>
                                   </div>
                                 ))}
@@ -1313,15 +1399,7 @@ const PaymentFormDialog = (props: Props) => {
                             </ScrollArea>
                           </div>
                         )}
-
-                        {/* {selectedEntries.length === 0 && (
-                          <p className="text-sm text-red-500">Please select at least one entry</p>
-                        )} */}
                       </div>
-
-                      {/* <p className="text-xs text-muted-foreground">
-                        Only entries with PAYMENT_PENDING status are shown.
-                      </p> */}
                     </div>
                   </FieldSet>
                 </TabsContent>
@@ -1488,6 +1566,22 @@ const PaymentFormDialog = (props: Props) => {
                         </div>
                       )}
 
+                      {isEditMode && existingPaymentData?.proofOfPaymentURL && !file && (
+                        <div className="w-full mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Paperclip className="w-4 h-4 text-blue-500" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-700">
+                                Existing proof of payment is already uploaded
+                              </p>
+                              <p className="text-xs text-blue-500">
+                                Upload a new file to replace the existing one
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="w-full flex justify-center mb-4">
                         {preview ? (
                           <img
@@ -1495,6 +1589,13 @@ const PaymentFormDialog = (props: Props) => {
                             alt="Uploaded receipt"
                             className="w-full max-w-[300px] rounded-lg border shadow"
                           />
+                        ) : isEditMode && existingPaymentData?.proofOfPaymentURL && !file ? (
+                          <div className="w-full max-w-[300px] h-[200px] rounded-lg border bg-gray-50 flex items-center justify-center">
+                            <div className="text-center">
+                              <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-500">Existing proof of payment available</p>
+                            </div>
+                          </div>
                         ) : (
                           <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
                             <div className="text-center">
@@ -1510,53 +1611,46 @@ const PaymentFormDialog = (props: Props) => {
                         className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${fieldErrors.file ? 'border-red-300 bg-red-50 hover:bg-red-100' : 'border-green-400 hover:bg-green-50'
                           }`}
                       >
-                        {loading ? (
-                          <Loader2 className={`w-6 h-6 mb-2 animate-spin ${fieldErrors.file ? 'text-red-500' : 'text-green-600'}`} />
+                        {isUploading ? (
+                          <div className="flex flex-col items-center">
+                            <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
+                            <span className="font-medium text-sm text-green-700">Uploading...</span>
+                            <span className="text-xs text-gray-500 mt-1">Please wait</span>
+                          </div>
+                        ) : loading ? (
+                          <div className="flex flex-col items-center">
+                            <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
+                            <span className="font-medium text-sm text-green-700">Scanning receipt...</span>
+                          </div>
                         ) : (
-                          <UploadIcon className={`w-6 h-6 mb-2 ${fieldErrors.file ? 'text-red-500' : 'text-green-600'}`} />
+                          <>
+                            <UploadIcon className={`w-6 h-6 mb-2 ${fieldErrors.file ? 'text-red-500' : 'text-green-600'}`} />
+                            <span className={`font-medium text-sm ${fieldErrors.file ? 'text-red-700' : 'text-green-700'}`}>
+                              {isEditMode ? "Upload New Receipt or Browse" : "Drag & Drop your receipt or Browse"}
+                            </span>
+                          </>
                         )}
-                        <span className={`font-medium text-sm ${fieldErrors.file ? 'text-red-700' : 'text-green-700'}`}>
-                          {loading ? "Scanning..." : "Drag & Drop your receipt or Browse"}
-                        </span>
                         <input
                           id="proofUpload"
                           type="file"
                           accept="image/*"
                           className="hidden"
                           onChange={handleFileUpload}
+                          disabled={isUploading || loading}
                         />
                       </label>
 
-                      {fieldErrors.file && (
-                        <p className="text-red-500 text-xs mt-2 text-center">{fieldErrors.file}</p>
+                      {isUploading && (
+                        <div className="w-full mt-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent"></div>
+                            <span className="text-sm text-gray-600">Uploading file to server...</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                            <div className="bg-green-600 h-1.5 rounded-full animate-pulse w-3/4"></div>
+                          </div>
+                        </div>
                       )}
-
-                      {/* <div className="w-full mt-4">
-                        <form.Field
-                          name="proofOfPaymentURL"
-                          children={(field) => {
-                            return (
-                              <div className="space-y-1">
-                                <Label className="text-sm font-medium">Proof of Payment URL (Auto-filled)</Label>
-                                <Input
-                                  type="url"
-                                  placeholder="Will be auto-filled after upload"
-                                  disabled={true}
-                                  id={field.name}
-                                  name={field.name}
-                                  value={uploadedFileUrl || field.state.value}
-                                  className="text-sm"
-                                />
-                                {(uploadedFileUrl || field.state.value) && (
-                                  <p className="text-xs text-green-600">
-                                    Proof of payment {uploadedFileUrl ? 'uploaded and' : ''} attached
-                                  </p>
-                                )}
-                              </div>
-                            )
-                          }}
-                        />
-                      </div> */}
                     </div>
                   </FieldSet>
                 </TabsContent>
@@ -1577,13 +1671,14 @@ const PaymentFormDialog = (props: Props) => {
               form="payment-form"
               disabled={selectedEntries.length === 0 || !form.getFieldValue("payerName") || !form.getFieldValue("amount") || !form.getFieldValue("method")}
             >
-              Submit
+              {isEditMode ? "Update" : "Submit"}
             </Button>
           </DialogFooter>
 
           <AnimatePresence>
             {success && <SuccessModal />}
             {showConfirmationDialog && <ConfirmationDialog />}
+            {(isUploading || loading) && <UploadingOverlay message={loading ? "Scanning receipt..." : "Uploading file..."} />}
           </AnimatePresence>
         </DialogContent>
       </Dialog >
