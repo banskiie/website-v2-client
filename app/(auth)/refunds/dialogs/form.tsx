@@ -111,8 +111,8 @@ const UPDATE = gql`
 `
 
 const ALL_ACTIVE_ENTRIES = gql`
-  query AllActiveEntryOptions {
-    allActiveEntryOptions {
+  query RefundActiveEntryOptions {
+    activeRefundEntryOptions {
       event
       players {
         firstName
@@ -156,14 +156,13 @@ const FormDialog = (props: Props) => {
     }
   )
   const [openFilteredEntries, setOpenFilteredEntries] = useState(false)
-  const entryOptions = (entryOptionsData as any)?.allActiveEntryOptions || []
+  const entryOptions = (entryOptionsData as any)?.activeRefundEntryOptions || []
   // Payment Methods
   const [openMethods, setOpenMethods] = useState(false)
   const Methods = Object.values(PaymentMethod).map((method) => ({
     label: method.toLocaleLowerCase().replaceAll("_", " "),
     value: method,
   }))
-  // Handle image
   // Handle Image
   const [files, setFiles] = useState<any[]>([])
   const { getRootProps, getInputProps } = useDropzone({
