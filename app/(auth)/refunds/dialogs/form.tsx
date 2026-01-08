@@ -72,6 +72,7 @@ import {
 } from "@/components/ui/sheet"
 import Image from "next/image"
 import { Input } from "@/components/ui/input"
+import { RefundSchema } from "@/validators/refund.validator"
 
 const USER = gql`
   query Refund($_id: ID!) {
@@ -201,17 +202,15 @@ const FormDialog = (props: Props) => {
     validators: {
       onSubmit: ({ formApi, value }) => {
         try {
-          UserSchema.parse(value)
+          RefundSchema.parse(value)
         } catch (error: any) {
-          const formErrors = JSON.parse(error)
-          formErrors.map(
-            ({ path, message }: { path: string; message: string }) =>
-              (formApi as any).fieldInfo[
-                path as keyof any
-              ].instance?.setErrorMap({
-                onSubmit: { message },
-              })
-          )
+          console.error(error)
+          JSON.parse(error).map(({ path, message }) => {
+            const pathName = path.join(".")
+            formApi.fieldInfo[pathName].instance?.setErrorMap({
+              onSubmit: { message },
+            })
+          })
         }
       },
     },
@@ -223,11 +222,33 @@ const FormDialog = (props: Props) => {
     onSubmit: ({ value, formApi }) =>
       startTransition(async () => {
         try {
-          const response: any = await submitForm({
+          const payload = value
+          if (files.length > 0) {
+            const formData = new FormData()
+            const file = files[0]
+
+            formData.append(
+              "file",
+              file,
+              `REFUND${payload.entryList.join("-").toUpperCase()}-${Date.now()}`
+            )
+
+            await fetch("/api/upload/refund", {
+              method: "POST",
+              body: formData,
+            }).then(async (res) => {
+              const data = await res.json()
+              if (!res.ok) throw new Error("Upload failed")
+              payload.proofOfRefundURL = data.url
+            })
+          }
+
+          const response = await submitForm({
             variables: {
-              input: isUpdate ? { _id: props._id, ...value } : { ...value },
+              input: isUpdate ? { _id: props._id, ...payload } : payload,
             },
           })
+
           if (response) onClose()
         } catch (error: any) {
           console.error(error.errors)
@@ -247,49 +268,11 @@ const FormDialog = (props: Props) => {
       }),
   })
 
-  const uploadFile = async (file: File): Promise<string | null> => {
-    return new Promise((resolve) => {
-      startTransition(async () => {
-        try {
-          const formData = new FormData()
-          const fileExt = file.name.split(".").pop() || ""
-
-          const fileName = `payment-${Date.now()}.${fileExt}`
-          formData.append("file", file, fileName)
-
-          console.log("Uploading file to PAYMENTS folder:", {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            fileName: fileName,
-          })
-
-          const response = await fetch("/api/upload/payment", {
-            method: "POST",
-            body: formData,
-          })
-
-          if (!response.ok) {
-            throw new Error("Upload Failed")
-          }
-
-          const data = await response.json()
-          console.log("Upload to PAYMENTS response:", data)
-
-          resolve(data.url)
-        } catch (error) {
-          console.error("Error Uploading file to payments folder:", error)
-          toast.error("Error uploading file. Please try again.")
-          resolve(null)
-        }
-      })
-    })
-  }
-
   const onClose = () => {
     setOpen(false)
     props.onClose?.()
     form.reset()
+    setFiles([])
   }
 
   return (
@@ -300,9 +283,9 @@ const FormDialog = (props: Props) => {
             Edit
           </DropdownMenuItem>
         ) : (
-          <Button variant="outline-warning">
+          <Button variant="outline-success">
             <CirclePlus className="size-3.5 -mx-0.5" />
-            Create Refund
+            Add Refund
           </Button>
         )}
       </DialogTrigger>
@@ -329,7 +312,7 @@ const FormDialog = (props: Props) => {
             form.handleSubmit()
           }}
         >
-          <FieldSet className="grid grid-cols-2">
+          <FieldSet className="grid grid-cols-2 h-[60vh] overflow-y-auto">
             <form.Field
               name="payerName"
               children={(field: any) => {
@@ -675,91 +658,136 @@ const FormDialog = (props: Props) => {
                 )
               }}
             />
+            <form.Field
+              name="proofOfRefundURL"
+              children={(field) => {
+                const imageUrl = field.state.value || ""
+                return (
+                  <div className="col-span-2">
+                    <div {...getRootProps({ className: "dropzone space-y-1" })}>
+                      <Label>Proof of Refund</Label>
+                      <Input disabled={files.length > 0} {...getInputProps()} />
+                      {imageUrl && (
+                        <div className="border flex justify-around p-1.75">
+                          {files.length > 0 &&
+                            files.map((file: any, idx: number) => (
+                              <Sheet key={file.name}>
+                                <SheetTrigger className="flex flex-col items-center">
+                                  <div className="flex gap-1">
+                                    <Label>New Proof</Label>
+                                    <Button
+                                      onClick={() => {
+                                        setFiles((prev) =>
+                                          prev.filter((_, i) => i !== idx)
+                                        )
+                                      }}
+                                      disabled={isPending}
+                                      className="scale-40 -m-2 rounded-full opacity-70 cursor-pointer"
+                                      size="icon-sm"
+                                      variant="destructive"
+                                      title="Remove image"
+                                    >
+                                      <XIcon />
+                                    </Button>
+                                  </div>
+                                  <Image
+                                    height={150}
+                                    width={150}
+                                    className="object-contain w-24 h-24 bg-gray-200 cursor-pointer rounded"
+                                    src={file.preview}
+                                    title={`${file.name}: ${(
+                                      file.size / 1024
+                                    ).toFixed(2)} KB`}
+                                    alt="Preview"
+                                  />
+                                </SheetTrigger>
+                                <SheetContent
+                                  className="h-screen p-[2%]"
+                                  side="bottom"
+                                >
+                                  <SheetHeader hidden>
+                                    <SheetTitle>Preview</SheetTitle>
+                                    <SheetDescription>
+                                      Description
+                                    </SheetDescription>
+                                  </SheetHeader>
+                                  <img
+                                    className="object-contain h-full"
+                                    src={file.preview}
+                                    title={`${file.name}: ${(
+                                      file.size / 1024
+                                    ).toFixed(2)} KB`}
+                                  />
+                                </SheetContent>
+                              </Sheet>
+                            ))}
 
-            <div className="col-span-2">
-              <div
-                {...getRootProps({ className: "dropzone space-y-1" })}
-              >
-                <Label>Proof of Refund</Label>
-                <Input disabled={files.length > 0} {...getInputProps()} />
-                <div className="flex flex-col items-center justify-center ">
-                  <Button
-                    variant="outline"
-                    title="Attach image/document"
-                    type="button"
-                    disabled={files.length > 0}
-                    className={cn(
-                      "flex flex-col h-fit min-h-32 border-dashed w-full"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        files.length > 0 ? "hidden" : "flex flex-col"
+                          <Sheet>
+                            <SheetTrigger className="flex flex-col items-center">
+                              <div className="flex gap-1">
+                                <Label>Old Proof</Label>
+                              </div>
+                              <Image
+                                height={150}
+                                width={150}
+                                className="object-contain w-24 h-24 bg-gray-200 cursor-pointer rounded"
+                                src={imageUrl}
+                                title={`Old Proof`}
+                                alt="Preview"
+                              />
+                            </SheetTrigger>
+                            <SheetContent
+                              className="h-screen p-[2%]"
+                              side="bottom"
+                            >
+                              <SheetHeader hidden>
+                                <SheetTitle>Preview</SheetTitle>
+                                <SheetDescription>Description</SheetDescription>
+                              </SheetHeader>
+                              <img
+                                className="object-contain h-full"
+                                src={imageUrl}
+                                title="Old proof"
+                              />
+                            </SheetContent>
+                          </Sheet>
+                        </div>
                       )}
-                    >
-                      <span className="block">Upload attachment here</span>
-                      <span className="text-muted-foreground font-normal">
-                        (Accepted: .png, .jpg, .jpeg)
-                      </span>
-                      <span className="text-muted-foreground font-normal">
-                        (Max: 3MB)
-                      </span>
-                    </div>
-                  </Button>
-                  {files.length > 0 &&
-                    files.map((file: any, idx: number) => (
+
                       <div
-                        key={file.name}
-                        className="flex items-start justify-end z-50 absolute"
+                        className={cn(
+                          "flex flex-col items-center justify-center",
+                          files.length > 0 && "hidden"
+                        )}
                       >
-                        <Sheet>
-                          <SheetTrigger>
-                            <Image
-                              height={150}
-                              width={150}
-                              className="object-contain w-24 h-24 bg-gray-200 cursor-pointer rounded"
-                              src={file.preview}
-                              title={`${file.name}: ${(
-                                file.size / 1024
-                              ).toFixed(2)} KB`}
-                              alt="Preview"
-                            />
-                          </SheetTrigger>
-                          <SheetContent
-                            className="h-screen p-[2%]"
-                            side="bottom"
-                          >
-                            <SheetHeader hidden>
-                              <SheetTitle>Preview</SheetTitle>
-                              <SheetDescription>Description</SheetDescription>
-                            </SheetHeader>
-                            <img
-                              className="object-contain h-full"
-                              src={file.preview}
-                              title={`${file.name}: ${(
-                                file.size / 1024
-                              ).toFixed(2)} KB`}
-                            />
-                          </SheetContent>
-                        </Sheet>
                         <Button
-                          onClick={() => {
-                            setFiles((prev) => prev.filter((_, i) => i !== idx))
-                          }}
-                          disabled={isPending}
-                          className="absolute -mr-3.5 -mt-3.5 scale-60 rounded-full opacity-70 cursor-pointer"
-                          size="icon-sm"
-                          variant="destructive"
-                          title="Remove image"
+                          variant="outline"
+                          title="Attach image/document"
+                          type="button"
+                          disabled={files.length > 0}
+                          className={cn(
+                            "flex flex-col h-fit min-h-32 border-dashed w-full"
+                          )}
                         >
-                          <XIcon />
+                          <div className={cn("flex flex-col")}>
+                            <span className="block">
+                              Upload attachment here
+                            </span>
+                            <span className="text-muted-foreground font-normal">
+                              (Accepted: .png, .jpg, .jpeg)
+                            </span>
+                            <span className="text-muted-foreground font-normal">
+                              (Max: 3MB)
+                            </span>
+                          </div>
                         </Button>
                       </div>
-                    ))}
-                </div>
-              </div>
-              <div></div>
-            </div>
+                    </div>
+                    <div></div>
+                  </div>
+                )
+              }}
+            />
           </FieldSet>
         </form>
         <DialogFooter>

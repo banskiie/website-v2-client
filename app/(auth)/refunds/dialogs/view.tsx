@@ -104,6 +104,7 @@ const ViewDialog = (props: Props) => {
   const { data, loading, error }: any = useQuery(REFUND, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
+    fetchPolicy: "network-only",
   })
 
   const onClose = () => {

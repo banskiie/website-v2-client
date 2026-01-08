@@ -178,40 +178,39 @@ const Page = () => {
         const { type, refund, refunds } = subscriptionData.data.refundChanged
         switch (type) {
           case "CREATE":
-            const newPayment = refund
-            const newPaymentExists = prev.refunds.edges.find(
-              (edge: any) => edge.node._id === newPayment?._id
+            const newRefund = refund
+            const newRefundExists = prev.refunds.edges.find(
+              (edge: any) => edge.node._id === newRefund?._id
             )
-            if (newPaymentExists || search || sort || filter.length > 0)
+            if (newRefundExists || search || sort || filter.length > 0)
               return prev
-            toast.success(`Payment (${newPayment?.name}) has been created.`)
+            toast.success(`Refund (${newRefund?.payerName}) has been created.`)
             return Object.assign({}, prev, {
               refunds: {
                 ...prev.refunds,
                 total: prev.refunds.total + 1,
                 edges: [
-                  { cursor: newPayment?._id, node: newPayment },
+                  { cursor: newRefund?._id, node: newRefund },
                   ...prev.refunds.edges,
                 ],
               },
             })
           case "UPDATE":
-            const updatedPayment = refund
+            const updatedRefund = refund
             if (search || sort || filter.length > 0) return prev
             toast.success(
-              `Payment (${updatedPayment?.payerName}) has been updated.`
+              `Refund (${updatedRefund?.payerName}) has been updated.`
             )
             return Object.assign({}, prev, {
               refunds: {
                 ...prev.refunds,
                 edges: prev.refunds.edges.map((edge: any) =>
-                  edge.node._id === updatedPayment._id
-                    ? { ...edge, node: updatedPayment }
+                  edge.node._id === updatedRefund._id
+                    ? { ...edge, node: updatedRefund }
                     : edge
                 ),
               },
             })
-
           default:
             return prev
         }
