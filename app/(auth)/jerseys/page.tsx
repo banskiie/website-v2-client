@@ -43,6 +43,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import JerseyBadge from "@/components/badges/jersey-badge"
 import { JerseyStatus, JerseySize } from "@/types/jersey.interface"
 import FormDialog from "./dialogs/form"
+import DeleteDialog from "./dialogs/delete"
 
 const JERSEYS = gql`
   query Jerseys(
@@ -111,7 +112,7 @@ const JERSEY_CHANGED = gql`
 const ActionsColumn = ({ data }: { data?: any }) => {
   const jersey = useMemo(() => data, [data])
   const [menuOpen, setMenuOpen] = useState(false)
-  
+
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
@@ -124,13 +125,19 @@ const ActionsColumn = ({ data }: { data?: any }) => {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           {/* <ViewDialog _id={jersey?._id} />*/}
-          <FormDialog _id={jersey?._id} onClose={() => setMenuOpen(false)} /> 
+          <FormDialog _id={jersey?._id} onClose={() => setMenuOpen(false)} />
           <DropdownMenuSeparator />
           {/* <StatusDialog
             _id={jersey?._id}
             onClose={() => setMenuOpen(false)}
             currentStatus={jersey?.currentStatus}
           /> */}
+          <DeleteDialog
+            _id={jersey?._id}
+            playerName={jersey?.playerName}
+            onClose={() => setMenuOpen(false)}
+            variant="menu-item"
+          />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -175,14 +182,40 @@ const Page = () => {
       updateQuery: (prev: any, { subscriptionData }: any) => {
         if (!subscriptionData.data) return prev
         const { type, jersey } = subscriptionData.data.jerseyChanged
-        
+
+        // Helper function to compute required fields
+        const computeJerseyFields = (jerseyData: any) => {
+          if (!jerseyData) return jerseyData
+
+          // Compute playerName
+          const playerName = jerseyData.player
+            ? `${jerseyData.player.firstName || ''} ${jerseyData.player.lastName || ''}`.trim()
+            : 'Unknown Player'
+
+          // Compute tournamentName
+          const tournamentName = jerseyData.tournament?.name || 'Unknown Tournament'
+
+          // Compute currentStatus - get the last status from statuses array
+          const currentStatus = jerseyData.statuses?.length > 0
+            ? jerseyData.statuses[jerseyData.statuses.length - 1]?.status
+            : 'UNKNOWN'
+
+          return {
+            ...jerseyData,
+            playerName,
+            tournamentName,
+            currentStatus,
+          }
+        }
+
         switch (type) {
           case "CREATE":
-            const newJersey = jersey
+            const newJersey = computeJerseyFields(jersey)
             const newJerseyExists = prev.jerseys.edges.find(
               (edge: any) => edge.node._id === newJersey?._id
             )
             if (newJerseyExists || search || sort || filter.length > 0) return prev
+
             toast.success(`Jersey for ${newJersey?.playerName} has been created.`)
             return Object.assign({}, prev, {
               jerseys: {
@@ -195,8 +228,9 @@ const Page = () => {
               },
             })
           case "UPDATE":
-            const updatedJersey = jersey
+            const updatedJersey = computeJerseyFields(jersey)
             if (search || sort || filter.length > 0) return prev
+
             toast.success(`Jersey for ${updatedJersey?.playerName} has been updated.`)
             return Object.assign({}, prev, {
               jerseys: {
@@ -209,8 +243,9 @@ const Page = () => {
               },
             })
           case "DELETE":
-            const deletedJersey = jersey
+            const deletedJersey = computeJerseyFields(jersey)
             if (search || sort || filter.length > 0) return prev
+
             toast.success(`Jersey for ${deletedJersey?.playerName} has been deleted.`)
             return Object.assign({}, prev, {
               jerseys: {
@@ -419,7 +454,7 @@ const Page = () => {
 
   const goNext = async () => {
     if (page.current === page.max) return
-    
+
     if (page.current === page.loaded) {
       await fetchMore({
         variables: {
@@ -651,7 +686,7 @@ const Page = () => {
         columns={columns}
         data={nodes.slice((page.current - 1) * rows, page.current * rows)}
         actionsColumn={<ActionsColumn />}
-        // rowView={<ViewDialog row />}
+      // rowView={<ViewDialog row />}
       />
     </div>
   )

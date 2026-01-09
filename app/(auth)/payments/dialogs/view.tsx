@@ -179,9 +179,9 @@ const ViewDialog = (props: Props) => {
                       {loading
                         ? null
                         : new Intl.NumberFormat("en-US", {
-                            style: "currency",
-                            currency: "PHP",
-                          }).format(data?.payment?.amount)}
+                          style: "currency",
+                          currency: "PHP",
+                        }).format(data?.payment?.amount)}
                     </span>
                   )}
                 </div>

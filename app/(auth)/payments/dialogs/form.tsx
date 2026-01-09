@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { gql } from "@apollo/client"
-import { useMutation, useQuery, useLazyQuery } from "@apollo/client/react"
+import { useMutation, useQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
 import React, { useState, useTransition, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -40,6 +40,8 @@ import { AnimatePresence, motion } from "framer-motion"
 import * as Tesseract from 'tesseract.js'
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
+import Image from "next/image"
+import { PaymentMethod } from "@/types/payment.interface"
 
 const CREATE_PAYMENT = gql`
   mutation CreatePayment($input: CreatePaymentInput!) {
@@ -59,26 +61,8 @@ const UPDATE_PAYMENT = gql`
   }
 `
 
-const GET_PAYMENTS = gql`
-  query Payments {
-    payments {
-      _id
-      payerName
-      referenceNumber
-      amount
-      method
-      paymentDate
-      proofOfPaymentURL
-      entryList {
-        entryNumber
-        isFullyPaid
-      }
-    }
-  }
-`
-
 const GET_PAYMENT = gql`
-  query GetPayment($_id: String!) {
+  query GetPayment($_id: ID!) {
     payment(_id: $_id) {
       _id
       payerName
@@ -87,9 +71,44 @@ const GET_PAYMENT = gql`
       method
       paymentDate
       proofOfPaymentURL
+      statuses {
+        status
+        date
+        reason
+        by {
+          _id
+          name
+          email
+          contactNumber
+          username
+          role
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
       entryList {
-        entryNumber
         isFullyPaid
+        entry {
+          _id
+          entryNumber
+          entryKey
+        }
+      }
+      remarks {
+        remark
+        date
+        by {
+          _id
+          name
+          email
+          contactNumber
+          username
+          role
+          isActive
+          createdAt
+          updatedAt
+        }
       }
     }
   }
@@ -110,12 +129,6 @@ const ACTIVE_PAYMENT_ENTRY_OPTIONS = gql`
   }
 `
 
-enum PaymentMethod {
-  BANK_TRANSFER = "BANK_TRANSFER",
-  GCASH = "GCASH",
-  OVER_THE_COUNTER = "OVER_THE_COUNTER"
-}
-
 interface Player {
   firstName: string
   lastName: string
@@ -133,6 +146,42 @@ interface ActivePaymentEntryOptionsResponse {
   activePaymentEntryOptions: ActivePaymentEntryOption[]
 }
 
+interface User {
+  _id: string
+  name: string
+  email: string
+  contactNumber: string
+  username: string
+  role: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+interface Status {
+  status: string
+  date: string
+  reason?: string
+  by: User
+}
+
+interface Remark {
+  remark: string
+  date: string
+  by: User
+}
+
+interface EntryItem {
+  _id: string
+  entryNumber: string
+  entryKey: string
+}
+
+interface EntryListItem {
+  isFullyPaid: boolean
+  entry: EntryItem
+}
+
 interface PaymentData {
   _id: string
   payerName: string
@@ -141,18 +190,13 @@ interface PaymentData {
   method: PaymentMethod
   paymentDate: string
   proofOfPaymentURL: string
-  entryList: Array<{
-    entryNumber: string
-    isFullyPaid: boolean
-  }>
+  statuses: Status[]
+  entryList: EntryListItem[]
+  remarks: Remark[]
 }
 
 interface PaymentResponse {
   payment: PaymentData
-}
-
-interface PaymentsResponse {
-  payments: PaymentData[]
 }
 
 interface EntryInput {
@@ -169,13 +213,60 @@ interface EntryInput {
   isEarlyBird: boolean
 }
 
+interface CreatePaymentResponse {
+  createPayment: {
+    ok: boolean
+    message: string
+  }
+}
+
+interface UpdatePaymentResponse {
+  updatePayment: {
+    ok: boolean
+    message: string
+  }
+}
+
+// FIXED: Updated interface to match your backend
+interface CreatePaymentVariables {
+  input: {
+    payerName: string
+    referenceNumber: string
+    amount: number
+    method: PaymentMethod
+    proofOfPaymentURL: string
+    paymentDate: Date
+    entryList: Array<{
+      entry: string[]  // Entry numbers (strings), not IDs
+      isFullyPaid: boolean
+    }>
+  }
+}
+
+// FIXED: Updated interface to match your backend
+interface UpdatePaymentVariables {
+  input: {
+    _id: string
+    payerName: string
+    referenceNumber: string
+    amount: number
+    method: PaymentMethod
+    proofOfPaymentURL: string
+    paymentDate: Date
+    entryList: Array<{
+      entry: string[]  // Entry numbers (strings), not IDs
+      isFullyPaid: boolean
+    }>
+  }
+}
+
 interface Props {
   _id?: string
   onClose?: () => void
   refetchPayments?: () => void
 }
 
-const PaymentFormDialog = (props: Props) => {
+const FormDialog = (props: Props) => {
   const { _id } = props
   const isEditMode = !!_id
 
@@ -191,17 +282,16 @@ const PaymentFormDialog = (props: Props) => {
   const [preview, setPreview] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [scannedTotal, setScannedTotal] = useState<string | null>(null)
   const [reference, setReference] = useState<string | null>(null)
   const [scannedText, setScannedText] = useState<string>("")
-  const [showConfirmationInput, setShowConfirmationInput] = useState(false)
   const [confirmationNumber, setConfirmationNumber] = useState<string>("")
   const [amountLabel, setAmountLabel] = useState("Total")
   const [referenceLabel, setReferenceLabel] = useState("Reference No.")
   const [referenceLoading, setReferenceLoading] = useState(false)
   const [amountLoading, setAmountLoading] = useState(false)
+  const [imageLoading, setImageLoading] = useState(true)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({
     payerName: '',
     amount: '',
@@ -220,19 +310,16 @@ const PaymentFormDialog = (props: Props) => {
     fetchPolicy: "network-only",
   })
 
-  // Using the PAYMENT query you mentioned
-  const { data: paymentsData, loading: paymentsLoading } = useQuery<PaymentsResponse>(
-    GET_PAYMENTS,
-    {
-      skip: !open || !isEditMode,
-      fetchPolicy: "network-only",
-    }
-  )
+  const { data: paymentData, loading: paymentLoading } = useQuery<PaymentResponse>(GET_PAYMENT, {
+    variables: { _id: _id as string },
+    skip: !_id || !open,
+    fetchPolicy: "network-only",
+  })
 
-  const [submitForm] = useMutation(CREATE_PAYMENT)
-  const [updateForm] = useMutation(UPDATE_PAYMENT)
+  const [createPayment, { loading: createLoading }] = useMutation<CreatePaymentResponse, CreatePaymentVariables>(CREATE_PAYMENT)
+  const [updatePayment, { loading: updateLoading }] = useMutation<UpdatePaymentResponse, UpdatePaymentVariables>(UPDATE_PAYMENT)
 
-  const isLoading = isPending || entriesLoading || paymentsLoading
+  const isLoading = isPending || entriesLoading || paymentLoading || createLoading || updateLoading
 
   useEffect(() => {
     if (entriesPopoverOpen && popoverTriggerRef.current) {
@@ -242,61 +329,72 @@ const PaymentFormDialog = (props: Props) => {
   }, [entriesPopoverOpen])
 
   useEffect(() => {
-    if (isEditMode && paymentsData?.payments && open) {
-      // Find the specific payment by _id
-      const payment = paymentsData.payments.find(p => p._id === _id)
-      if (payment) {
-        setExistingPaymentData(payment)
+    if (paymentData?.payment && open && isEditMode) {
+      const payment = paymentData.payment
+      setExistingPaymentData(payment)
 
-        // Set form values from the fetched payment data
-        form.setFieldValue("payerName", payment.payerName)
-        form.setFieldValue("referenceNumber", payment.referenceNumber)
-        form.setFieldValue("amount", payment.amount / 100) // Convert from cents
-        form.setFieldValue("method", payment.method as PaymentMethod)
-        form.setFieldValue("paymentDate", new Date(payment.paymentDate))
+      // Set form values
+      form.setFieldValue("payerName", payment.payerName)
+      form.setFieldValue("referenceNumber", payment.referenceNumber)
+      form.setFieldValue("amount", payment.amount)
+      form.setFieldValue("method", payment.method as PaymentMethod)
+      form.setFieldValue("paymentDate", new Date(payment.paymentDate))
+
+      if (payment.proofOfPaymentURL) {
         form.setFieldValue("proofOfPaymentURL", payment.proofOfPaymentURL)
+        setPreview(payment.proofOfPaymentURL)
+      }
 
-        // Set the preview if there's an existing proof of payment URL
-        if (payment.proofOfPaymentURL && !preview) {
-          setPreview(payment.proofOfPaymentURL)
-        }
+      if (payment.entryList && payment.entryList.length > 0) {
+        const existingEntries: EntryInput[] = []
 
-        // Set selected entries from existing payment
-        if (payment.entryList && payment.entryList.length > 0) {
-          const existingEntries = payment.entryList.map(entryItem => {
-            // Find the entry details from activePaymentEntryOptions
-            const entryDetail = entriesData?.activePaymentEntryOptions?.find(
-              e => e.entryNumber === entryItem.entryNumber
+        payment.entryList.forEach(entryItem => {
+          const entry = entryItem.entry
+          if (entry && entriesData?.activePaymentEntryOptions) {
+            const entryDetail = entriesData.activePaymentEntryOptions.find(
+              e => e.entryNumber === entry.entryNumber
             )
 
-            const entryKey = entryItem.entryNumber.includes('_')
-              ? entryItem.entryNumber.split('_')[1]
-              : '';
-
-            return {
-              entryNumber: entryItem.entryNumber,
-              entryKey: entryKey,
-              player1Name: entryDetail?.players[0]
-                ? `${entryDetail.players[0].firstName} ${entryDetail.players[0].lastName}`
-                : 'Unknown Player',
-              player2Name: entryDetail?.players[1]
-                ? `${entryDetail.players[1].firstName} ${entryDetail.players[1].lastName}`
-                : null,
-              eventName: entryDetail?.eventName || '',
-              tournamentName: entryDetail?.eventName?.split(' - ')[0] || entryDetail?.eventName || '',
-              club: '',
-              currentStatus: entryDetail?.currentStatus || '',
-              isEarlyBird: false,
-              isFullyPaid: entryItem.isFullyPaid,
-              amount: entryDetail?.remainingFee || 0
+            if (entryDetail) {
+              existingEntries.push({
+                entryNumber: entry.entryNumber,
+                entryKey: entry.entryKey || '',
+                player1Name: entryDetail.players[0]
+                  ? `${entryDetail.players[0].firstName} ${entryDetail.players[0].lastName}`
+                  : 'Unknown Player',
+                player2Name: entryDetail.players[1]
+                  ? `${entryDetail.players[1].firstName} ${entryDetail.players[1].lastName}`
+                  : null,
+                eventName: entryDetail.eventName || '',
+                tournamentName: entryDetail.eventName?.split(' - ')[0] || entryDetail.eventName || '',
+                club: '',
+                currentStatus: entryDetail.currentStatus || '',
+                isEarlyBird: false,
+                isFullyPaid: entryItem.isFullyPaid || false,
+                amount: entryDetail.remainingFee || 0
+              })
+            } else {
+              existingEntries.push({
+                entryNumber: entry.entryNumber,
+                entryKey: entry.entryKey || '',
+                player1Name: 'Unknown Player',
+                player2Name: null,
+                eventName: '',
+                tournamentName: '',
+                club: '',
+                currentStatus: '',
+                isEarlyBird: false,
+                isFullyPaid: entryItem.isFullyPaid || false,
+                amount: 0
+              })
             }
-          })
+          }
+        })
 
-          setSelectedEntries(existingEntries)
-        }
+        setSelectedEntries(existingEntries)
       }
     }
-  }, [paymentsData, open, entriesData, isEditMode, _id, preview])
+  }, [paymentData, open, entriesData, isEditMode])
 
   const form = useForm({
     defaultValues: {
@@ -306,119 +404,6 @@ const PaymentFormDialog = (props: Props) => {
       method: PaymentMethod.BANK_TRANSFER as PaymentMethod,
       proofOfPaymentURL: "",
       paymentDate: new Date(),
-    },
-    validators: {
-      onChange: ({ value }) => {
-        const errors: Record<string, string> = {}
-
-        if (!value.payerName?.trim()) {
-          errors.payerName = "Payer name is required"
-        }
-
-        if (!value.amount || value.amount <= 0) {
-          errors.amount = "Amount must be greater than 0"
-        }
-
-        if (!value.method) {
-          errors.method = "Payment method is required"
-        }
-
-        if (!value.paymentDate) {
-          errors.paymentDate = "Payment date is required"
-        }
-
-        if (selectedEntries.length === 0) {
-          errors._entries = "At least one entry must be selected"
-        }
-
-        return errors
-      },
-    },
-    onSubmit: async ({ value, formApi }) => {
-      startTransition(async () => {
-        try {
-          const entryList = selectedEntries.map(entry => ({
-            entryNumber: entry.entryNumber,
-            isFullyPaid: entry.isFullyPaid
-          }))
-
-          if (entryList.length === 0) {
-            throw new Error("At least one entry must be selected")
-          }
-
-          const finalReferenceNumber = reference && reference !== "Not found" ? reference : confirmationNumber || value.referenceNumber || `ref_${Date.now()}`
-
-          if (isEditMode && _id) {
-            // Update existing payment
-            const response: any = await updateForm({
-              variables: {
-                input: {
-                  _id,
-                  payerName: value.payerName,
-                  referenceNumber: finalReferenceNumber,
-                  amount: Math.round(value.amount * 100),
-                  method: value.method,
-                  proofOfPaymentURL: value.proofOfPaymentURL || existingPaymentData?.proofOfPaymentURL,
-                  paymentDate: value.paymentDate,
-                  entryList: entryList,
-                },
-              },
-            })
-
-            if (response.data?.updatePayment?.ok) {
-              setSuccess(true)
-              setTimeout(() => {
-                onClose()
-                props.refetchPayments?.()
-              }, 2000)
-            } else {
-              throw new Error(response.data?.updatePayment?.message || "Update failed")
-            }
-          } else {
-            // Create new payment
-            const response: any = await submitForm({
-              variables: {
-                input: {
-                  payerName: value.payerName,
-                  referenceNumber: finalReferenceNumber,
-                  amount: Math.round(value.amount * 100),
-                  method: value.method,
-                  proofOfPaymentURL: value.proofOfPaymentURL,
-                  paymentDate: value.paymentDate,
-                  entryList: entryList,
-                },
-              },
-            })
-
-            if (response.data?.createPayment?.ok) {
-              setSuccess(true)
-              setTimeout(() => {
-                onClose()
-                props.refetchPayments?.()
-              }, 2000)
-            } else {
-              throw new Error(response.data?.createPayment?.message || "Submission failed")
-            }
-          }
-        } catch (error: any) {
-          console.error("Submission error:", error)
-          if (error.name === "CombinedGraphQLErrors") {
-            const fieldErrors = error.errors[0]?.extensions?.fields
-            if (fieldErrors) {
-              fieldErrors.forEach(({ path, message }: { path: string; message: string }) => {
-                const fieldInfo = formApi.fieldInfo as any
-                if (fieldInfo[path]) {
-                  fieldInfo[path].instance?.setErrorMap({
-                    onSubmit: { message },
-                  })
-                }
-              })
-            }
-          } else {
-            toast.error(error.message || "An error occurred")
-          }
-        }
-      })
     },
   })
 
@@ -431,12 +416,10 @@ const PaymentFormDialog = (props: Props) => {
     setPreview(null)
     setFile(null)
     setIsUploading(false)
-    setUploadedFileUrl(null)
     setLoading(false)
     setScannedTotal(null)
     setReference(null)
     setScannedText("")
-    setShowConfirmationInput(false)
     setConfirmationNumber("")
     setSuccess(false)
     setFieldErrors({
@@ -446,6 +429,7 @@ const PaymentFormDialog = (props: Props) => {
       paymentMethod: '',
     })
     setExistingPaymentData(null)
+    setShowConfirmationDialog(false)
     props.onClose?.()
     form.reset()
   }
@@ -572,22 +556,18 @@ const PaymentFormDialog = (props: Props) => {
 
         const confirmationMatch = text.match(/confirmation[\s#:=-]*no\.?\s*([A-Z0-9-]{5,})/i)
         if (confirmationMatch) {
-          setShowConfirmationInput(true)
           setConfirmationNumber(confirmationMatch[1])
         } else {
-          setShowConfirmationInput(false)
           setConfirmationNumber("")
         }
 
         const traceMatch = text.match(/Trace no\.\s*([A-Z0-9-]+)/i)
         if (traceMatch) {
-          setShowConfirmationInput(true)
           setConfirmationNumber(traceMatch[1])
         }
 
         const landBankTransactionRefMatch = text.match(/Transaction Reference Number\s*([A-Z0-9\/]+)/i)
         if (landBankTransactionRefMatch) {
-          setShowConfirmationInput(true)
           setConfirmationNumber(landBankTransactionRefMatch[1])
         }
 
@@ -607,7 +587,7 @@ const PaymentFormDialog = (props: Props) => {
           text.match(new RegExp(`amount[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i")) ||
           text.match(new RegExp(`total\\s*amount\\s*sent[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i"))
 
-        let detectedAmount = null
+        let detectedAmount = ""
         if (bdoAmountMatch) {
           setAmountLabel("Paid Amount")
           detectedAmount = bdoAmountMatch[1]
@@ -622,7 +602,7 @@ const PaymentFormDialog = (props: Props) => {
           detectedAmount = totalMatch[1]
         } else {
           setAmountLabel("Total")
-          detectedAmount = null
+          detectedAmount = ""
         }
 
         if (detectedAmount) {
@@ -745,7 +725,6 @@ const PaymentFormDialog = (props: Props) => {
   const handleRemoveFile = () => {
     setFile(null)
     setPreview(null)
-    setUploadedFileUrl(null)
     setReferenceLoading(false)
     setScannedTotal(null)
     setReference(null)
@@ -755,7 +734,6 @@ const PaymentFormDialog = (props: Props) => {
 
   const validateFile = (file: File): string => {
     if (!file) {
-      // For edit mode, file is not required if we already have a URL
       if (isEditMode && existingPaymentData?.proofOfPaymentURL) {
         return ''
       }
@@ -765,7 +743,7 @@ const PaymentFormDialog = (props: Props) => {
     if (!validTypes.includes(file.type)) {
       return 'Please upload a valid image file (JPEG, PNG, JPG) or PDF'
     }
-    if (file.size > 10 * 1024 * 1024) { // 10MB
+    if (file.size > 10 * 1024 * 1024) {
       return 'File size must be less than 10MB'
     }
     return ''
@@ -791,7 +769,6 @@ const PaymentFormDialog = (props: Props) => {
 
   const handleEntrySelect = (entry: ActivePaymentEntryOption) => {
     if (!selectedEntries.find(e => e.entryNumber === entry.entryNumber)) {
-      // Extract entryKey from entryNumber format (e.g., "1234_MD")
       const entryKey = entry.entryNumber.includes('_')
         ? entry.entryNumber.split('_')[1]
         : '';
@@ -840,44 +817,189 @@ const PaymentFormDialog = (props: Props) => {
     calculateTotal()
   }, [selectedEntries, form.getFieldValue("amount")])
 
-  const handleConfirmPayment = async () => {
-    setShowConfirmationDialog(false)
+  // FIXED: Updated handleSubmitPayment function
+  const handleSubmitPayment = async () => {
+    console.log("Starting payment submission...")
+
+    // Get all form values
+    const payerName = form.getFieldValue("payerName")
+    const amount = form.getFieldValue("amount")
+    const method = form.getFieldValue("method")
+    const paymentDate = form.getFieldValue("paymentDate")
+    const referenceNumber = form.getFieldValue("referenceNumber")
+    let proofOfPaymentURL = form.getFieldValue("proofOfPaymentURL")
+
+    console.log("Form values:", { payerName, amount, method, paymentDate, referenceNumber, proofOfPaymentURL })
+    console.log("Selected entries:", selectedEntries)
+    console.log("File:", file)
+    console.log("Is edit mode:", isEditMode)
+
+    // Validate required fields
+    if (!payerName?.trim()) {
+      toast.error("Payer name is required")
+      setActiveTab("payment-details")
+      return
+    }
+
+    if (!amount || amount <= 0) {
+      toast.error("Amount must be greater than 0")
+      setActiveTab("payment-reference")
+      return
+    }
+
+    if (!method) {
+      toast.error("Payment method is required")
+      setActiveTab("payment-details")
+      return
+    }
+
+    if (!paymentDate) {
+      toast.error("Payment date is required")
+      setActiveTab("payment-details")
+      return
+    }
+
+    if (selectedEntries.length === 0) {
+      toast.error("At least one entry must be selected")
+      setActiveTab("payment-details")
+      return
+    }
 
     try {
       setIsUploading(true)
 
-      let imageUrl = form.getFieldValue("proofOfPaymentURL")
-
-      if (!imageUrl && file) {
+      // Upload file if it exists and we don't already have a URL
+      if (!proofOfPaymentURL && file) {
+        console.log("Uploading file...")
         const uploadedUrl = await uploadFile(file)
         if (!uploadedUrl) {
           toast.error("Failed to upload receipt image. Please try again.")
           setIsUploading(false)
           return
         }
-        imageUrl = uploadedUrl
-        form.setFieldValue("proofOfPaymentURL", imageUrl)
+        proofOfPaymentURL = uploadedUrl
+        console.log("File uploaded, URL:", proofOfPaymentURL)
       }
 
       // For edit mode, if no new file uploaded, use existing URL
-      if (!imageUrl && isEditMode && existingPaymentData?.proofOfPaymentURL) {
-        imageUrl = existingPaymentData.proofOfPaymentURL
-        form.setFieldValue("proofOfPaymentURL", imageUrl)
+      if (!proofOfPaymentURL && isEditMode && existingPaymentData?.proofOfPaymentURL) {
+        proofOfPaymentURL = existingPaymentData.proofOfPaymentURL
+        console.log("Using existing URL:", proofOfPaymentURL)
       }
 
-      if (!imageUrl) {
-        toast.error("Please upload proof of payment or provide a URL")
+      // For new payments, require proof of payment
+      if (!isEditMode && !proofOfPaymentURL) {
+        toast.error("Please upload proof of payment")
+        setActiveTab("payment-reference")
         setIsUploading(false)
         return
       }
 
-      form.handleSubmit()
+      // FIXED: Create entry list with entry numbers (not entry keys)
+      const entryList = selectedEntries.map(entry => ({
+        entry: [entry.entryNumber],  // Send entry numbers, not entry keys
+        isFullyPaid: entry.isFullyPaid
+      }))
+
+      // Determine reference number
+      const finalReferenceNumber = reference && reference !== "Not found"
+        ? reference
+        : confirmationNumber || referenceNumber || `ref_${Date.now()}`
+
+      console.log("Final reference number:", finalReferenceNumber)
+      console.log("Submitting payment with data:", {
+        payerName,
+        referenceNumber: finalReferenceNumber,
+        amount: amount,
+        method,
+        proofOfPaymentURL: proofOfPaymentURL || '',
+        paymentDate,
+        entryList
+      })
+
+      startTransition(async () => {
+        try {
+          if (isEditMode && _id) {
+            // Update existing payment
+            const response = await updatePayment({
+              variables: {
+                input: {
+                  _id,
+                  payerName,
+                  referenceNumber: finalReferenceNumber,
+                  amount: amount,
+                  method,
+                  proofOfPaymentURL: proofOfPaymentURL || '',
+                  paymentDate,
+                  entryList,
+                },
+              },
+            })
+
+            console.log("Update response:", response)
+
+            if (response.data?.updatePayment?.ok) {
+              setSuccess(true)
+              toast.success("Payment updated successfully!")
+              setTimeout(() => {
+                onClose()
+                props.refetchPayments?.()
+              }, 2000)
+            } else {
+              throw new Error(response.data?.updatePayment?.message || "Update failed")
+            }
+          } else {
+            // Create new payment
+            const response = await createPayment({
+              variables: {
+                input: {
+                  payerName,
+                  referenceNumber: finalReferenceNumber,
+                  amount: amount,
+                  method,
+                  proofOfPaymentURL: proofOfPaymentURL || '',
+                  paymentDate,
+                  entryList,
+                },
+              },
+            })
+
+            console.log("Create response:", response)
+
+            if (response.data?.createPayment?.ok) {
+              setSuccess(true)
+              toast.success("Payment created successfully!")
+              setTimeout(() => {
+                onClose()
+                props.refetchPayments?.()
+              }, 2000)
+            } else {
+              throw new Error(response.data?.createPayment?.message || "Creation failed")
+            }
+          }
+        } catch (error: any) {
+          console.error("Payment submission error:", error)
+          toast.error(error.message || "An error occurred while processing the payment")
+        }
+      })
     } catch (err: any) {
-      console.error('Error creating/updating payment:', err)
+      console.error('Error in handleSubmitPayment:', err)
       toast.error(`Error: ${err.message}`)
     } finally {
       setIsUploading(false)
     }
+  }
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log("Form submitted, showing confirmation dialog")
+    setShowConfirmationDialog(true)
+  }
+
+  const handleConfirmPayment = async () => {
+    console.log("Confirming payment...")
+    setShowConfirmationDialog(false)
+    await handleSubmitPayment()
   }
 
   const SuccessModal = () => (
@@ -943,15 +1065,6 @@ const PaymentFormDialog = (props: Props) => {
             </div>
           </div>
 
-          {(reference || confirmationNumber || form.getFieldValue("referenceNumber")) && (
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm font-medium text-gray-700 mb-1">Reference No.</div>
-              <div className="text-base font-bold text-blue-600 truncate">
-                {reference && reference !== "Not found" ? reference : confirmationNumber || form.getFieldValue("referenceNumber")}
-              </div>
-            </div>
-          )}
-
           <div className="p-3 bg-gray-50 rounded-lg">
             <div className="text-sm font-medium text-gray-700 mb-1">Payer Name</div>
             <div className="text-base font-medium text-gray-800">
@@ -971,7 +1084,7 @@ const PaymentFormDialog = (props: Props) => {
                     <div>
                       <span className="font-medium">Entry {index + 1}:</span>
                       <span className="text-gray-600 ml-2">
-                        {entry.entryNumber} ({entry.entryKey})
+                        {entry.entryNumber}
                       </span>
                     </div>
                     <div className="text-right">
@@ -1050,14 +1163,6 @@ const PaymentFormDialog = (props: Props) => {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "MMM dd, yyyy")
-    } catch {
-      return dateString
-    }
-  }
-
   const getSelectedEntriesText = () => {
     if (selectedEntries.length === 0) {
       return "Select entries..."
@@ -1072,7 +1177,6 @@ const PaymentFormDialog = (props: Props) => {
     setSelectedEntries(selectedEntries.filter(e => e.entryNumber !== entryNumber))
   }
 
-  // Filter entries based on search
   const filteredEntries = entriesData?.activePaymentEntryOptions?.filter(entry => {
     if (!entrySearch) return true;
 
@@ -1115,6 +1219,7 @@ const PaymentFormDialog = (props: Props) => {
           onOpenAutoFocus={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
           showCloseButton={false}
+          className="max-w-4xl"
         >
           <DialogHeader>
             <DialogTitle>
@@ -1136,10 +1241,7 @@ const PaymentFormDialog = (props: Props) => {
             <form
               className="space-y-4 mb-4"
               id="payment-form"
-              onSubmit={(e) => {
-                e.preventDefault()
-                setShowConfirmationDialog(true)
-              }}
+              onSubmit={handleFormSubmit}
             >
               <div className="min-h-[580px] max-h-[60vh] overflow-y-auto pr-2">
                 <TabsContent value="payment-details" className="space-y-4 mt-4">
@@ -1147,7 +1249,7 @@ const PaymentFormDialog = (props: Props) => {
                     <form.Field
                       name="payerName"
                       children={(field) => {
-                        const isInvalid = field.state.meta.errors.length > 0 || fieldErrors.payerName
+                        const isInvalid = fieldErrors.payerName
                         return (
                           <Field data-invalid={!!isInvalid}>
                             <RequiredLabel htmlFor={field.name}>Payer Name</RequiredLabel>
@@ -1165,9 +1267,6 @@ const PaymentFormDialog = (props: Props) => {
                               }}
                               aria-invalid={!!isInvalid}
                             />
-                            {(isInvalid || fieldErrors.payerName) && (
-                              <FieldError errors={[...field.state.meta.errors]} />
-                            )}
                           </Field>
                         )
                       }}
@@ -1177,7 +1276,7 @@ const PaymentFormDialog = (props: Props) => {
                       <form.Field
                         name="method"
                         children={(field) => {
-                          const isInvalid = field.state.meta.errors.length > 0 || fieldErrors.paymentMethod
+                          const isInvalid = fieldErrors.paymentMethod
                           return (
                             <Field data-invalid={isInvalid}>
                               <RequiredLabel htmlFor={field.name}>Payment Method</RequiredLabel>
@@ -1201,9 +1300,6 @@ const PaymentFormDialog = (props: Props) => {
                                   ))}
                                 </SelectContent>
                               </Select>
-                              {(isInvalid || fieldErrors.paymentMethod) && (
-                                <FieldError errors={[...field.state.meta.errors]} />
-                              )}
                             </Field>
                           )
                         }}
@@ -1212,7 +1308,7 @@ const PaymentFormDialog = (props: Props) => {
                       <form.Field
                         name="paymentDate"
                         children={(field) => {
-                          const isInvalid = field.state.meta.errors.length > 0
+                          const isInvalid = !field.state.value
                           return (
                             <Field data-invalid={isInvalid}>
                               <RequiredLabel htmlFor={field.name}>Payment Date</RequiredLabel>
@@ -1239,12 +1335,10 @@ const PaymentFormDialog = (props: Props) => {
                                     selected={field.state.value}
                                     onSelect={(date) => date && field.handleChange(date)}
                                     initialFocus
+                                    captionLayout="dropdown"
                                   />
                                 </PopoverContent>
                               </Popover>
-                              {isInvalid && (
-                                <FieldError errors={field.state.meta.errors} />
-                              )}
                             </Field>
                           )
                         }}
@@ -1395,7 +1489,7 @@ const PaymentFormDialog = (props: Props) => {
                                       <div className="flex-1">
                                         <div className="flex items-center gap-2">
                                           <span className="font-medium text-sm">
-                                            {entry.entryNumber} ({entry.entryKey})
+                                            {entry.entryNumber}
                                           </span>
                                           <Badge
                                             variant="outline"
@@ -1406,6 +1500,11 @@ const PaymentFormDialog = (props: Props) => {
                                           {entry.amount && entry.amount > 0 && (
                                             <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                                               ₱{entry.amount.toFixed(2)}
+                                            </Badge>
+                                          )}
+                                          {entry.isFullyPaid && (
+                                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                              Fully Paid
                                             </Badge>
                                           )}
                                         </div>
@@ -1445,7 +1544,7 @@ const PaymentFormDialog = (props: Props) => {
                       <form.Field
                         name="amount"
                         children={(field) => {
-                          const isInvalid = field.state.meta.errors.length > 0 || fieldErrors.amount
+                          const isInvalid = fieldErrors.amount
                           return (
                             <Field data-invalid={isInvalid}>
                               <RequiredLabel htmlFor={field.name}>Amount</RequiredLabel>
@@ -1479,9 +1578,6 @@ const PaymentFormDialog = (props: Props) => {
                                   </p>
                                 )}
                               </div>
-                              {(isInvalid || fieldErrors.amount) && (
-                                <FieldError errors={[...field.state.meta.errors]} />
-                              )}
                             </Field>
                           )
                         }}
@@ -1490,14 +1586,12 @@ const PaymentFormDialog = (props: Props) => {
                       <form.Field
                         name="referenceNumber"
                         children={(field) => {
-                          const isInvalid = field.state.meta.errors.length > 0
                           const inputValue =
                             (reference && reference !== "Not found") ? reference :
-                              confirmationNumber ? confirmationNumber :
-                                field.state.value;
+                              confirmationNumber || field.state.value;
 
                           return (
-                            <Field data-invalid={isInvalid}>
+                            <Field>
                               <div className="flex items-center gap-1">
                                 <Label className="text-sm font-medium">Reference No.</Label>
                                 <span className="text-red-500">*</span>
@@ -1525,7 +1619,6 @@ const PaymentFormDialog = (props: Props) => {
                                       onBlur={field.handleBlur}
                                       onChange={(e) => {
                                         field.handleChange(e.target.value);
-                                        // Clear the scanned reference if user manually changes it
                                         if (e.target.value !== reference && e.target.value !== confirmationNumber) {
                                           setReference(null);
                                           setConfirmationNumber("");
@@ -1550,9 +1643,6 @@ const PaymentFormDialog = (props: Props) => {
                                   </div>
                                 )}
                               </div>
-                              {isInvalid && (
-                                <FieldError errors={field.state.meta.errors} />
-                              )}
                             </Field>
                           )
                         }}
@@ -1618,18 +1708,40 @@ const PaymentFormDialog = (props: Props) => {
                       )}
 
                       <div className="w-full flex justify-center mb-4">
-                        {preview ? (
-                          <img
-                            src={preview}
-                            alt="Uploaded receipt"
-                            className="w-full max-w-[300px] rounded-lg border shadow"
-                          />
-                        ) : isEditMode && existingPaymentData?.proofOfPaymentURL && !file ? (
-                          <div className="w-full max-w-[300px] h-[200px] rounded-lg border bg-gray-50 flex items-center justify-center">
-                            <div className="text-center">
-                              <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                              <p className="text-sm text-gray-500">Existing proof of payment available</p>
-                            </div>
+                        {preview || existingPaymentData?.proofOfPaymentURL ? (
+                          <div className="w-full max-w-[300px] relative">
+
+                            {imageLoading && (
+                              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border bg-gray-100">
+                                <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-green-500" />
+                              </div>
+                            )}
+
+                            <Image
+                              src={preview || existingPaymentData?.proofOfPaymentURL || ''}
+                              alt={preview ? "Uploaded receipt" : "Existing proof of payment"}
+                              className={`w-full rounded-lg border shadow transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"
+                                }`}
+                              width={300}
+                              height={300}
+                              onLoad={() => setImageLoading(false)}
+                              onError={(e) => {
+                                console.error("Failed to load image:", e.currentTarget.src);
+                                setImageLoading(false)
+                                e.currentTarget.style.display = 'none';
+                                const fallbackDiv = document.createElement('div');
+                                fallbackDiv.className = 'w-full max-w-[300px] h-[200px] rounded-lg border bg-gray-50 flex items-center justify-center';
+                                fallbackDiv.innerHTML = `
+            <div class="text-center">
+              <svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+              <p class="text-sm text-gray-500">Failed to load image</p>
+            </div>
+          `;
+                                e.currentTarget.parentNode?.appendChild(fallbackDiv);
+                              }}
+                            />
                           </div>
                         ) : (
                           <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
@@ -1721,4 +1833,4 @@ const PaymentFormDialog = (props: Props) => {
   )
 }
 
-export default PaymentFormDialog
+export default FormDialog
