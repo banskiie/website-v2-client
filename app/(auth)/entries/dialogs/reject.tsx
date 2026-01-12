@@ -105,10 +105,9 @@ const RejectDialog = (props: Props) => {
         variables: {
           input: {
             _id: props._id,
-            reason: `${
-              REASON_OPTIONS.find((option) => option.value === selectedReason)
-                ?.label
-            }${rejectDescription ? `: ${rejectDescription}` : ""}`,
+            reason: `${REASON_OPTIONS.find((option) => option.value === selectedReason)
+              ?.label
+              }${rejectDescription ? `: ${rejectDescription}` : ""}`,
           },
         },
       })

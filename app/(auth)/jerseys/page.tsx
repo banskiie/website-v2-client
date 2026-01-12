@@ -44,6 +44,7 @@ import JerseyBadge from "@/components/badges/jersey-badge"
 import { JerseyStatus, JerseySize } from "@/types/jersey.interface"
 import FormDialog from "./dialogs/form"
 import DeleteDialog from "./dialogs/delete"
+import ViewDialog from "./dialogs/view"
 
 const JERSEYS = gql`
   query Jerseys(
@@ -124,7 +125,7 @@ const ActionsColumn = ({ data }: { data?: any }) => {
         <DropdownMenuLabel>Settings</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {/* <ViewDialog _id={jersey?._id} />*/}
+          <ViewDialog _id={jersey?._id} />
           <FormDialog _id={jersey?._id} onClose={() => setMenuOpen(false)} />
           <DropdownMenuSeparator />
           {/* <StatusDialog
@@ -183,19 +184,15 @@ const Page = () => {
         if (!subscriptionData.data) return prev
         const { type, jersey } = subscriptionData.data.jerseyChanged
 
-        // Helper function to compute required fields
         const computeJerseyFields = (jerseyData: any) => {
           if (!jerseyData) return jerseyData
 
-          // Compute playerName
           const playerName = jerseyData.player
             ? `${jerseyData.player.firstName || ''} ${jerseyData.player.lastName || ''}`.trim()
             : 'Unknown Player'
 
-          // Compute tournamentName
           const tournamentName = jerseyData.tournament?.name || 'Unknown Tournament'
 
-          // Compute currentStatus - get the last status from statuses array
           const currentStatus = jerseyData.statuses?.length > 0
             ? jerseyData.statuses[jerseyData.statuses.length - 1]?.status
             : 'UNKNOWN'
@@ -229,9 +226,15 @@ const Page = () => {
             })
           case "UPDATE":
             const updatedJersey = computeJerseyFields(jersey)
-            if (search || sort || filter.length > 0) return prev
+            const oldJersey = prev.jerseys.edges.find(
+              (edge: any) => edge.node._id === updatedJersey._id
+            )
 
-            toast.success(`Jersey for ${updatedJersey?.playerName} has been updated.`)
+            if (oldJersey?.node.currentStatus !== updatedJersey.currentStatus &&
+              updatedJersey.currentStatus === "PAID") {
+              toast.success(`Jersey for ${updatedJersey?.playerName} is now PAID.`)
+            }
+
             return Object.assign({}, prev, {
               jerseys: {
                 ...prev.jerseys,
@@ -686,7 +689,7 @@ const Page = () => {
         columns={columns}
         data={nodes.slice((page.current - 1) * rows, page.current * rows)}
         actionsColumn={<ActionsColumn />}
-      // rowView={<ViewDialog row />}
+        rowView={<ViewDialog row />}
       />
     </div>
   )

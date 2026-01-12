@@ -161,10 +161,10 @@ export function CategoryCard({
         <Badge className={`text-xs px-2 ${levelColor}`}>{level}</Badge>
         <Badge
           className={`text-xs px-2 ${gender === "Male"
-              ? "bg-blue-100 text-blue-800"
-              : gender === "Women"
-                ? "bg-pink-100 text-pink-800"
-                : "bg-green-100 text-green-800"
+            ? "bg-blue-100 text-blue-800"
+            : gender === "Women"
+              ? "bg-pink-100 text-pink-800"
+              : "bg-green-100 text-green-800"
             }`}
         >
           {gender}
@@ -1297,7 +1297,8 @@ export function UploadProofMergedModal({
         remainingAmount -= amountPaidForThisEntry
 
         return {
-          entry: entryDetailsData.entry._id,
+          // entry: entryDetailsData.entry._id,
+          entry: entry.entryNumber,
           isFullyPaid,
         }
       })
@@ -1893,8 +1894,8 @@ export function UploadProofMergedModal({
                       {priceReminder && (
                         <div
                           className={`text-xs w-full p-2 rounded-lg border ${priceReminder.startsWith("✅")
-                              ? "bg-green-100 border-green-300 text-green-600"
-                              : "bg-red-100 border-red-300 text-red-600"
+                            ? "bg-green-100 border-green-300 text-green-600"
+                            : "bg-red-100 border-red-300 text-red-600"
                             }`}
                         >
                           {priceReminder}
@@ -2089,8 +2090,8 @@ export function UploadProofMergedModal({
                                 <div className="px-14">
                                   <div
                                     className={`text-sm text-gray-600 p-2 rounded border w-full ${isEntryRejected
-                                        ? "bg-red-50 border-red-200"
-                                        : "bg-gray-50"
+                                      ? "bg-red-50 border-red-200"
+                                      : "bg-gray-50"
                                       }`}
                                   >
                                     <div className="flex justify-between items-center">
@@ -2113,8 +2114,8 @@ export function UploadProofMergedModal({
 
                                       <div
                                         className={`text-xs ${isEntryRejected
-                                            ? "text-red-600"
-                                            : "text-gray-600"
+                                          ? "text-red-600"
+                                          : "text-gray-600"
                                           }`}
                                       >
                                         {details.entry?.event?.type} Event
@@ -2133,8 +2134,8 @@ export function UploadProofMergedModal({
                             {entryError && (
                               <div
                                 className={`text-sm font-medium px-14 ${isEntryRejected
-                                    ? "text-red-600 bg-red-50"
-                                    : "text-red-600 bg-red-50"
+                                  ? "text-red-600 bg-red-50"
+                                  : "text-red-600 bg-red-50"
                                   } p-2 rounded-lg border ${isEntryRejected
                                     ? "border-red-200"
                                     : "border-red-200"
@@ -2355,8 +2356,8 @@ export function UploadProofMergedModal({
                 <label
                   htmlFor="proofUpload"
                   className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${fieldErrors.file
-                      ? "border-red-300 bg-red-50 hover:bg-red-100"
-                      : "border-green-400 hover:bg-green-50"
+                    ? "border-red-300 bg-red-50 hover:bg-red-100"
+                    : "border-green-400 hover:bg-green-50"
                     }`}
                 >
                   {isUploading ? (
@@ -2494,8 +2495,8 @@ export function UploadProofMergedModal({
                       }))
                     }}
                     className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 bg-white ${fieldErrors.paymentMethod
-                        ? "border-red-500"
-                        : "border-gray-300"
+                      ? "border-red-500"
+                      : "border-gray-300"
                       }`}
                   >
                     <option value="">Select payment method</option>
@@ -2708,8 +2709,8 @@ export function CheckEntryModal({
                       setError("")
                     }}
                     className={`w-full pl-10 pr-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition ${error
-                        ? "border-red-500 focus:ring-red-300"
-                        : "border-gray-300 focus:ring-green-400"
+                      ? "border-red-500 focus:ring-red-300"
+                      : "border-gray-300 focus:ring-green-400"
                       }`}
                   />
                 </div>
