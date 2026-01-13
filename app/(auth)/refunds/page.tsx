@@ -242,6 +242,13 @@ const Page = () => {
     resetPage()
   }
 
+  const existingRefunds = useMemo(() => {
+    return (data?.refunds.edges || []).map((edge: any) => ({
+      referenceNumber: edge.node.referenceNumber,
+      payerName: edge.node.payerName
+    }))
+  }, [data?.refunds])
+
   const onFilter = useCallback((value: any) => {
     setFilter(value)
     resetPage()
@@ -504,7 +511,7 @@ const Page = () => {
               Clear Filtering
             </Button>
           )}
-          {<FormDialog />}
+          {<FormDialog existingRefunds={existingRefunds} />}
         </div>
       </div>
       <div className="w-full flex justify-between">

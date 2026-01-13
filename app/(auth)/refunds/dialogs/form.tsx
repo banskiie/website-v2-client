@@ -27,6 +27,7 @@ import {
   Paperclip,
   Video,
   XIcon,
+  AlertCircle,
 } from "lucide-react"
 import {
   Field,
@@ -85,6 +86,7 @@ import {
 } from "@/components/ui/select"
 import { AnimatePresence, motion } from "framer-motion"
 import * as Tesseract from 'tesseract.js'
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const USER = gql`
   query Refund($_id: ID!) {
@@ -135,9 +137,16 @@ const ALL_ACTIVE_ENTRIES = gql`
   }
 `
 
+// Add interface for existing refund
+interface ExistingRefund {
+  referenceNumber: string
+  payerName: string
+}
+
 type Props = {
   _id?: string
   onClose?: () => void
+  existingRefunds?: ExistingRefund[] // Add this prop
 }
 
 const FormDialog = (props: Props) => {
@@ -146,6 +155,8 @@ const FormDialog = (props: Props) => {
   // Determine if it's an update or create operation
   const isUpdate = Boolean(props._id)
   const [isPending, startTransition] = useTransition()
+  const [duplicateError, setDuplicateError] = useState<string | null>(null)
+
   // Fetch existing date if updating
   const { data, loading: fetchLoading }: any = useQuery(USER, {
     variables: { _id: props._id },
@@ -191,6 +202,29 @@ const FormDialog = (props: Props) => {
   const [imageLoading, setImageLoading] = useState(true)
   const [scannedText, setScannedText] = useState<string>("")
 
+  // Function to check for duplicate reference number
+  const checkForDuplicateReference = (referenceNumber: string): boolean => {
+    if (!referenceNumber || isUpdate) return false
+
+    // Normalize the reference number (trim and uppercase for comparison)
+    const normalizedRef = referenceNumber.trim().toUpperCase()
+
+    // Check if this reference number already exists
+    const isDuplicate = props.existingRefunds?.some(refund =>
+      refund.referenceNumber.trim().toUpperCase() === normalizedRef
+    )
+
+    return isDuplicate || false
+  }
+
+  // Get duplicate refund info
+  const getDuplicateRefundInfo = (referenceNumber: string) => {
+    const normalizedRef = referenceNumber.trim().toUpperCase()
+    return props.existingRefunds?.find(refund =>
+      refund.referenceNumber.trim().toUpperCase() === normalizedRef
+    )
+  }
+
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
       "image/png": [],
@@ -198,7 +232,7 @@ const FormDialog = (props: Props) => {
       "image/jpeg": [],
     },
     multiple: false,
-    maxSize: 3 * 1024 * 1024, // 30MB
+    maxSize: 3 * 1024 * 1024, // 3MB
     onDrop: (acceptedFiles: any, fileRejections: any) => {
       if (fileRejections.length > 0) {
         toast.error("File too large or unsupported type. (Max size: 3MB)")
@@ -218,6 +252,7 @@ const FormDialog = (props: Props) => {
     setReferenceLoading(true)
     setScannedAmount(null)
     setScannedReference(null)
+    setDuplicateError(null) // Clear duplicate error when scanning new receipt
 
     try {
       const reader = new FileReader()
@@ -300,6 +335,14 @@ const FormDialog = (props: Props) => {
         setScannedReference(refNumber)
         if (refNumber !== "Not found") {
           form.setFieldValue("referenceNumber", refNumber)
+
+          // Check for duplicate after setting the value
+          if (checkForDuplicateReference(refNumber)) {
+            const duplicateRefund = getDuplicateRefundInfo(refNumber)
+            setDuplicateError(
+              `Reference number "${refNumber}" already exists for refund by "${duplicateRefund?.payerName}".`
+            )
+          }
         }
 
         setReferenceLoading(false)
@@ -353,26 +396,63 @@ const FormDialog = (props: Props) => {
     validators: {
       onSubmit: ({ formApi, value }) => {
         try {
+          // Check for duplicate reference number before validation
+          if (!isUpdate && checkForDuplicateReference(value.referenceNumber)) {
+            const duplicateRefund = getDuplicateRefundInfo(value.referenceNumber)
+            throw new Error(`Reference number "${value.referenceNumber}" already exists for refund by "${duplicateRefund?.payerName}".`)
+          }
+
           RefundSchema.parse(value)
         } catch (error: any) {
           console.error(error)
-          JSON.parse(error).map(({ path, message }) => {
-            const pathName = path.join(".")
-            formApi.fieldInfo[pathName].instance?.setErrorMap({
-              onSubmit: { message },
+          // Handle custom duplicate error
+          if (error.message && error.message.includes("already exists")) {
+            formApi.fieldInfo["referenceNumber"].instance?.setErrorMap({
+              onSubmit: { message: error.message },
             })
-          })
+          } else {
+            JSON.parse(error).map(({ path, message }) => {
+              const pathName = path.join(".")
+              formApi.fieldInfo[pathName].instance?.setErrorMap({
+                onSubmit: { message },
+              })
+            })
+          }
         }
       },
     },
     listeners: {
       onChange: ({ formApi, fieldApi }) => {
-        // console.log(fieldApi.name, fieldApi.state.value)
+        // Check for duplicate when reference number changes
+        if (fieldApi.name === "referenceNumber" && !isUpdate) {
+          const refNumber = fieldApi.state.value
+          if (refNumber && refNumber.trim().length > 0) {
+            if (checkForDuplicateReference(refNumber)) {
+              const duplicateRefund = getDuplicateRefundInfo(refNumber)
+              setDuplicateError(
+                `Reference number "${refNumber}" already exists for refund by "${duplicateRefund?.payerName}".`
+              )
+            } else {
+              setDuplicateError(null)
+            }
+          } else {
+            setDuplicateError(null)
+          }
+        }
       },
-    }, // this is just for demo purposes
+    },
     onSubmit: ({ value, formApi }) =>
       startTransition(async () => {
         try {
+          // Check for duplicate reference number before submission
+          if (!isUpdate && checkForDuplicateReference(value.referenceNumber)) {
+            const duplicateRefund = getDuplicateRefundInfo(value.referenceNumber)
+            setDuplicateError(
+              `Cannot create refund: Reference number "${value.referenceNumber}" already exists for refund by "${duplicateRefund?.payerName}".`
+            )
+            return
+          }
+
           const payload = value
           if (files.length > 0) {
             const formData = new FormData()
@@ -428,6 +508,7 @@ const FormDialog = (props: Props) => {
     setActiveTab("refund-details")
     setScannedAmount(null)
     setScannedReference(null)
+    setDuplicateError(null)
   }
 
   const getSelectedEntriesText = () => {
@@ -516,6 +597,16 @@ const FormDialog = (props: Props) => {
             }}
           >
             <div className="min-h-[580px] max-h-[60vh] overflow-y-auto pr-2">
+              {/* Duplicate Error Alert */}
+              {duplicateError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {duplicateError}
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <TabsContent value="refund-details" className="space-y-4 mt-4">
                 <FieldSet className="grid grid-cols-2 gap-4">
                   <form.Field
@@ -856,14 +947,22 @@ const FormDialog = (props: Props) => {
                     children={(field: any) => {
                       const isInvalid =
                         field.state.meta.isTouched && !field.state.meta.isValid
+                      const currentRef = field.state.value
+                      const isDuplicate = currentRef ? checkForDuplicateReference(currentRef) : false
+
                       return (
-                        <Field data-invalid={isInvalid}>
+                        <Field data-invalid={isInvalid || isDuplicate}>
                           <div className="flex items-center gap-1">
                             <Label className="text-sm font-medium">Reference No.</Label>
                             <span className="text-red-500">*</span>
                             {referenceLoading && (
                               <span className="text-xs font-normal text-blue-500 animate-pulse ml-2">
                                 Scanning...
+                              </span>
+                            )}
+                            {isDuplicate && !referenceLoading && (
+                              <span className="text-xs font-normal text-red-500 ml-2">
+                                Duplicate!
                               </span>
                             )}
                           </div>
@@ -883,8 +982,28 @@ const FormDialog = (props: Props) => {
                                     name={field.name}
                                     value={field.state.value}
                                     onBlur={field.handleBlur}
-                                    onChange={(e) => field.handleChange(e.target.value)}
-                                    aria-invalid={isInvalid}
+                                    onChange={(e) => {
+                                      const value = e.target.value
+                                      field.handleChange(value)
+
+                                      // Check for duplicate
+                                      if (value && value.trim().length > 0) {
+                                        if (checkForDuplicateReference(value)) {
+                                          const duplicateRefund = getDuplicateRefundInfo(value)
+                                          setDuplicateError(
+                                            `Reference number "${value}" already exists for refund by "${duplicateRefund?.payerName}".`
+                                          )
+                                        } else {
+                                          setDuplicateError(null)
+                                        }
+                                      } else {
+                                        setDuplicateError(null)
+                                      }
+                                    }}
+                                    aria-invalid={isInvalid || isDuplicate}
+                                    className={cn(
+                                      isDuplicate && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                    )}
                                   />
                                 </InputGroup>
                                 {scannedReference && scannedReference !== "Not found" && (
@@ -897,10 +1016,16 @@ const FormDialog = (props: Props) => {
                                     No reference detected in receipt
                                   </p>
                                 )}
+                                {isDuplicate && (
+                                  <p className="text-xs text-red-500 flex items-center">
+                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                    This reference number already exists
+                                  </p>
+                                )}
                               </div>
                             )}
                           </div>
-                          {isInvalid && (
+                          {isInvalid && !isDuplicate && (
                             <FieldError errors={field.state.meta.errors} />
                           )}
                         </Field>
@@ -936,6 +1061,7 @@ const FormDialog = (props: Props) => {
                           onClick={() => {
                             setFiles([])
                             setPreview(null)
+                            setDuplicateError(null) // Clear duplicate error when removing file
                           }}
                           disabled={isUploading}
                           className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
@@ -1057,6 +1183,7 @@ const FormDialog = (props: Props) => {
             loading={isLoading}
             type="submit"
             form="refund-form"
+            disabled={!isUpdate && duplicateError !== null} // Disable if duplicate error exists
           >
             Submit
           </Button>

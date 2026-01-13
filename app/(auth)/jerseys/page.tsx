@@ -110,9 +110,12 @@ const JERSEY_CHANGED = gql`
   }
 `
 
+
 const ActionsColumn = ({ data }: { data?: any }) => {
   const jersey = useMemo(() => data, [data])
   const [menuOpen, setMenuOpen] = useState(false)
+
+
 
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
@@ -289,6 +292,13 @@ const Page = () => {
     setSearch(value)
     resetPage()
   }
+
+  const existingJerseys = useMemo(() => {
+    return (data?.jerseys.edges || []).map((edge: any) => ({
+      playerName: edge.node.playerName,
+      tournamentName: edge.node.tournamentName
+    }))
+  }, [data?.jerseys])
 
   const onFilter = useCallback((value: any) => {
     setFilter(value)
@@ -566,7 +576,7 @@ const Page = () => {
               Clear Filtering
             </Button>
           )}
-          {<FormDialog />}
+          {<FormDialog existingJerseys={existingJerseys} />}
         </div>
       </div>
       <div className="w-full flex justify-between">
