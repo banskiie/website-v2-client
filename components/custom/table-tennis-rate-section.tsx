@@ -4,6 +4,7 @@ import { useRef } from "react"
 import { motion, useMotionValue, useSpring, useTransform, useInView } from "framer-motion"
 import Image from "next/image"
 import { CircleDollarSign, Facebook, Phone } from "lucide-react"
+import { CLOUD } from "./main-faq"
 
 export default function TableTennisSection() {
   const sectionRef = useRef<HTMLDivElement>(null)
@@ -60,7 +61,7 @@ export default function TableTennisSection() {
               style={{ rotateX: springRotateX, rotateY: springRotateY, transformPerspective: 1000 }}
             >
               <Image
-                src="/assets/img/sports-center/court/DSC_0052.png"
+                src={`${CLOUD}/v1764210817/DSC_0052_hdgbnn.png`}
                 alt="Table Tennis Room"
                 fill
                 className="object-cover w-full h-full"

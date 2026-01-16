@@ -363,7 +363,7 @@ const Home = () => {
                 <div className="relative flex justify-between items-center h-full p-4">
                   <div className="flex-1 flex flex-col justify-start">
                     <div className="flex items-center gap-2 mb-1">
-                      <Image src={`${DRIVE}/c-one-logo.png`} alt="C-ONE Logo" width={24} height={24} />
+                      <Image src={`${CLOUD}/v1764038543/c-one-logo_tgi6rl.png`} alt="C-ONE Logo" width={24} height={24} />
                       <span className="text-white font-bold text-base">C-ONE</span>
                     </div>
                     <p className="text-white text-xs leading-relaxed text-left mr-2">
@@ -373,7 +373,7 @@ const Home = () => {
                   </div>
                   <div className="w-40 h-24 flex-shrink-0 relative hidden sm:block">
                     <Image
-                      src={`${DRIVE}/img/contents/swiper1.png`}
+                      src={`${CLOUD}/v1764039904/swiper1_rhirnr.png`}
                       alt="Swiper Image"
                       width={160}
                       height={96}

@@ -10,8 +10,7 @@ import { motion } from 'framer-motion'
 import Header from '@/components/custom/header'
 import FloatingTicketing from "@/components/custom/ticket"
 import useSmoothScroll from '@/hooks/useSmoothScroll'
-import { BadgePercent, CheckCircle2, Clock, Gift, GiftIcon, MapPin, Phone, Plus, PlusCircle, ShieldCheck } from 'lucide-react'
-import VisitUsSection from '@/components/custom/visit-us-main'
+import { CheckCircle2, Clock, Gift, GiftIcon, MapPin, Phone, Plus, PlusCircle, ShieldCheck } from 'lucide-react'
 import { CLOUD } from '@/components/custom/main-faq'
 
 const products = [
@@ -84,7 +83,7 @@ function page() {
   }, [])
 
   const highlights = useMemo(() => {
-    const boxes = []
+    const boxes: { x: number; y: number }[] = []
     const used = new Set()
     const min = 60
     const max = 80

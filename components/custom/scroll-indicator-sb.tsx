@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import { CLOUD } from "./main-faq"
 
 export default function ScrollIndicator() {
   const [scrollPercent, setScrollPercent] = useState(0)
@@ -54,7 +55,7 @@ export default function ScrollIndicator() {
 
         <div className="absolute inset-0 flex items-center justify-center">
           <Image
-            src="/assets/img/sports-center/shuttlebrew/sb_icon.png"
+            src={`${CLOUD}/v1764048136/sb_icon_ftg2zo.png`}
             alt="Logo"
             width={16}
             height={16}
