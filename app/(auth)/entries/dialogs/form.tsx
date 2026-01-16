@@ -20,6 +20,10 @@ import {
   CheckIcon,
   ChevronsUpDownIcon,
   CirclePlus,
+  UploadIcon,
+  XCircle,
+  Paperclip,
+  Loader2,
 } from "lucide-react"
 import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
@@ -46,6 +50,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { JerseySize } from "@/types/jersey.interface"
 import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
+import { Input } from "@/components/ui/input"
+import { toast } from "sonner"
+import Image from "next/image"
+import { AnimatePresence, motion } from "framer-motion"
 
 const ENTRY = gql`
   query Entry($_id: ID!) {
@@ -56,6 +64,7 @@ const ENTRY = gql`
       club
       isInSoftware
       isEarlyBird
+      documentImage
       statuses {
         status
         date
@@ -179,6 +188,14 @@ const FormDialog = (props: Props) => {
     fetchPolicy: "no-cache",
   })
   const entry = data?.entry
+
+  // Image upload states
+  const [preview, setPreview] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [imageLoading, setImageLoading] = useState(true)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
   // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
   const [fetchPlayer, { data: playerData, loading: playerLoading }] =
@@ -261,6 +278,7 @@ const FormDialog = (props: Props) => {
       connectedPlayer2: entry?.connectedPlayer2?._id || null,
       isInSoftware: entry?.isInSoftware || false,
       isEarlyBird: entry?.isEarlyBird || false,
+      documentImage: entry?.documentImage || "",
       ...(isUpdate ? {} : { isPlayer1New: false, isPlayer2New: false }),
     },
     validators: {
@@ -399,22 +417,38 @@ const FormDialog = (props: Props) => {
         }
       },
     }, // this is just for demo purposes
-    onSubmit: ({ value: payload, formApi }) =>
+    onSubmit: async ({ value: payload, formApi }) =>
       startTransition(async () => {
         try {
+          // Upload document image if new file selected
+          let documentImage = payload.documentImage
+          if (file) {
+            const uploadedUrl = await uploadFile(file, "entry")
+            if (uploadedUrl) {
+              documentImage = uploadedUrl
+            }
+          }
+
           const event = events.find(
             (e: { value: string }) => e.value === payload.event
           )
           const isDoubles = event?.type === EventType.DOUBLES
-          const { tournament, ...modifiedPayload } = {
+
+          const modifiedPayload = {
             ...payload,
+            documentImage,
+          }
+
+          const { tournament, ...finalPayload } = {
+            ...modifiedPayload,
             player2Entry: isDoubles ? payload.player2Entry : null,
           }
+
           const response: any = await submitForm({
             variables: {
               input: isUpdate
-                ? { _id: props._id, ...modifiedPayload }
-                : { ...modifiedPayload },
+                ? { _id: props._id, ...finalPayload }
+                : { ...finalPayload },
             },
           })
           if (response) onClose()
@@ -440,13 +474,108 @@ const FormDialog = (props: Props) => {
     if (data && !tournamentId) {
       setTournamentId(data.entry.event.tournament._id)
     }
+    // Set initial preview image
+    if (data?.entry?.documentImage) {
+      setPreview(data.entry.documentImage)
+    }
   }, [data, tournamentId])
 
   const onClose = () => {
     setOpen(false)
     props.onClose?.()
     form.reset()
+    setPreview(null)
+    setFile(null)
+    setFieldErrors({})
   }
+
+  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+    try {
+      setIsUploading(true)
+
+      const formData = new FormData()
+      const fileExt = file.name.split('.').pop() || ''
+      const fileName = `${folder}-${Date.now()}.${fileExt}`
+      formData.append("file", file, fileName)
+
+      const response = await fetch(`/api/upload/entry_requirement`, {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Upload Failed")
+      }
+
+      const data = await response.json()
+      toast.success("Document uploaded successfully!")
+      return data.url
+    } catch (error) {
+      console.error("Error uploading file:", error)
+      toast.error("Error uploading document. Please try again.")
+      return null
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadedFile = event.target.files?.[0]
+    if (!uploadedFile) return
+
+    // Validate file
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/pdf']
+    if (!validTypes.includes(uploadedFile.type)) {
+      toast.error('Please upload a valid image file (JPEG, PNG, JPG, WEBP) or PDF')
+      setFieldErrors(prev => ({ ...prev, file: 'Please upload a valid image file or PDF' }))
+      return
+    }
+    if (uploadedFile.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB')
+      setFieldErrors(prev => ({ ...prev, file: 'File size must be less than 10MB' }))
+      return
+    }
+
+    setFile(uploadedFile)
+    setFieldErrors(prev => ({ ...prev, file: '' }))
+
+    // Create preview for images only (not PDFs)
+    if (uploadedFile.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const imageData = reader.result as string
+        setPreview(imageData)
+        setImageLoading(true)
+      }
+      reader.readAsDataURL(uploadedFile)
+    } else {
+      setPreview(null) // No preview for PDFs
+    }
+  }
+
+  const handleRemoveFile = () => {
+    setFile(null)
+    setPreview(null)
+    setFieldErrors(prev => ({ ...prev, file: '' }))
+    form.setFieldValue("documentImage", "")
+  }
+
+  const UploadingOverlay = () => (
+    <motion.div
+      className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-lg border">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-4"></div>
+        <p className="text-lg font-medium text-gray-800 mb-2">
+          Uploading document...
+        </p>
+        <p className="text-sm text-gray-500 mt-4">Please wait</p>
+      </div>
+    </motion.div>
+  )
 
   return (
     <Dialog modal open={open} onOpenChange={setOpen}>
@@ -496,15 +625,14 @@ const FormDialog = (props: Props) => {
                           (e: { value: string }) => e.value === state.event
                         )
                         if (event?.type === EventType.DOUBLES)
-                          return "grid grid-cols-3"
-                        else return "grid grid-cols-2"
+                          return "grid grid-cols-4"
+                        else return "grid grid-cols-3"
                       } else {
-                        return "flex"
+                        return "grid grid-cols-2"  // Just Details and Document
                       }
                     })()
                   )}
                 >
-                  <TabsTrigger value="details">Details</TabsTrigger>
                   {(() => {
                     if (state.event) {
                       const event = events.find(
@@ -513,14 +641,27 @@ const FormDialog = (props: Props) => {
                       if (event?.type === EventType.DOUBLES)
                         return (
                           <>
+                            <TabsTrigger value="details">Details</TabsTrigger>
                             <TabsTrigger value="player1">Player 1</TabsTrigger>
                             <TabsTrigger value="player2">Player 2</TabsTrigger>
+                            <TabsTrigger value="document">Document</TabsTrigger>
                           </>
                         )
                       else
                         return (
-                          <TabsTrigger value="player1">Player 1</TabsTrigger>
+                          <>
+                            <TabsTrigger value="details">Details</TabsTrigger>
+                            <TabsTrigger value="player1">Player 1</TabsTrigger>
+                            <TabsTrigger value="document">Document</TabsTrigger>
+                          </>
                         )
+                    } else {
+                      return (
+                        <>
+                          <TabsTrigger value="details">Details</TabsTrigger>
+                          <TabsTrigger value="document">Document</TabsTrigger>
+                        </>
+                      )
                     }
                   })()}
                 </TabsList>
@@ -2029,6 +2170,205 @@ const FormDialog = (props: Props) => {
                     />
                   </FieldSet>
                 </TabsContent>
+                <TabsContent value="document">
+                  <FieldSet className="flex flex-col gap-3 h-[52vh] overflow-y-auto">
+                    <div className="border-2 border-dashed border-green-300 rounded-xl p-4 bg-green-50 flex flex-col items-center">
+                      <div className="w-full text-left mb-3">
+                        <div className="text-green-800 font-bold text-sm mb-1">
+                          Upload Supporting Document
+                        </div>
+                        <p className="text-gray-600 text-xs">
+                          Upload any supporting document for this entry (ID, proof of payment, etc.)
+                        </p>
+                      </div>
+
+                      {file && (
+                        <div className="w-full mb-4 p-3 bg-white border rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Paperclip className="w-4 h-4 text-gray-500" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium truncate">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {(file.size / 1024).toFixed(2)} KB • {file.type}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={handleRemoveFile}
+                              disabled={isUploading}
+                              className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          {isUploading && (
+                            <div className="mt-2">
+                              <div className="w-full bg-gray-200 rounded-full h-1">
+                                <div className="bg-green-600 h-1 rounded-full animate-pulse"></div>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">Uploading...</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {isUpdate && entry?.documentImage && !file && (
+                        <div className="w-full mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Paperclip className="w-4 h-4 text-blue-500" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-700">
+                                Existing document is already uploaded
+                              </p>
+                              <p className="text-xs text-blue-500">
+                                Upload a new file to replace the existing one
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="w-full flex justify-center mb-4">
+                        {preview && file?.type.startsWith('image/') ? (
+                          <div className="w-full max-w-[300px] relative">
+                            {imageLoading && (
+                              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border bg-gray-100">
+                                <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-green-500" />
+                              </div>
+                            )}
+
+                            <Image
+                              src={preview}
+                              alt="Uploaded document"
+                              className={`w-full rounded-lg border shadow transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"
+                                }`}
+                              width={300}
+                              height={300}
+                              onLoad={() => setImageLoading(false)}
+                              onError={(e) => {
+                                console.error("Failed to load image:", e.currentTarget.src);
+                                setImageLoading(false)
+                                e.currentTarget.style.display = 'none';
+                                const fallbackDiv = document.createElement('div');
+                                fallbackDiv.className = 'w-full max-w-[300px] h-[200px] rounded-lg border bg-gray-50 flex items-center justify-center';
+                                fallbackDiv.innerHTML = `
+                                  <div class="text-center">
+                                    <svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                    </svg>
+                                    <p class="text-sm text-gray-500">Failed to load image</p>
+                                  </div>
+                                `;
+                                e.currentTarget.parentNode?.appendChild(fallbackDiv);
+                              }}
+                            />
+                          </div>
+                        ) : file && !file.type.startsWith('image/') ? (
+                          <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                            <div className="text-center">
+                              <Paperclip className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm font-medium text-gray-700">{file.name}</p>
+                              <p className="text-xs text-gray-500 mt-1">PDF Document</p>
+                            </div>
+                          </div>
+                        ) : preview && isUpdate ? (
+                          <div className="w-full max-w-[300px] relative">
+                            {imageLoading && (
+                              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border bg-gray-100">
+                                <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-green-500" />
+                              </div>
+                            )}
+
+                            <Image
+                              src={preview}
+                              alt="Existing document"
+                              className={`w-full rounded-lg border shadow transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"
+                                }`}
+                              width={300}
+                              height={300}
+                              onLoad={() => setImageLoading(false)}
+                              onError={(e) => {
+                                console.error("Failed to load image:", e.currentTarget.src);
+                                setImageLoading(false)
+                                e.currentTarget.style.display = 'none';
+                                const fallbackDiv = document.createElement('div');
+                                fallbackDiv.className = 'w-full max-w-[300px] h-[200px] rounded-lg border bg-gray-50 flex items-center justify-center';
+                                fallbackDiv.innerHTML = `
+                                  <div class="text-center">
+                                    <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <p class="text-sm text-gray-500">Document</p>
+                                  </div>
+                                `;
+                                e.currentTarget.parentNode?.appendChild(fallbackDiv);
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                            <div className="text-center">
+                              <UploadIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-gray-500">Document preview will appear here</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <label
+                        htmlFor="documentUpload"
+                        className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${fieldErrors.file ? 'border-red-300 bg-red-50 hover:bg-red-100' : 'border-green-400 hover:bg-green-50'
+                          }`}
+                      >
+                        {isUploading ? (
+                          <div className="flex flex-col items-center">
+                            <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
+                            <span className="font-medium text-sm text-green-700">Uploading...</span>
+                            <span className="text-xs text-gray-500 mt-1">Please wait</span>
+                          </div>
+                        ) : (
+                          <>
+                            <UploadIcon className={`w-6 h-6 mb-2 ${fieldErrors.file ? 'text-red-500' : 'text-green-600'
+                              }`} />
+                            <span className={`font-medium text-sm ${fieldErrors.file ? 'text-red-700' : 'text-green-700'
+                              }`}>
+                              {isUpdate ? "Upload New Document or Browse" : "Drag & Drop your document or Browse"}
+                            </span>
+                            <span className="text-xs text-gray-500 mt-1">
+                              Supports images (JPEG, PNG, JPG, WEBP) and PDF files up to 10MB
+                            </span>
+                          </>
+                        )}
+                        <input
+                          id="documentUpload"
+                          type="file"
+                          accept="image/*,application/pdf"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                          disabled={isUploading}
+                        />
+                      </label>
+
+                      {fieldErrors.file && (
+                        <p className="text-xs text-red-500 mt-2">{fieldErrors.file}</p>
+                      )}
+
+                      {isUploading && (
+                        <div className="w-full mt-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent"></div>
+                            <span className="text-sm text-gray-600">Uploading file to server...</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                            <div className="bg-green-600 h-1.5 rounded-full animate-pulse w-3/4"></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </FieldSet>
+                </TabsContent>
               </Tabs>
             )}
           />
@@ -2041,13 +2381,17 @@ const FormDialog = (props: Props) => {
           </DialogClose>
           <Button
             className="w-20"
-            loading={isLoading}
+            loading={isLoading || isUploading}
             type="submit"
             form="entry-form"
           >
             Submit
           </Button>
         </DialogFooter>
+
+        <AnimatePresence>
+          {isUploading && <UploadingOverlay />}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   )
