@@ -569,19 +569,19 @@ export function UploadProofMergedModal({
   const [entryDetails, setEntryDetails] = useState<Record<number, any | null>>(
     {}
   )
-
+  const [duplicateReferenceError, setDuplicateReferenceError] = useState(false)
   const [loading, setLoading] = useState(false)
   const [scannedTotal, setScannedTotal] = useState<string | null>(null)
   const [reference, setReference] = useState<string | null>(null)
-  const [scannedText, setScannedText] = useState<string>("")
+  const [_scannedText, setScannedText] = useState<string>("")
   const [showConfirmationInput, setShowConfirmationInput] = useState(false)
   const [confirmationNumber, setConfirmationNumber] = useState<string>("")
-  const [amountLabel, setAmountLabel] = useState("Total")
+  const [_amountLabel, setAmountLabel] = useState("Total")
   const [referenceLabel, setReferenceLabel] = useState("Reference No.")
 
-  const [amountLoading, setAmountLoading] = useState(false)
-  const [entryNumber, setEntryNumber] = useState("")
-  const [entryKey, setEntryKey] = useState("")
+  const [amountLoading, _setAmountLoading] = useState(false)
+  const [entryNumber, _setEntryNumber] = useState("")
+  const [entryKey, _setEntryKey] = useState("")
 
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
   const [showRejectedModal, setShowRejectedModal] = useState(false)
@@ -646,16 +646,23 @@ export function UploadProofMergedModal({
       }
 
       const data = await response.json();
-      console.log('Upload to PAYMENTS response:', data);
+      // console.log('Upload to PAYMENTS response:', data);
 
-      toast.success("File uploaded successfully!");
+      // toast.success("File uploaded successfully!");
       return data.url;
     } catch (error) {
-      console.error("Error Uploading file to payments folder:", error);
+      // console.error("Error Uploading file to payments folder:", error);
       toast.error("Error uploading file. Please try again.");
       return null;
     } finally {
       setIsUploading(false);
+    }
+  }
+
+  const handleReferenceChange = (newReference: string | null) => {
+    setReference(newReference)
+    if (duplicateReferenceError) {
+      setDuplicateReferenceError(false)
     }
   }
 
@@ -1091,6 +1098,7 @@ export function UploadProofMergedModal({
         }
 
         setReference(refNumber)
+        setDuplicateReferenceError(false)
         setReferenceLabel(refLabel)
       } catch (err) {
         setScannedText("Error: Could not read text.")
@@ -1177,12 +1185,12 @@ export function UploadProofMergedModal({
         setPriceReminder(null)
       } else if (numAmount >= total) {
         setPriceReminder(
-          `✅ Amount is enough and matches the total price of ₱${total}.`
+          `✅ Enough Amount : ₱${total}`
         )
       } else {
         const diff = total - numAmount
         setPriceReminder(
-          `⚠️ Amount is not enough. Missing ₱${diff.toFixed(2)} from ₱${total}.`
+          `Not Enough Amount : ₱${diff.toFixed(2)} Missing Amount`
         )
       }
     }
@@ -1213,7 +1221,12 @@ export function UploadProofMergedModal({
       }
     }
 
+
     if (foundRejected) {
+      toast.error("Cannot Submit Payment", {
+        description: "One or more entries have been rejected and cannot be paid.",
+        duration: 5000,
+      })
       return
     }
 
@@ -1242,9 +1255,33 @@ export function UploadProofMergedModal({
     setFieldErrors((prev) => ({ ...prev, ...newFieldErrors }))
 
     if (!validationResult.isValid) {
-      setError(
-        validationResult.errors[0] || "Please fix the errors before submitting."
-      )
+      const errorMessage = validationResult.errors[0] || "Please fix the errors before submitting."
+
+      toast.error("Validation Error", {
+        description: errorMessage,
+        duration: 5000,
+        action: {
+          label: "Fix Now",
+          onClick: () => {
+            const firstErrorField = Object.keys(validationResult.fields)[0]
+            if (firstErrorField) {
+              const element = document.querySelector(`[name="${firstErrorField}"]`) ||
+                document.querySelector(`#${firstErrorField}`) ||
+                document.querySelector(`input[placeholder*="${firstErrorField}"]`)
+
+              if (element) {
+                element.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'center'
+                })
+                  ; (element as HTMLElement).focus()
+              }
+            }
+          }
+        }
+      })
+
+      setError("")
       return
     }
 
@@ -1266,14 +1303,22 @@ export function UploadProofMergedModal({
 
   const handleConfirmPayment = async () => {
     setShowConfirmationDialog(false)
+    setDuplicateReferenceError(false)
 
     try {
       setIsUploading(true)
 
+      // const loadingToastId = toast.loading("Processing payment...", {
+      //   description: "Please wait while we upload your receipt and process the payment.",
+      // })
+
       const imageUrl = await uploadFile(file!)
 
       if (!imageUrl) {
-        setError("Failed to upload receipt image. Please try again.")
+        toast.error("Upload Failed", {
+          description: "Failed to upload receipt image. Please try again.",
+          duration: 5000,
+        })
         setIsUploading(false)
         return
       }
@@ -1292,23 +1337,20 @@ export function UploadProofMergedModal({
         }
 
         const isFullyPaid = remainingAmount >= entryAmount
-
         const amountPaidForThisEntry = Math.min(remainingAmount, entryAmount)
         remainingAmount -= amountPaidForThisEntry
 
         return {
-          // entry: entryDetailsData.entry._id,
           entry: entry.entryNumber,
           isFullyPaid,
         }
       })
 
       const finalPayerName = payerName.trim()
-
       const finalReferenceNumber =
         reference && reference !== "Not found"
           ? reference
-          : confirmationNumber || `ref_${Date.now()}`
+          : confirmationNumber || `ref_${Date.now()}`;
 
       const input: CreatePaymentInput = {
         referenceNumber: finalReferenceNumber,
@@ -1318,42 +1360,49 @@ export function UploadProofMergedModal({
         proofOfPaymentURL: imageUrl,
         payerName: finalPayerName,
         entryList,
-      }
+      };
 
-      console.log("Submitting payment:", input)
-      console.log(
-        "Payment distribution:",
-        entriesState.map((_, index) => {
-          const entryAmount = entryAmounts[index] || 0
-          const isFullyPaid = entryList[index]?.isFullyPaid || false
-          return {
-            entry: index + 1,
-            isFullyPaid,
-            amountRequired: entryAmount,
-            status: isFullyPaid ? "Fully Paid" : "Partially Paid",
-          }
-        })
-      )
+      console.log("Submitting payment:", input);
 
       const result = await createPayment({
         variables: { input },
-      })
+      });
 
       if (result.data?.createPayment.ok) {
-        setError("")
-        setSuccess(true)
-        console.log(
-          "Payment created successfully:",
-          result.data.createPayment.message
-        )
+        toast.success("Payment Submitted Successfully!", {
+          description: "Your payment has been recorded. Please wait for verification.",
+          duration: 4000,
+        });
+        setSuccess(true);
       } else {
-        setError("Failed to create payment. Please try again.")
+        toast.error("Payment Failed", {
+          description: "Failed to create payment. Please try again.",
+          duration: 5000,
+        });
+        setError("");
       }
     } catch (err: any) {
-      console.error("Error creating payment:", err)
-      setError(`Error creating payment: ${err.message}`)
+
+      if (err.message?.includes("E1100") ||
+        err.message?.toLowerCase().includes("duplicate") ||
+        err.message?.toLowerCase().includes("reference number")) {
+
+        setDuplicateReferenceError(true)
+
+        toast.error("Duplicate Reference Number", {
+          description: "This reference number has already been used. Please check your receipt or use a different reference.",
+          duration: 15000,
+        });
+
+      } else {
+        toast.error("Error Processing Payment", {
+          description: err.message || "An unexpected error occurred. Please try again.",
+          duration: 15000,
+        });
+      }
+      setError("");
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
   }
 
@@ -1878,12 +1927,12 @@ export function UploadProofMergedModal({
                   {Object.values(entryAmounts).some(
                     (amount) => amount !== null
                   ) ? (
-                    <div className="text-sm font-medium text-blue-600">
+                    <div className="text-sm font-medium text-black">
                       <div className="font-semibold mb-1">
                         Total Amount Required
                       </div>
                       {totalRequired > 0 && (
-                        <div className="text-red-600 text-md mb-1">
+                        <div className="text-red-600 text-base mb-1 underline">
                           <span className="font-medium">₱</span>
                           {totalRequired.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
@@ -1962,10 +2011,11 @@ export function UploadProofMergedModal({
                       )}
                     </div>
                   )}
+
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-blue-600">
+                  <div className="text-sm font-medium text-black">
                     <div className="font-semibold mb-1 flex items-center">
                       {referenceLabel} <span className="text-red-500">*</span>
                       {referenceLoading && (
@@ -1984,12 +2034,30 @@ export function UploadProofMergedModal({
                           </span>
                         </div>
                       ) : reference && reference !== "Not found" ? (
-                        <div className="text-sm font-mono p-2 rounded border bg-blue-50 border-blue-200 text-blue-700">
+                        <div className={`text-sm font-mono p-2 rounded border ${duplicateReferenceError
+                          ? 'bg-red-50 border-red-300 text-red-700'
+                          : 'bg-blue-50 border-blue-200 text-blue-700'
+                          }`}>
                           {reference}
+                          {duplicateReferenceError && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              <span className="text-xs">Duplicate reference number</span>
+                            </div>
+                          )}
                         </div>
                       ) : confirmationNumber ? (
-                        <div className="text-lg font-mono p-2 rounded border bg-yellow-50 border-yellow-200 text-yellow-700">
+                        <div className={`text-lg font-mono p-2 rounded border ${duplicateReferenceError
+                          ? 'bg-red-50 border-red-300 text-red-700'
+                          : 'bg-yellow-50 border-yellow-200 text-yellow-700'
+                          }`}>
                           {confirmationNumber}
+                          {duplicateReferenceError && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              <span className="text-xs">Duplicate reference number</span>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="text-lg p-2 rounded border bg-gray-50 border-gray-200 text-gray-500 italic">
@@ -2029,22 +2097,24 @@ export function UploadProofMergedModal({
                   </div>
                 </div>
               </div>
+              {/* <div className="px-6 pt-2 pb-1">
+                {error && (
+                  <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
+                    <p className="text-red-700 text-sm font-medium">{error}</p>
+                  </div>
+                )}
+                {createPaymentError && (
+                  <div className="p-3 bg-red-100 border border-red-300 rounded-lg mt-2">
+                    <p className="text-red-700 text-sm font-medium">
+                      Payment Error: {createPaymentError.message}
+                    </p>
+                  </div>
+                )}
+              </div> */}
             </div>
 
             <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1">
-              {error && (
-                <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
-                  <p className="text-red-700 text-sm font-medium">{error}</p>
-                </div>
-              )}
 
-              {createPaymentError && (
-                <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
-                  <p className="text-red-700 text-sm font-medium">
-                    Payment Error: {createPaymentError.message}
-                  </p>
-                </div>
-              )}
 
               <div className="w-full">
                 <Separator className="mx-2 mb-2" />

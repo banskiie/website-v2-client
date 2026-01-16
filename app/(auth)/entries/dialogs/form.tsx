@@ -20,7 +20,6 @@ import {
   CheckIcon,
   ChevronsUpDownIcon,
   CirclePlus,
-  Eraser,
 } from "lucide-react"
 import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
@@ -47,7 +46,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { JerseySize } from "@/types/jersey.interface"
 import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
-import { Separator } from "@/components/ui/separator"
 
 const ENTRY = gql`
   query Entry($_id: ID!) {
@@ -558,12 +556,12 @@ const FormDialog = (props: Props) => {
                                 >
                                   {field.state.value
                                     ? tournaments.find(
-                                        (o: {
-                                          value: string
-                                          label: string
-                                          hasEarlyBird: boolean
-                                        }) => o.value === field.state.value
-                                      )?.label
+                                      (o: {
+                                        value: string
+                                        label: string
+                                        hasEarlyBird: boolean
+                                      }) => o.value === field.state.value
+                                    )?.label
                                     : "Select Tournament"}
                                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
@@ -908,19 +906,19 @@ const FormDialog = (props: Props) => {
                                         className={cn(
                                           "w-full justify-between font-normal capitalize -mt-2",
                                           !field.state.value &&
-                                            "text-muted-foreground"
+                                          "text-muted-foreground"
                                         )}
                                         type="button"
                                       >
                                         {field.state.value
                                           ? players.find(
-                                              (o: {
-                                                value: string
-                                                label: string
-                                                hasEarlyBird: boolean
-                                              }) =>
-                                                o.value === field.state.value
-                                            )?.label
+                                            (o: {
+                                              value: string
+                                              label: string
+                                              hasEarlyBird: boolean
+                                            }) =>
+                                              o.value === field.state.value
+                                          )?.label
                                           : "Select Player"}
                                         <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                       </Button>
@@ -1205,8 +1203,8 @@ const FormDialog = (props: Props) => {
                                 >
                                   {field.state.value
                                     ? genders.find(
-                                        (o) => o.value === field.state.value
-                                      )?.label
+                                      (o) => o.value === field.state.value
+                                    )?.label
                                     : "Select Gender"}
                                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
@@ -1332,8 +1330,8 @@ const FormDialog = (props: Props) => {
                                 >
                                   {field.state.value
                                     ? jerseySizes.find(
-                                        (o) => o.value === field.state.value
-                                      )?.label
+                                      (o) => o.value === field.state.value
+                                    )?.label
                                     : "Select Jersey Size"}
                                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
@@ -1507,19 +1505,19 @@ const FormDialog = (props: Props) => {
                                         className={cn(
                                           "w-full justify-between font-normal capitalize -mt-2",
                                           !field.state.value &&
-                                            "text-muted-foreground"
+                                          "text-muted-foreground"
                                         )}
                                         type="button"
                                       >
                                         {field.state.value
                                           ? players.find(
-                                              (o: {
-                                                value: string
-                                                label: string
-                                                hasEarlyBird: boolean
-                                              }) =>
-                                                o.value === field.state.value
-                                            )?.label
+                                            (o: {
+                                              value: string
+                                              label: string
+                                              hasEarlyBird: boolean
+                                            }) =>
+                                              o.value === field.state.value
+                                          )?.label
                                           : "Select Player"}
                                         <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                       </Button>
@@ -1804,8 +1802,8 @@ const FormDialog = (props: Props) => {
                                 >
                                   {field.state.value
                                     ? genders.find(
-                                        (o) => o.value === field.state.value
-                                      )?.label
+                                      (o) => o.value === field.state.value
+                                    )?.label
                                     : "Select Gender"}
                                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
@@ -1931,8 +1929,8 @@ const FormDialog = (props: Props) => {
                                 >
                                   {field.state.value
                                     ? jerseySizes.find(
-                                        (o) => o.value === field.state.value
-                                      )?.label
+                                      (o) => o.value === field.state.value
+                                    )?.label
                                     : "Select Jersey Size"}
                                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>

@@ -35,7 +35,7 @@ const getBaseFields = (hasFreeJersey: boolean) => {
         clubContactNumber: z.string().optional(),
         player1FirstName: z.string().min(1, "First name is required"),
         player1LastName: z.string().min(1, "Last name is required"),
-        player1MiddleName: z.string().min(1, "Middle name is required"),
+        player1MiddleName: z.string().optional(),
         player1Suffix: z.string().optional(),
         player1Birthday: z.string().min(1, "Birthday is required"),
         player1Email: z.string().email("Invalid email address").optional(),
@@ -57,7 +57,7 @@ const getDoublesFields = (hasFreeJersey: boolean) => {
     const doublesFields = {
         player2FirstName: z.string().min(1, "First name is required"),
         player2LastName: z.string().min(1, "Last name is required"),
-        player2MiddleName: z.string().min(1, "Middle name is required"),
+        player2MiddleName: z.string().optional(),
         player2Suffix: z.string().optional(),
         player2Birthday: z.string().min(1, "Birthday is required"),
         player2Email: z.string().email("Invalid email address").optional(),
@@ -190,7 +190,7 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
                 });
             }
         }
-        
+
         // Add mixed gender validation for MIXED events
         if (eventData?.gender === "MIXED") {
             if (data.player1Gender && data.player2Gender && data.player1Gender === data.player2Gender) {

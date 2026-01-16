@@ -14,7 +14,6 @@ import { useQuery } from "@apollo/client/react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import RoleBadge from "@/components/badges/role-badge"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
@@ -28,7 +27,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { CheckCircle, CheckCircle2, CircleAlert, Paperclip } from "lucide-react"
+import { CheckCircle, CheckCircle2, CircleAlert, Paperclip, ZoomIn, Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const PAYMENT = gql`
@@ -56,7 +55,6 @@ const PAYMENT = gql`
           updatedAt
         }
       }
-
       entryList {
         isFullyPaid
         entry {
@@ -148,81 +146,121 @@ const ViewDialog = (props: Props) => {
               <TabsTrigger value="proof">Proof</TabsTrigger>
               <TabsTrigger value="status">Status</TabsTrigger>
             </TabsList>
+
             <TabsContent value="details">
-              <div className="grid grid-cols-2 gap-2 place-content-start h-[60vh] overflow-y-auto">
-                <div className="col-span-2">
-                  <Label>Reference No.</Label>
-                  {loading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span className="block text-sm">
-                      {data?.payment?.referenceNumber}
-                    </span>
-                  )}
+              <div className="h-[60vh] overflow-y-auto">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="h-4 w-1 bg-green-600" />
+                  <Label className="text-xs text-muted-foreground">
+                    Payment Details
+                  </Label>
                 </div>
-                <div>
-                  <Label>Paid By</Label>
-                  {loading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span className="block text-sm">
-                      {data?.payment?.payerName}
-                    </span>
-                  )}
+
+                <div className="border border-b-0 rounded-t-lg p-4 hover:bg-muted/80 transition-colors">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Reference No.</Label>
+                    {loading ? (
+                      <Skeleton className="w-full my-1 h-3" />
+                    ) : (
+                      <span className="block text-[13px] tracking-wide font-medium">
+                        {data?.payment?.referenceNumber}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <Label>Amount</Label>
-                  {loading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span className="block text-sm">
-                      {loading
-                        ? null
-                        : new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: "PHP",
-                        }).format(data?.payment?.amount)}
-                    </span>
-                  )}
+
+                <div className="border p-4 hover:bg-muted/80 transition-colors">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Paid By</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-[13px] font-[420] tracking-normal uppercase underline underline-offset-2">
+                          {data?.payment?.payerName}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Amount</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-[13px] tracking-wide font-medium">
+                          {loading
+                            ? null
+                            : new Intl.NumberFormat("en-US", {
+                              style: "currency",
+                              currency: "PHP",
+                            }).format(data?.payment?.amount)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label>Payment Method</Label>
-                  {loading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span className="block text-sm capitalize">
-                      {data?.payment?.method.toLowerCase().replaceAll("_", " ")}
-                    </span>
-                  )}
+
+                <div className="border border-t-0 rounded-b-lg p-4 mb-4 hover:bg-muted/80 transition-colors">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Payment Method</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-[13px] font-medium tracking-wide capitalize">
+                          {data?.payment?.method.toLowerCase().replaceAll("_", " ")}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Payment Date</Label>
+                      {loading ? (
+                        <Skeleton className="my-1 w-20 h-4.25" />
+                      ) : (
+                        <span className="block text-[13px] tracking-wide font-medium capitalize">
+                          {data?.payment?.paymentDate &&
+                            format(new Date(data?.payment?.paymentDate), "PP")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label>Payment Date</Label>
-                  {loading ? (
-                    <Skeleton className="my-1 w-20 h-4.25" />
-                  ) : (
-                    <span className="block text-sm capitalize">
-                      {data?.payment?.paymentDate &&
-                        format(new Date(data?.payment?.paymentDate), "PP")}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <Label>Entries Involved</Label>
-                  {loading ? (
-                    <Skeleton className="my-1 w-20 h-4.25" />
-                  ) : (
-                    <ol className="text-sm">
-                      {data?.payment?.entryList.map((s: any, index: number) => (
-                        <li key={index}>
-                          {s.entry.entryNumber}{" "}
-                          {s.isFullyPaid && " (Fully Paid)"}
-                        </li>
-                      ))}
-                    </ol>
-                  )}
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-4 w-1 bg-green-600" />
+                    <Label className="text-xs text-muted-foreground">
+                      Entries Involved
+                    </Label>
+                  </div>
+
+                  <div className="bg-white border rounded-lg p-3">
+                    {loading ? (
+                      <Skeleton className="my-1 w-20 h-4.25" />
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {data?.payment?.entryList.map((s: any, index: number) => (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                              "h-7 px-2 text-xs cursor-default",
+                              s.isFullyPaid
+                                ? "text-green-600 bg-green-50 border-green-200"
+                                : "text-blue-600"
+                            )}
+                          >
+                            <span className="text-black">{s.entry.entryNumber}</span>
+                            {s.isFullyPaid && <span className="-ml-1">(Fully Paid)</span>}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>
+
             <TabsContent value="proof">
               <div className="h-[60vh]">
                 {!data?.payment?.proofOfPaymentURL && !loading ? (
@@ -231,15 +269,23 @@ const ViewDialog = (props: Props) => {
                   </span>
                 ) : (
                   <Sheet>
-                    <SheetTrigger className="cursor-pointer w-full flex items-center justify-center">
+                    <SheetTrigger className="cursor-pointer w-full flex items-center justify-center relative group">
                       {data?.payment?.proofOfPaymentURL ? (
-                        <Image
-                          width={500}
-                          height={500}
-                          src={data?.payment?.proofOfPaymentURL}
-                          alt="Uploaded Image"
-                          className="object-contain bg-gray max-h-[60vh] w-full"
-                        />
+                        <>
+                          <Image
+                            width={500}
+                            height={500}
+                            src={data?.payment?.proofOfPaymentURL}
+                            alt="Uploaded Image"
+                            className="object-contain bg-gray max-h-[60vh] w-full group-hover:bg-gray-100 transition-all duration-200"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
+                              <ZoomIn className="w-4 h-4" />
+                              <span className="text-sm font-medium">Click to Expand Image</span>
+                            </div>
+                          </div>
+                        </>
                       ) : (
                         <div className="flex items-center justify-center">
                           <Paperclip className="w-6 h-6 text-muted-foreground absolute z-10" />
@@ -264,12 +310,12 @@ const ViewDialog = (props: Props) => {
                 )}
               </div>
             </TabsContent>
+
             <TabsContent value="status">
               <div className="flex flex-col gap-2 h-[60vh] overflow-y-auto place-content-start">
                 {loading ? (
                   <Skeleton className="w-full my-1 h-3" />
-                ) : data?.payment?.statuses &&
-                  data?.payment?.statuses.length ? (
+                ) : data?.payment?.statuses && data?.payment?.statuses.length ? (
                   <div className="h-full">
                     {data?.payment.statuses
                       .slice()
@@ -355,9 +401,12 @@ const ViewDialog = (props: Props) => {
                       ))}
                   </div>
                 ) : (
-                  <span className="text-sm text-muted-foreground">
-                    No status history available.
-                  </span>
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <Wallet className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No status history available.</p>
+                    </div>
+                  </div>
                 )}
               </div>
             </TabsContent>
@@ -365,7 +414,7 @@ const ViewDialog = (props: Props) => {
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button className="w-20" onClick={onClose} variant="outline">
+              <Button className="w-20 cursor-pointer" onClick={onClose} variant="outline">
                 Cancel
               </Button>
             </DialogClose>

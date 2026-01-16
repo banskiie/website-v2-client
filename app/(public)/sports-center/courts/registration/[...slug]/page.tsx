@@ -18,7 +18,7 @@ import {
     FieldLabel,
 } from "@/components/ui/field"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon, AlertCircle } from "lucide-react"
+import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon, AlertCircle, ArrowLeftIcon } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { startTransition, use, useEffect, useState } from "react"
 import Header from "@/components/custom/header-white"
@@ -42,7 +42,7 @@ import { REGISTRY_ENTRY } from "@/graphql/registration/resolver"
 import { PublicTournamentsData } from "@/components/custom/category-selection"
 import { RegisterEntryResponse, RegisterEntryVariables } from "@/app/(public)/types/entry.interface"
 import FloatingTicketing from "@/components/custom/ticket"
-import { any } from "zod"
+import Link from "next/link"
 
 interface RegistrationPageProps {
     params: Promise<{ slug: string[] }>
@@ -52,12 +52,14 @@ const RegistrationFeeModal = ({
     isOpen,
     onClose,
     event,
-    tournament
+    tournament,
+    onDontShowAgain
 }: {
     isOpen: boolean,
     onClose: () => void,
     event: any,
-    tournament: any
+    tournament: any,
+    onDontShowAgain?: () => void
 }) => {
     if (!isOpen || !event || !tournament) return null
 
@@ -71,6 +73,8 @@ const RegistrationFeeModal = ({
 
     const isDoubles = event.type === "DOUBLES"
     const isEarlyBird = tournament.settings?.hasEarlyBird
+
+    const [dontShowChecked, setDontShowChecked] = useState(false)
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -123,23 +127,6 @@ const RegistrationFeeModal = ({
                                     ₱{pricePerPlayer?.toLocaleString()}
                                 </div>
                             </div>
-
-                            {/* {isDoubles && (
-                                <>
-                                    <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-green-100">
-                                        <div className="text-left">
-                                            <div className="font-medium text-green-800">Doubles Partner Fee</div>
-                                        </div>
-                                        <div className="font-bold text-green-700">
-                                            ₱{pricePerPlayer?.toLocaleString()}
-                                        </div>
-                                    </div>
-                                    <div className="text-xs text-gray-500 text-left pl-3">
-                                        <Users2 className="inline w-3 h-3 mr-1" />
-                                        Each player pays the same fee
-                                    </div>
-                                </>
-                            )} */}
                         </div>
 
                         <div className="mt-4 p-4 bg-linear-to-r from-green-50 to-teal-50 rounded-xl border border-green-300">
@@ -164,7 +151,7 @@ const RegistrationFeeModal = ({
                         </div>
                     </div>
 
-                    <div className="p-4 bg-green-50 text-green-800 rounded-xl border border-green-200 text-left mb-6">
+                    <div className="p-4 bg-green-50 text-green-800 rounded-xl border border-green-200 text-left mb-4">
                         <h4 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
                             <Mail className="w-4 h-4" />
                             Payment Instructions
@@ -175,8 +162,28 @@ const RegistrationFeeModal = ({
                         </p>
                     </div>
 
+                    {onDontShowAgain && (
+                        <div className="flex items-center justify-start mb-4 p-2 bg-gray-50 rounded-lg">
+                            <input
+                                type="checkbox"
+                                id="dontShowAgain"
+                                checked={dontShowChecked}
+                                onChange={(e) => setDontShowChecked(e.target.checked)}
+                                className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded cursor-pointer"
+                            />
+                            <label htmlFor="dontShowAgain" className="text-sm text-gray-600 cursor-pointer">
+                                Don't show this message again
+                            </label>
+                        </div>
+                    )}
+
                     <Button
-                        onClick={onClose}
+                        onClick={() => {
+                            if (dontShowChecked && onDontShowAgain) {
+                                onDontShowAgain()
+                            }
+                            onClose()
+                        }}
                         className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white py-3 rounded-lg font-semibold transition-all duration-300 shadow-md"
                     >
                         Continue Registration
@@ -302,6 +309,49 @@ export default function Page({ params }: RegistrationPageProps) {
     const event = tournament?.events?.find((e: any) => e._id === eventId) ?? tournament?.events?.[0]
     const hasFreeJersey = tournament?.settings?.hasFreeJersey || false
 
+    // Check if modal should be shown
+    useEffect(() => {
+        if (event && tournament && !showSuccessModal) {
+            // Check if modal has been shown before (using localStorage for permanent storage)
+            const modalKey = `registrationFeeModalShown-${tournamentId}-${eventId}`
+            const hasSeenModalBefore = localStorage.getItem(modalKey)
+
+            // Also check sessionStorage for current session
+            const sessionKey = `registrationFeeModalSession-${tournamentId}-${eventId}`
+            const hasSeenThisSession = sessionStorage.getItem(sessionKey)
+
+            // Only show modal if user hasn't seen it before in localStorage AND hasn't seen it this session
+            if (!hasSeenModalBefore && !hasSeenThisSession) {
+                const timer = setTimeout(() => {
+                    setShowFeeModal(true)
+                }, 500)
+
+                return () => clearTimeout(timer)
+            }
+        }
+    }, [event, tournament, showSuccessModal, tournamentId, eventId])
+
+    const handleFeeModalClose = () => {
+        // Mark as seen for this session
+        const sessionKey = `registrationFeeModalSession-${tournamentId}-${eventId}`
+        sessionStorage.setItem(sessionKey, 'true')
+        setShowFeeModal(false)
+    }
+
+    const handleDontShowAgain = () => {
+        // Mark as permanently seen in localStorage
+        const modalKey = `registrationFeeModalShown-${tournamentId}-${eventId}`
+        localStorage.setItem(modalKey, 'true')
+    }
+
+    // Reset modal preferences when tournament/event changes
+    useEffect(() => {
+        // Clear any existing modal preferences when component mounts
+        // This ensures modal shows when user visits a different tournament/event
+        const modalKey = `registrationFeeModalSession-${tournamentId}-${eventId}`
+        sessionStorage.removeItem(modalKey)
+    }, [tournamentId, eventId])
+
     useEffect(() => {
         if (event && tournament) {
             console.log("=== 🎯 AUTOMATIC EARLY BIRD PRICE CHECK ===");
@@ -325,16 +375,6 @@ export default function Page({ params }: RegistrationPageProps) {
 
         }
     }, [event, tournament])
-
-    useEffect(() => {
-        if (event && tournament && !showSuccessModal) {
-            const timer = setTimeout(() => {
-                setShowFeeModal(true)
-            }, 500)
-
-            return () => clearTimeout(timer)
-        }
-    }, [event, tournament, showSuccessModal])
 
     const isMixed = /mixed/i.test(event?.gender || "")
     const autoGender = event ? (
@@ -554,8 +594,6 @@ export default function Page({ params }: RegistrationPageProps) {
                             email: playerData[`player${playerNum}Email`],
                             phoneNumber: playerData[`player${playerNum}ContactNumber`],
                             gender: playerData[`player${playerNum}Gender`],
-                            // isEarlyBird: tournament?.settings?.hasEarlyBird || false,
-                            // isInSoftware: true, // or false, depending on your logic
                         };
 
                         if (hasFreeJersey && playerData[`player${playerNum}JerseySize`]) {
@@ -821,7 +859,8 @@ export default function Page({ params }: RegistrationPageProps) {
 
             <RegistrationFeeModal
                 isOpen={showFeeModal}
-                onClose={() => setShowFeeModal(false)}
+                onClose={handleFeeModalClose}
+                onDontShowAgain={handleDontShowAgain}
                 event={event}
                 tournament={tournament}
             />
@@ -831,19 +870,15 @@ export default function Page({ params }: RegistrationPageProps) {
                 onClose={handleModalClose}
                 message={successMessage}
             />
-
-            {/* {submitError && (
-                <div className="max-w-4xl mx-auto mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                    <div className="flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                        <div>
-                            <strong>Submission Error:</strong> {submitError.message}
-                        </div>
-                    </div>
-                </div>
-            )} */}
-
-            <Card className="w-full max-w-6xl mx-auto mt-20 mb-20 shadow-xl border border-green-200">
+            <div className="p-4 sm:p-6 pb-0 mt-20">
+                <Button variant="ghost" asChild className="text-green-700 hover:text-green-800 hover:bg-green-200">
+                    <Link href="/sports-center/courts/categories" className="flex items-center gap-2">
+                        <ArrowLeftIcon className="w-6 h-6" />
+                        <span className="underline text-base">Back</span>
+                    </Link>
+                </Button>
+            </div>
+            <Card className="w-full max-w-6xl mx-auto -mt-1 mb-20 shadow-xl border border-green-200">
                 <CardHeader className="mx-auto w-full max-w-md text-center px-4 sm:px-6">
                     <CardTitle className="text-xl sm:text-2xl font-semibold">
                         {tournament.name}
@@ -871,66 +906,6 @@ export default function Page({ params }: RegistrationPageProps) {
                         }}
                         className="space-y-6"
                     >
-                        {/* {isMixed && event?.type === "DOUBLES" && (
-                            <div className="max-w-5xl mx-auto p-4 bg-purple-50 border border-purple-200 rounded-xl">
-                                <div className="flex items-start gap-3">
-                                    <div className="bg-purple-100 p-2 rounded-lg">
-                                        <VenusAndMarsIcon className="w-5 h-5 text-purple-600" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-purple-800 mb-1">
-                                            Mixed Doubles Event
-                                        </h3>
-                                        <div className="text-purple-700 text-sm space-y-1">
-                                            <p>
-                                                <strong>Important:</strong> This is a MIXED doubles event.
-                                            </p>
-                                            <p className="font-medium">
-                                                You must register one male and one female player.
-                                            </p>
-                                            <p className="text-xs mt-2">
-                                                The system will validate that Player 1 and Player 2 have different genders.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {event && ((event as any).minAge || (event as any).maxAge) && (
-                            <div className="max-w-5xl mx-auto p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                                <div className="flex items-start gap-3">
-                                    <div className="bg-blue-100 p-2 rounded-lg">
-                                        <InfoIcon className="w-5 h-5 text-blue-600" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-blue-800 mb-1">
-                                            Age Requirements for {event.name}
-                                        </h3>
-                                        <div className="text-blue-700 text-sm space-y-1">
-                                            <p>
-                                                <strong>Age Range:</strong>{" "}
-                                                {(event as any).minAge && (event as any).maxAge
-                                                    ? `${(event as any).minAge} to ${(event as any).maxAge} years old`
-                                                    : (event as any).minAge
-                                                        ? `Minimum ${(event as any).minAge} years old`
-                                                        : `Maximum ${(event as any).maxAge} years old`}
-                                            </p>
-                                            {tournament?.dates?.tournamentStart && (
-                                                <p>
-                                                    <strong>Age Calculation Date:</strong>{" "}
-                                                    {format(new Date(tournament.dates.tournamentStart), "MMMM d, yyyy")}
-                                                </p>
-                                            )}
-                                            <p className="mt-2 font-medium">
-                                                Your age will be automatically calculated based on the tournament start date.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )} */}
-
                         <div className="max-w-5xl mx-auto p-4 sm:p-6 bg-white rounded-xl shadow-md border border-green-200">
                             <div className="text-center space-y-4 mt-4">
                                 <CardTitle className="flex items-center gap-2 text-green-800 justify-center">
@@ -1059,63 +1034,6 @@ export default function Page({ params }: RegistrationPageProps) {
                             </div>
                         </div>
 
-                        {/* <div className="text-start space-y-4 max-w-5xl mx-auto px-4 sm:px-0">
-                            <CardTitle className="flex items-center gap-2 text-green-800 justify-start">
-                                <div className="p-2 bg-linear-to-r from-yellow-400 to-orange-500 rounded-lg">
-                                    <span className="text-white font-bold">💰</span>
-                                </div>
-                                <span className="text-lg sm:text-xl font-semibold">Registration Fee</span>
-                            </CardTitle>
-
-                            {event && tournament && (
-                                <div className="bg-linear-to-r from-green-50 to-teal-50 p-4 sm:p-6 rounded-lg border border-green-200">
-
-                                    <div className="flex flex-row justify-between items-start gap-4">
-
-                                        <div>
-                                            {tournament.settings?.hasEarlyBird ? (
-                                                <Badge className="bg-green-100 text-green-800 border-green-300">
-                                                    Early Bird Pricing
-                                                </Badge>
-                                            ) : (
-                                                <Badge className="bg-gray-100 text-gray-800 border-gray-300">
-                                                    Regular Pricing
-                                                </Badge>
-                                            )}
-                                        </div>
-
-                                        <div className="text-left sm:text-right">
-
-                                            {tournament.settings?.hasEarlyBird &&
-                                                event.earlyBirdPricePerPlayer && (
-                                                    <div className="text-sm text-gray-500 line-through">
-                                                        ₱{event.pricePerPlayer?.toLocaleString()}
-                                                    </div>
-                                                )}
-
-                                            <div className="text-lg font-bold text-green-700">
-                                                ₱{(
-                                                    tournament.settings?.hasEarlyBird &&
-                                                        event.earlyBirdPricePerPlayer
-                                                        ? event.earlyBirdPricePerPlayer
-                                                        : event.pricePerPlayer
-                                                )?.toLocaleString()}
-                                            </div>
-
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4 p-4 bg-green-100 text-green-800 border-green-300 rounded-lg border">
-                                        <h4 className="font-semibold text-green-800 mb-2">Payment Instructions</h4>
-                                        <p className="text-green-700 text-sm">
-                                            After submitting this registration, you will receive payment instructions via email.
-                                            Please complete your payment within 24 hours to secure your spot.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </div> */}
-
                         <div className="max-w-5xl mx-auto mt-6 p-4 bg-white rounded-xl shadow-md">
                             <div className="text-start space-y-4">
                                 <CardTitle className="flex flex-col items-center gap-2 text-green-800 justify-center">
@@ -1138,7 +1056,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                             </div>
                                         </div>
 
-                                        {event && tournament && !showFeeModal && (
+                                        {event && tournament && (
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Button
@@ -1195,7 +1113,6 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                         ? "Jersey Size"
                                                                                         : "Suffix";
 
-                                                            // Type-safe handling of birthday field
                                                             const birthdayString = name.includes("Birthday")
                                                                 ? getBirthdayString(field.state.value)
                                                                 : null;
@@ -1212,7 +1129,6 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                             {label} {!name.includes("MiddleName") && !name.includes("Suffix") && <span className="text-red-500">*</span>}
                                                                         </FieldLabel>
 
-                                                                        {/* Show calculated age for birthday field */}
                                                                         {name.includes("Birthday") && birthdayString && tournament?.dates?.tournamentStart && (
                                                                             <div className="flex items-center gap-1">
                                                                                 <span className={`text-xs font-medium px-2 py-0.5 rounded ${minAge !== undefined && maxAge !== undefined &&

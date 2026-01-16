@@ -86,7 +86,6 @@ import {
 } from "@/components/ui/select"
 import { AnimatePresence, motion } from "framer-motion"
 import * as Tesseract from 'tesseract.js'
-import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const USER = gql`
   query Refund($_id: ID!) {
@@ -137,7 +136,6 @@ const ALL_ACTIVE_ENTRIES = gql`
   }
 `
 
-// Add interface for existing refund
 interface ExistingRefund {
   referenceNumber: string
   payerName: string
@@ -146,30 +144,24 @@ interface ExistingRefund {
 type Props = {
   _id?: string
   onClose?: () => void
-  existingRefunds?: ExistingRefund[] // Add this prop
+  existingRefunds?: ExistingRefund[]
 }
 
 const FormDialog = (props: Props) => {
-  // Dialog open state
   const [open, setOpen] = useState(false)
-  // Determine if it's an update or create operation
   const isUpdate = Boolean(props._id)
   const [isPending, startTransition] = useTransition()
   const [duplicateError, setDuplicateError] = useState<string | null>(null)
 
-  // Fetch existing date if updating
   const { data, loading: fetchLoading }: any = useQuery(USER, {
     variables: { _id: props._id },
     skip: !open || !isUpdate,
     fetchPolicy: "no-cache",
   })
   const refund = data?.refund as IRefund
-  // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
-  // Combined loading state
   const isLoading = isUpdate ? isPending || fetchLoading : false
 
-  // Combined loading state
   const loading = isPending || fetchLoading
 
   const { data: entryOptionsData, loading: optionsLoading } = useQuery(
@@ -180,17 +172,14 @@ const FormDialog = (props: Props) => {
   )
   const [openFilteredEntries, setOpenFilteredEntries] = useState(false)
   const entryOptions = (entryOptionsData as any)?.activeRefundEntryOptions || []
-  // Payment Methods
   const [openMethods, setOpenMethods] = useState(false)
   const Methods = Object.values(PaymentMethod).map((method) => ({
     label: method.toLocaleLowerCase().replaceAll("_", " "),
     value: method,
   }))
 
-  // Tab state
   const [activeTab, setActiveTab] = useState("refund-details")
 
-  // Handle Image
   const [files, setFiles] = useState<any[]>([])
   const [preview, setPreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -202,14 +191,11 @@ const FormDialog = (props: Props) => {
   const [imageLoading, setImageLoading] = useState(true)
   const [scannedText, setScannedText] = useState<string>("")
 
-  // Function to check for duplicate reference number
   const checkForDuplicateReference = (referenceNumber: string): boolean => {
     if (!referenceNumber || isUpdate) return false
 
-    // Normalize the reference number (trim and uppercase for comparison)
     const normalizedRef = referenceNumber.trim().toUpperCase()
 
-    // Check if this reference number already exists
     const isDuplicate = props.existingRefunds?.some(refund =>
       refund.referenceNumber.trim().toUpperCase() === normalizedRef
     )
@@ -217,7 +203,6 @@ const FormDialog = (props: Props) => {
     return isDuplicate || false
   }
 
-  // Get duplicate refund info
   const getDuplicateRefundInfo = (referenceNumber: string) => {
     const normalizedRef = referenceNumber.trim().toUpperCase()
     return props.existingRefunds?.find(refund =>
@@ -232,7 +217,7 @@ const FormDialog = (props: Props) => {
       "image/jpeg": [],
     },
     multiple: false,
-    maxSize: 3 * 1024 * 1024, // 3MB
+    maxSize: 3 * 1024 * 1024,
     onDrop: (acceptedFiles: any, fileRejections: any) => {
       if (fileRejections.length > 0) {
         toast.error("File too large or unsupported type. (Max size: 3MB)")
@@ -243,7 +228,6 @@ const FormDialog = (props: Props) => {
       const previewUrl = URL.createObjectURL(file)
       setPreview(previewUrl)
 
-      // Scan the receipt
       scanReceipt(file)
     },
   })
@@ -252,7 +236,7 @@ const FormDialog = (props: Props) => {
     setReferenceLoading(true)
     setScannedAmount(null)
     setScannedReference(null)
-    setDuplicateError(null) // Clear duplicate error when scanning new receipt
+    setDuplicateError(null)
 
     try {
       const reader = new FileReader()
@@ -396,7 +380,6 @@ const FormDialog = (props: Props) => {
     validators: {
       onSubmit: ({ formApi, value }) => {
         try {
-          // Check for duplicate reference number before validation
           if (!isUpdate && checkForDuplicateReference(value.referenceNumber)) {
             const duplicateRefund = getDuplicateRefundInfo(value.referenceNumber)
             throw new Error(`Reference number "${value.referenceNumber}" already exists for refund by "${duplicateRefund?.payerName}".`)
@@ -405,7 +388,6 @@ const FormDialog = (props: Props) => {
           RefundSchema.parse(value)
         } catch (error: any) {
           console.error(error)
-          // Handle custom duplicate error
           if (error.message && error.message.includes("already exists")) {
             formApi.fieldInfo["referenceNumber"].instance?.setErrorMap({
               onSubmit: { message: error.message },
@@ -423,7 +405,6 @@ const FormDialog = (props: Props) => {
     },
     listeners: {
       onChange: ({ formApi, fieldApi }) => {
-        // Check for duplicate when reference number changes
         if (fieldApi.name === "referenceNumber" && !isUpdate) {
           const refNumber = fieldApi.state.value
           if (refNumber && refNumber.trim().length > 0) {
@@ -444,7 +425,6 @@ const FormDialog = (props: Props) => {
     onSubmit: ({ value, formApi }) =>
       startTransition(async () => {
         try {
-          // Check for duplicate reference number before submission
           if (!isUpdate && checkForDuplicateReference(value.referenceNumber)) {
             const duplicateRefund = getDuplicateRefundInfo(value.referenceNumber)
             setDuplicateError(
@@ -575,11 +555,17 @@ const FormDialog = (props: Props) => {
           <DialogTitle>
             {isUpdate ? "Edit Refund" : "Create Refund"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="space-y-2">
             {isUpdate
               ? "Update existing refund details."
               : "Create a new refund in the system."}
           </DialogDescription>
+          {duplicateError && (
+            <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>{duplicateError}</span>
+            </div>
+          )}
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="">
@@ -597,16 +583,6 @@ const FormDialog = (props: Props) => {
             }}
           >
             <div className="min-h-[580px] max-h-[60vh] overflow-y-auto pr-2">
-              {/* Duplicate Error Alert */}
-              {duplicateError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    {duplicateError}
-                  </AlertDescription>
-                </Alert>
-              )}
-
               <TabsContent value="refund-details" className="space-y-4 mt-4">
                 <FieldSet className="grid grid-cols-2 gap-4">
                   <form.Field
@@ -753,7 +729,7 @@ const FormDialog = (props: Props) => {
                                   <ChevronsUpDown className="opacity-50" />
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-full p-0">
+                              <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                                 <Command>
                                   <CommandInput
                                     placeholder="Search entry..."
@@ -960,11 +936,6 @@ const FormDialog = (props: Props) => {
                                 Scanning...
                               </span>
                             )}
-                            {isDuplicate && !referenceLoading && (
-                              <span className="text-xs font-normal text-red-500 ml-2">
-                                Duplicate!
-                              </span>
-                            )}
                           </div>
                           <div className="space-y-2">
                             {referenceLoading ? (
@@ -974,7 +945,7 @@ const FormDialog = (props: Props) => {
                               </div>
                             ) : (
                               <div className="space-y-1">
-                                <InputGroup className="-my-1.5">
+                                <InputGroup>
                                   <InputGroupInput
                                     placeholder="Reference No."
                                     disabled={loading}
@@ -986,7 +957,6 @@ const FormDialog = (props: Props) => {
                                       const value = e.target.value
                                       field.handleChange(value)
 
-                                      // Check for duplicate
                                       if (value && value.trim().length > 0) {
                                         if (checkForDuplicateReference(value)) {
                                           const duplicateRefund = getDuplicateRefundInfo(value)
@@ -1002,20 +972,24 @@ const FormDialog = (props: Props) => {
                                     }}
                                     aria-invalid={isInvalid || isDuplicate}
                                     className={cn(
+                                      "border-red-500 focus:border-red-500 focus:ring-red-500",
                                       isDuplicate && "border-red-500 focus:border-red-500 focus:ring-red-500"
                                     )}
                                   />
                                 </InputGroup>
-                                {scannedReference && scannedReference !== "Not found" && (
+
+                                {scannedReference && scannedReference !== "Not found" && !isDuplicate && (
                                   <p className="text-xs text-green-600">
                                     ✓ Scanned reference auto-filled
                                   </p>
                                 )}
+
                                 {(!scannedReference || scannedReference === "Not found") && files.length > 0 && (
                                   <p className="text-xs text-gray-500">
                                     No reference detected in receipt
                                   </p>
                                 )}
+
                                 {isDuplicate && (
                                   <p className="text-xs text-red-500 flex items-center">
                                     <AlertCircle className="h-3 w-3 mr-1" />
@@ -1061,7 +1035,7 @@ const FormDialog = (props: Props) => {
                           onClick={() => {
                             setFiles([])
                             setPreview(null)
-                            setDuplicateError(null) // Clear duplicate error when removing file
+                            setDuplicateError(null)
                           }}
                           disabled={isUploading}
                           className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
@@ -1183,7 +1157,7 @@ const FormDialog = (props: Props) => {
             loading={isLoading}
             type="submit"
             form="refund-form"
-            disabled={!isUpdate && duplicateError !== null} // Disable if duplicate error exists
+            disabled={!isUpdate && duplicateError !== null}
           >
             Submit
           </Button>

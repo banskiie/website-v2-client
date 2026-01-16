@@ -293,13 +293,6 @@ const Page = () => {
     resetPage()
   }
 
-  const existingJerseys = useMemo(() => {
-    return (data?.jerseys.edges || []).map((edge: any) => ({
-      playerName: edge.node.playerName,
-      tournamentName: edge.node.tournamentName
-    }))
-  }, [data?.jerseys])
-
   const onFilter = useCallback((value: any) => {
     setFilter(value)
     resetPage()
@@ -576,7 +569,7 @@ const Page = () => {
               Clear Filtering
             </Button>
           )}
-          {<FormDialog existingJerseys={existingJerseys} />}
+          {<FormDialog />}
         </div>
       </div>
       <div className="w-full flex justify-between">

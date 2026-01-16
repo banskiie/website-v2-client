@@ -15,7 +15,7 @@ import { useMutation, useQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
 import React, { useState, useTransition, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { CirclePlus, X, ChevronDown, Check, Loader2, Paperclip, XCircle, UploadIcon, CheckCircle, Edit } from "lucide-react"
+import { CirclePlus, X, ChevronDown, Check, Loader2, Paperclip, XCircle, UploadIcon, CheckCircle, Edit, AlertCircle } from "lucide-react"
 import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"
@@ -260,10 +260,17 @@ interface UpdatePaymentVariables {
   }
 }
 
+interface ExistingPayment {
+  referenceNumber: string
+  payerName: string
+  entries: string
+}
+
 interface Props {
   _id?: string
   onClose?: () => void
   refetchPayments?: () => void
+  existingPayments?: ExistingPayment[]
 }
 
 const FormDialog = (props: Props) => {
@@ -304,6 +311,7 @@ const FormDialog = (props: Props) => {
   const [totalRequired, setTotalRequired] = useState(0)
   const [priceReminder, setPriceReminder] = useState<string | null>(null)
   const [existingPaymentData, setExistingPaymentData] = useState<PaymentData | null>(null)
+  const [duplicateError, setDuplicateError] = useState<string | null>(null)
 
   const { data: entriesData, loading: entriesLoading } = useQuery<ActivePaymentEntryOptionsResponse>(ACTIVE_PAYMENT_ENTRY_OPTIONS, {
     skip: !open,
@@ -407,6 +415,25 @@ const FormDialog = (props: Props) => {
     },
   })
 
+  const checkForDuplicateReference = (referenceNumber: string): boolean => {
+    if (!referenceNumber || isEditMode) return false
+
+    const normalizedRef = referenceNumber.trim().toUpperCase()
+
+    const isDuplicate = props.existingPayments?.some(payment =>
+      payment.referenceNumber.trim().toUpperCase() === normalizedRef
+    )
+
+    return isDuplicate || false
+  }
+
+  const getDuplicatePaymentInfo = (referenceNumber: string) => {
+    const normalizedRef = referenceNumber.trim().toUpperCase()
+    return props.existingPayments?.find(payment =>
+      payment.referenceNumber.trim().toUpperCase() === normalizedRef
+    )
+  }
+
   const onClose = () => {
     setOpen(false)
     setSelectedEntries([])
@@ -422,6 +449,7 @@ const FormDialog = (props: Props) => {
     setScannedText("")
     setConfirmationNumber("")
     setSuccess(false)
+    setDuplicateError(null)
     setFieldErrors({
       payerName: '',
       amount: '',
@@ -543,6 +571,7 @@ const FormDialog = (props: Props) => {
       setReference(null)
       setConfirmationNumber("")
       setScannedText("")
+      setDuplicateError(null)
 
       try {
         const preprocessedData = await preprocessImage(imageData)
@@ -711,6 +740,19 @@ const FormDialog = (props: Props) => {
         setReference(refNumber)
         setReferenceLabel(refLabel)
 
+        if (refNumber !== "Not found") {
+          // Check for duplicates when scanning
+          if (checkForDuplicateReference(refNumber)) {
+            const duplicatePayment = getDuplicatePaymentInfo(refNumber)
+            const duplicateEntries = duplicatePayment?.entries || "unknown entries"
+            setDuplicateError(
+              `Reference number "${refNumber}" already exists for Entries: ${duplicateEntries}.`
+            )
+          } else {
+            setDuplicateError(null)
+          }
+        }
+
       } catch (err) {
         setScannedText("Error: Could not read text.")
       } finally {
@@ -728,6 +770,7 @@ const FormDialog = (props: Props) => {
     setReferenceLoading(false)
     setScannedTotal(null)
     setReference(null)
+    setDuplicateError(null)
     setFieldErrors(prev => ({ ...prev, file: isEditMode && existingPaymentData?.proofOfPaymentURL ? '' : 'Proof of payment is required' }))
     form.setFieldValue("proofOfPaymentURL", "")
   }
@@ -992,12 +1035,36 @@ const FormDialog = (props: Props) => {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Check for duplicates before showing confirmation dialog
+    const currentRef = form.getFieldValue("referenceNumber")
+    if (!isEditMode && currentRef && checkForDuplicateReference(currentRef)) {
+      const duplicatePayment = getDuplicatePaymentInfo(currentRef)
+      const duplicateEntries = duplicatePayment?.entries || "unknown entries"
+      setDuplicateError(
+        `Cannot create payment: Reference number "${currentRef}" already exists for Entries: ${duplicateEntries}.`
+      )
+      toast.error(`Reference number "${currentRef}" already exists.`)
+      return
+    }
+
     console.log("Form submitted, showing confirmation dialog")
     setShowConfirmationDialog(true)
   }
 
   const handleConfirmPayment = async () => {
     console.log("Confirming payment...")
+
+    const currentRef = form.getFieldValue("referenceNumber")
+
+    // Double-check for duplicates before submitting
+    if (!isEditMode && currentRef && checkForDuplicateReference(currentRef)) {
+      const duplicatePayment = getDuplicatePaymentInfo(currentRef)
+      const duplicateEntries = duplicatePayment?.entries || "unknown entries"
+      toast.error(`Cannot create payment: Reference number "${currentRef}" already exists for Entries: ${duplicateEntries}.`)
+      return
+    }
+
     setShowConfirmationDialog(false)
     await handleSubmitPayment()
   }
@@ -1225,12 +1292,20 @@ const FormDialog = (props: Props) => {
             <DialogTitle>
               {isEditMode ? "Edit Payment" : "Create Payment"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="space-y-2">
               {isEditMode
                 ? "Update payment details for tournament entries"
                 : "Record a new payment for tournament entries"}
             </DialogDescription>
+
+            {duplicateError && (
+              <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 mt-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>{duplicateError}</span>
+              </div>
+            )}
           </DialogHeader>
+
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="">
             <TabsList className="grid w-full grid-cols-2">
@@ -1590,8 +1665,11 @@ const FormDialog = (props: Props) => {
                             (reference && reference !== "Not found") ? reference :
                               confirmationNumber || field.state.value;
 
+                          const currentRef = inputValue
+                          const isDuplicate = currentRef ? checkForDuplicateReference(currentRef) : false
+
                           return (
-                            <Field>
+                            <Field data-invalid={isDuplicate}>
                               <div className="flex items-center gap-1">
                                 <Label className="text-sm font-medium">Reference No.</Label>
                                 <span className="text-red-500">*</span>
@@ -1618,26 +1696,53 @@ const FormDialog = (props: Props) => {
                                       value={inputValue}
                                       onBlur={field.handleBlur}
                                       onChange={(e) => {
-                                        field.handleChange(e.target.value);
+                                        const value = e.target.value
+                                        field.handleChange(value);
                                         if (e.target.value !== reference && e.target.value !== confirmationNumber) {
                                           setReference(null);
                                           setConfirmationNumber("");
                                         }
+
+                                        if (value && value.trim().length > 0) {
+                                          if (checkForDuplicateReference(value)) {
+                                            const duplicatePayment = getDuplicatePaymentInfo(value)
+                                            const duplicateEntries = duplicatePayment?.entries || "unknown entries"
+                                            const duplicatePayerName = duplicatePayment?.payerName.toUpperCase() || "unknown payer"
+                                            setDuplicateError(
+                                              `Reference number "${value}" already exists for Entries: ${duplicateEntries} and Paid by: "${duplicatePayerName}".`
+                                            )
+                                          } else {
+                                            setDuplicateError(null)
+                                          }
+                                        } else {
+                                          setDuplicateError(null)
+                                        }
                                       }}
+                                      className={cn(
+                                        isDuplicate && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                      )}
+                                      aria-invalid={isDuplicate}
                                     />
-                                    {(reference && reference !== "Not found") && (
+
+                                    {(reference && reference !== "Not found") && !isDuplicate && (
                                       <p className="text-xs text-green-600">
                                         ✓ Scanned reference auto-filled
                                       </p>
                                     )}
-                                    {confirmationNumber && !reference && (
+                                    {confirmationNumber && !reference && !isDuplicate && (
                                       <p className="text-xs text-yellow-600">
                                         ⚠️ Using confirmation/trace number
                                       </p>
                                     )}
-                                    {(!reference || reference === "Not found") && !confirmationNumber && file && (
+                                    {(!reference || reference === "Not found") && !confirmationNumber && file && !isDuplicate && (
                                       <p className="text-xs text-gray-500">
                                         No reference detected in receipt
+                                      </p>
+                                    )}
+                                    {isDuplicate && (
+                                      <p className="text-xs text-red-500 flex items-center">
+                                        <AlertCircle className="h-3 w-3 mr-1" />
+                                        This reference number already exists
                                       </p>
                                     )}
                                   </div>
@@ -1816,7 +1921,13 @@ const FormDialog = (props: Props) => {
               loading={isLoading || isUploading}
               type="submit"
               form="payment-form"
-              disabled={selectedEntries.length === 0 || !form.getFieldValue("payerName") || !form.getFieldValue("amount") || !form.getFieldValue("method")}
+              disabled={
+                selectedEntries.length === 0 ||
+                !form.getFieldValue("payerName") ||
+                !form.getFieldValue("amount") ||
+                !form.getFieldValue("method") ||
+                (!isEditMode && duplicateError !== null)
+              }
             >
               {isEditMode ? "Update" : "Submit"}
             </Button>

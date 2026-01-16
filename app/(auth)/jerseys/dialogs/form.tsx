@@ -14,7 +14,7 @@ import { useMutation, useQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
 import React, { useEffect, useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, ChevronsUpDownIcon, CirclePlus, CreditCard, Loader2, AlertCircle, UserX } from "lucide-react"
+import { CheckIcon, ChevronsUpDownIcon, CirclePlus, CreditCard, Loader2 } from "lucide-react"
 import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
 import {
     Popover,
@@ -33,7 +33,6 @@ import { cn } from "@/lib/utils"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { JerseySize, JerseyStatus } from "@/types/jersey.interface"
 import { JerseySchema } from "@/validators/jersey.validator"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface PlayerOption {
     label: string
@@ -169,8 +168,6 @@ const JerseyFormDialog = (props: Props) => {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [paymentStatus, setPaymentStatus] = useState<PlayerPaymentStatus | null>(null)
     const [checkingPayment, setCheckingPayment] = useState(false)
-    const [duplicateError, setDuplicateError] = useState<string | null>(null)
-    const [duplicatePlayerId, setDuplicatePlayerId] = useState<string | null>(null)
 
     const { data: playersData, loading: playersLoading } = useQuery<PlayerOptionsResponse>(
         PLAYER_OPTIONS,
@@ -212,34 +209,6 @@ const JerseyFormDialog = (props: Props) => {
         value: tournament._id,
         isActive: tournament.isActive
     })) || []
-
-    // Create a map of player names to check against
-    const playersWithJerseys = useMemo(() => {
-        const playerNames = props.existingJerseys?.map(jersey => jersey.playerName.toLowerCase().trim()) || []
-        return [...new Set(playerNames)] // Remove duplicates
-    }, [props.existingJerseys])
-
-    // Get jersey info for a player by name
-    const getPlayerJerseyInfoByName = (playerName: string) => {
-        return props.existingJerseys?.find(jersey =>
-            jersey.playerName.toLowerCase().trim() === playerName.toLowerCase().trim()
-        )
-    }
-
-    // Get player option by ID
-    const getPlayerOptionById = (playerId: string) => {
-        return playerOptions.find(player => player.value === playerId)
-    }
-
-    const checkIfPlayerHasJersey = (playerId: string): boolean => {
-        if (!playerId || isUpdate) return false
-
-        const playerOption = getPlayerOptionById(playerId)
-        if (!playerOption) return false
-
-        const playerName = playerOption.label.toLowerCase().trim()
-        return playersWithJerseys.includes(playerName)
-    }
 
     const getActiveTournamentId = () => {
         if (props.defaultTournamentId) {
@@ -285,16 +254,6 @@ const JerseyFormDialog = (props: Props) => {
             tournament: "",
         },
         onSubmit: async ({ value }) => {
-            if (!isUpdate && checkIfPlayerHasJersey(value.player)) {
-                const playerOption = getPlayerOptionById(value.player)
-                const existingJersey = getPlayerJerseyInfoByName(playerOption?.label || "")
-                setDuplicateError(
-                    `Cannot create jersey: ${playerOption?.label} already has a jersey for "${existingJersey?.tournamentName}".`
-                )
-                setDuplicatePlayerId(value.player)
-                return
-            }
-
             setIsSubmitting(true)
             try {
                 const shouldBePaid = paymentStatus?.hasFullyPaidEntry || false
@@ -388,21 +347,11 @@ const JerseyFormDialog = (props: Props) => {
         }
     }, [form.getFieldValue('player'), form.getFieldValue('tournament')])
 
-    // Reset duplicate error when dialog opens
-    useEffect(() => {
-        if (open) {
-            setDuplicateError(null)
-            setDuplicatePlayerId(null)
-        }
-    }, [open])
-
     const onClose = () => {
         setOpen(false)
         props.onClose?.()
         form.reset()
         setPaymentStatus(null)
-        setDuplicateError(null)
-        setDuplicatePlayerId(null)
     }
 
     const getPlayerDisplayName = (playerId: string) => {
@@ -413,16 +362,6 @@ const JerseyFormDialog = (props: Props) => {
     const getTournamentDisplayName = (tournamentId: string) => {
         const tournament = tournamentOptions.find(t => t.value === tournamentId)
         return tournament?.label || "Select Tournament"
-    }
-
-    // Check if a player name (from playerOptions) is in the existing jerseys
-    const isPlayerInExistingJerseys = (playerLabel: string): boolean => {
-        return playersWithJerseys.includes(playerLabel.toLowerCase().trim())
-    }
-
-    // Get jersey info for display
-    const getJerseyInfoForPlayer = (playerLabel: string) => {
-        return getPlayerJerseyInfoByName(playerLabel)
     }
 
     const isLoading = playersLoading || tournamentsLoading || isSubmitting || checkingPayment || paymentStatusLoading
@@ -466,34 +405,13 @@ const JerseyFormDialog = (props: Props) => {
                     }}
                 >
                     <FieldSet>
-                        {/* Duplicate Error Alert */}
-                        {duplicateError && (
-                            <Alert variant="destructive" className="mb-4">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertDescription>
-                                    {duplicateError}
-                                </AlertDescription>
-                            </Alert>
-                        )}
-
                         <form.Field
                             name="player"
                             children={(field) => {
                                 const isInvalid = field.state.meta.errors.length > 0
-                                const currentPlayerId = field.state.value
-                                const currentPlayer = getPlayerOptionById(currentPlayerId)
-                                const hasJersey = currentPlayer ? isPlayerInExistingJerseys(currentPlayer.label) : false
-
                                 return (
-                                    <Field data-invalid={isInvalid || hasJersey}>
-                                        <div className="flex items-center justify-between mb-1">
-                                            <FieldLabel htmlFor={field.name}>Player *</FieldLabel>
-                                            {playersWithJerseys.length > 0 && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    {playerOptions.filter(p => !isPlayerInExistingJerseys(p.label)).length} of {playerOptions.length} players available
-                                                </span>
-                                            )}
-                                        </div>
+                                    <Field data-invalid={isInvalid}>
+                                        <FieldLabel htmlFor={field.name}>Player *</FieldLabel>
                                         <Popover open={openPlayer} onOpenChange={setOpenPlayer}>
                                             <PopoverTrigger asChild>
                                                 <Button
@@ -504,20 +422,12 @@ const JerseyFormDialog = (props: Props) => {
                                                     onBlur={field.handleBlur}
                                                     variant="outline"
                                                     role="combobox"
-                                                    aria-invalid={isInvalid || hasJersey}
-                                                    className={cn(
-                                                        "w-full justify-between font-normal",
-                                                        hasJersey && "border-destructive text-destructive"
-                                                    )}
+                                                    aria-invalid={isInvalid}
+                                                    className="w-full justify-between font-normal"
                                                     type="button"
                                                 >
                                                     {field.state.value ? (
-                                                        <div className="flex items-center justify-between w-full">
-                                                            <span>{getPlayerDisplayName(field.state.value)}</span>
-                                                            {hasJersey && (
-                                                                <UserX className="ml-2 h-4 w-4 text-destructive" />
-                                                            )}
-                                                        </div>
+                                                        <span>{getPlayerDisplayName(field.state.value)}</span>
                                                     ) : (
                                                         "Select Player"
                                                     )}
@@ -530,82 +440,33 @@ const JerseyFormDialog = (props: Props) => {
                                                     <CommandList className="max-h-72 overflow-y-auto">
                                                         <CommandEmpty>No player found.</CommandEmpty>
                                                         <CommandGroup>
-                                                            {playerOptions.filter(player =>
-                                                                !isPlayerInExistingJerseys(player.label)
-                                                            ).length > 0 && (
-                                                                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                                                                        Available Players
-                                                                    </div>
-                                                                )}
-                                                            {playerOptions
-                                                                .filter(player => !isPlayerInExistingJerseys(player.label))
-                                                                .map((player) => (
-                                                                    <CommandItem
-                                                                        key={player.value}
-                                                                        value={player.value}
-                                                                        onSelect={() => {
-                                                                            field.handleChange(player.value)
-                                                                            setOpenPlayer(false)
-                                                                            setDuplicateError(null)
-                                                                            setDuplicatePlayerId(null)
-                                                                        }}
-                                                                    >
-                                                                        <CheckIcon
-                                                                            className={cn(
-                                                                                "mr-2 h-4 w-4",
-                                                                                field.state.value === player.value
-                                                                                    ? "opacity-100"
-                                                                                    : "opacity-0"
-                                                                            )}
-                                                                        />
-                                                                        {player.label}
-                                                                    </CommandItem>
-                                                                ))}
-
-                                                            {/* Players with existing jerseys (disabled) */}
-                                                            {/* {playersWithJerseys.length > 0 && (
-                                                                <>
-                                                                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                                                                        Already Have Jersey
-                                                                    </div>
-                                                                    {playerOptions
-                                                                        .filter(player => isPlayerInExistingJerseys(player.label))
-                                                                        .map((player) => {
-                                                                            const jerseyInfo = getJerseyInfoForPlayer(player.label)
-                                                                            return (
-                                                                                <CommandItem
-                                                                                    key={player.value}
-                                                                                    value={player.value}
-                                                                                    disabled
-                                                                                    className="opacity-50 cursor-not-allowed"
-                                                                                >
-                                                                                    <UserX className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                                                    <div className="flex flex-col">
-                                                                                        <span>{player.label}</span>
-                                                                                        <span className="text-xs text-muted-foreground">
-                                                                                            Already has jersey for "{jerseyInfo?.tournamentName || "a tournament"}"
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </CommandItem>
-                                                                            )
-                                                                        })}
-                                                                </>
-                                                            )} */}
+                                                            {playerOptions.map((player) => (
+                                                                <CommandItem
+                                                                    key={player.value}
+                                                                    value={player.label}
+                                                                    onSelect={() => {
+                                                                        field.handleChange(player.value)
+                                                                        setOpenPlayer(false)
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            field.state.value === player.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {player.label}
+                                                                </CommandItem>
+                                                            ))}
                                                         </CommandGroup>
                                                     </CommandList>
                                                 </Command>
                                             </PopoverContent>
                                         </Popover>
 
-                                        {/* Show warning if current selection already has a jersey */}
-                                        {hasJersey && (
-                                            <div className="text-xs text-destructive mt-1 flex items-center">
-                                                <AlertCircle className="h-3 w-3 mr-1" />
-                                                This player already has a jersey
-                                            </div>
-                                        )}
-
-                                        {isInvalid && !hasJersey && (
+                                        {isInvalid && (
                                             <FieldError errors={field.state.meta.errors} />
                                         )}
                                     </Field>
@@ -852,27 +713,12 @@ const JerseyFormDialog = (props: Props) => {
                         </Button>
                     </DialogClose>
                     <Button
+                        className="w-20"
                         type="submit"
                         form="jersey-form"
-                        disabled={isLoading || (!isUpdate && checkIfPlayerHasJersey(form.getFieldValue('player')))}
-                        onClick={(e) => {
-                            e.preventDefault()
-                            const playerId = form.getFieldValue('player')
-
-                            if (!isUpdate && checkIfPlayerHasJersey(playerId)) {
-                                const playerOption = getPlayerOptionById(playerId)
-                                const existingJersey = getPlayerJerseyInfoByName(playerOption?.label || "")
-                                setDuplicateError(
-                                    `Cannot save jersey: ${playerOption?.label} already has a jersey for "${existingJersey?.tournamentName}".`
-                                )
-                                setDuplicatePlayerId(playerId)
-                                return
-                            }
-
-                            form.handleSubmit()
-                        }}
+                        loading={isLoading}
                     >
-                        {isLoading ? "Saving..." : "Save Jersey"}
+                        Submit
                     </Button>
                 </DialogFooter>
             </DialogContent>

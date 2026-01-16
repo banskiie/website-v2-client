@@ -14,6 +14,7 @@ import { format, isSameMonth, isSameYear } from "date-fns"
 import Header from "@/components/custom/header-white"
 import { PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
 import FloatingTicketing from "@/components/custom/ticket"
+import Image from "next/image"
 
 function CategoryCard({
     name,
@@ -271,13 +272,50 @@ export default function CategoriesPage() {
 
     if (!data?.publicTournaments?.length) {
         return (
-            <div className="flex justify-center items-center h-screen">
-                <div className="text-gray-500 font-bold text-3xl">
-                    There is No Current Tournament...
+            <div className="relative h-screen w-screen">
+                <Image
+                    src="/images/no_tour.jpg"
+                    alt="No tournament"
+                    fill
+                    priority
+                    className="object-cover"
+                />
+
+                <div className="absolute inset-0 bg-black/60" />
+
+                <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 text-center gap-4">
+                    <Image
+                        src="/assets/c-one-logo-white.png"
+                        alt="C-One Logo"
+                        width={300}
+                        height={80}
+                        priority
+                        className="object-contain"
+                    />
+
+                    <h1 className="text-white font-bold text-2xl sm:text-3xl md:text-4xl">
+                        There is no Current{" "}
+                        <span className="text-green-400">Active Badminton Tournament</span>
+                    </h1>
+
+                    <p className="text-white text-lg">
+                        Please Check our{" "}
+                        <Link
+                            href="https://www.facebook.com/c.onebadmintonchallenge/"
+                            className=" text-blue-300"
+                        >
+                            <span className="underline underline-offset-2 inline-block hover:scale-105 transition-transform duration-300">
+                                FB Page
+                            </span>
+                        </Link>{" "}
+                        to see the updates and more information.
+                    </p>
                 </div>
             </div>
         )
     }
+
+
 
     return (
         <div className="min-h-screen bg-linear-to-b from-green-50/30 to-green-100/30 relative">
@@ -418,7 +456,7 @@ export default function CategoriesPage() {
                     </div>
                 </div>
             </div>
-            
+
             <FloatingTicketing />
             <CategoryModal
                 isOpen={isModalOpen}
