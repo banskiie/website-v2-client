@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const response = await drive.files.create({
       requestBody: {
         name: file.name,
-        parents: [process.env.NEXT_PUBLIC_GOOGLE_DRIVE_REQUIREMENT_FOLDER!],
+        parents: [process.env.NEXT_PUBLIC_GOOGLE_DRIVE_ENTRY_REQUIREMENT_FOLDER!],
       },
       media: {
         mimeType: file?.type,
