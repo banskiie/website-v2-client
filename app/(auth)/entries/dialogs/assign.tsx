@@ -79,6 +79,11 @@ const ENTRY = gql`
         birthDate
         email
         phoneNumber
+        validDocuments {
+          documentURL
+          documentType
+          dateUploaded
+        }
       }
       connectedPlayer1 {
         _id
@@ -90,6 +95,11 @@ const ENTRY = gql`
         birthDate
         email
         phoneNumber
+        validDocuments {
+          documentURL
+          documentType
+          dateUploaded
+        }
       }
       player2Entry {
         firstName
@@ -100,6 +110,11 @@ const ENTRY = gql`
         birthDate
         email
         phoneNumber
+        validDocuments {
+          documentURL
+          documentType
+          dateUploaded
+        }
       }
       connectedPlayer2 {
         _id
@@ -111,6 +126,11 @@ const ENTRY = gql`
         birthDate
         email
         phoneNumber
+        validDocuments {
+          documentURL
+          documentType
+          dateUploaded
+        }
       }
     }
   }
@@ -224,6 +244,7 @@ const AssignDialog = (props: Props) => {
         birthDate: false,
         phoneNumber: false,
         email: false,
+        validDocuments: false,
       },
       migratePlayer2Data: {
         firstName: false,
@@ -233,6 +254,7 @@ const AssignDialog = (props: Props) => {
         birthDate: false,
         phoneNumber: false,
         email: false,
+        validDocuments: false,
       },
     },
     listeners: {
@@ -248,10 +270,8 @@ const AssignDialog = (props: Props) => {
             birthDate: false,
             phoneNumber: false,
             email: false,
+            validDocuments: false,
           })
-        }
-        if (fieldApi.name === "connectedPlayer1" && fieldApi.state.value) {
-          fetchPlayer1({ variables: { _id: fieldApi.state.value } })
         }
 
         // Player 2 Listeners
@@ -265,6 +285,7 @@ const AssignDialog = (props: Props) => {
             birthDate: false,
             phoneNumber: false,
             email: false,
+            validDocuments: false,
           })
         }
         if (fieldApi.name === "connectedPlayer2" && fieldApi.state.value) {
@@ -420,6 +441,7 @@ const AssignDialog = (props: Props) => {
                                   </span>
                                 </div>
                               </div>
+
                               {isInvalid && (
                                 <FieldError errors={field.state.meta.errors} />
                               )}
@@ -427,6 +449,92 @@ const AssignDialog = (props: Props) => {
                           )
                         }}
                       />
+                      <div>
+                        <form.Field
+                          name="migratePlayer1Data.validDocuments"
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field>
+                                <div className="flex items-center w-full gap-2">
+                                  <div className="flex items-center justify-center">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(checked) =>
+                                        field.handleChange(checked === true)
+                                      }
+                                      aria-invalid={isInvalid}
+                                      disabled={
+                                        isLoading ||
+                                        !state.connectedPlayer1 ||
+                                        state.isPlayer1New
+                                      }
+                                    />
+                                  </div>
+                                  <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                    <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                      Valid Documents
+                                    </span>
+                                    {state.connectedPlayer1 && !state.isPlayer1New ? (
+                                      <>
+                                        <span
+                                          className={cn(
+                                            !field.state.value &&
+                                            "text-success bg-success/5",
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            !player1?.validDocuments?.length && "italic"
+                                          )}
+                                        >
+                                          {player1?.validDocuments?.length || 0} documents
+                                        </span>{" "}
+                                        <span
+                                          className={cn(
+                                            field.state.value &&
+                                            "text-success bg-success/5",
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            !entry?.player1Entry?.validDocuments?.length && "italic"
+                                          )}
+                                        >
+                                          {entry?.player1Entry?.validDocuments?.length || 0} new documents
+                                        </span>
+                                      </>
+                                    ) : state.isPlayer1New ? (
+                                      <span
+                                        className={cn(
+                                          "col-span-4 px-2 border w-full flex items-center py-1 justify-start text-success bg-success/5"
+                                        )}
+                                      >
+                                        Will be added to new player profile
+                                      </span>
+                                    ) : (
+                                      <span
+                                        className={cn(
+                                          "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
+                                          !entry?.player1Entry?.validDocuments?.length && "italic"
+                                        )}
+                                      >
+                                        {entry?.player1Entry?.validDocuments?.length || 0} documents (will be added to new player)
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <FieldDescription>
+                                  {state.isPlayer1New
+                                    ? "Documents will be automatically added to the new player profile."
+                                    : state.connectedPlayer1
+                                      ? "Check to add entry documents to the existing player profile."
+                                      : "Will be added when creating a new player."}
+                                </FieldDescription>
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
                       {!state.isPlayer1New && (
                         <>
                           <form.Field
@@ -457,18 +565,18 @@ const AssignDialog = (props: Props) => {
                                         className={cn(
                                           "w-full justify-between font-normal capitalize -mt-2",
                                           !field.state.value &&
-                                            "text-muted-foreground"
+                                          "text-muted-foreground"
                                         )}
                                         type="button"
                                       >
                                         {field.state.value
                                           ? players.find(
-                                              (o: {
-                                                value: string
-                                                label: string
-                                              }) =>
-                                                o.value === field.state.value
-                                            )?.label
+                                            (o: {
+                                              value: string
+                                              label: string
+                                            }) =>
+                                              o.value === field.state.value
+                                          )?.label
                                           : "Select Player 1"}
                                         <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                       </Button>
@@ -566,6 +674,7 @@ const AssignDialog = (props: Props) => {
                                       birthDate: checked === true,
                                       phoneNumber: checked === true,
                                       email: checked === true,
+                                      validDocuments: checked === true,
                                     })
                                   }}
                                 />
@@ -631,7 +740,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1"
                                                 )}
                                               >
@@ -640,7 +749,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1"
                                                 )}
                                               >
@@ -651,7 +760,7 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 h-full border w-full flex items-center justify-start"
                                               )}
                                             >
@@ -702,10 +811,10 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center justify-start py-1",
                                                   !player1?.middleName &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {player1?.middleName || "N/A"}
@@ -713,10 +822,10 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center justify-start py-1",
                                                   !player1?.middleName &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {entry?.player1Entry
@@ -727,7 +836,7 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center justify-start py-1",
                                                 !player1?.middleName && "italic"
                                               )}
@@ -780,7 +889,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center justify-start py-1",
                                                   !player1?.lastName && "italic"
                                                 )}
@@ -790,7 +899,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center justify-start py-1",
                                                   !player1?.lastName && "italic"
                                                 )}
@@ -803,7 +912,7 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center justify-start py-1",
                                                 !player1?.lastName && "italic"
                                               )}
@@ -856,7 +965,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player1?.suffix && "italic"
                                                 )}
@@ -866,7 +975,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player1?.suffix && "italic"
                                                 )}
@@ -879,7 +988,7 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                                 !player1?.suffix && "italic"
                                               )}
@@ -932,7 +1041,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player1?.email && "italic"
                                                 )}
@@ -942,7 +1051,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player1?.email && "italic"
                                                 )}
@@ -955,7 +1064,7 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                                 !player1?.email && "italic"
                                               )}
@@ -1008,10 +1117,10 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player1?.phoneNumber &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {player1?.phoneNumber || "N/A"}
@@ -1019,10 +1128,10 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player1?.phoneNumber &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {entry?.player1Entry
@@ -1033,10 +1142,10 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                                 !player1?.phoneNumber &&
-                                                  "italic"
+                                                "italic"
                                               )}
                                             >
                                               {entry?.player1Entry
@@ -1087,37 +1196,37 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player1?.birthDate &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {player1?.birthDate
                                                   ? format(
-                                                      new Date(
-                                                        player1.birthDate
-                                                      ),
-                                                      "PP"
-                                                    )
+                                                    new Date(
+                                                      player1.birthDate
+                                                    ),
+                                                    "PP"
+                                                  )
                                                   : "N/A"}
                                               </span>{" "}
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player1?.birthDate &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {entry?.player1Entry.birthDate
                                                   ? format(
-                                                      new Date(
-                                                        entry.player1Entry.birthDate
-                                                      ),
-                                                      "PP"
-                                                    )
+                                                    new Date(
+                                                      entry.player1Entry.birthDate
+                                                    ),
+                                                    "PP"
+                                                  )
                                                   : "N/A"}
                                               </span>
                                             </>
@@ -1125,18 +1234,18 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                                 !player1?.birthDate && "italic"
                                               )}
                                             >
                                               {entry?.player1Entry.birthDate
                                                 ? format(
-                                                    new Date(
-                                                      entry.player1Entry.birthDate
-                                                    ),
-                                                    "PP"
-                                                  )
+                                                  new Date(
+                                                    entry.player1Entry.birthDate
+                                                  ),
+                                                  "PP"
+                                                )
                                                 : "N/A"}
                                             </span>
                                           )}
@@ -1192,6 +1301,100 @@ const AssignDialog = (props: Props) => {
                           )
                         }}
                       />
+                      <div>
+                        <form.Field
+                          name="migratePlayer2Data.validDocuments"
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            const entryDocs = entry?.player2Entry?.validDocuments || []
+                            const playerDocs = player2?.validDocuments || []
+                            const newDocsCount = entryDocs.length
+                            const existingDocsCount = playerDocs.length
+
+                            return (
+                              <Field>
+                                <div className="flex items-center w-full gap-2">
+                                  <div className="flex items-center justify-center">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(checked) =>
+                                        field.handleChange(checked === true)
+                                      }
+                                      aria-invalid={isInvalid}
+                                      disabled={
+                                        isLoading ||
+                                        !state.connectedPlayer2 ||
+                                        state.isPlayer2New ||
+                                        newDocsCount === 0
+                                      }
+                                    />
+                                  </div>
+                                  <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                    <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                      Valid Documents
+                                    </span>
+                                    {state.connectedPlayer2 && !state.isPlayer2New ? (
+                                      <>
+                                        <span
+                                          className={cn(
+                                            !field.state.value &&
+                                            "text-success bg-success/5",
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            existingDocsCount === 0 && "italic"
+                                          )}
+                                        >
+                                          {existingDocsCount} documents
+                                        </span>{" "}
+                                        <span
+                                          className={cn(
+                                            field.state.value &&
+                                            "text-success bg-success/5",
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            newDocsCount === 0 && "italic"
+                                          )}
+                                        >
+                                          {newDocsCount} new documents
+                                        </span>
+                                      </>
+                                    ) : state.isPlayer2New ? (
+                                      <span
+                                        className={cn(
+                                          "col-span-4 px-2 border w-full flex items-center py-1 justify-start text-success bg-success/5"
+                                        )}
+                                      >
+                                        Will be added to new player profile ({newDocsCount} documents)
+                                      </span>
+                                    ) : (
+                                      <span
+                                        className={cn(
+                                          "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
+                                          newDocsCount === 0 && "italic"
+                                        )}
+                                      >
+                                        {newDocsCount} documents (will be added to new player)
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <FieldDescription>
+                                  {state.isPlayer2New
+                                    ? `Documents will be automatically added to the new player profile (${newDocsCount} documents).`
+                                    : state.connectedPlayer2
+                                      ? field.state.value
+                                        ? `Check to add ${newDocsCount} new documents to the existing player profile.`
+                                        : `Documents will not be added to the existing player profile (${existingDocsCount} existing, ${newDocsCount} new).`
+                                      : `Will be added when creating a new player (${newDocsCount} documents).`}
+                                </FieldDescription>
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
                       {!state.isPlayer2New && (
                         <>
                           <form.Field
@@ -1222,18 +1425,18 @@ const AssignDialog = (props: Props) => {
                                         className={cn(
                                           "w-full justify-between font-normal capitalize -mt-2",
                                           !field.state.value &&
-                                            "text-muted-foreground"
+                                          "text-muted-foreground"
                                         )}
                                         type="button"
                                       >
                                         {field.state.value
                                           ? players.find(
-                                              (o: {
-                                                value: string
-                                                label: string
-                                              }) =>
-                                                o.value === field.state.value
-                                            )?.label
+                                            (o: {
+                                              value: string
+                                              label: string
+                                            }) =>
+                                              o.value === field.state.value
+                                          )?.label
                                           : "Select Player 2"}
                                         <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                       </Button>
@@ -1331,6 +1534,7 @@ const AssignDialog = (props: Props) => {
                                       birthDate: checked === true,
                                       phoneNumber: checked === true,
                                       email: checked === true,
+                                      validDocuments: checked === true,
                                     })
                                   }}
                                 />
@@ -1396,7 +1600,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1"
                                                 )}
                                               >
@@ -1405,7 +1609,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1"
                                                 )}
                                               >
@@ -1417,7 +1621,7 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 h-full border w-full flex items-center justify-start"
                                               )}
                                             >
@@ -1469,10 +1673,10 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center justify-start py-1",
                                                   !player2?.middleName &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {player2?.middleName || "N/A"}
@@ -1480,15 +1684,15 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center justify-start py-1",
                                                   !player2?.middleName &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {entry?.player2Entry
                                                   ? entry?.player2Entry
-                                                      .middleName
+                                                    .middleName
                                                   : "N/A"}
                                               </span>
                                             </>
@@ -1496,7 +1700,7 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center justify-start py-1",
                                                 !player2?.middleName && "italic"
                                               )}
@@ -1550,7 +1754,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center justify-start py-1",
                                                   !player2?.lastName && "italic"
                                                 )}
@@ -1560,7 +1764,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center justify-start py-1",
                                                   !player2?.lastName && "italic"
                                                 )}
@@ -1574,7 +1778,7 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center justify-start py-1",
                                                 !player2?.lastName && "italic"
                                               )}
@@ -1628,7 +1832,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player2?.suffix && "italic"
                                                 )}
@@ -1638,7 +1842,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player2?.suffix && "italic"
                                                 )}
@@ -1652,7 +1856,7 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                                 !player2?.suffix && "italic"
                                               )}
@@ -1706,7 +1910,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player2?.email && "italic"
                                                 )}
@@ -1716,7 +1920,7 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player2?.email && "italic"
                                                 )}
@@ -1730,7 +1934,7 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                                 !player2?.email && "italic"
                                               )}
@@ -1784,10 +1988,10 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player2?.phoneNumber &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {player2?.phoneNumber || "N/A"}
@@ -1795,15 +1999,15 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player2?.phoneNumber &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {entry?.player2Entry
                                                   ? entry?.player2Entry
-                                                      .phoneNumber
+                                                    .phoneNumber
                                                   : "N/A"}
                                               </span>
                                             </>
@@ -1811,15 +2015,15 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                                 !player2?.phoneNumber &&
-                                                  "italic"
+                                                "italic"
                                               )}
                                             >
                                               {entry?.player2Entry
                                                 ? entry?.player2Entry
-                                                    .phoneNumber
+                                                  .phoneNumber
                                                 : "N/A"}
                                             </span>
                                           )}
@@ -1867,38 +2071,38 @@ const AssignDialog = (props: Props) => {
                                               <span
                                                 className={cn(
                                                   !field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player2?.birthDate &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {player2?.birthDate
                                                   ? format(
-                                                      new Date(
-                                                        player2.birthDate
-                                                      ),
-                                                      "PP"
-                                                    )
+                                                    new Date(
+                                                      player2.birthDate
+                                                    ),
+                                                    "PP"
+                                                  )
                                                   : "N/A"}
                                               </span>{" "}
                                               <span
                                                 className={cn(
                                                   field.state.value &&
-                                                    "text-success bg-success/5",
+                                                  "text-success bg-success/5",
                                                   "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
                                                   !player2?.birthDate &&
-                                                    "italic"
+                                                  "italic"
                                                 )}
                                               >
                                                 {entry?.player2Entry &&
-                                                entry?.player2Entry.birthDate
+                                                  entry?.player2Entry.birthDate
                                                   ? format(
-                                                      new Date(
-                                                        entry.player2Entry.birthDate
-                                                      ),
-                                                      "PP"
-                                                    )
+                                                    new Date(
+                                                      entry.player2Entry.birthDate
+                                                    ),
+                                                    "PP"
+                                                  )
                                                   : "N/A"}
                                               </span>
                                             </>
@@ -1906,19 +2110,19 @@ const AssignDialog = (props: Props) => {
                                             <span
                                               className={cn(
                                                 field.state.value &&
-                                                  "text-success",
+                                                "text-success",
                                                 "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                                 !player2?.birthDate && "italic"
                                               )}
                                             >
                                               {entry?.player2Entry &&
-                                              entry?.player2Entry.birthDate
+                                                entry?.player2Entry.birthDate
                                                 ? format(
-                                                    new Date(
-                                                      entry.player2Entry.birthDate
-                                                    ),
-                                                    "PP"
-                                                  )
+                                                  new Date(
+                                                    entry.player2Entry.birthDate
+                                                  ),
+                                                  "PP"
+                                                )
                                                 : "N/A"}
                                             </span>
                                           )}

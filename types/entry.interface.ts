@@ -2,7 +2,7 @@ import type { IEvent } from "./event.interface"
 import type { Gender, IRemark, IRemarkInput } from "./shared.interface"
 import type { JerseySize } from "./jersey.interface"
 import type { IUser } from "./user.interface"
-import type { IPlayer } from "./player.interface"
+import type { IPlayer, IValidDocument } from "./player.interface"
 
 export enum EntryStatus {
   PENDING = "PENDING",
@@ -36,6 +36,7 @@ export interface IPlayerEntry {
   email: string
   phoneNumber: string
   jerseySize?: JerseySize
+  validDocuments?: IValidDocument[]
 }
 
 export interface IEntryStatusLog {
@@ -68,6 +69,7 @@ export interface IEntry {
   statuses: IEntryStatusLog[]
   transactions: ITransactions[]
   remarks?: IRemark[]
+  validDocuments?: IValidDocument[]
 }
 
 export interface IEntryNode {

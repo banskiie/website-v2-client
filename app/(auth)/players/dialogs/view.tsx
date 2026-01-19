@@ -21,6 +21,8 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
+import Image from "next/image"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 const PLAYER = gql`
   query Player($_id: ID!) {
@@ -173,10 +175,10 @@ const ViewDialog = (props: Props) => {
                         (
                         {player?.birthDate
                           ? `${Math.floor(
-                              (Date.now() -
-                                new Date(player?.birthDate).getTime()) /
-                                (1000 * 60 * 60 * 24 * 365.25)
-                            )} y.o.`
+                            (Date.now() -
+                              new Date(player?.birthDate).getTime()) /
+                            (1000 * 60 * 60 * 24 * 365.25)
+                          )} y.o.`
                           : "N/A"}
                         )
                       </span>
@@ -238,8 +240,54 @@ const ViewDialog = (props: Props) => {
             </TabsContent>
             <TabsContent value="requirements">
               <div className="grid grid-cols-2 gap-2 -mt-2 h-[36vh] overflow-y-auto place-content-start">
-                {player?.validDocuments && player.validDocuments?.length > 0 ? (
-                  player?.validDocuments.length
+                {player?.validDocuments && player.validDocuments.length > 0 ? (
+                  player.validDocuments.map((doc: any, index: number) => (
+                    <Sheet key={index}>
+                      <SheetHeader>
+                        <SheetTitle>
+                          {doc.documentType.replaceAll("_", " ")}
+                        </SheetTitle>
+                      </SheetHeader>
+                      <SheetTrigger asChild>
+
+                        <div className="border rounded-md p-2 hover:bg-muted transition cursor-pointer group relative">
+                          <Image
+                            src={doc.documentURL}
+                            alt={doc.documentType}
+                            fill
+                            className="object-cover rounded bg-gray-100"
+
+                          />
+
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 rounded">
+                            <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-md">
+                              <span className="text-xs font-medium">Click to expand</span>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-muted-foreground mt-1 text-center">
+                            {doc.documentType.replaceAll("_", " ")}
+                          </p>
+                        </div>
+                      </SheetTrigger>
+
+                      <SheetContent side="right" className="p-4 w-full sm:max-w-xl">
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium">
+                            {doc.documentType.replaceAll("_", " ")}
+                          </p>
+
+                          <Image
+                            src={doc.documentURL}
+                            alt={doc.documentType}
+                            className="w-full h-auto rounded object-contain bg-muted"
+                            width={500}
+                            height={500}
+                          />
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  ))
                 ) : (
                   <div className="text-muted-foreground text-sm text-center col-span-2 h-[36vh] flex items-center justify-center">
                     No documents submitted.

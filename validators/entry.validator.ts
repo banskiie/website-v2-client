@@ -61,6 +61,7 @@ export const AssignPlayersSchema = z.object({
     birthDate: z.boolean().default(false),
     phoneNumber: z.boolean().default(false),
     email: z.boolean().default(false),
+    validDocuments: z.boolean().default(false),
   }),
   migratePlayer2Data: z.object({
     firstName: z.boolean().default(false),
@@ -70,5 +71,6 @@ export const AssignPlayersSchema = z.object({
     birthDate: z.boolean().default(false),
     phoneNumber: z.boolean().default(false),
     email: z.boolean().default(false),
+    validDocuments: z.boolean().default(false),
   }),
 })

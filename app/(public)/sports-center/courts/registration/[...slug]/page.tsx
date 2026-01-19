@@ -18,7 +18,7 @@ import {
     FieldLabel,
 } from "@/components/ui/field"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon, AlertCircle, ArrowLeftIcon } from "lucide-react"
+import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon, AlertCircle, ArrowLeftIcon, Loader2, Paperclip, XCircle, ChevronsUpDown, CheckIcon } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { startTransition, use, useEffect, useState } from "react"
 import Header from "@/components/custom/header-white"
@@ -43,6 +43,18 @@ import { PublicTournamentsData } from "@/components/custom/category-selection"
 import { RegisterEntryResponse, RegisterEntryVariables } from "@/app/(public)/types/entry.interface"
 import FloatingTicketing from "@/components/custom/ticket"
 import Link from "next/link"
+import { motion, AnimatePresence } from "framer-motion"
+import { ValidDocumentType } from "@/types/player.interface"
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
 
 interface RegistrationPageProps {
     params: Promise<{ slug: string[] }>
@@ -284,6 +296,29 @@ const showValidationToast = (errors: string[], title?: string) => {
     });
 }
 
+const UploadingOverlay = () => (
+    <motion.div
+        className="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+    >
+        <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-lg border">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-4"></div>
+            <p className="text-lg font-medium text-gray-800 mb-2">
+                Uploading document...
+            </p>
+            <p className="text-sm text-gray-500">Please wait</p>
+        </div>
+    </motion.div>
+)
+
+// Document type options
+const documentTypes = Object.values(ValidDocumentType).map((type) => ({
+    label: type.toLocaleLowerCase().replaceAll("_", " "),
+    value: type,
+}))
+
 export default function Page({ params }: RegistrationPageProps) {
     const paramData = use(params)
     const [tournamentId, eventId] = paramData.slug ?? []
@@ -303,6 +338,14 @@ export default function Page({ params }: RegistrationPageProps) {
 
     const [player1IdPreview, setPlayer1IdPreview] = useState<string | null>(null)
     const [player2IdPreview, setPlayer2IdPreview] = useState<string | null>(null)
+    const [filePlayer1, setFilePlayer1] = useState<File | null>(null)
+    const [filePlayer2, setFilePlayer2] = useState<File | null>(null)
+    const [isUploading, setIsUploading] = useState(false)
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+    const [selectedDocumentTypePlayer1, setSelectedDocumentTypePlayer1] = useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
+    const [selectedDocumentTypePlayer2, setSelectedDocumentTypePlayer2] = useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
+    const [openDocumentTypesPlayer1, setOpenDocumentTypesPlayer1] = useState(false)
+    const [openDocumentTypesPlayer2, setOpenDocumentTypesPlayer2] = useState(false)
 
     const tournaments = data?.publicTournaments ?? []
     const tournament = tournaments.find((t: any) => t._id === tournamentId) ?? tournaments.find((t: any) => t.isActive)
@@ -496,6 +539,104 @@ export default function Page({ params }: RegistrationPageProps) {
         gender: event.gender
     } : undefined;
 
+    const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+        try {
+            setIsUploading(true)
+
+            const formData = new FormData()
+            const fileExt = file.name.split('.').pop() || ''
+            const fileName = `${folder}-${Date.now()}.${fileExt}`
+            formData.append("file", file, fileName)
+
+            const response = await fetch(`/api/upload/entry_requirement`, {
+                method: "POST",
+                body: formData,
+            })
+
+            if (!response.ok) {
+                throw new Error("Upload Failed")
+            }
+
+            const data = await response.json()
+            toast.success("Document uploaded successfully!")
+            return data.url
+        } catch (error) {
+            console.error("Error uploading file:", error)
+            toast.error("Error uploading document. Please try again.")
+            return null
+        } finally {
+            setIsUploading(false)
+        }
+    }
+
+    const handleFileUpload = (playerNum: number, event: React.ChangeEvent<HTMLInputElement>, field: any) => {
+        const uploadedFile = event.target.files?.[0]
+        if (!uploadedFile) return
+
+        // Validate file
+        const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/pdf']
+        if (!validTypes.includes(uploadedFile.type)) {
+            toast.error('Please upload a valid image file (JPEG, PNG, JPG, WEBP) or PDF')
+            setFieldErrors(prev => ({ ...prev, [`filePlayer${playerNum}`]: 'Please upload a valid image file or PDF' }))
+            return
+        }
+        if (uploadedFile.size > 10 * 1024 * 1024) {
+            toast.error('File size must be less than 10MB')
+            setFieldErrors(prev => ({ ...prev, [`filePlayer${playerNum}`]: 'File size must be less than 10MB' }))
+            return
+        }
+
+        field.handleChange([uploadedFile])
+
+        if (playerNum === 1) {
+            setFilePlayer1(uploadedFile)
+        } else {
+            setFilePlayer2(uploadedFile)
+        }
+
+        setFieldErrors(prev => ({ ...prev, [`filePlayer${playerNum}`]: '' }))
+
+        // Create preview for images only
+        if (uploadedFile.type.startsWith('image/')) {
+            const reader = new FileReader()
+            reader.onload = () => {
+                const imageData = reader.result as string
+                if (playerNum === 1) {
+                    setPlayer1IdPreview(imageData)
+                } else {
+                    setPlayer2IdPreview(imageData)
+                }
+            }
+            reader.readAsDataURL(uploadedFile)
+        } else {
+            if (playerNum === 1) {
+                setPlayer1IdPreview(null)
+            } else {
+                setPlayer2IdPreview(null)
+            }
+        }
+    }
+
+    const handleRemoveFile = (playerNum: number, field: any) => {
+        field.handleChange(null)
+
+        if (playerNum === 1) {
+            setFilePlayer1(null)
+            setPlayer1IdPreview(null)
+        } else {
+            setFilePlayer2(null)
+            setPlayer2IdPreview(null)
+        }
+
+        setFieldErrors(prev => ({ ...prev, [`filePlayer${playerNum}`]: '' }))
+
+        // Clear file input
+        const fileInput = document.getElementById(`player${playerNum}IdUpload`) as HTMLInputElement
+        if (fileInput) {
+            fileInput.value = ''
+        }
+    }
+
     const form = useForm({
         defaultValues: {
             club: "",
@@ -584,7 +725,26 @@ export default function Page({ params }: RegistrationPageProps) {
                         return new Date(dateString + 'T00:00:00.000Z').toISOString();
                     };
 
-                    const createPlayerEntry = (playerData: any, playerNum: number) => {
+                    // Upload documents if files are selected
+                    let documentUrlPlayer1 = ""
+                    let documentUrlPlayer2 = ""
+
+                    if (filePlayer1) {
+                        const uploadedUrl = await uploadFile(filePlayer1, `registration-player1-${Date.now()}`)
+                        if (uploadedUrl) {
+                            documentUrlPlayer1 = uploadedUrl
+                        }
+                    }
+
+                    if (filePlayer2 && event?.type === "DOUBLES") {
+                        const uploadedUrl = await uploadFile(filePlayer2, `registration-player2-${Date.now()}`)
+                        if (uploadedUrl) {
+                            documentUrlPlayer2 = uploadedUrl
+                        }
+                    }
+
+                    // Create player entries with document URLs
+                    const createPlayerEntry = (playerData: any, playerNum: number, documentUrl: string) => {
                         const baseEntry = {
                             firstName: playerData[`player${playerNum}FirstName`],
                             lastName: playerData[`player${playerNum}LastName`],
@@ -596,22 +756,32 @@ export default function Page({ params }: RegistrationPageProps) {
                             gender: playerData[`player${playerNum}Gender`],
                         };
 
-                        if (hasFreeJersey && playerData[`player${playerNum}JerseySize`]) {
+                        // Add validDocuments if file was uploaded
+                        if (documentUrl) {
+                            const documentType = playerNum === 1 ? selectedDocumentTypePlayer1 : selectedDocumentTypePlayer2;
                             return {
                                 ...baseEntry,
-                                jerseySize: playerData[`player${playerNum}JerseySize`]
+                                ...(hasFreeJersey && { jerseySize: playerData[`player${playerNum}JerseySize`] }),
+                                validDocuments: [{
+                                    documentURL: documentUrl,
+                                    documentType: documentType,
+                                    dateUploaded: new Date().toISOString(),
+                                }]
                             };
                         }
 
-                        return baseEntry;
+                        return {
+                            ...baseEntry,
+                            ...(hasFreeJersey && { jerseySize: playerData[`player${playerNum}JerseySize`] })
+                        };
                     };
 
                     const input = {
                         event: eventId,
                         club: finalFormData.club,
-                        player1Entry: createPlayerEntry(finalFormData, 1),
+                        player1Entry: createPlayerEntry(finalFormData, 1, documentUrlPlayer1),
                         ...(event?.type === "DOUBLES" && {
-                            player2Entry: createPlayerEntry(finalFormData, 2)
+                            player2Entry: createPlayerEntry(finalFormData, 2, documentUrlPlayer2)
                         })
                     }
 
@@ -701,43 +871,17 @@ export default function Page({ params }: RegistrationPageProps) {
         event?.type,
     ])
 
-    const handleFileUpload = (playerNum: number, files: FileList | null, field: any) => {
-        field.handleChange(files);
-
-        if (files && files[0]) {
-            const file = files[0];
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    if (playerNum === 1) {
-                        setPlayer1IdPreview(reader.result as string);
-                    } else {
-                        setPlayer2IdPreview(reader.result as string);
-                    }
-                };
-                reader.readAsDataURL(file);
-            } else {
-                if (playerNum === 1) {
-                    setPlayer1IdPreview(null);
-                } else {
-                    setPlayer2IdPreview(null);
-                }
-            }
-        } else {
-            if (playerNum === 1) {
-                setPlayer1IdPreview(null);
-            } else {
-                setPlayer2IdPreview(null);
-            }
-        }
-    };
-
     const handleModalClose = () => {
         setShowSuccessModal(false);
         setSyncPlayer1(false);
         setSyncPlayer2(false);
         setPlayer1IdPreview(null);
         setPlayer2IdPreview(null);
+        setFilePlayer1(null);
+        setFilePlayer2(null);
+        setFieldErrors({});
+        setSelectedDocumentTypePlayer1(ValidDocumentType.BIRTH_CERTIFICATE);
+        setSelectedDocumentTypePlayer2(ValidDocumentType.BIRTH_CERTIFICATE);
 
         form.reset({
             club: "",
@@ -835,6 +979,97 @@ export default function Page({ params }: RegistrationPageProps) {
         );
     };
 
+    const DocumentTypeSelector = ({ playerNum }: { playerNum: number }) => {
+        const selectedDocumentType = playerNum === 1 ? selectedDocumentTypePlayer1 : selectedDocumentTypePlayer2;
+        const setSelectedDocumentType = playerNum === 1 ? setSelectedDocumentTypePlayer1 : setSelectedDocumentTypePlayer2;
+        const openDocumentTypes = playerNum === 1 ? openDocumentTypesPlayer1 : openDocumentTypesPlayer2;
+        const setOpenDocumentTypes = playerNum === 1 ? setOpenDocumentTypesPlayer1 : setOpenDocumentTypesPlayer2;
+
+        return (
+            <Field className="text-left">
+                <FieldLabel htmlFor={`documentType${playerNum}`} className="text-green-800">
+                    Document Type (Player {playerNum}) <span className="text-red-500">*</span>
+                </FieldLabel>
+                <Popover
+                    open={openDocumentTypes}
+                    onOpenChange={setOpenDocumentTypes}
+                    modal
+                >
+                    <PopoverTrigger asChild>
+                        <Button
+                            id={`documentType${playerNum}`}
+                            name={`documentType${playerNum}`}
+                            disabled={isUploading}
+                            aria-expanded={openDocumentTypes}
+                            variant="outline"
+                            role="combobox"
+                            className="w-full justify-between font-normal capitalize -mt-2"
+                            type="button"
+                        >
+                            {selectedDocumentType
+                                ? documentTypes.find(
+                                    (o) => o.value === selectedDocumentType
+                                )?.label
+                                : "Select Document Type"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                        <Command
+                            filter={(value, search) =>
+                                documentTypes
+                                    .find(
+                                        (t: { value: string; label: string }) =>
+                                            t.value === value
+                                    )
+                                    ?.label.toLowerCase()
+                                    .includes(search.toLowerCase())
+                                    ? 1
+                                    : 0
+                            }
+                        >
+                            <CommandInput placeholder="Search document type..." />
+                            <CommandList className="max-h-72 overflow-y-auto">
+                                <CommandEmpty>
+                                    No document type found.
+                                </CommandEmpty>
+                                <CommandGroup>
+                                    <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
+                                        Document Types
+                                    </Label>
+                                    {documentTypes?.map((o) => (
+                                        <CommandItem
+                                            key={o.value}
+                                            value={o.value}
+                                            onSelect={(v) => {
+                                                setSelectedDocumentType(v as ValidDocumentType)
+                                                setOpenDocumentTypes(false)
+                                            }}
+                                            className="capitalize"
+                                        >
+                                            <CheckIcon
+                                                className={cn(
+                                                    "h-4 w-4",
+                                                    selectedDocumentType === o.value
+                                                        ? "opacity-100"
+                                                        : "opacity-0"
+                                                )}
+                                            />
+                                            {o.label}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
+                <p className="text-xs text-gray-500 mt-1">
+                    Select the type of document you're uploading (ID, Passport, etc.)
+                </p>
+            </Field>
+        );
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -870,6 +1105,11 @@ export default function Page({ params }: RegistrationPageProps) {
                 onClose={handleModalClose}
                 message={successMessage}
             />
+
+            <AnimatePresence>
+                {isUploading && <UploadingOverlay />}
+            </AnimatePresence>
+
             <div className="p-4 sm:p-6 pb-0 mt-20">
                 <Button variant="ghost" asChild className="text-green-700 hover:text-green-800 hover:bg-green-200">
                     <Link href="/sports-center/courts/categories" className="flex items-center gap-2">
@@ -1274,35 +1514,82 @@ export default function Page({ params }: RegistrationPageProps) {
                                             </FieldGroup>
 
                                             <div className="mt-6">
+                                                {/* Document Type Selector */}
+                                                <div className="mb-4">
+                                                    <DocumentTypeSelector playerNum={playerNum} />
+                                                </div>
+
                                                 <form.Field
                                                     name={`player${playerNum}IdUpload` as FormFieldNames}
                                                     children={(field) => {
                                                         const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
                                                         const preview = playerNum === 1 ? player1IdPreview : player2IdPreview;
+                                                        const file = playerNum === 1 ? filePlayer1 : filePlayer2;
+                                                        const selectedDocumentType = playerNum === 1 ? selectedDocumentTypePlayer1 : selectedDocumentTypePlayer2;
 
                                                         return (
                                                             <Field data-invalid={isInvalid} className="text-left">
                                                                 <div className="border-2 border-dashed border-green-300 rounded-2xl p-4 sm:p-6 bg-white flex flex-col items-center justify-center text-center gap-4">
                                                                     <div className="w-full flex flex-col text-left">
                                                                         <FieldLabel htmlFor={field.name} className="text-green-800 font-bold text-lg">
-                                                                            Important: Please Upload a Clear ID for Verification <span className="text-red-500">*</span>
+                                                                            Upload {selectedDocumentType.replaceAll("_", " ").toLowerCase()} for Verification <span className="text-red-500">*</span>
                                                                         </FieldLabel>
                                                                         <p className="text-gray-600 text-sm mt-1">
-                                                                            To Complete your Registration, we need a Clear Copy of any type of Valid ID.
+                                                                            To complete your registration, we need a clear copy of your {selectedDocumentType.replaceAll("_", " ").toLowerCase()}.
                                                                             Make sure the details are clearly visible and readable.
                                                                         </p>
                                                                     </div>
 
-                                                                    <div className="w-full flex justify-center">
-                                                                        {preview ? (
+                                                                    {file && (
+                                                                        <div className="w-full mb-4 p-3 bg-white border rounded-lg">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Paperclip className="w-4 h-4 text-gray-500" />
+                                                                                <div className="flex-1">
+                                                                                    <p className="text-sm font-medium truncate">
+                                                                                        {file.name}
+                                                                                    </p>
+                                                                                    <p className="text-xs text-gray-500">
+                                                                                        {(file.size / 1024).toFixed(2)} KB • {file.type}
+                                                                                    </p>
+                                                                                </div>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    onClick={() => handleRemoveFile(playerNum, field)}
+                                                                                    disabled={isUploading}
+                                                                                    className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                                                                                >
+                                                                                    <XCircle className="w-4 h-4" />
+                                                                                </Button>
+                                                                            </div>
+                                                                            {isUploading && (
+                                                                                <div className="mt-2">
+                                                                                    <div className="w-full bg-gray-200 rounded-full h-1">
+                                                                                        <div className="bg-green-600 h-1 rounded-full animate-pulse"></div>
+                                                                                    </div>
+                                                                                    <p className="text-xs text-gray-500 mt-1">Uploading...</p>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div className="w-full flex justify-center mb-4">
+                                                                        {preview && (file?.type?.startsWith('image/')) ? (
                                                                             <Image
                                                                                 src={preview}
-                                                                                alt="Uploaded ID Preview"
+                                                                                alt={`Uploaded ${selectedDocumentType} Preview`}
                                                                                 width={400}
                                                                                 height={250}
                                                                                 className="max-w-full h-auto rounded-lg border shadow"
                                                                                 style={{ maxWidth: 'min(400px, 100%)' }}
                                                                             />
+                                                                        ) : file && !file.type?.startsWith('image/') ? (
+                                                                            <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                                                                                <div className="text-center">
+                                                                                    <Paperclip className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                                                                    <p className="text-sm font-medium text-gray-700">{file.name}</p>
+                                                                                    <p className="text-xs text-gray-500 mt-1">PDF Document</p>
+                                                                                </div>
+                                                                            </div>
                                                                         ) : (
                                                                             <Image
                                                                                 src="/id.png"
@@ -1317,25 +1604,44 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                                                     <label
                                                                         htmlFor={`player${playerNum}IdUpload`}
-                                                                        className="cursor-pointer w-full flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed border-green-300 rounded-xl bg-green-50 hover:bg-green-100 transition"
+                                                                        className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed rounded-xl transition ${fieldErrors[`filePlayer${playerNum}`]
+                                                                            ? 'border-red-300 bg-red-50 hover:bg-red-100'
+                                                                            : 'border-green-300 bg-green-50 hover:bg-green-100'
+                                                                            }`}
                                                                     >
-                                                                        <UploadIcon className='w-6 h-6 sm:w-8 sm:h-8 text-green-600 mb-2' />
-
-                                                                        <span className="text-green-700 font-medium text-sm sm:text-base">
-                                                                            Drag & Drop your files or <span className="underline">Browse</span>
-                                                                        </span>
-
+                                                                        {isUploading && (playerNum === 1 && filePlayer1 || playerNum === 2 && filePlayer2) ? (
+                                                                            <div className="flex flex-col items-center">
+                                                                                <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
+                                                                                <span className="font-medium text-sm text-green-700">Uploading...</span>
+                                                                                <span className="text-xs text-gray-500 mt-1">Please wait</span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <>
+                                                                                <UploadIcon className={`w-6 h-6 mb-2 ${fieldErrors[`filePlayer${playerNum}`] ? 'text-red-500' : 'text-green-600'
+                                                                                    }`} />
+                                                                                <span className={`font-medium text-sm ${fieldErrors[`filePlayer${playerNum}`] ? 'text-red-700' : 'text-green-700'
+                                                                                    }`}>
+                                                                                    Drag & Drop your files or <span className="underline">Browse</span>
+                                                                                </span>
+                                                                                <span className="text-xs text-gray-500 mt-1">
+                                                                                    Supports images (JPEG, PNG, JPG, WEBP) and PDF files up to 10MB
+                                                                                </span>
+                                                                            </>
+                                                                        )}
                                                                         <input
                                                                             id={`player${playerNum}IdUpload`}
                                                                             name={field.name}
                                                                             type='file'
                                                                             accept='image/*,.pdf'
                                                                             className='hidden'
-                                                                            onChange={(e) => {
-                                                                                handleFileUpload(playerNum, e.target.files, field);
-                                                                            }}
+                                                                            onChange={(e) => handleFileUpload(playerNum, e, field)}
+                                                                            disabled={isUploading}
                                                                         />
                                                                     </label>
+
+                                                                    {fieldErrors[`filePlayer${playerNum}`] && (
+                                                                        <p className="text-xs text-red-500 mt-2">{fieldErrors[`filePlayer${playerNum}`]}</p>
+                                                                    )}
                                                                 </div>
                                                                 {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} />}
                                                             </Field>
@@ -1443,10 +1749,10 @@ export default function Page({ params }: RegistrationPageProps) {
                         <Button
                             type="submit"
                             form="registration-form"
-                            disabled={submitting}
+                            disabled={submitting || isUploading}
                             className="lg:w-1/2! w-auto!  px-6 py-5 cursor-pointer"
                         >
-                            {submitting ? "Submitting..." : "Submit"}
+                            {submitting ? "Submitting..." : isUploading ? "Uploading..." : "Submit"}
                         </Button>
                     </div>
                 </CardFooter>
