@@ -16,9 +16,9 @@ export async function POST(request: Request) {
     const stream = Readable.from(
       file?.type.startsWith("image/") //
         ? await sharp(buffer) // Compress images
-            .resize({ width: 1080 })
-            .jpeg({ quality: 70 })
-            .toBuffer()
+          .resize({ width: 1080 })
+          .jpeg({ quality: 70 })
+          .toBuffer()
         : buffer
     )
 
@@ -28,7 +28,6 @@ export async function POST(request: Request) {
       key: process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
       scopes: ["https://www.googleapis.com/auth/drive"],
     })
-
     const drive = google.drive({ version: "v3", auth })
 
     const response = await drive.files.create({

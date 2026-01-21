@@ -1177,7 +1177,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             value={field.state.value}
                                                             onBlur={field.handleBlur}
                                                             onChange={(e) => field.handleChange(e.target.value)}
-                                                            placeholder="example.com"
+                                                            placeholder="Enter your Club Name or Affiliation Here"
                                                             aria-invalid={isInvalid}
                                                             className="!pl-5"
                                                         />

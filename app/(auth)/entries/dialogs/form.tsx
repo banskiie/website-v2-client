@@ -13,7 +13,7 @@ import { CreateEntrySchema } from "@/validators/entry.validator"
 import { gql } from "@apollo/client"
 import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
-import React, { useEffect, useState, useTransition } from "react"
+import React, { useEffect, useState, useTransition, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   CalendarIcon,
@@ -190,6 +190,19 @@ type Props = {
   onClose?: () => void
 }
 
+// Helper function to truncate file names
+const truncateFileNameWithEllipsis = (fileName: string, prefixLength: number = 15): string => {
+  if (fileName.length <= prefixLength + 10) return fileName;
+
+  const extension = fileName.split('.').pop() || '';
+  const nameWithoutExtension = fileName.slice(0, fileName.lastIndexOf('.'));
+
+  if (nameWithoutExtension.length <= prefixLength) return fileName;
+
+  const prefix = nameWithoutExtension.slice(0, prefixLength);
+  return `${prefix} ... .${extension}`;
+};
+
 // Reusable DocumentUploadTab component
 const DocumentUploadTab = ({
   playerNumber,
@@ -333,8 +346,8 @@ const DocumentUploadTab = ({
               <div className="flex items-center gap-2">
                 <Paperclip className="w-4 h-4 text-gray-500" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium truncate">
-                    {file.name}
+                  <p className="text-sm font-medium truncate" title={file.name}>
+                    {truncateFileNameWithEllipsis(file.name, 15)}
                   </p>
                   <p className="text-xs text-gray-500">
                     {(file.size / 1024).toFixed(2)} KB • {file.type}
@@ -423,7 +436,7 @@ const DocumentUploadTab = ({
               <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                   <Paperclip className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-gray-700">{file.name}</p>
+                  <p className="text-sm font-medium text-gray-700">{truncateFileNameWithEllipsis(file.name, 15)}</p>
                   <p className="text-xs text-gray-500 mt-1">PDF Document</p>
                 </div>
               </div>
@@ -567,6 +580,9 @@ const FormDialog = (props: Props) => {
 
   // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
+
+  // Add a ref to track if submission is in progress
+  const isSubmittingRef = useRef(false)
 
   const form = useForm({
     defaultValues: {
@@ -748,82 +764,103 @@ const FormDialog = (props: Props) => {
         }
       },
     },
-    onSubmit: async ({ value: payload, formApi }) =>
-      startTransition(async () => {
-        try {
-          // Upload documents for both players if files are selected
-          let documentUrlPlayer1 = initialDocumentUrlPlayer1
-          let documentUrlPlayer2 = initialDocumentUrlPlayer2
+    onSubmit: async ({ value: payload, formApi }) => {
+      // Prevent multiple submissions
+      if (isSubmittingRef.current) {
+        console.log('Submission already in progress, skipping...')
+        return
+      }
 
-          if (filePlayer1) {
-            const uploadedUrl = await uploadFile(filePlayer1, `entry-player1`)
-            if (uploadedUrl) {
-              documentUrlPlayer1 = uploadedUrl
-            }
-          }
+      isSubmittingRef.current = true
+      console.log('Form submission started at:', new Date().toISOString())
 
-          if (filePlayer2) {
-            const uploadedUrl = await uploadFile(filePlayer2, `entry-player2`)
-            if (uploadedUrl) {
-              documentUrlPlayer2 = uploadedUrl
-            }
-          }
+      try {
+        // Upload documents for both players if files are selected
+        let documentUrlPlayer1 = initialDocumentUrlPlayer1
+        let documentUrlPlayer2 = initialDocumentUrlPlayer2
 
-          const event = events.find(
-            (e: { value: string }) => e.value === payload.event
-          )
-          const isDoubles = event?.type === EventType.DOUBLES
-
-          // Prepare player entries with their documents
-          const player1Entry = {
-            ...payload.player1Entry,
-            validDocuments: documentUrlPlayer1 ? [{
-              documentURL: documentUrlPlayer1,
-              documentType: selectedDocumentTypePlayer1,
-              dateUploaded: new Date().toISOString(),
-            }] : payload.player1Entry.validDocuments || []
-          }
-
-          const player2Entry = isDoubles ? {
-            ...payload.player2Entry,
-            validDocuments: documentUrlPlayer2 ? [{
-              documentURL: documentUrlPlayer2,
-              documentType: selectedDocumentTypePlayer2,
-              dateUploaded: new Date().toISOString(),
-            }] : payload.player2Entry?.validDocuments || []
-          } : null
-
-          const modifiedPayload = {
-            ...payload,
-            player1Entry,
-            player2Entry: isDoubles ? player2Entry : null,
-          }
-
-          const { tournament, ...finalPayload } = modifiedPayload
-
-          const response: any = await submitForm({
-            variables: {
-              input: isUpdate
-                ? { _id: props._id, ...finalPayload }
-                : { ...finalPayload },
-            },
-          })
-          if (response) onClose()
-        } catch (error: any) {
-          if (error.name == "CombinedGraphQLErrors") {
-            const fieldErrors = error.errors[0].extensions.fields
-            if (fieldErrors)
-              fieldErrors.map(
-                ({ path, message }: { path: string; message: string }) =>
-                  formApi.fieldInfo[
-                    path as keyof typeof formApi.fieldInfo
-                  ].instance?.setErrorMap({
-                    onSubmit: { message },
-                  })
-              )
+        if (filePlayer1) {
+          const uploadedUrl = await uploadFile(filePlayer1, `entry-player1`)
+          if (uploadedUrl) {
+            documentUrlPlayer1 = uploadedUrl
           }
         }
-      }),
+
+        if (filePlayer2) {
+          const uploadedUrl = await uploadFile(filePlayer2, `entry-player2`)
+          if (uploadedUrl) {
+            documentUrlPlayer2 = uploadedUrl
+          }
+        }
+
+        const event = events.find(
+          (e: { value: string }) => e.value === payload.event
+        )
+        const isDoubles = event?.type === EventType.DOUBLES
+
+        // Prepare player entries with their documents
+        const player1Entry = {
+          ...payload.player1Entry,
+          validDocuments: documentUrlPlayer1 ? [{
+            documentURL: documentUrlPlayer1,
+            documentType: selectedDocumentTypePlayer1,
+            dateUploaded: new Date().toISOString(),
+          }] : payload.player1Entry.validDocuments || []
+        }
+
+        const player2Entry = isDoubles ? {
+          ...payload.player2Entry,
+          validDocuments: documentUrlPlayer2 ? [{
+            documentURL: documentUrlPlayer2,
+            documentType: selectedDocumentTypePlayer2,
+            dateUploaded: new Date().toISOString(),
+          }] : payload.player2Entry?.validDocuments || []
+        } : null
+
+        const modifiedPayload = {
+          ...payload,
+          player1Entry,
+          player2Entry: isDoubles ? player2Entry : null,
+        }
+
+        const { tournament, ...finalPayload } = modifiedPayload
+
+        console.log('Submitting form with payload:', finalPayload)
+
+        const response: any = await submitForm({
+          variables: {
+            input: isUpdate
+              ? { _id: props._id, ...finalPayload }
+              : { ...finalPayload },
+          },
+        })
+
+        console.log('Form submission response:', response)
+
+        if (response) {
+          // Call onClose directly without waiting for transition
+          onClose()
+        }
+      } catch (error: any) {
+        console.error('Form submission error:', error)
+        if (error.name == "CombinedGraphQLErrors") {
+          const fieldErrors = error.errors[0].extensions.fields
+          if (fieldErrors)
+            fieldErrors.map(
+              ({ path, message }: { path: string; message: string }) =>
+                formApi.fieldInfo[
+                  path as keyof typeof formApi.fieldInfo
+                ].instance?.setErrorMap({
+                  onSubmit: { message },
+                })
+            )
+        }
+      } finally {
+        // Reset the submission flag
+        isSubmittingRef.current = false
+        console.log('Submission flag reset at:', new Date().toISOString())
+      }
+    },
   })
 
   // Set tournamentId when data is fetched
@@ -858,6 +895,8 @@ const FormDialog = (props: Props) => {
     setFieldErrors({})
     setSelectedDocumentTypePlayer1(ValidDocumentType.BIRTH_CERTIFICATE)
     setSelectedDocumentTypePlayer2(ValidDocumentType.BIRTH_CERTIFICATE)
+    // Reset submission flag when dialog closes
+    isSubmittingRef.current = false
   }
 
   const uploadFile = async (file: File, folder: string): Promise<string | null> => {
@@ -866,7 +905,14 @@ const FormDialog = (props: Props) => {
 
       const formData = new FormData()
       const fileExt = file.name.split('.').pop() || ''
-      const fileName = `${folder}-${Date.now()}.${fileExt}`
+
+      // Truncate the original file name for the server
+      const originalName = file.name.slice(0, file.name.lastIndexOf('.'))
+      const truncatedOriginalName = originalName.length > 30
+        ? originalName.slice(0, 30) + '...'
+        : originalName
+
+      const fileName = `${folder}-${truncatedOriginalName}-${Date.now()}.${fileExt}`
       formData.append("file", file, fileName)
 
       const response = await fetch(`/api/upload/entry_requirement`, {
@@ -993,6 +1039,31 @@ const FormDialog = (props: Props) => {
     }
   }
 
+  // Handle form submission
+  const handleSubmit = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    console.log('Submit button clicked at:', new Date().toISOString())
+
+    // Check if already submitting
+    if (isSubmittingRef.current) {
+      console.log('Already submitting, ignoring click')
+      toast.warning('Submission already in progress. Please wait.')
+      return
+    }
+
+    try {
+      // Use startTransition to wrap the form submission
+      startTransition(async () => {
+        await form.handleSubmit()
+      })
+    } catch (error) {
+      console.error('Form submission error in handleSubmit:', error)
+      isSubmittingRef.current = false
+    }
+  }
+
   return (
     <Dialog modal open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -1021,14 +1092,9 @@ const FormDialog = (props: Props) => {
               : "Create a new entry in the system."}
           </DialogDescription>
         </DialogHeader>
-        <form
-          className="-mt-2 mb-2"
-          id="entry-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            form.handleSubmit()
-          }}
-        >
+
+        {/* Use a regular div instead of form to prevent default submission */}
+        <div className="-mt-2 mb-2">
           <form.Subscribe
             selector={(state) => state.values}
             children={(state) => {
@@ -2604,8 +2670,10 @@ const FormDialog = (props: Props) => {
               )
             }}
           />
-        </form>
+        </div>
+
         <DialogFooter>
+
           <DialogClose asChild>
             <Button className="w-20" onClick={onClose} variant="outline">
               Cancel
@@ -2613,9 +2681,10 @@ const FormDialog = (props: Props) => {
           </DialogClose>
           <Button
             className="w-20"
-            loading={isLoading || isUploading}
-            type="submit"
-            form="entry-form"
+            loading={isLoading || isUploading || isSubmittingRef.current}
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmittingRef.current}
           >
             Submit
           </Button>

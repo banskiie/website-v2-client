@@ -425,14 +425,14 @@ const Page = () => {
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                        ...edge,
-                        node: {
-                          ...edge.node,
-                          ...updatedEntries.find(
-                            (u: any) => u._id === edge.node._id
-                          ),
-                        },
-                      }
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...updatedEntries.find(
+                          (u: any) => u._id === edge.node._id
+                        ),
+                      },
+                    }
                     : edge
                 ),
               },
