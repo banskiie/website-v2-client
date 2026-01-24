@@ -56,6 +56,13 @@ const EntryStatusBadge = (props: Props) => {
           {props.status.toLocaleLowerCase().replaceAll("_", " ")}
         </Badge>
       )
+
+    case EntryStatus.PAYMENT_VERIFIED:
+      return (
+        <Badge className="pointer-events-none bg-sky-500 capitalize">
+          {props.status.toLocaleLowerCase().replaceAll("_", " ")}
+        </Badge>
+      )
     case EntryStatus.VERIFIED:
       return (
         <Badge className="pointer-events-none bg-sky-600 capitalize">

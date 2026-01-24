@@ -2603,7 +2603,6 @@
 
 // export default AssignDialog
 
-
 "use client"
 
 import { gql } from "@apollo/client"
@@ -2620,16 +2619,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { IEntry } from "@/types/entry.interface"
@@ -2638,7 +2627,6 @@ import { AssignPlayersSchema } from "@/validators/entry.validator"
 import { useTransition } from "react"
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldLabel,
   FieldSet,
@@ -2648,7 +2636,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { CheckIcon, ChevronsUpDownIcon, FileText, Image, Eye, Check, X } from "lucide-react"
+import { CheckIcon, ChevronsUpDownIcon, FileText, Eye, Check, X, Maximize, Sparkles, AlertCircle, Loader2, Save, ExternalLink, ChevronLeft, File, Download, Maximize2 } from "lucide-react"
 import {
   Command,
   CommandEmpty,
@@ -2664,6 +2652,7 @@ import { Separator } from "@/components/ui/separator"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import Image from "next/image"
 
 const ASSIGN_PLAYERS = gql`
   mutation AssignPlayers($input: assignPlayersInput!) {
@@ -2818,52 +2807,42 @@ type DocumentSelection = {
   };
 };
 
-const extractFileIdFromUrl = (url: string): string | undefined => {
-  if (!url || !url.includes('drive.google.com')) {
-    return undefined
+const extractFileIdFromUrl = (url: string): string | null => {
+  if (!url) return null;
+
+  // Various Google Drive URL patterns
+  const patterns = [
+    // Standard file URL: https://drive.google.com/file/d/FILE_ID/view
+    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
+
+    // Open URL: https://drive.google.com/open?id=FILE_ID
+    /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
+
+    // URL with /u/0/: https://drive.google.com/u/0/uc?id=FILE_ID&export=download
+    /drive\.google\.com\/.*[?&]id=([a-zA-Z0-9_-]+)/,
+
+    // Direct download link
+    /drive\.google\.com\/uc\?id=([a-zA-Z0-9_-]+)/,
+
+    // Share link: https://drive.google.com/file/d/FILE_ID/edit?usp=sharing
+    /drive\.google\.com\/.*\/d\/([a-zA-Z0-9_-]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
   }
 
-  try {
-    const cleanUrl = url.trim()
-
-    const patterns = [
-      /\/file\/d\/([a-zA-Z0-9_-]+)/,
-      /\/open\?id=([a-zA-Z0-9_-]+)/,
-      /id=([a-zA-Z0-9_-]+)/,
-      /\/uc\?id=([a-zA-Z0-9_-]+)/,
-      /\/view\?.*id=([a-zA-Z0-9_-]+)/,
-      /\/preview\?.*id=([a-zA-Z0-9_-]+)/,
-    ]
-
-    for (const pattern of patterns) {
-      const match = cleanUrl.match(pattern)
-      if (match && match[1]) {
-        const fileId = match[1].split(/[&?\/]/)[0]
-        if (fileId && fileId.length >= 25) {
-          return fileId
-        }
-      }
-    }
-
-    const urlParts = cleanUrl.split(/[\/=&?]/)
-    for (const part of urlParts) {
-      if (part.length >= 25 && /^[a-zA-Z0-9_-]+$/.test(part)) {
-        return part
-      }
-    }
-
-    return undefined
-  } catch (error) {
-    console.error('Error extracting file ID from URL:', error, url)
-    return undefined
-  }
+  return null;
 }
 
 const replaceDocumentsInDrive = async (
   existingDocuments: any[],
   newDocuments: any[],
   playerType: 'player1' | 'player2',
-  documentSelection: DocumentSelection
+  documentSelection?: DocumentSelection
 ) => {
   try {
     console.log(`🔄 Starting Google Drive document replacement for ${playerType}`)
@@ -2871,34 +2850,170 @@ const replaceDocumentsInDrive = async (
     const replacedDocuments: any[] = [];
     const failedReplacements: any[] = [];
 
-    // Process each document type based on user selection
-    for (const [documentType, selection] of Object.entries(documentSelection)) {
-      const { selectedSource, existingDoc, newDoc } = selection;
+    if (documentSelection) {
+      // Process based on document selection
+      for (const [documentType, selection] of Object.entries(documentSelection)) {
+        const { selectedSource, existingDoc, newDoc } = selection;
 
-      if (selectedSource === 'existing' && existingDoc) {
-        // Keep existing document - no action needed
-        console.log(`✅ Keeping existing document: ${documentType}`);
-        continue;
+        if (selectedSource === 'existing' && existingDoc) {
+          // Keep existing document - no action needed for Google Drive
+          console.log(`✅ Keeping existing document: ${documentType}`);
+          continue;
+        }
+
+        if (selectedSource === 'new' && newDoc) {
+          const newFileId = extractFileIdFromUrl(newDoc.documentURL);
+
+          if (!newFileId) {
+            console.warn(`Could not extract file ID from new document: ${newDoc.documentURL}`);
+            failedReplacements.push({
+              documentType,
+              error: 'Invalid file URL'
+            });
+            continue;
+          }
+
+          if (existingDoc) {
+            // Replace existing document with new one
+            const oldFileId = extractFileIdFromUrl(existingDoc.documentURL);
+
+            if (oldFileId) {
+              console.log(`🔄 Replacing ${documentType}: ${oldFileId} -> ${newFileId}`);
+
+              try {
+                const replaceResponse = await fetch('/api/transfer/replace', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    oldFileId,
+                    newFileId,
+                    documentType,
+                    playerType
+                  }),
+                });
+
+                const replaceResult = await replaceResponse.json();
+
+                if (replaceResponse.ok && replaceResult.success) {
+                  replacedDocuments.push({
+                    documentType,
+                    oldFileId,
+                    newFileId: replaceResult.newFileId || newFileId,
+                    status: 'replaced',
+                    action: replaceResult.action,
+                    message: replaceResult.message
+                  });
+                  console.log(`✅ Successfully replaced in Google Drive: ${documentType}`);
+                } else {
+                  console.error(`❌ Failed to replace ${documentType}:`, replaceResult.message);
+                  failedReplacements.push({
+                    documentType,
+                    error: replaceResult.message,
+                    fallback: true
+                  });
+
+                  // Fallback: Try to move new document
+                  try {
+                    const moveResponse = await fetch('/api/transfer/entry_requirement', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ fileId: newFileId }),
+                    });
+
+                    if (moveResponse.ok) {
+                      replacedDocuments.push({
+                        documentType,
+                        oldFileId,
+                        newFileId,
+                        status: 'moved_new_only',
+                        action: 'moved',
+                        message: 'Replacement failed, moved new document instead'
+                      });
+                      console.log(`✅ Moved new document instead: ${documentType}`);
+                    }
+                  } catch (moveError) {
+                    console.error(`❌ Failed to move new document:`, moveError);
+                  }
+                }
+              } catch (replaceError: any) {
+                console.error(`❌ Error replacing ${documentType}:`, replaceError);
+                failedReplacements.push({
+                  documentType,
+                  error: replaceError?.message || 'Unknown error'
+                });
+              }
+            } else {
+              console.log(`⚠️ Could not extract old file ID, moving new document...`);
+
+              try {
+                const moveResponse = await fetch('/api/transfer/entry_requirement', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ fileId: newFileId }),
+                });
+
+                if (moveResponse.ok) {
+                  replacedDocuments.push({
+                    documentType,
+                    newFileId,
+                    status: 'added_new_no_old',
+                    action: 'added',
+                    message: 'No existing file found, added new document'
+                  });
+                  console.log(`✅ Added new document: ${documentType}`);
+                }
+              } catch (moveError) {
+                console.error(`❌ Error adding new document:`, moveError);
+              }
+            }
+          } else {
+            // No existing document, just move the new one
+            try {
+              const moveResponse = await fetch('/api/transfer/entry_requirement', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileId: newFileId }),
+              })
+
+              if (moveResponse.ok) {
+                replacedDocuments.push({
+                  documentType,
+                  newFileId,
+                  status: 'added_new_type',
+                  action: 'added',
+                  message: 'Added new document type'
+                });
+                console.log(`✅ Added new document type: ${documentType}`);
+              }
+            } catch (moveError) {
+              console.error(`❌ Error moving new document ${documentType}:`, moveError);
+            }
+          }
+        }
       }
-
-      if (selectedSource === 'new' && newDoc) {
+    } else {
+      // Fallback: Old behavior - replace all documents
+      for (const newDoc of newDocuments) {
         const newFileId = extractFileIdFromUrl(newDoc.documentURL);
 
         if (!newFileId) {
-          console.warn(`Could not extract file ID from new document: ${newDoc.documentURL}`);
+          console.warn(`Could not extract file ID from new document: ${newDoc.documentURL}`)
           failedReplacements.push({
-            documentType,
+            documentType: newDoc.documentType,
             error: 'Invalid file URL'
           });
           continue;
         }
 
+        const existingDoc = existingDocuments.find(
+          doc => doc.documentType === newDoc.documentType
+        );
+
         if (existingDoc) {
-          // Replace existing document with new one
           const oldFileId = extractFileIdFromUrl(existingDoc.documentURL);
 
           if (oldFileId) {
-            console.log(`🔄 Replacing ${documentType}: ${oldFileId} -> ${newFileId}`);
+            console.log(`🔄 Replacing ${existingDoc.documentType}: ${oldFileId} -> ${newFileId}`);
 
             try {
               const replaceResponse = await fetch('/api/transfer/replace', {
@@ -2907,7 +3022,7 @@ const replaceDocumentsInDrive = async (
                 body: JSON.stringify({
                   oldFileId,
                   newFileId,
-                  documentType,
+                  documentType: newDoc.documentType,
                   playerType
                 }),
               });
@@ -2916,23 +3031,22 @@ const replaceDocumentsInDrive = async (
 
               if (replaceResponse.ok && replaceResult.success) {
                 replacedDocuments.push({
-                  documentType,
+                  documentType: newDoc.documentType,
                   oldFileId,
                   newFileId: replaceResult.newFileId || newFileId,
                   status: 'replaced',
                   action: replaceResult.action,
                   message: replaceResult.message
                 });
-                console.log(`✅ Successfully replaced in Google Drive: ${documentType}`);
+                console.log(`✅ Successfully replaced in Google Drive: ${newDoc.documentType}`);
               } else {
-                console.error(`❌ Failed to replace ${documentType}:`, replaceResult.message);
+                console.error(`❌ Failed to replace ${newDoc.documentType}:`, replaceResult.message);
                 failedReplacements.push({
-                  documentType,
+                  documentType: newDoc.documentType,
                   error: replaceResult.message,
                   fallback: true
                 });
 
-                // Fallback: Try to move new document
                 try {
                   const moveResponse = await fetch('/api/transfer/entry_requirement', {
                     method: 'POST',
@@ -2942,23 +3056,23 @@ const replaceDocumentsInDrive = async (
 
                   if (moveResponse.ok) {
                     replacedDocuments.push({
-                      documentType,
+                      documentType: newDoc.documentType,
                       oldFileId,
                       newFileId,
                       status: 'moved_new_only',
                       action: 'moved',
                       message: 'Replacement failed, moved new document instead'
                     });
-                    console.log(`✅ Moved new document instead: ${documentType}`);
+                    console.log(`✅ Moved new document instead: ${newDoc.documentType}`);
                   }
                 } catch (moveError) {
                   console.error(`❌ Failed to move new document:`, moveError);
                 }
               }
             } catch (replaceError: any) {
-              console.error(`❌ Error replacing ${documentType}:`, replaceError);
+              console.error(`❌ Error replacing ${newDoc.documentType}:`, replaceError);
               failedReplacements.push({
-                documentType,
+                documentType: newDoc.documentType,
                 error: replaceError?.message || 'Unknown error'
               });
             }
@@ -2974,20 +3088,20 @@ const replaceDocumentsInDrive = async (
 
               if (moveResponse.ok) {
                 replacedDocuments.push({
-                  documentType,
+                  documentType: newDoc.documentType,
                   newFileId,
                   status: 'added_new_no_old',
                   action: 'added',
                   message: 'No existing file found, added new document'
                 });
-                console.log(`✅ Added new document: ${documentType}`);
+                console.log(`✅ Added new document: ${newDoc.documentType}`);
               }
             } catch (moveError) {
               console.error(`❌ Error adding new document:`, moveError);
             }
           }
         } else {
-          // No existing document, just add the new one
+          // No existing document of this type, just move the new one
           try {
             const moveResponse = await fetch('/api/transfer/entry_requirement', {
               method: 'POST',
@@ -2997,16 +3111,16 @@ const replaceDocumentsInDrive = async (
 
             if (moveResponse.ok) {
               replacedDocuments.push({
-                documentType,
+                documentType: newDoc.documentType,
                 newFileId,
                 status: 'added_new_type',
                 action: 'added',
                 message: 'Added new document type'
               });
-              console.log(`✅ Added new document type: ${documentType}`);
+              console.log(`✅ Added new document type: ${newDoc.documentType}`);
             }
           } catch (moveError) {
-            console.error(`❌ Error moving new document ${documentType}:`, moveError);
+            console.error(`❌ Error moving new document ${newDoc.documentType}:`, moveError);
           }
         }
       }
@@ -3030,90 +3144,6 @@ const replaceDocumentsInDrive = async (
   }
 }
 
-const moveOrCopyDocumentsToRequirements = async (documents: any[], player: string) => {
-  const movedDocuments: any[] = [];
-
-  for (const doc of documents) {
-    const fileId = extractFileIdFromUrl(doc.documentURL);
-
-    if (!fileId) {
-      console.warn(`Could not extract file ID from URL: ${doc.documentURL}`);
-      continue;
-    }
-
-    console.log(`📤 Processing ${doc.documentType} for ${player}: ${fileId}`);
-
-    try {
-      const checkResponse = await fetch('/api/transfer/requirement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileId }),
-      });
-
-      if (checkResponse.ok) {
-        const checkResult = await checkResponse.json();
-
-        if (!checkResult.exists) {
-          console.log(`🔄 Attempting to move file ${fileId}...`);
-          const moveResponse = await fetch('/api/transfer/entry_requirement', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileId }),
-          });
-
-          const moveResult = await moveResponse.json();
-
-          if (moveResponse.ok) {
-            movedDocuments.push({
-              documentType: doc.documentType,
-              fileId,
-              status: 'moved',
-              player,
-              message: 'Successfully moved to requirements folder'
-            });
-          } else {
-            const copyResponse = await fetch('/api/transfer/copy', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fileId }),
-            });
-
-            const copyResult = await copyResponse.json();
-
-            if (copyResponse.ok) {
-              movedDocuments.push({
-                documentType: doc.documentType,
-                fileId: copyResult.copiedFileId,
-                status: 'copied',
-                player,
-                message: 'Successfully copied to requirements folder'
-              });
-              console.log(`✅ Copied: ${fileId} -> ${copyResult.copiedFileId}`);
-            } else {
-              console.error(`❌ Copy also failed for ${fileId}:`, copyResult.message);
-            }
-          }
-        } else {
-          movedDocuments.push({
-            documentType: doc.documentType,
-            fileId,
-            status: 'already_exists',
-            player,
-            message: 'File already in requirements folder'
-          });
-        }
-      } else {
-        const errorText = await checkResponse.text();
-        console.error(`❌ Error checking file ${fileId}:`, errorText);
-      }
-    } catch (error) {
-      console.error(`❌ Error processing file ${fileId}:`, error);
-    }
-  }
-
-  return movedDocuments;
-}
-
 const checkAndMoveDocuments = async (
   entry: IEntry,
   connectedPlayer1?: any,
@@ -3131,7 +3161,7 @@ const checkAndMoveDocuments = async (
     if (entry.player1Entry?.validDocuments && entry.player1Entry.validDocuments.length > 0) {
       const player1Docs = entry.player1Entry.validDocuments
 
-      if (connectedPlayer1?.validDocuments?.length > 0 && documentSelections.player1) {
+      if (connectedPlayer1?.validDocuments?.length > 0) {
         const player1Result = await replaceDocumentsInDrive(
           connectedPlayer1.validDocuments,
           player1Docs,
@@ -3144,8 +3174,31 @@ const checkAndMoveDocuments = async (
           console.warn(`⚠️ Some Player 1 documents failed to replace:`, player1Result.failedReplacements)
         }
       } else {
-        const player1Moved = await moveOrCopyDocumentsToRequirements(player1Docs, 'player1')
-        movedDocuments.push(...player1Moved)
+        // For new player, just move documents
+        for (const doc of player1Docs) {
+          const fileId = extractFileIdFromUrl(doc.documentURL);
+          if (fileId) {
+            try {
+              const moveResponse = await fetch('/api/transfer/entry_requirement', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileId }),
+              });
+
+              if (moveResponse.ok) {
+                movedDocuments.push({
+                  documentType: doc.documentType,
+                  fileId,
+                  status: 'moved',
+                  player: 'player1',
+                  message: 'Successfully moved to requirements folder'
+                });
+              }
+            } catch (error) {
+              console.error(`❌ Error moving document ${doc.documentType}:`, error);
+            }
+          }
+        }
       }
     }
 
@@ -3153,7 +3206,7 @@ const checkAndMoveDocuments = async (
     if (entry.player2Entry?.validDocuments && entry.player2Entry.validDocuments.length > 0) {
       const player2Docs = entry.player2Entry.validDocuments
 
-      if (connectedPlayer2?.validDocuments?.length > 0 && documentSelections.player2) {
+      if (connectedPlayer2?.validDocuments?.length > 0) {
         const player2Result = await replaceDocumentsInDrive(
           connectedPlayer2.validDocuments,
           player2Docs,
@@ -3166,8 +3219,31 @@ const checkAndMoveDocuments = async (
           console.warn(`⚠️ Some Player 2 documents failed to replace:`, player2Result.failedReplacements)
         }
       } else {
-        const player2Moved = await moveOrCopyDocumentsToRequirements(player2Docs, 'player2')
-        movedDocuments.push(...player2Moved)
+        // For new player, just move documents
+        for (const doc of player2Docs) {
+          const fileId = extractFileIdFromUrl(doc.documentURL);
+          if (fileId) {
+            try {
+              const moveResponse = await fetch('/api/transfer/entry_requirement', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileId }),
+              });
+
+              if (moveResponse.ok) {
+                movedDocuments.push({
+                  documentType: doc.documentType,
+                  fileId,
+                  status: 'moved',
+                  player: 'player2',
+                  message: 'Successfully moved to requirements folder'
+                });
+              }
+            } catch (error) {
+              console.error(`❌ Error moving document ${doc.documentType}:`, error);
+            }
+          }
+        }
       }
     }
 
@@ -3192,168 +3268,6 @@ const checkAndMoveDocuments = async (
   }
 }
 
-const DocumentPreviewDialog = ({
-  open,
-  onOpenChange,
-  documents
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  documents: DocumentInfo[];
-}) => {
-  const [selectedDoc, setSelectedDoc] = useState<DocumentInfo | null>(null);
-
-  const getDocumentTypeIcon = (docType: string) => {
-    if (docType.toLowerCase().includes('image') || docType.toLowerCase().includes('photo')) {
-      return <Image className="h-4 w-4 mr-2" />;
-    }
-    return <FileText className="h-4 w-4 mr-2" />;
-  };
-
-  const getStatusBadge = (source: DocumentInfo['source']) => {
-    switch (source) {
-      case 'existing':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Existing</Badge>;
-      case 'new':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">New</Badge>;
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle>Document Preview</DialogTitle>
-          <DialogDescription>
-            Preview documents that will be moved/copied to requirements folder
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid grid-cols-3 gap-4 h-[60vh]">
-          <div className="col-span-1 border rounded-lg overflow-y-auto">
-            <div className="p-4 border-b">
-              <h3 className="font-medium">Documents ({documents.length})</h3>
-            </div>
-            <div className="p-2">
-              {documents.map((doc, index) => (
-                <div
-                  key={`${doc.player}-${doc.documentType}-${index}`}
-                  className={`p-3 rounded-lg cursor-pointer hover:bg-gray-50 mb-2 border ${selectedDoc?.documentURL === doc.documentURL
-                    ? 'bg-blue-50 border-blue-200'
-                    : 'border-gray-100'
-                    }`}
-                  onClick={() => setSelectedDoc(doc)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      {getDocumentTypeIcon(doc.documentType)}
-                      <div>
-                        <p className="text-sm font-medium">{doc.documentType}</p>
-                        <p className="text-xs text-gray-500">{doc.player}</p>
-                      </div>
-                    </div>
-                    {getStatusBadge(doc.source)}
-                  </div>
-                  {doc.dateUploaded && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Uploaded: {format(new Date(doc.dateUploaded), "PP")}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="col-span-2 border rounded-lg overflow-hidden">
-            {selectedDoc ? (
-              <>
-                <div className="p-4 border-b flex justify-between items-center">
-                  <div>
-                    <h3 className="font-medium">{selectedDoc.documentType}</h3>
-                    <p className="text-sm text-gray-500">
-                      {selectedDoc.player} • {getStatusBadge(selectedDoc.source)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(selectedDoc.documentURL, '_blank')}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Open in New Tab
-                  </Button>
-                </div>
-                <div className="h-full p-4 overflow-auto">
-                  {selectedDoc.documentURL.includes('drive.google.com') ? (
-                    <div className="h-full flex flex-col items-center justify-center">
-                      <iframe
-                        src={`https://drive.google.com/file/d/${extractFileIdFromUrl(selectedDoc.documentURL)}/preview`}
-                        className="w-full h-full min-h-[400px] border-0"
-                        title={selectedDoc.documentType}
-                      />
-                      <p className="text-sm text-gray-500 mt-2">
-                        Google Drive preview - click "Open in New Tab" for full view
-                      </p>
-                    </div>
-                  ) : selectedDoc.documentURL.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
-                    <div className="flex items-center justify-center h-full">
-                      <img
-                        src={selectedDoc.documentURL}
-                        alt={selectedDoc.documentType}
-                        className="max-h-full max-w-full object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          (e.target as HTMLImageElement).parentElement!.innerHTML =
-                            '<div class="text-center p-8"><p class="text-gray-500">Image cannot be displayed directly</p><p class="text-sm text-gray-400">Click "Open in New Tab" to view</p></div>';
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="text-center p-8">
-                        <FileText className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                        <p className="text-gray-600 mb-2">Document Preview</p>
-                        <p className="text-sm text-gray-500 mb-4">
-                          This document type cannot be previewed directly
-                        </p>
-                        <Button
-                          variant="outline"
-                          onClick={() => window.open(selectedDoc.documentURL, '_blank')}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Open Document
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center p-8">
-                  <Eye className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-600 mb-2">Select a document to preview</p>
-                  <p className="text-sm text-gray-500">
-                    Click on any document from the list to view its content
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
 const DocumentSelectionDialog = ({
   open,
   onOpenChange,
@@ -3372,13 +3286,16 @@ const DocumentSelectionDialog = ({
   isLoading: boolean;
 }) => {
   const [selections, setSelections] = useState<DocumentSelection>({});
+  const [expandedPreview, setExpandedPreview] = useState<{
+    url: string;
+    type: string;
+    source: 'existing' | 'new';
+  } | null>(null);
 
-  // Initialize selections when dialog opens
   useEffect(() => {
     if (open) {
       const initialSelections: DocumentSelection = {};
 
-      // Group documents by type
       const allDocumentTypes = new Set([
         ...existingDocuments.map(doc => doc.documentType),
         ...newDocuments.map(doc => doc.documentType)
@@ -3406,279 +3323,510 @@ const DocumentSelectionDialog = ({
 
   const getDocumentTypeIcon = (docType: string) => {
     if (docType.toLowerCase().includes('image') || docType.toLowerCase().includes('photo')) {
-      return <Image className="h-4 w-4 mr-2" />;
+      return <FileText className="h-4 w-4 mr-2" />;
     }
     return <FileText className="h-4 w-4 mr-2" />;
   };
 
-  const handlePreview = (url: string) => {
-    window.open(url, '_blank');
+  const getFileType = (url: string): string => {
+    if (!url) return 'unknown';
+
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+    const searchParams = urlObj.searchParams;
+
+    if (url.includes('drive.google.com')) {
+      return 'googleDrive';
+    }
+
+    const pathParts = pathname.split('.');
+    if (pathParts.length > 1) {
+      const extension = pathParts.pop()?.toLowerCase() || '';
+
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(extension)) {
+        return 'image';
+      } else if (['pdf'].includes(extension)) {
+        return 'pdf';
+      } else if (['doc', 'docx'].includes(extension)) {
+        return 'doc';
+      } else if (['txt'].includes(extension)) {
+        return 'text';
+      }
+    }
+
+    if (searchParams.has('format') || searchParams.has('ext')) {
+      const format = searchParams.get('format') || searchParams.get('ext') || '';
+      const formatLower = format.toLowerCase();
+
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(formatLower)) {
+        return 'image';
+      } else if (formatLower === 'pdf') {
+        return 'pdf';
+      }
+    }
+
+    return 'image';
+  };
+
+  const getGoogleDrivePreviewUrl = (url: string): string => {
+    if (!url) return '';
+
+    try {
+      const urlObj = new URL(url);
+      const fileId = urlObj.searchParams.get('id');
+
+      if (fileId) {
+        return `https://drive.google.com/file/d/${fileId}/preview`;
+      }
+
+      const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `https://drive.google.com/file/d/${match[1]}/preview`;
+      }
+    } catch (e) {
+      console.error('Error parsing URL:', e);
+    }
+
+    return url;
+  };
+
+  const getGoogleDriveDownloadUrl = (url: string): string => {
+    if (!url) return '';
+
+    try {
+      const urlObj = new URL(url);
+      const fileId = urlObj.searchParams.get('id');
+
+      if (fileId) {
+        return `https://drive.google.com/uc?export=download&id=${fileId}`;
+      }
+
+      // Try to extract from standard Google Drive URL pattern
+      const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+      }
+    } catch (e) {
+      console.error('Error parsing URL:', e);
+    }
+
+    return url;
+  };
+
+  const renderDocumentPreview = (doc: DocumentInfo, source: 'existing' | 'new') => {
+    const fileType = getFileType(doc.documentURL);
+    const isGoogleDrive = fileType === 'googleDrive';
+    const previewUrl = isGoogleDrive ? getGoogleDrivePreviewUrl(doc.documentURL) : doc.documentURL;
+    const downloadUrl = isGoogleDrive ? getGoogleDriveDownloadUrl(doc.documentURL) : doc.documentURL;
+
+    return (
+      <div className="mt-2">
+        <div className="">
+          <div className="flex flex-col">
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <h3 className="text-sm font-medium underline underline-offset-3">
+                  {doc.documentType.replaceAll("_", " ")}
+                </h3>
+                {/* <p className="text-xs text-muted-foreground">
+                  {source === 'existing' ? 'Existing Document' : 'New Document'}
+                </p> */}
+              </div>
+              <div className="flex items-center gap-2">
+                {/* <Button
+                  size="sm"
+                  variant="outline"
+                  asChild
+                  className="flex items-center gap-2 h-8"
+                >
+                  <a
+                    href={downloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Download
+                  </a>
+                </Button> */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  asChild
+                  className="h-8 w-8 p-0"
+                >
+                  <a
+                    href={previewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open in new tab"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            <div className="relative w-full h-[500px] border rounded-lg overflow-hidden bg-gray-50">
+              {fileType === 'image' ? (
+                <div className="relative w-full h-full">
+                  <div
+                    className="relative w-full h-full cursor-pointer"
+                    onClick={() => setExpandedPreview({
+                      url: doc.documentURL,
+                      type: doc.documentType,
+                      source: source
+                    })}
+                  >
+                    <img
+                      src={doc.documentURL}
+                      alt={doc.documentType}
+                      className="object-contain w-full h-full"
+                    />
+                  </div>
+                </div>
+              ) : isGoogleDrive ? (
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-full border-0"
+                  title={`Document Preview: ${doc.documentType}`}
+                  sandbox="allow-same-origin allow-scripts"
+                  loading="lazy"
+                />
+              ) : fileType === 'pdf' ? (
+                <iframe
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(doc.documentURL)}&embedded=true`}
+                  className="w-full h-full border-0"
+                  title={`PDF Preview: ${doc.documentType}`}
+                  loading="lazy"
+                />
+              ) : fileType === 'doc' || fileType === 'text' ? (
+                <div className="w-full h-full flex flex-col items-center justify-center p-8">
+                  <File className="h-32 w-32 text-blue-500 mb-6" />
+                  <span className="text-2xl font-semibold text-gray-700 text-center mb-2">
+                    {fileType === 'doc' ? 'Microsoft Word Document' : 'Text Document'}
+                  </span>
+                  <span className="text-sm text-muted-foreground text-center mb-6 max-w-md">
+                    This document cannot be previewed inline. Please download to view the contents.
+                  </span>
+                  {/* <Button asChild className="mt-2">
+                    <a
+                      href={downloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download Document
+                    </a>
+                  </Button> */}
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-8">
+                  <File className="h-32 w-32 text-gray-500 mb-6" />
+                  <span className="text-2xl font-semibold text-gray-700 text-center mb-2">
+                    Document File
+                  </span>
+                  <span className="text-sm text-muted-foreground text-center mb-6 max-w-md">
+                    This file type cannot be previewed inline. Please download to view the contents.
+                  </span>
+                  {/* <Button asChild className="mt-2">
+                    <a
+                      href={downloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download File
+                    </a>
+                  </Button> */}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-2 text-center">
+              <p className="text-xs text-muted-foreground">
+                {fileType === 'image' ? 'Click on image to view enlarged version' :
+                  isGoogleDrive ? 'Google Drive preview' :
+                    fileType === 'pdf' ? 'PDF preview via Google Docs Viewer' :
+                      'Document preview'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
+      <DialogContent className="max-w-5xl! max-h-[95vh]">
         <DialogHeader>
-          <DialogTitle>Select Documents for {playerName}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg">Select Documents for {playerName}</DialogTitle>
+          <DialogDescription className="text-sm">
             Choose which documents to keep - existing ones or new ones from the entry
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 h-[60vh] overflow-y-auto pr-2">
-          {Object.entries(selections).map(([documentType, selection]) => (
-            <div key={documentType} className="border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center">
-                  {getDocumentTypeIcon(documentType)}
-                  <h3 className="font-medium text-sm">{documentType}</h3>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "px-2 py-1 text-xs",
-                      selection.selectedSource === 'existing'
-                        ? "bg-green-50 text-green-700 border-green-200"
-                        : "bg-blue-50 text-blue-700 border-blue-200"
-                    )}
-                  >
-                    {selection.selectedSource === 'existing' ? 'Keeping Existing' : 'Using New'}
-                  </Badge>
+        {expandedPreview ? (
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-between mb-4 pb-4 border-b">
+              <div className="flex items-center">
+                <button
+                  onClick={() => setExpandedPreview(null)}
+                  className="mr-3 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <div>
+                  <h3 className="font-semibold text-md  underline underline-offset-3">{expandedPreview.type}</h3>
+                  {/* <p className="text-sm text-gray-600">
+                    {expandedPreview.source === 'existing' ? 'Existing Document' : 'New Document'}
+                  </p> */}
                 </div>
               </div>
-
-              <RadioGroup
-                value={selection.selectedSource}
-                onValueChange={(value: 'existing' | 'new') => {
-                  setSelections(prev => ({
-                    ...prev,
-                    [documentType]: {
-                      ...prev[documentType],
-                      selectedSource: value
-                    }
-                  }));
-                }}
-                className="grid grid-cols-2 gap-4"
+              <button
+                onClick={() => setExpandedPreview(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                {/* Existing Document Option */}
-                <div className={cn(
-                  "border rounded-lg p-3 cursor-pointer",
-                  selection.selectedSource === 'existing'
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-200 hover:border-gray-300"
-                )}>
-                  <div className="flex items-start space-x-3">
-                    <RadioGroupItem value="existing" id={`${documentType}-existing`} />
-                    <div className="flex-1 space-y-2">
-                      <Label htmlFor={`${documentType}-existing`} className="cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">Existing Document</span>
-                          {!selection.existingDoc && (
-                            <Badge variant="outline" className="text-xs bg-gray-100">
-                              Not Available
-                            </Badge>
-                          )}
-                        </div>
-                      </Label>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-                      {selection.existingDoc ? (
-                        <>
-                          <div className="text-xs text-gray-600 space-y-1">
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-xs"
-                                onClick={() => handlePreview(selection.existingDoc!.documentURL)}
-                              >
-                                <Eye className="h-3 w-3 mr-1" />
-                                Preview
-                              </Button>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-xs text-gray-500 italic">No existing document of this type</p>
-                      )}
-                    </div>
-                  </div>
+            <div className="flex-1 overflow-hidden bg-gray-900 rounded-lg">
+              <div className="relative w-full h-full">
+                <div className="absolute inset-0 flex items-center justify-center p-8">
+                  <Image
+                    src={expandedPreview.url}
+                    alt={expandedPreview.type}
+                    className="max-w-full max-h-full object-contain"
+                    width={0}
+                    height={0}
+                  />
                 </div>
-
-                {/* New Document Option */}
-                <div className={cn(
-                  "border rounded-lg p-3 cursor-pointer",
-                  selection.selectedSource === 'new'
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                )}>
-                  <div className="flex items-start space-x-3">
-                    <RadioGroupItem value="new" id={`${documentType}-new`} />
-                    <div className="flex-1 space-y-2">
-                      <Label htmlFor={`${documentType}-new`} className="cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">New Document</span>
-                          {!selection.newDoc && (
-                            <Badge variant="outline" className="text-xs bg-gray-100">
-                              Not Available
-                            </Badge>
-                          )}
-                        </div>
-                      </Label>
-
-                      {selection.newDoc ? (
-                        <>
-                          <div className="text-xs text-gray-600 space-y-1">
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-xs"
-                                onClick={() => handlePreview(selection.newDoc!.documentURL)}
-                              >
-                                <Eye className="h-3 w-3 mr-1" />
-                                Preview
-                              </Button>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-xs text-gray-500 italic">No new document of this type</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </RadioGroup>
-
-              <div className="mt-3 pt-3 border-t text-xs text-gray-500">
-                {selection.selectedSource === 'existing' && selection.existingDoc ? (
-                  <p>The existing document will be kept. The new document will be ignored.</p>
-                ) : selection.selectedSource === 'new' && selection.newDoc ? (
-                  <p className={selection.existingDoc ? "text-amber-600" : ""}>
-                    {selection.existingDoc
-                      ? "⚠️ The new document will replace the existing one. The old document will be removed."
-                      : "The new document will be added."}
-                  </p>
-                ) : (
-                  <p>No document available for this type.</p>
-                )}
               </div>
             </div>
-          ))}
 
-          {Object.keys(selections).length === 0 && (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-600">No documents to select</p>
-              <p className="text-sm text-gray-500 mt-1">
-                There are no documents that need selection for this player.
-              </p>
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Click the back button or close icon to return to document selection
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setExpandedPreview(null)}
+                  className="px-6 py-2.5"
+                >
+                  Back to Selection
+                </Button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-8 h-[70vh] overflow-y-auto pr-2">
+              {Object.entries(selections).map(([documentType, selection]) => (
+                <div key={documentType} className="border-2 rounded-xl p-5 bg-white shadow-sm">
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center">
+                      {getDocumentTypeIcon(documentType)}
+                      <h3 className="font-semibold text-lg ">{documentType}</h3>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "px-3 py-1.5 text-sm",
+                          selection.selectedSource === 'existing'
+                            ? "bg-green-50 text-green-800 border-green-300"
+                            : "bg-blue-50 text-blue-800 border-blue-300"
+                        )}
+                      >
+                        {selection.selectedSource === 'existing' ? 'Keeping Existing' : 'Using New'}
+                      </Badge>
+                    </div>
+                  </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Selections"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
+                  <RadioGroup
+                    value={selection.selectedSource}
+                    onValueChange={(value: 'existing' | 'new') => {
+                      setSelections(prev => ({
+                        ...prev,
+                        [documentType]: {
+                          ...prev[documentType],
+                          selectedSource: value
+                        }
+                      }));
+                    }}
+                    className="grid grid-cols-2 gap-2"
+                  >
+                    <div className={cn(
+                      "border-2 rounded-xl p-5 cursor-pointer transition-all",
+                      selection.selectedSource === 'existing'
+                        ? "border-green-500 bg-green-50/50 shadow-sm"
+                        : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                    )}>
+                      <div className="space-y-4">
+                        <div className="flex items-start space-x-4">
+                          <RadioGroupItem value="existing" id={`${documentType}-existing`} className="h-5 w-5" />
+                          <div className="flex-1">
+                            <Label htmlFor={`${documentType}-existing`} className="cursor-pointer">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-base">Existing Document</span>
+                              </div>
+                            </Label>
+                          </div>
+                        </div>
 
-const ConfirmationDialog = ({
-  open,
-  onOpenChange,
-  onConfirm,
-  documentsCount,
-  willReplaceDocuments,
-  isLoading,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-  documentsCount: number;
-  willReplaceDocuments: boolean;
-  isLoading: boolean;
-}) => {
-  const getActionDescription = () => {
-    if (documentsCount === 0) return "No documents to process.";
-    if (willReplaceDocuments) return `Replace ${documentsCount} existing document(s) with new ones.`;
-    return `Move/Copy ${documentsCount} document(s) to requirements folder.`;
-  };
+                        {selection.existingDoc ? (
+                          <>
+                            {renderDocumentPreview(selection.existingDoc, 'existing')}
+                            <div className="text-sm text-gray-700 space-y-2 pt-3">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold">Status:</span>
+                                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                                  <Check className="h-3 w-3 mr-1" />
+                                  Existing
+                                </Badge>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="mt-4 p-10 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center h-[500px]">
+                            <FileText className="h-20 w-20 text-gray-400 mb-4" />
+                            <p className="text-lg text-gray-600 font-medium">No existing document</p>
+                            <p className="text-sm text-gray-500 mt-2 italic">No document of this type currently exists</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-  const getWarningMessage = () => {
-    if (willReplaceDocuments) {
-      return "⚠️ Existing documents will be permanently removed from Google Drive AND the database.";
-    }
-    if (documentsCount > 0) {
-      return "Document changes cannot be undone automatically.";
-    }
-    return null;
-  };
+                    <div className={cn(
+                      "border-2 rounded-xl p-5 cursor-pointer transition-all",
+                      selection.selectedSource === 'new'
+                        ? "border-blue-500 bg-blue-50/50 shadow-sm"
+                        : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                    )}>
+                      <div className="space-y-4">
+                        <div className="flex items-start space-x-4">
+                          <RadioGroupItem value="new" id={`${documentType}-new`} className="h-5 w-5" />
+                          <div className="flex-1">
+                            <Label htmlFor={`${documentType}-new`} className="cursor-pointer">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-base">New Document</span>
+                              </div>
+                            </Label>
+                          </div>
+                        </div>
 
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Confirm Player Assignment</AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="space-y-2">
-              <div>Are you sure you want to assign players to this entry?</div>
-              <div className="font-medium">{getActionDescription()}</div>
-              {getWarningMessage() && (
-                <div className="text-amber-600 dark:text-amber-400 font-medium">
-                  {getWarningMessage()}
+                        {selection.newDoc ? (
+                          <>
+                            {renderDocumentPreview(selection.newDoc, 'new')}
+                            <div className="text-sm text-gray-700 space-y-2 pt-3">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold">Status:</span>
+                                <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  New
+                                </Badge>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="mt-4 p-10 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center h-[500px]">
+                            <FileText className="h-20 w-20 text-gray-400 mb-4" />
+                            <p className="text-lg text-gray-600 font-medium">No new document</p>
+                            <p className="text-sm text-gray-500 mt-2 italic">No new document of this type was uploaded</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </RadioGroup>
+
+                  <div className="mt-6 pt-5 border-t text-sm text-gray-700">
+                    {selection.selectedSource === 'existing' && selection.existingDoc ? (
+                      <p className="text-green-800 bg-green-50 p-3 rounded-lg border border-green-200">
+                        <Check className="h-4 w-4 inline mr-2" />
+                        <span className="font-medium">The existing document will be kept.</span> The new document will be removed.
+                      </p>
+                    ) : selection.selectedSource === 'new' && selection.newDoc ? (
+                      <p className={cn(
+                        "p-3 rounded-lg border",
+                        selection.existingDoc
+                          ? "text-amber-800 bg-amber-50 border-amber-200"
+                          : "text-blue-800 bg-blue-50 border-blue-200"
+                      )}>
+                        {selection.existingDoc ? (
+                          <>
+                            <AlertCircle className="h-4 w-4 inline mr-2" />
+                            <span className="font-bold">⚠️ Replacement:</span> The new document will replace the existing one. The old document will be permanently removed.
+                          </>
+                        ) : (
+                          <>
+                            <Check className="h-4 w-4 inline mr-2" />
+                            <span className="font-medium">The new document will be added.</span> No existing document to replace.
+                          </>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-gray-500 italic p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        No document available for this type.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {Object.keys(selections).length === 0 && (
+                <div className="text-center py-12">
+                  <FileText className="h-20 w-20 mx-auto text-gray-300 mb-5" />
+                  <p className="text-xl text-gray-600 font-medium">No documents to select</p>
+                  <p className="text-base text-gray-500 mt-2 max-w-md mx-auto">
+                    There are no documents that need selection for this player.
+                  </p>
                 </div>
               )}
-              <div className="text-sm text-muted-foreground mt-2">
-                This action will update player profiles and process documents as configured.
-              </div>
             </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault();
-              onConfirm();
-            }}
-            disabled={isLoading}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              'Confirm & Assign'
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+
+            <DialogFooter className="pt-6 border-t">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isLoading}
+                className="px-6 py-2.5 text-base"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isLoading}
+                className="px-8 py-2.5 text-base"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-5 w-5 mr-2" />
+                    Save Selections
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 
 const AssignDialog = (props: Props) => {
   const [isPending, startTransition] = useTransition()
   const [open, setOpen] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
-  const [showConfirmation, setShowConfirmation] = useState(false)
   const [showDocumentSelection1, setShowDocumentSelection1] = useState(false)
   const [showDocumentSelection2, setShowDocumentSelection2] = useState(false)
-  const [documentsToPreview, setDocumentsToPreview] = useState<DocumentInfo[]>([])
   const [documentSelections, setDocumentSelections] = useState<{
     player1?: DocumentSelection;
     player2?: DocumentSelection;
@@ -3733,6 +3881,7 @@ const AssignDialog = (props: Props) => {
         birthDate: false,
         phoneNumber: false,
         email: false,
+        validDocuments: false, // Add this back for server-side handling
       },
       migratePlayer2Data: {
         firstName: false,
@@ -3742,6 +3891,7 @@ const AssignDialog = (props: Props) => {
         birthDate: false,
         phoneNumber: false,
         email: false,
+        validDocuments: false, // Add this back for server-side handling
       },
     },
     listeners: {
@@ -3756,6 +3906,7 @@ const AssignDialog = (props: Props) => {
             birthDate: false,
             phoneNumber: false,
             email: false,
+            validDocuments: false,
           })
           // Clear document selections for player 1
           setDocumentSelections(prev => ({ ...prev, player1: undefined }))
@@ -3775,6 +3926,7 @@ const AssignDialog = (props: Props) => {
             birthDate: false,
             phoneNumber: false,
             email: false,
+            validDocuments: false,
           })
           // Clear document selections for player 2
           setDocumentSelections(prev => ({ ...prev, player2: undefined }))
@@ -3806,6 +3958,11 @@ const AssignDialog = (props: Props) => {
         try {
           console.log("🚀 Starting player assignment process...")
           console.log("📋 Form payload:", payload)
+
+          // Prepare the payload with document selections
+          const finalPayload = {
+            ...payload,
+          };
 
           if (entry) {
             try {
@@ -3855,7 +4012,7 @@ const AssignDialog = (props: Props) => {
 
           const response: any = await assignPlayers({
             variables: {
-              input: payload,
+              input: finalPayload,
             },
           })
 
@@ -3919,82 +4076,6 @@ const AssignDialog = (props: Props) => {
     props.onClose?.()
   }
 
-  const collectDocumentsForPreview = async (): Promise<DocumentInfo[]> => {
-    const docs: DocumentInfo[] = [];
-
-    if (!entry) return docs;
-
-    // Collect new documents from entry
-    if (entry.player1Entry?.validDocuments) {
-      entry.player1Entry.validDocuments.forEach(doc => {
-        docs.push({
-          documentType: doc.documentType,
-          documentURL: doc.documentURL,
-          dateUploaded: doc.dateUploaded,
-          player: 'Player 1',
-          source: 'new'
-        });
-      });
-    }
-
-    if (entry.player2Entry?.validDocuments) {
-      entry.player2Entry.validDocuments.forEach(doc => {
-        docs.push({
-          documentType: doc.documentType,
-          documentURL: doc.documentURL,
-          dateUploaded: doc.dateUploaded,
-          player: 'Player 2',
-          source: 'new'
-        });
-      });
-    }
-
-    // Collect existing documents from connected players
-    if (player1?.validDocuments) {
-      player1.validDocuments.forEach(doc => {
-        docs.push({
-          documentType: doc.documentType,
-          documentURL: doc.documentURL,
-          dateUploaded: doc.dateUploaded,
-          player: 'Player 1 (Existing)',
-          source: 'existing'
-        });
-      });
-    }
-
-    if (player2?.validDocuments) {
-      player2.validDocuments.forEach(doc => {
-        docs.push({
-          documentType: doc.documentType,
-          documentURL: doc.documentURL,
-          dateUploaded: doc.dateUploaded,
-          player: 'Player 2 (Existing)',
-          source: 'existing'
-        });
-      });
-    }
-
-    return docs;
-  };
-
-  const handlePreviewClick = async () => {
-    try {
-      const docs = await collectDocumentsForPreview();
-      if (docs.length === 0) {
-        toast.info('No documents to preview', {
-          description: 'There are no documents that will be processed.',
-          duration: 3000,
-        });
-        return;
-      }
-      setDocumentsToPreview(docs);
-      setShowPreview(true);
-    } catch (error) {
-      console.error('Error collecting documents for preview:', error);
-      toast.error('Failed to load document preview');
-    }
-  };
-
   const handleDocumentSelection1 = () => {
     setShowDocumentSelection1(true);
   };
@@ -4005,32 +4086,20 @@ const AssignDialog = (props: Props) => {
 
   const handleSaveDocumentSelections1 = (selections: DocumentSelection) => {
     setDocumentSelections(prev => ({ ...prev, player1: selections }));
+    // Update the form value to indicate documents will be migrated
+    form.setFieldValue("migratePlayer1Data.validDocuments", true);
     toast.success('Document selections saved for Player 1', {
       duration: 3000,
     });
-
-    // Check if we need to show Player 2 dialog next
-    const needsPlayer2Selection = !form.getFieldValue("isPlayer2New") &&
-      form.getFieldValue("connectedPlayer2") &&
-      hasPlayer2DocumentsToSelect() &&
-      !documentSelections.player2;
-
-    if (needsPlayer2Selection) {
-      setShowDocumentSelection2(true);
-    } else {
-      // Show final confirmation
-      showFinalConfirmation();
-    }
   };
 
   const handleSaveDocumentSelections2 = (selections: DocumentSelection) => {
     setDocumentSelections(prev => ({ ...prev, player2: selections }));
+    // Update the form value to indicate documents will be migrated
+    form.setFieldValue("migratePlayer2Data.validDocuments", true);
     toast.success('Document selections saved for Player 2', {
       duration: 3000,
     });
-
-    // Show final confirmation
-    showFinalConfirmation();
   };
 
   const getPlayer1ExistingDocuments = (): DocumentInfo[] => {
@@ -4089,17 +4158,6 @@ const AssignDialog = (props: Props) => {
     return hasExisting && hasNew;
   };
 
-  const showFinalConfirmation = async () => {
-    const docs = await collectDocumentsForPreview();
-
-    // Check if any documents will be replaced
-    const willReplaceDocuments = Object.values(documentSelections).some(selection =>
-      selection && Object.values(selection).some(s => s.selectedSource === 'new' && s.existingDoc)
-    );
-
-    setShowConfirmation(true);
-  };
-
   const handleFormSubmit = async () => {
     // First, check if we need to show document selection dialogs
     const needsPlayer1Selection = !form.getFieldValue("isPlayer1New") &&
@@ -4115,20 +4173,14 @@ const AssignDialog = (props: Props) => {
     // If either player needs document selection, show those dialogs
     if (needsPlayer1Selection) {
       setShowDocumentSelection1(true);
+      return; // Wait for user to make selections
     } else if (needsPlayer2Selection) {
       setShowDocumentSelection2(true);
+      return; // Wait for user to make selections
     } else {
-      // No document selections needed, proceed directly to confirmation
-      showFinalConfirmation();
+      // No document selections needed, proceed directly to form submission
+      form.handleSubmit();
     }
-  };
-
-  const handleConfirmAssignment = () => {
-    // Close confirmation dialog
-    setShowConfirmation(false);
-
-    // Trigger form submission
-    form.handleSubmit();
   };
 
   const getDocumentSelectionSummary = (selections?: DocumentSelection) => {
@@ -4239,20 +4291,45 @@ const AssignDialog = (props: Props) => {
                                   Choose which documents to keep for Player 1
                                 </p>
                               </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDocumentSelection1}
+                                disabled={isLoading}
+                              >
+                                {documentSelections.player1 ? "Edit Selection" : "Select Documents"}
+                              </Button>
                             </div>
                             {documentSelections.player1 ? (
-                              <div className="mt-2 text-xs text-gray-600">
-                                <p>Selected: {getDocumentSelectionSummary(documentSelections.player1)}</p>
-                                <p className="text-muted-foreground">Selections saved - will be prompted to review before assignment</p>
+                              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <Check className="h-4 w-4 mr-2 text-green-600" />
+                                    <div>
+                                      <p className="text-sm font-medium text-blue-800">Document selections saved</p>
+                                      <p className="text-xs text-blue-600">
+                                        {getDocumentSelectionSummary(documentSelections.player1)} documents selected
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleDocumentSelection1}
+                                    className="text-xs"
+                                  >
+                                    Edit
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
-                              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                              <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
                                 <div className="flex items-center">
-                                  <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                                  <FileText className="h-4 w-4 mr-2 text-amber-600" />
                                   <div>
-                                    <p className="text-sm font-medium text-blue-800">Document Selection Required</p>
-                                    <p className="text-xs text-blue-600">
-                                      Will be prompted to select documents before assignment
+                                    <p className="text-sm font-medium text-amber-800">Document Selection Required</p>
+                                    <p className="text-xs text-amber-600">
+                                      Click "Select Documents" to choose which documents to keep
                                     </p>
                                   </div>
                                 </div>
@@ -4260,6 +4337,28 @@ const AssignDialog = (props: Props) => {
                             )}
                           </div>
                         )}
+
+                        {/* Document info display */}
+                        {/* {!state.isPlayer1New && state.connectedPlayer1 && (
+                          <div className="mb-4">
+                            <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                              <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                Valid Documents
+                              </span>
+                              <span className="col-span-2 px-2 border w-full flex items-center py-1 justify-start">
+                                {getPlayer1ExistingDocuments().length} existing documents
+                              </span>
+                              <span className="col-span-2 px-2 border w-full flex items-center py-1 justify-start">
+                                {getPlayer1NewDocuments().length} new documents
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {documentSelections.player1
+                                ? "Documents will be replaced based on your selection"
+                                : "Click 'Select Documents' to choose which ones to keep"}
+                            </p>
+                          </div>
+                        )} */}
 
                         {!state.isPlayer1New && (
                           <>
@@ -4400,7 +4499,14 @@ const AssignDialog = (props: Props) => {
                                         birthDate: checked === true,
                                         phoneNumber: checked === true,
                                         email: checked === true,
+                                        validDocuments: checked === true,
                                       })
+                                      if (checked) {
+                                        // If checking all, show document selection dialog
+                                        setTimeout(() => {
+                                          handleDocumentSelection1();
+                                        }, 100);
+                                      }
                                     }}
                                   />
                                 </div>
@@ -5037,25 +5143,72 @@ const AssignDialog = (props: Props) => {
                                   Choose which documents to keep for Player 2
                                 </p>
                               </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDocumentSelection2}
+                                disabled={isLoading}
+                              >
+                                {documentSelections.player2 ? "Edit Selection" : "Select Documents"}
+                              </Button>
                             </div>
                             {documentSelections.player2 ? (
-                              <div className="mt-2 text-xs text-gray-600">
-                                <p>Selected: {getDocumentSelectionSummary(documentSelections.player2)}</p>
-                                <p className="text-muted-foreground">Selections saved - will be prompted to review before assignment</p>
+                              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <Check className="h-4 w-4 mr-2 text-green-600" />
+                                    <div>
+                                      <p className="text-sm font-medium text-blue-800">Document selections saved</p>
+                                      <p className="text-xs text-blue-600">
+                                        {getDocumentSelectionSummary(documentSelections.player2)} documents selected
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleDocumentSelection2}
+                                    className="text-xs"
+                                  >
+                                    Edit
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
-                              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                              <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
                                 <div className="flex items-center">
-                                  <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                                  <FileText className="h-4 w-4 mr-2 text-amber-600" />
                                   <div>
-                                    <p className="text-sm font-medium text-blue-800">Document Selection Required</p>
-                                    <p className="text-xs text-blue-600">
-                                      Will be prompted to select documents before assignment
+                                    <p className="text-sm font-medium text-amber-800">Document Selection Required</p>
+                                    <p className="text-xs text-amber-600">
+                                      Click "Select Documents" to choose which documents to keep
                                     </p>
                                   </div>
                                 </div>
                               </div>
                             )}
+                          </div>
+                        )}
+
+                        {/* Document info display */}
+                        {!state.isPlayer2New && state.connectedPlayer2 && (
+                          <div className="mb-4">
+                            <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                              <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                Valid Documents
+                              </span>
+                              <span className="col-span-2 px-2 border w-full flex items-center py-1 justify-start">
+                                {getPlayer2ExistingDocuments().length} existing documents
+                              </span>
+                              <span className="col-span-2 px-2 border w-full flex items-center py-1 justify-start">
+                                {getPlayer2NewDocuments().length} new documents
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {documentSelections.player2
+                                ? "Documents will be replaced based on your selection"
+                                : "Click 'Select Documents' to choose which ones to keep"}
+                            </p>
                           </div>
                         )}
 
@@ -5198,7 +5351,14 @@ const AssignDialog = (props: Props) => {
                                         birthDate: checked === true,
                                         phoneNumber: checked === true,
                                         email: checked === true,
+                                        validDocuments: checked === true,
                                       })
+                                      if (checked) {
+                                        // If checking all, show document selection dialog
+                                        setTimeout(() => {
+                                          handleDocumentSelection2();
+                                        }, 100);
+                                      }
                                     }}
                                   />
                                 </div>
@@ -5806,56 +5966,23 @@ const AssignDialog = (props: Props) => {
               />
             </form>
             <DialogFooter>
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center">
-                  {(() => {
-                    const player1DocCount = entry?.player1Entry?.validDocuments?.length || 0;
-                    const player2DocCount = entry?.player2Entry?.validDocuments?.length || 0;
-                    const hasDocuments = player1DocCount > 0 || player2DocCount > 0;
-
-                    if (hasDocuments) {
-                      const totalDocs = player1DocCount + player2DocCount;
-
-                      return (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handlePreviewClick}
-                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Preview {totalDocs} Document{totalDocs !== 1 ? 's' : ''}
-                        </Button>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={onClose}>
-                    Cancel
-                  </Button>
-                  <Button
-                    className="w-20"
-                    loading={isLoading || isPending}
-                    onClick={handleFormSubmit}
-                    type="button"
-                  >
-                    Assign
-                  </Button>
-                </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  className="w-20"
+                  loading={isLoading || isPending}
+                  onClick={handleFormSubmit}
+                  type="button"
+                >
+                  Assign
+                </Button>
               </div>
             </DialogFooter>
           </DialogContent>
         </form>
       </Dialog>
-
-      <DocumentPreviewDialog
-        open={showPreview}
-        onOpenChange={setShowPreview}
-        documents={documentsToPreview}
-      />
 
       <DocumentSelectionDialog
         open={showDocumentSelection1}
@@ -5875,19 +6002,6 @@ const AssignDialog = (props: Props) => {
         newDocuments={getPlayer2NewDocuments()}
         playerName="Player 2"
         isLoading={isLoading}
-      />
-
-      <ConfirmationDialog
-        open={showConfirmation}
-        onOpenChange={setShowConfirmation}
-        onConfirm={handleConfirmAssignment}
-        documentsCount={documentsToPreview.length}
-        willReplaceDocuments={(() => {
-          return Object.values(documentSelections).some(selection =>
-            selection && Object.values(selection).some(s => s.selectedSource === 'new' && s.existingDoc)
-          );
-        })()}
-        isLoading={isLoading || isPending}
       />
     </>
   )

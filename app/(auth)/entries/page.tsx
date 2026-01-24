@@ -56,6 +56,7 @@ import EntryTable from "@/components/table/entry-table"
 import AssignDialog from "./dialogs/assign"
 import ApproveDialog from "./dialogs/approve"
 import RejectDialog from "./dialogs/reject"
+import TransferDialog from "./dialogs/transfer-payment"
 
 const ENTRIES = gql`
   query Entries(
@@ -158,6 +159,14 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
         <DropdownMenuGroup>
           <ViewDialog _id={entry?._id} />
           <FormDialog _id={entry?._id} onClose={() => setMenuOpen(false)} />
+
+          {(status === "PAYMENT_PENDING" || status === "PAYMENT_PAID" || status === "PAYMENT_PARTIALLY_PAID") && (
+            <TransferDialog
+              entryId={entry?._id}
+              onClose={() => setMenuOpen(false)}
+            />
+          )}
+
           {status === "LEVEL_PENDING" && (
             <>
               <DropdownMenuSeparator />

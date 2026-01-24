@@ -26,6 +26,14 @@ export interface IEntryList {
   isFullyPaid: boolean
 }
 
+export enum TransferEntryStatus {
+  PAYMENT_PENDING = "PAYMENT_PENDING",
+  PAYMENT_PARTIALLY_PAID = "PAYMENT_PARTIALLY_PAID",
+  VERIFIED = "VERIFIED",
+  REJECTED = "REJECTED",
+  CANCELLED = "CANCELLED",
+}
+
 export interface IPayment {
   _id: string
   payerName: string

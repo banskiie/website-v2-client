@@ -227,7 +227,7 @@ interface UpdatePaymentResponse {
   }
 }
 
-// FIXED: Updated interface to match your backend
+// UPDATED: Remove isFullyPaid from frontend interfaces
 interface CreatePaymentVariables {
   input: {
     payerName: string
@@ -237,13 +237,12 @@ interface CreatePaymentVariables {
     proofOfPaymentURL: string
     paymentDate: Date
     entryList: Array<{
-      entry: string[]  // Entry numbers (strings), not IDs
-      isFullyPaid: boolean
+      entry: string[]  // Only entry numbers
     }>
   }
 }
 
-// FIXED: Updated interface to match your backend
+// UPDATED: Remove isFullyPaid from frontend interfaces
 interface UpdatePaymentVariables {
   input: {
     _id: string
@@ -254,8 +253,7 @@ interface UpdatePaymentVariables {
     proofOfPaymentURL: string
     paymentDate: Date
     entryList: Array<{
-      entry: string[]  // Entry numbers (strings), not IDs
-      isFullyPaid: boolean
+      entry: string[]  // Only entry numbers
     }>
   }
 }
@@ -811,6 +809,8 @@ const FormDialog = (props: Props) => {
   }
 
   const handleEntrySelect = (entry: ActivePaymentEntryOption) => {
+    console.log("Selecting entry:", entry.entryNumber)
+
     if (!selectedEntries.find(e => e.entryNumber === entry.entryNumber)) {
       const entryKey = entry.entryNumber.includes('_')
         ? entry.entryNumber.split('_')[1]
@@ -830,6 +830,8 @@ const FormDialog = (props: Props) => {
         amount: entry.remainingFee
       };
 
+      console.log("New entry object:", newEntry)
+
       setSelectedEntries([...selectedEntries, newEntry]);
     }
     setEntrySearch("");
@@ -847,24 +849,23 @@ const FormDialog = (props: Props) => {
       setTotalRequired(total)
 
       const currentAmount = form.getFieldValue("amount") || 0
+
       if (currentAmount === 0 || total === 0) {
         setPriceReminder(null)
       } else if (currentAmount >= total) {
-        setPriceReminder(`✅ Amount is enough and matches the total price of ₱${total.toFixed(2)}.`)
+        setPriceReminder(`✅ Payment amount is enough for selected entries.`)
       } else {
         const diff = total - currentAmount
-        setPriceReminder(`⚠️ Amount is not enough. Missing ₱${diff.toFixed(2)} from ₱${total.toFixed(2)}.`)
+        setPriceReminder(`⚠️ Payment amount may not be enough for all selected entries.`)
       }
     }
 
     calculateTotal()
   }, [selectedEntries, form.getFieldValue("amount")])
 
-  // FIXED: Updated handleSubmitPayment function
   const handleSubmitPayment = async () => {
     console.log("Starting payment submission...")
 
-    // Get all form values
     const payerName = form.getFieldValue("payerName")
     const amount = form.getFieldValue("amount")
     const method = form.getFieldValue("method")
@@ -877,7 +878,6 @@ const FormDialog = (props: Props) => {
     console.log("File:", file)
     console.log("Is edit mode:", isEditMode)
 
-    // Validate required fields
     if (!payerName?.trim()) {
       toast.error("Payer name is required")
       setActiveTab("payment-details")
@@ -911,7 +911,6 @@ const FormDialog = (props: Props) => {
     try {
       setIsUploading(true)
 
-      // Upload file if it exists and we don't already have a URL
       if (!proofOfPaymentURL && file) {
         console.log("Uploading file...")
         const uploadedUrl = await uploadFile(file)
@@ -924,13 +923,11 @@ const FormDialog = (props: Props) => {
         console.log("File uploaded, URL:", proofOfPaymentURL)
       }
 
-      // For edit mode, if no new file uploaded, use existing URL
       if (!proofOfPaymentURL && isEditMode && existingPaymentData?.proofOfPaymentURL) {
         proofOfPaymentURL = existingPaymentData.proofOfPaymentURL
         console.log("Using existing URL:", proofOfPaymentURL)
       }
 
-      // For new payments, require proof of payment
       if (!isEditMode && !proofOfPaymentURL) {
         toast.error("Please upload proof of payment")
         setActiveTab("payment-reference")
@@ -938,26 +935,24 @@ const FormDialog = (props: Props) => {
         return
       }
 
-      // FIXED: Create entry list with entry numbers (not entry keys)
       const entryList = selectedEntries.map(entry => ({
-        entry: [entry.entryNumber],  // Send entry numbers, not entry keys
-        isFullyPaid: entry.isFullyPaid
+        entry: [entry.entryNumber],
+        isFullyPaid: false
       }))
 
-      // Determine reference number
+      console.log("Entry list to send (backend will calculate distribution):", entryList)
       const finalReferenceNumber = reference && reference !== "Not found"
         ? reference
         : confirmationNumber || referenceNumber || `ref_${Date.now()}`
 
-      console.log("Final reference number:", finalReferenceNumber)
       console.log("Submitting payment with data:", {
         payerName,
         referenceNumber: finalReferenceNumber,
-        amount: amount,
+        amount,
         method,
         proofOfPaymentURL: proofOfPaymentURL || '',
         paymentDate,
-        entryList
+        entryList // Now only contains entry numbers
       })
 
       startTransition(async () => {
@@ -970,7 +965,7 @@ const FormDialog = (props: Props) => {
                   _id,
                   payerName,
                   referenceNumber: finalReferenceNumber,
-                  amount: amount,
+                  amount,
                   method,
                   proofOfPaymentURL: proofOfPaymentURL || '',
                   paymentDate,
@@ -998,7 +993,7 @@ const FormDialog = (props: Props) => {
                 input: {
                   payerName,
                   referenceNumber: finalReferenceNumber,
-                  amount: amount,
+                  amount,
                   method,
                   proofOfPaymentURL: proofOfPaymentURL || '',
                   paymentDate,
@@ -1035,9 +1030,13 @@ const FormDialog = (props: Props) => {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("Form submitted - handleFormSubmit called")
+    console.log("Selected entries count:", selectedEntries.length)
+    console.log("Selected entries:", selectedEntries)
 
     // Check for duplicates before showing confirmation dialog
     const currentRef = form.getFieldValue("referenceNumber")
+    console.log("Current reference:", currentRef)
     if (!isEditMode && currentRef && checkForDuplicateReference(currentRef)) {
       const duplicatePayment = getDuplicatePaymentInfo(currentRef)
       const duplicateEntries = duplicatePayment?.entries || "unknown entries"
@@ -1054,6 +1053,7 @@ const FormDialog = (props: Props) => {
 
   const handleConfirmPayment = async () => {
     console.log("Confirming payment...")
+    console.log("Selected entries before confirm:", selectedEntries)
 
     const currentRef = form.getFieldValue("referenceNumber")
 
@@ -1088,66 +1088,65 @@ const FormDialog = (props: Props) => {
     </motion.div>
   )
 
-  const ConfirmationDialog = () => (
-    <motion.div
-      className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl z-50"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
+  // UPDATED: ConfirmationDialog - Simplify display
+  const ConfirmationDialog = () => {
+    const totalAmount = form.getFieldValue("amount") || 0
+
+    return (
       <motion.div
-        className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl z-50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
       >
-        <div className="text-center mb-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-2">
-            {isEditMode ? "Confirm Payment Update" : "Confirm Payment Submission"}
-          </h3>
-          <p className="text-gray-600 text-sm">
-            {isEditMode
-              ? "Please review your updated payment details before submitting:"
-              : "Please review your payment details before submitting:"}
-          </p>
-        </div>
+        <motion.div
+          className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+        >
+          <div className="text-center mb-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">
+              {isEditMode ? "Confirm Payment Update" : "Confirm Payment Submission"}
+            </h3>
+            <p className="text-gray-600 text-sm">
+              {isEditMode
+                ? "Please review your updated payment details before submitting:"
+                : "Please review your payment details before submitting:"}
+            </p>
+          </div>
 
-        <div className="space-y-4 mb-6">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm font-medium text-gray-700 mb-1">Payment Method:</div>
-              <div className="text-base font-bold text-purple-600">
-                {form.getFieldValue("method").replace("_", " ")}
+          <div className="space-y-4 mb-6">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="text-sm font-medium text-gray-700 mb-1">Payment Method:</div>
+                <div className="text-base font-bold text-purple-600">
+                  {form.getFieldValue("method").replace("_", " ")}
+                </div>
+              </div>
+
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="text-sm font-medium text-gray-700 mb-1">Entries:</div>
+                <div className="text-base font-bold text-blue-600">
+                  {selectedEntries.length} entries
+                </div>
               </div>
             </div>
 
             <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm font-medium text-gray-700 mb-1">Total Required:</div>
-              <div className="text-base font-bold text-green-600">
-                ₱{totalRequired.toLocaleString('en-US', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
-                })}
+              <div className="text-sm font-medium text-gray-700 mb-1">Payer Name</div>
+              <div className="text-base font-medium text-gray-800">
+                {form.getFieldValue("payerName").trim()}
               </div>
             </div>
-          </div>
 
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <div className="text-sm font-medium text-gray-700 mb-1">Payer Name</div>
-            <div className="text-base font-medium text-gray-800">
-              {form.getFieldValue("payerName").trim()}
-            </div>
-          </div>
-
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <span className="text-sm font-medium text-gray-700 block mb-2">
-              Payment Distribution:
-            </span>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {selectedEntries.map((entry, index) => {
-                const entryAmount = entry.amount || 0
-                return (
-                  <div key={`${entry.entryNumber}-${index}`} className="flex justify-between items-center text-xs p-2 bg-white rounded border">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <span className="text-sm font-medium text-gray-700 block mb-2">
+                Selected Entries:
+              </span>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {selectedEntries.map((entry, index) => (
+                  <div key={index} className="flex justify-between items-center text-xs p-2 bg-white rounded border">
                     <div>
                       <span className="font-medium">Entry {index + 1}:</span>
                       <span className="text-gray-600 ml-2">
@@ -1156,63 +1155,71 @@ const FormDialog = (props: Props) => {
                     </div>
                     <div className="text-right">
                       <div className="font-medium text-green-600">
-                        ₱{entryAmount.toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}
+                        ₱{(entry.amount || 0).toFixed(2)}
                       </div>
                       <div className="text-gray-500 text-xs">
-                        {entry.isFullyPaid ? 'Fully Paid' : 'Partial Payment'}
+                        {entry.player1Name}
+                        {entry.player2Name ? `, ${entry.player2Name}` : ''}
                       </div>
                     </div>
                   </div>
-                )
-              })}
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <div className="text-sm text-blue-700">
+                <div className="font-medium mb-1">Note:</div>
+                <div className="text-xs">
+                  Payment will be distributed across entries based on their current pending amounts.
+                  The backend will automatically calculate which entries become fully paid.
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg border border-green-200">
+              <span className="text-sm font-bold text-green-700">Payment Amount </span>
+              <span className="text-lg font-bold text-green-700">
+                ₱{totalAmount.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </span>
             </div>
           </div>
 
-          <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <span className="text-sm font-bold text-blue-700">Payment Amount </span>
-            <span className="text-lg font-bold text-blue-700">
-              ₱{(form.getFieldValue("amount") || 0).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              })}
-            </span>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setShowConfirmationDialog(false)}
+              className="flex-1 bg-gray-300 text-gray-700 hover:bg-gray-400"
+              disabled={isUploading || isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmPayment}
+              className="flex-1 bg-green-600 text-white hover:bg-green-700"
+              disabled={isUploading || isPending}
+            >
+              {isUploading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Uploading...</span>
+                </div>
+              ) : isPending ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{isEditMode ? "Updating..." : "Submitting..."}</span>
+                </div>
+              ) : (
+                isEditMode ? "Update Payment" : "Confirm Payment"
+              )}
+            </Button>
           </div>
-        </div>
-
-        <div className="flex gap-3">
-          <Button
-            onClick={() => setShowConfirmationDialog(false)}
-            className="flex-1 bg-gray-300 text-gray-700 hover:bg-gray-400"
-            disabled={isUploading || isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmPayment}
-            className="flex-1 bg-green-600 text-white hover:bg-green-700"
-            disabled={isUploading || isPending}
-          >
-            {isUploading ? (
-              <div className="flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Uploading...</span>
-              </div>
-            ) : isPending ? (
-              <div className="flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{isEditMode ? "Updating..." : "Submitting..."}</span>
-              </div>
-            ) : (
-              isEditMode ? "Update Payment" : "Confirm Payment"
-            )}
-          </Button>
-        </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
-  )
+    )
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1305,7 +1312,6 @@ const FormDialog = (props: Props) => {
               </div>
             )}
           </DialogHeader>
-
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="">
             <TabsList className="grid w-full grid-cols-2">
@@ -1555,7 +1561,7 @@ const FormDialog = (props: Props) => {
 
                             <ScrollArea className="h-40">
                               <div className="space-y-2 pr-2">
-                                {selectedEntries.map((entry) => (
+                                {selectedEntries.map((entry, index) => (
                                   <div
                                     key={entry.entryNumber}
                                     className="p-3 border rounded-lg space-y-2"
@@ -1573,15 +1579,11 @@ const FormDialog = (props: Props) => {
                                             {entry.currentStatus.replace("_", " ")}
                                           </Badge>
                                           {entry.amount && entry.amount > 0 && (
-                                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                                               ₱{entry.amount.toFixed(2)}
                                             </Badge>
                                           )}
-                                          {entry.isFullyPaid && (
-                                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                              Fully Paid
-                                            </Badge>
-                                          )}
+                                          {/* Removed: "Will be Fully Paid" badge since backend calculates */}
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
                                           <div><strong>Players:</strong> {entry.player1Name}{entry.player2Name ? `, ${entry.player2Name}` : ''}</div>
