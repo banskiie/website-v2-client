@@ -108,18 +108,18 @@ const ADMIN_ITEMS = [
     icon: CircleUser,
     allowedRoles: [Role.ADMIN, Role.SUPPORT],
   },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-    allowedRoles: [Role.ADMIN, Role.SUPPORT],
-  },
-  {
-    title: "Logs",
-    url: "/logs",
-    icon: Logs,
-    allowedRoles: [Role.ADMIN, Role.SUPPORT],
-  },
+  // {
+  //   title: "Settings",
+  //   url: "/settings",
+  //   icon: Settings,
+  //   allowedRoles: [Role.ADMIN, Role.SUPPORT],
+  // },
+  // {
+  //   title: "Logs",
+  //   url: "/logs",
+  //   icon: Logs,
+  //   allowedRoles: [Role.ADMIN, Role.SUPPORT],
+  // },
 ]
 
 export default function AppSidebar() {

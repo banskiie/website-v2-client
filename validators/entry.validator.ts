@@ -25,10 +25,10 @@ const NewPlayerEntrySchema = z.object({
   birthDate: z.coerce.date("Invalid birth date"),
   phoneNumber: z
     .string()
-    .length(11, "Phone number must be exactly 11 digits long")
+    .length(10, "Phone number must be exactly 10 digits long")
     .regex(
-      /^09\d{9}$/,
-      "Phone number must start with '09' and contain 11 digits"
+      /^9\d{9}$/,
+      "Phone number must start with '9' and contain 10 digits"
     ),
   email: z.email("Invalid email address"),
   jerseySize: z.enum(Object.values(JerseySize)).optional().nullable(),
@@ -74,3 +74,26 @@ export const AssignPlayersSchema = z.object({
     validDocuments: z.boolean().default(false),
   }),
 })
+
+
+const extractFieldValidators = () => {
+  const firstNameValidator = NewPlayerEntrySchema.shape.firstName
+  const lastNameValidator = NewPlayerEntrySchema.shape.lastName
+  const emailValidator = NewPlayerEntrySchema.shape.email
+  const phoneValidator = NewPlayerEntrySchema.shape.phoneNumber
+  const birthDateValidator = NewPlayerEntrySchema.shape.birthDate
+  const genderValidator = NewPlayerEntrySchema.shape.gender
+  const jerseySizeValidator = NewPlayerEntrySchema.shape.jerseySize
+
+  return {
+    firstName: firstNameValidator,
+    lastName: lastNameValidator,
+    email: emailValidator,
+    phoneNumber: phoneValidator,
+    birthDate: birthDateValidator,
+    gender: genderValidator,
+    jerseySize: jerseySizeValidator,
+  }
+}
+
+export const fieldValidators = extractFieldValidators()

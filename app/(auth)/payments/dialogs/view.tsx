@@ -46,13 +46,6 @@ const PAYMENT = gql`
         by {
           _id
           name
-          email
-          contactNumber
-          username
-          role
-          isActive
-          createdAt
-          updatedAt
         }
       }
       entryList {

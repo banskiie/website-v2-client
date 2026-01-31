@@ -467,7 +467,7 @@ const FormDialog = (props: Props) => {
                         >
                           {field.state.value
                             ? genders.find((o) => o.value === field.state.value)
-                                ?.label
+                              ?.label
                             : "Select Role"}
                           <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>

@@ -28,10 +28,10 @@ const PulsingIcon = ({ icon: Icon, className = "", iconClassName = "", pulseColo
   </div>
 )
 
-export default function IntroStep({ 
-  onIntroComplete, 
-  onStartChat, 
-  showStartButton = false 
+export default function IntroStep({
+  onIntroComplete,
+  onStartChat,
+  showStartButton = false
 }: IntroStepProps) {
   // If this is the initial intro (with timer)
   if (onIntroComplete && !showStartButton) {
@@ -114,7 +114,7 @@ export default function IntroStep({
       </h1>
 
       <p className="text-sm sm:text-base md:text-base text-gray-600 mb-6 px-2 sm:px-4">
-        Need assistance? Our support team is ready to chat with you in real-time.
+        Need Assistance? Our Support Team will respond to your Inquiries during <span className="font-semibold">Operational Availability</span>.
       </p>
 
       <Button

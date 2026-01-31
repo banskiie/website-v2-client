@@ -12,12 +12,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Plus, Minus, AlertCircle, X, Check, ChevronDown } from "lucide-react"
+import { Plus, Minus, AlertCircle, X, Check, ChevronDown, CreditCard, Calendar, Hash, User } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { TransferEntryStatus } from "@/types/payment.interface"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+
 
 const TRANSFER_PAYMENT = gql`
   mutation TransferPaymentToOtherEntry($input: TransferPaymentInput!) {
@@ -103,6 +105,7 @@ interface TransferPaymentInput {
     remarks?: Array<{
         remark: string
         date: Date
+        by: string
     }> | null
 }
 
@@ -263,7 +266,7 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                 isFullyPaid
             }],
             oldEntriesStatus: oldEntriesStatus || undefined,
-            remarks: remarks ? [{ remark: remarks, date: new Date() }] : null
+            remarks: remarks ? [{ remark: remarks, date: new Date(), by: "" }] : null
         }
 
         try {
@@ -282,11 +285,11 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start">
+                <span className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
                     Transfer Payment
-                </Button>
+                </span>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-xl! max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Transfer Payment</DialogTitle>
                     <DialogDescription>
@@ -295,9 +298,8 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                 </DialogHeader>
 
                 <div className="space-y-6">
-                    {/* Payment Selection */}
-                    <div className="space-y-2">
-                        <Label htmlFor="payment-select">Select Payment to Transfer</Label>
+                    <div className="space-y-3">
+                        <Label className="text-sm font-medium">Select Payment to Transfer</Label>
                         {paymentsLoading ? (
                             <div className="text-sm text-muted-foreground">Loading payments...</div>
                         ) : paymentsError ? (
@@ -308,74 +310,64 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                         ) : payments.length === 0 ? (
                             <div className="text-sm text-muted-foreground">No payments found for this entry</div>
                         ) : (
-                            <Select
-                                value={selectedPaymentId}
-                                onValueChange={setSelectedPaymentId}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a payment" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {payments.map((payment) => (
-                                        <SelectItem key={payment._id} value={payment._id}>
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">{payment.payerName}</span>
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                    <span>₱{payment.amount?.toLocaleString()}</span>
-                                                    <span>•</span>
-                                                    <span>{payment.method}</span>
-                                                    <span>•</span>
-                                                    <span>{formatDate(payment.paymentDate)}</span>
+                            <div className="space-y-2">
+                                {payments.map((payment) => (
+                                    <Card
+                                        key={payment._id}
+                                        className={`cursor-pointer transition-all hover:bg-gray-50 ${selectedPaymentId === payment._id ? 'ring-2 ring-primary' : ''}`}
+                                        onClick={() => setSelectedPaymentId(payment._id)}
+                                    >
+                                        <CardContent className="p-3">
+                                            <div className="flex items-start justify-between">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`p-1 rounded ${selectedPaymentId === payment._id ? 'bg-primary/10' : 'bg-gray-100'}`}>
+                                                            <CreditCard className="h-3 w-3" />
+                                                        </div>
+                                                        <span className="font-medium text-sm">{payment.payerName}</span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 pl-6">
+                                                        <div className="flex items-center gap-1">
+                                                            <Hash className="h-3 w-3 text-muted-foreground" />
+                                                            <span className="text-xs text-muted-foreground">Ref:</span>
+                                                            <span className="text-xs font-medium">{payment.referenceNumber || "N/A"}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <CreditCard className="h-3 w-3 text-muted-foreground" />
+                                                            <span className="text-xs text-muted-foreground">Method:</span>
+                                                            <span className="text-xs font-medium">{payment.method}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <User className="h-3 w-3 text-muted-foreground" />
+                                                            <span className="text-xs text-muted-foreground">Amount:</span>
+                                                            <span className="text-xs font-medium text-green-600">₱{payment.amount?.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                                                            <span className="text-xs text-muted-foreground">Date:</span>
+                                                            <span className="text-xs font-medium">{formatDate(payment.paymentDate)}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                {payment.referenceNumber && (
-                                                    <span className="text-xs text-muted-foreground">Ref: {payment.referenceNumber}</span>
+
+                                                {selectedPaymentId === payment._id && (
+                                                    <div className="flex-shrink-0">
+                                                        <div className="rounded-full bg-primary p-1">
+                                                            <Check className="h-3 w-3 text-primary-foreground" />
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
                         )}
                     </div>
 
-                    {/* Selected Payment Details */}
-                    {selectedPayment && (
-                        <>
-                            <Card>
-                                <CardContent className="p-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label className="text-sm text-muted-foreground">Payer Name</Label>
-                                            <p className="font-medium">{selectedPayment.payerName}</p>
-                                        </div>
-                                        <div>
-                                            <Label className="text-sm text-muted-foreground">Reference Number</Label>
-                                            <p className="font-medium">{selectedPayment.referenceNumber || "N/A"}</p>
-                                        </div>
-                                        <div>
-                                            <Label className="text-sm text-muted-foreground">Amount</Label>
-                                            <p className="font-medium">₱{selectedPayment.amount?.toLocaleString()}</p>
-                                        </div>
-                                        <div>
-                                            <Label className="text-sm text-muted-foreground">Method</Label>
-                                            <p className="font-medium">{selectedPayment.method}</p>
-                                        </div>
-                                        <div>
-                                            <Label className="text-sm text-muted-foreground">Payment Date</Label>
-                                            <p className="font-medium">{formatDate(selectedPayment.paymentDate)}</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Separator />
-                        </>
-                    )}
-
-                    {/* Only show the rest of the form if a payment is selected */}
                     {selectedPaymentId && (
                         <>
-                            {/* New Entries Selection */}
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <Label className="text-base">Select New Entries</Label>
@@ -501,7 +493,7 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                             <Label className="text-sm font-medium">
                                                 Selected Entries ({selectedEntries.length})
                                             </Label>
-                                            <ScrollArea className="h-40">
+                                            <ScrollArea className={selectedEntries.length > 1 ? "h-40" : ""}>
                                                 <div className="space-y-2 pr-2">
                                                     {selectedEntries.map((entry) => (
                                                         <div
@@ -518,7 +510,6 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                                                             variant="outline"
                                                                             className={`text-xs ${getStatusColor(entry.currentStatus)}`}
                                                                         >
-
                                                                             {entry.currentStatus.replace("_", " ")}
                                                                         </Badge>
                                                                         <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
@@ -549,7 +540,6 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                     )}
                                 </div>
 
-                                {/* Is Fully Paid */}
                                 <div className="flex items-center space-x-2 pt-2">
                                     <input
                                         type="checkbox"
@@ -566,12 +556,10 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
 
                             <Separator />
 
-                            {/* Old Entries Status */}
                             <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Label htmlFor="old-entries-status">Status for Original Entries</Label>
-                                    <span className="text-xs text-muted-foreground">(Optional)</span>
-                                </div>
+                                <Label htmlFor="old-entries-status" className="text-sm font-medium">
+                                    Status for Original Entries
+                                </Label>
                                 <Select
                                     value={oldEntriesStatus || ""}
                                     onValueChange={(value: string) => {
@@ -604,9 +592,11 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
+                                <p className="text-xs text-muted-foreground">
+                                    Select a status for the original entries after transferring this payment
+                                </p>
                             </div>
 
-                            {/* Remarks - Show only if Cancelled or Rejected selected */}
                             {(oldEntriesStatus === TransferEntryStatus.CANCELLED || oldEntriesStatus === TransferEntryStatus.REJECTED) && (
                                 <div className="space-y-2">
                                     <Label htmlFor="remarks">Remarks *</Label>
@@ -630,7 +620,6 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2">
                                             <Label htmlFor="remarks">Remarks</Label>
-                                            <span className="text-xs text-muted-foreground">(Optional)</span>
                                         </div>
                                         <Textarea
                                             id="remarks"

@@ -198,7 +198,7 @@ const Home = () => {
             </motion.button> */}
 
             {/* Feature Section */}
-            <div className="max-w-">
+            <div className="">
               <FeatureSection
                 items={items}
                 activeIndex={activeIndex}

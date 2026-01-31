@@ -27,6 +27,7 @@ import {
   CircleAlert,
   CircleQuestionMark,
   Copy,
+  MessageSquare,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import PlayerViewDialog from "@/app/(auth)/players/dialogs/view"
@@ -107,6 +108,22 @@ const ENTRY = gql`
   }
 `
 
+const PAYMENT_REMARKS = gql`
+  query PaymentRemarksByEntryId($entryId: ID!) {
+    paymentRemarksByEntryId(entryId: $entryId) {
+      paymentId
+      paymentReferenceNumber
+      payerName
+      amount
+      remark
+      date
+      by {
+        name
+      }
+    }
+  }
+`
+
 type Props = {
   _id?: string
   row?: boolean
@@ -122,6 +139,76 @@ type Props = {
   }
 }
 
+// Define proper types for events
+type StatusEvent = {
+  type: 'status'
+  id: string
+  status: string
+  date: Date | string
+  reason?: string
+  by?: { name?: string }
+  isStatus: true
+  isPaymentRemark: false
+}
+
+type PaymentRemarkEvent = {
+  type: 'paymentRemark'
+  id: string
+  status: string
+  date: Date | string
+  remark: string
+  paymentId: string
+  paymentReferenceNumber?: string
+  payerName: string
+  amount: number
+  by?: { name?: string }
+  isStatus: false
+  isPaymentRemark: true
+}
+
+type TimelineEvent = StatusEvent | PaymentRemarkEvent
+
+// Helper function to combine and sort events
+const combineEvents = (statuses: any[], paymentRemarks: any[]): TimelineEvent[] => {
+  const statusEvents: StatusEvent[] = (statuses || []).map((status, index) => ({
+    type: 'status',
+    id: `status-${index}`,
+    status: status.status,
+    date: status.date,
+    reason: status.reason,
+    by: status.by,
+    isStatus: true,
+    isPaymentRemark: false
+  }))
+
+  const remarkEvents: PaymentRemarkEvent[] = (paymentRemarks || []).map((remark, index) => ({
+    type: 'paymentRemark',
+    id: `remark-${index}`,
+    status: 'PAYMENT_REMARK',
+    date: remark.date,
+    remark: remark.remark,
+    paymentId: remark.paymentId,
+    paymentReferenceNumber: remark.paymentReferenceNumber,
+    payerName: remark.payerName,
+    amount: remark.amount,
+    by: remark.by,
+    isStatus: false,
+    isPaymentRemark: true
+  }))
+
+  return [...statusEvents, ...remarkEvents]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+}
+
+// Type guard functions
+const isPaymentRemarkEvent = (event: TimelineEvent): event is PaymentRemarkEvent => {
+  return event.isPaymentRemark
+}
+
+const isStatusEvent = (event: TimelineEvent): event is StatusEvent => {
+  return event.isStatus
+}
+
 const ViewDialog = (props: Props) => {
   // Dialog open state
   const [open, setOpen] = useState(false)
@@ -134,14 +221,29 @@ const ViewDialog = (props: Props) => {
       setOpen(value)
     }
   }
-  const { data, loading, error }: any = useQuery(ENTRY, {
+
+  // Entry query
+  const { data: entryData, loading: entryLoading, error: entryError }: any = useQuery(ENTRY, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
     fetchPolicy: "network-only",
   })
-  const entry = data?.entry as IEntry
 
-  if (error) console.error(error)
+  // Payment remarks query
+  const { data: paymentRemarksData, loading: paymentRemarksLoading, error: paymentRemarksError }: any = useQuery(PAYMENT_REMARKS, {
+    variables: { entryId: props._id },
+    skip: !isOpen || !Boolean(props._id),
+    fetchPolicy: "network-only",
+  })
+
+  const entry = entryData?.entry as IEntry
+  const paymentRemarks = paymentRemarksData?.paymentRemarksByEntryId || []
+
+  // Combine all events
+  const allEvents = combineEvents(entry?.statuses || [], paymentRemarks)
+
+  if (entryError) console.error(entryError)
+  if (paymentRemarksError) console.error(paymentRemarksError)
 
   const onClose = () => {
     if (props.row) {
@@ -210,12 +312,12 @@ const ViewDialog = (props: Props) => {
                   className="col-span-2 hover:cursor-pointer"
                   onClick={(e) => {
                     toast.success(
-                      `${entry.entryNumber}_${entry.entryKey}` +
-                        " copied to clipboard!"
+                      `${entry?.entryNumber}_${entry?.entryKey}` +
+                      " copied to clipboard!"
                     )
                     e.stopPropagation()
                     navigator.clipboard.writeText(
-                      `${entry.entryNumber}_${entry.entryKey}`
+                      `${entry?.entryNumber}_${entry?.entryKey}`
                     )
                   }}
                   title="Click to copy to clipboard"
@@ -223,7 +325,7 @@ const ViewDialog = (props: Props) => {
                   <Label>
                     Reference No. <Copy className="size-3 -ml-1" />
                   </Label>
-                  {loading ? (
+                  {entryLoading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">
@@ -233,7 +335,7 @@ const ViewDialog = (props: Props) => {
                 </div>
                 <div>
                   <Label>Entry Number</Label>
-                  {loading ? (
+                  {entryLoading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">{entry?.entryNumber}</span>
@@ -241,7 +343,7 @@ const ViewDialog = (props: Props) => {
                 </div>
                 <div>
                   <Label>Entry Key</Label>
-                  {loading ? (
+                  {entryLoading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">{entry?.entryKey}</span>
@@ -249,7 +351,7 @@ const ViewDialog = (props: Props) => {
                 </div>
                 <div className="col-span-2">
                   <Label>Event</Label>
-                  {loading ? (
+                  {entryLoading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">
@@ -274,7 +376,7 @@ const ViewDialog = (props: Props) => {
                 </div>
                 <div className="col-span-2">
                   <Label>Tournament</Label>
-                  {loading ? (
+                  {entryLoading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">
@@ -284,7 +386,7 @@ const ViewDialog = (props: Props) => {
                 </div>
                 <div className="col-span-2">
                   <Label>Total Event Fee</Label>
-                  {loading ? (
+                  {entryLoading ? (
                     <Skeleton className="w-full my-1 h-3" />
                   ) : (
                     <span className="block text-sm">
@@ -327,7 +429,7 @@ const ViewDialog = (props: Props) => {
                     {entry?.connectedPlayer1 && (
                       <div className="col-span-2">
                         <Label>Connected Player</Label>
-                        {loading ? (
+                        {entryLoading ? (
                           <Skeleton className="w-full my-1 h-3" />
                         ) : (
                           <PlayerViewDialog
@@ -341,7 +443,7 @@ const ViewDialog = (props: Props) => {
                     )}
                     <div className="col-span-2">
                       <Label>Entry Name</Label>
-                      {loading ? (
+                      {entryLoading ? (
                         <Skeleton className="w-full my-1 h-3" />
                       ) : (
                         <span className="block text-sm">
@@ -354,7 +456,7 @@ const ViewDialog = (props: Props) => {
                     </div>
                     <div>
                       <Label>Jersey Size</Label>
-                      {loading ? (
+                      {entryLoading ? (
                         <Skeleton className="w-full my-1 h-3" />
                       ) : (
                         <span className="block text-sm">
@@ -364,7 +466,7 @@ const ViewDialog = (props: Props) => {
                     </div>
                     <div>
                       <Label>Email</Label>
-                      {loading ? (
+                      {entryLoading ? (
                         <Skeleton className="w-full my-1 h-3" />
                       ) : (
                         <span className="block text-sm">
@@ -374,17 +476,19 @@ const ViewDialog = (props: Props) => {
                     </div>
                     <div>
                       <Label>Contact No.</Label>
-                      {loading ? (
+                      {entryLoading ? (
                         <Skeleton className="w-full my-1 h-3" />
                       ) : (
                         <span className="block text-sm">
-                          {entry?.player1Entry.phoneNumber || "N/A"}
+                          {entry?.player1Entry.phoneNumber
+                            ? `+63 ${entry.player1Entry.phoneNumber}`
+                            : "N/A"}
                         </span>
                       )}
                     </div>
                     <div>
                       <Label>Birthday (Age)</Label>
-                      {loading ? (
+                      {entryLoading ? (
                         <Skeleton className="w-full my-1 h-3" />
                       ) : (
                         <span className="block text-sm">
@@ -406,7 +510,7 @@ const ViewDialog = (props: Props) => {
                         {entry?.connectedPlayer2 && (
                           <div className="col-span-2">
                             <Label>Connected Player</Label>
-                            {loading ? (
+                            {entryLoading ? (
                               <Skeleton className="w-full my-1 h-3" />
                             ) : (
                               <PlayerViewDialog
@@ -420,7 +524,7 @@ const ViewDialog = (props: Props) => {
                         )}
                         <div className="col-span-2">
                           <Label>Entry Name</Label>
-                          {loading ? (
+                          {entryLoading ? (
                             <Skeleton className="w-full my-1 h-3" />
                           ) : (
                             <span className="block text-sm">
@@ -433,7 +537,7 @@ const ViewDialog = (props: Props) => {
                         </div>
                         <div>
                           <Label>Jersey Size</Label>
-                          {loading ? (
+                          {entryLoading ? (
                             <Skeleton className="w-full my-1 h-3" />
                           ) : (
                             <span className="block text-sm">
@@ -443,7 +547,7 @@ const ViewDialog = (props: Props) => {
                         </div>
                         <div>
                           <Label>Email</Label>
-                          {loading ? (
+                          {entryLoading ? (
                             <Skeleton className="w-full my-1 h-3" />
                           ) : (
                             <span className="block text-sm">
@@ -453,7 +557,7 @@ const ViewDialog = (props: Props) => {
                         </div>
                         <div>
                           <Label>Contact No.</Label>
-                          {loading ? (
+                          {entryLoading ? (
                             <Skeleton className="w-full my-1 h-3" />
                           ) : (
                             <span className="block text-sm">
@@ -463,7 +567,7 @@ const ViewDialog = (props: Props) => {
                         </div>
                         <div>
                           <Label>Birthday (Age)</Label>
-                          {loading ? (
+                          {entryLoading ? (
                             <Skeleton className="w-full my-1 h-3" />
                           ) : (
                             <span className="block text-sm">
@@ -483,92 +587,122 @@ const ViewDialog = (props: Props) => {
             </TabsContent>
             <TabsContent value="status">
               <div className="flex flex-col gap-2 h-[50vh] overflow-y-auto place-content-start">
-                {loading ? (
+                {entryLoading || paymentRemarksLoading ? (
                   <Skeleton className="w-full my-1 h-3" />
-                ) : entry?.statuses && entry?.statuses.length ? (
+                ) : allEvents.length > 0 ? (
                   <div className="h-full">
-                    {entry.statuses
-                      .slice()
-                      .reverse()
-                      .map((status, index) => (
-                        <div key={index} className="flex gap-2">
-                          <div className="flex flex-col justify-start items-center">
-                            {(() => {
-                              if (index === 0) {
-                                switch (status.status) {
-                                  case "PENDING":
-                                    return (
-                                      <CheckCircle2 className="size-4 my-2 text-success" />
-                                    )
-                                  case "CANCELLED":
-                                  case "REJECTED":
-                                    return (
-                                      <CircleAlert className="size-4 my-2 text-destructive" />
-                                    )
-                                  case "VERIFIED":
-                                    return (
-                                      <CheckCircle className="size-4 my-2 text-success" />
-                                    )
-                                }
-                                return (
-                                  <CircleAlert
-                                    className={cn(
-                                      "size-4 my-2",
-                                      index > 0
-                                        ? "text-muted-foreground/50"
-                                        : "text-info"
-                                    )}
-                                  />
-                                )
-                              } else {
-                                return (
-                                  <CheckCircle
-                                    className={cn(
-                                      "size-4 my-2",
-                                      index > 0
-                                        ? "text-muted-foreground/50"
-                                        : "text-success"
-                                    )}
-                                  />
-                                )
-                              }
-                            })()}
+                    {allEvents.map((event, index) => (
+                      <div key={event.id} className="flex gap-2">
+                        <div className="flex flex-col justify-start items-center">
+                          {(() => {
+                            if (isPaymentRemarkEvent(event)) {
+                              return (
+                                <MessageSquare className="size-4 my-3 text-blue-500" />
+                              )
+                            }
 
-                            {index < entry.statuses.length - 1 && (
-                              <div className="min-h-11 w-px bg-gray-200"></div>
+                            if (index === 0) {
+                              switch (event.status) {
+                                case "PENDING":
+                                  return (
+                                    <CheckCircle2 className="size-4 my-2 text-success" />
+                                  )
+                                case "CANCELLED":
+                                case "REJECTED":
+                                  return (
+                                    <CircleAlert className="size-4 my-2 text-destructive" />
+                                  )
+                                case "VERIFIED":
+                                  return (
+                                    <CheckCircle className="size-4 my-2 text-success" />
+                                  )
+                              }
+                              return (
+                                <CircleAlert
+                                  className={cn(
+                                    "size-4 my-2",
+                                    index > 0
+                                      ? "text-muted-foreground/50"
+                                      : "text-info"
+                                  )}
+                                />
+                              )
+                            } else {
+                              return (
+                                <CheckCircle
+                                  className={cn(
+                                    "size-4 my-2",
+                                    index > 0
+                                      ? "text-muted-foreground/50"
+                                      : "text-success"
+                                  )}
+                                />
+                              )
+                            }
+                          })()}
+
+                          {index < allEvents.length - 1 && (
+                            <div className="min-h-11 w-px bg-gray-200"></div>
+                          )}
+                        </div>
+                        <div className="mt-2">
+                          <span
+                            className={cn(
+                              "capitalize block -mb-0.5",
+                              index === 0
+                                ? "font-mono"
+                                : "text-muted-foreground",
+                              isPaymentRemarkEvent(event) && "text-muted-foreground font-medium"
                             )}
-                          </div>
-                          <div className="mt-1">
-                            <span
-                              className={cn(
-                                "capitalize block -mb-0.5",
-                                index === 0
-                                  ? "font-mono"
-                                  : "text-muted-foreground"
-                              )}
-                            >
-                              {status.status
+                          >
+                            {isPaymentRemarkEvent(event)
+                              ? 'Payment Remark'
+                              : event.status
                                 .split("_")
                                 .join(" ")
                                 .toLocaleLowerCase()}
-                            </span>
-                            <span className="text-xs text-muted-foreground block">
-                              {format(status.date, "PPpp")}
-                            </span>
-                            {status.reason && (
-                              <span className="text-xs text-muted-foreground block">
-                                Note:{" "}
-                                <span className="italic underline">
-                                  {status?.reason}
-                                </span>
+                          </span>
+                          <span className="text-xs text-muted-foreground block">
+                            {format(new Date(event.date), "PPpp")}
+                          </span>
+
+                          {isPaymentRemarkEvent(event) ? (
+                            <>
+                              <span className="text-xs text-muted-foreground block mt-0.5">
+                                <span className="">Remark:</span>{" "}
+                                <span className="italic font-medium">{event.remark}</span>
                               </span>
-                            )}
-                            <span className="text-xs text-muted-foreground block">
-                              {status.by?.name}
+                              <div className="text-xs text-muted-foreground space-y-0.5">
+                                <div>Payment Ref: {event.paymentReferenceNumber}</div>
+                                <div>Payer: {event.payerName}</div>
+                                <div>Amount: <span className="font-medium">₱{event.amount?.toLocaleString()}</span></div>
+                              </div>
+                              <div className="-mt-1 underline underline-offset-2">
+                                <PaymentViewDialog
+                                  externalUse
+                                  _id={event.paymentId}
+                                  title={`View Payment Details`}
+                                  titleClassName="text-xs text-blue-600 hover:text-blue-800"
+                                />
+                              </div>
+                            </>
+                          ) : isStatusEvent(event) && event.reason && (
+                            <span className="text-xs text-muted-foreground block my-0.5">
+                              Note:{" "}
+                              <span className="italic underline">
+                                {event.reason}
+                              </span>
                             </span>
-                          </div>
+                          )}
+
+                          {event.by?.name && (
+                            <span className="text-xs text-muted-foreground block mt-0.5">
+                              By: <span className="underline underline-offset-2 ml-0.5"> {event.by.name} </span>
+                            </span>
+                          )}
                         </div>
-                      ))}
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <span className="text-sm text-muted-foreground">
@@ -579,9 +713,9 @@ const ViewDialog = (props: Props) => {
             </TabsContent>
             <TabsContent value="transactions">
               <div className="flex flex-col gap-2 h-[50vh] overflow-y-auto place-content-start">
-                {loading ? (
+                {entryLoading ? (
                   <Skeleton className="w-full my-1 h-3" />
-                ) : entry?.statuses && entry?.statuses.length ? (
+                ) : entry?.transactions && entry?.transactions.length ? (
                   <div className="h-full">
                     {entry.transactions
                       .slice()
@@ -603,6 +737,10 @@ const ViewDialog = (props: Props) => {
                                 case "REFUND_PAYMENT":
                                   return (
                                     <CircleAlert className="size-4 my-2 text-destructive" />
+                                  )
+                                default:
+                                  return (
+                                    <CircleQuestionMark className="size-4 my-2 text-muted-foreground" />
                                   )
                               }
                             })()}
@@ -634,8 +772,8 @@ const ViewDialog = (props: Props) => {
                                 transaction.pendingAmount == 0
                                   ? "text-success"
                                   : transaction.pendingAmount > 0
-                                  ? "text-info"
-                                  : "text-destructive"
+                                    ? "text-info"
+                                    : "text-destructive"
                               )}
                             >
                               {transaction.pendingAmount >= 0
@@ -661,24 +799,23 @@ const ViewDialog = (props: Props) => {
                               >
                                 Amount{" "}
                                 {transaction.transactionType ==
-                                "BALANCE_PAYMENT"
+                                  "BALANCE_PAYMENT"
                                   ? "Paid"
                                   : "Reverted"}
                                 :{" "}
-                                {`${
-                                  transaction.amountChanged > 0 ? "+" : "-"
-                                }${Math.abs(
-                                  transaction.amountChanged
-                                ).toLocaleString("en-PH", {
-                                  style: "currency",
-                                  currency: "PHP",
-                                  minimumFractionDigits: 2,
-                                })}`}
+                                {`${transaction.amountChanged > 0 ? "+" : "-"
+                                  }${Math.abs(
+                                    transaction.amountChanged
+                                  ).toLocaleString("en-PH", {
+                                    style: "currency",
+                                    currency: "PHP",
+                                    minimumFractionDigits: 2,
+                                  })}`}
                               </span>
                             ) : null}
                             {transaction.transactionId &&
                               transaction.transactionType ===
-                                "BALANCE_PAYMENT" && (
+                              "BALANCE_PAYMENT" && (
                                 <PaymentViewDialog
                                   externalUse
                                   _id={transaction.transactionId}
@@ -696,7 +833,7 @@ const ViewDialog = (props: Props) => {
                   </div>
                 ) : (
                   <span className="text-sm text-muted-foreground">
-                    No status history available.
+                    No transaction history available.
                   </span>
                 )}
               </div>

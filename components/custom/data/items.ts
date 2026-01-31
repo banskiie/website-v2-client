@@ -21,7 +21,7 @@ export const items = [
     title: "Trucks & Equipment",
     description:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    img: `${DRIVE}/img/trucks_new/Wheel Loader/XIASHENG XM935-4.jpg`,
+    img: `${DRIVE}/img/steel/category/XIASHENG XM935-4.jpg`,
     badgeColor: "#FF3300",
     badgeNum: "02",
     activeColor: "#FF3300",
@@ -32,7 +32,7 @@ export const items = [
     title: "Sports Center",
     description:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    img: `${DRIVE}/img/courts/Background-Badminton.png`,
+    img: `${DRIVE}/img/steel/category/Background-Badminton.png`,
     badgeColor: "#2AFE00",
     badgeNum: "03",
     activeColor: "#2AFE00",
@@ -43,7 +43,7 @@ export const items = [
     title: "Rentals",
     description:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    img: `${DRIVE}/img/rentals/rentals-bg-2.png`,
+    img: `${DRIVE}/img/steel/category/rentals-bg-2.png`,
     badgeColor: "#00B3EF",
     badgeNum: "04",
     activeColor: "#00B3EF",

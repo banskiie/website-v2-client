@@ -26,6 +26,7 @@ import {
   Sparkles,
   Check,
   AlertCircle,
+  Copy,
 } from "lucide-react"
 import { categories, Gender } from "./data/items"
 import Link from "next/link"
@@ -68,8 +69,10 @@ import Tesseract from "tesseract.js"
 import {
   CreatePaymentInput,
   createPaymentResponse,
+  DuplicateCheckResponse,
 } from "@/app/(public)/types/payment.interface"
 import { CREATE_PAYMENT } from "@/graphql/payments/mutation"
+import { CHECK_DUPLICATE_REFERENCE } from "@/graphql/payments/queries"
 import { toast } from "sonner"
 import { Input } from "../ui/input"
 import { format } from "date-fns"
@@ -82,6 +85,9 @@ import {
   validatePaymentForm,
   validatePaymentMethod,
 } from "@/app/(public)/validator/payment.validator"
+import { Label } from "../ui/label"
+import { cn } from "@/lib/utils"
+import Guidelines from "./guidelines"
 // const tournament = tournaments.find(t => t.isActive)
 
 export type PublicTournamentsData = {
@@ -195,279 +201,305 @@ export function CategoryModal({
     currency?: string
   } | null
 }) {
-  const { data, loading, error } =
-    useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
+  const [showGuidelines, setShowGuidelines] = useState(false);
+  const { data, loading, error } = useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS);
 
-  if (!isOpen || !category) return null
-  if (loading) return <p>Loading...</p>
-  if (error) return <p>Error loading tournaments: {error.message}</p>
+  const handleRegisterClick = () => {
+    // Show guidelines modal instead of redirecting immediately
+    setShowGuidelines(true);
+  };
+
+  const handleAgreeToGuidelines = () => {
+    // This will be called when user agrees to guidelines
+    // Now redirect to registration page
+    const activeTournament = data?.publicTournaments?.find(
+      (t: ITournament) => t.isActive
+    );
+    const tournament = activeTournament || data?.publicTournaments?.[0];
+
+    if (tournament && category) {
+      window.location.href = `/sports-center/courts/registration/${tournament._id}/${category.id}`;
+    }
+  };
+
+  if (!isOpen || !category) return null;
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error loading tournaments: {error.message}</p>;
 
   const activeTournament = data?.publicTournaments?.find(
     (t: ITournament) => t.isActive
-  )
-  const tournament = activeTournament || data?.publicTournaments?.[0]
+  );
+  const tournament = activeTournament || data?.publicTournaments?.[0];
 
   const hasEarlyBird =
-    category.hasEarlyBird || tournament?.settings.hasEarlyBird
+    category.hasEarlyBird || tournament?.settings.hasEarlyBird;
   const displayPricePerPlayer =
     hasEarlyBird && category.earlyBirdPricePerPlayer
       ? category.earlyBirdPricePerPlayer
-      : category.pricePerPlayer
+      : category.pricePerPlayer;
 
   const getCurrencySymbol = (currency?: string) => {
-    if (!currency) return ""
-    return currency.toUpperCase() === "USD" ? "$" : "₱"
-  }
+    if (!currency) return "";
+    return currency.toUpperCase() === "USD" ? "$" : "₱";
+  };
 
-  const symbol = getCurrencySymbol(category.currency)
+  const symbol = getCurrencySymbol(category.currency);
   const perPlayerPrice = displayPricePerPlayer
     ? `${symbol}${displayPricePerPlayer.toLocaleString()}`
-    : "N/A"
+    : "N/A";
 
   const earlyBirdPerPlayer = category.earlyBirdPricePerPlayer
     ? `${symbol}${category.earlyBirdPricePerPlayer.toLocaleString()}`
-    : null
+    : null;
 
   const perPairPrice =
     category.type === "Doubles" && displayPricePerPlayer
       ? `${symbol}${(displayPricePerPlayer * 2).toLocaleString()}`
-      : null
+      : null;
 
   const earlyBirdPerPair =
     category.type === "Doubles" && category.earlyBirdPricePerPlayer
       ? `${symbol}${(category.earlyBirdPricePerPlayer * 2).toLocaleString()}`
-      : null
+      : null;
 
   // Calculate savings if early bird is active
   const savingsPerPlayer =
     hasEarlyBird && category.earlyBirdPricePerPlayer && category.pricePerPlayer
       ? category.pricePerPlayer - category.earlyBirdPricePerPlayer
-      : 0
+      : 0;
 
   const savingsPerPair =
-    category.type === "Doubles" && savingsPerPlayer ? savingsPerPlayer * 2 : 0
+    category.type === "Doubles" && savingsPerPlayer ? savingsPerPlayer * 2 : 0;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
-      onClick={onClose}
-    >
+    <>
+      {/* Category Modal */}
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-[400px] p-6 relative"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
+        onClick={onClose}
       >
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-3 text-gray-400 cursor-pointer hover:text-gray-600"
+        <div
+          className="bg-white rounded-xl shadow-xl w-full max-w-[400px] p-6 relative"
+          onClick={(e) => e.stopPropagation()}
         >
-          <X className="w-5 h-5" />
-        </button>
+          <button
+            onClick={onClose}
+            className="absolute top-6 right-3 text-gray-400 cursor-pointer hover:text-gray-600"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        <div className="flex items-center gap-2 mb-4">
-          <Trophy className="w-6 h-6 text-yellow-500" />
-          <h2 className="text-lg font-bold">Category Registration</h2>
-        </div>
-
-        <div className="mb-4 text-left">
-          <div className="flex items-center gap-2 mb-2">
-            <Users
-              className={`w-5 h-5 text-gray-600 ${category.type === "Singles" ? "hidden" : ""
-                }`}
-            />
-            <User
-              className={`w-5 h-5 text-gray-600 ${category.type === "Doubles" ? "hidden" : ""
-                }`}
-            />
-            <span className="font-semibold text-gray-800 text-sm">
-              {category.name}
-            </span>
-            <Badge
-              variant="outline"
-              className="bg-yellow-100 text-yellow-800 text-xs"
-            >
-              {category.level || category.name.split(" ")[1]}
-            </Badge>
+          <div className="flex items-center gap-2 mb-4">
+            <Trophy className="w-6 h-6 text-yellow-500" />
+            <h2 className="text-lg font-bold">Category Registration</h2>
           </div>
 
-          <p className="text-sm text-gray-500">
-            {category.level || category.name.split(" ")[1]} level. This is a{" "}
-            {category.type.toLowerCase()} category where{" "}
-            {category.type === "Doubles" ? "pairs" : "players"} compete
-            together.
-          </p>
-        </div>
-
-        <div className="relative mb-6">
-          <div className="absolute -inset-2 bg-linear-to-r from-green-100 to-emerald-100 rounded-2xl blur opacity-60" />
-          <div className="relative bg-white rounded-2xl p-5 border-2 border-green-200 shadow-md">
-            <div className="flex items-center gap-1 mb-2">
-              <Sparkles className="size-4 text-yellow-500" />
-              <span className="text-gray-900 text-[12px] font-semibold">
-                Registration Fee
+          <div className="mb-4 text-left">
+            <div className="flex items-center gap-2 mb-2">
+              <Users
+                className={`w-5 h-5 text-gray-600 ${category.type === "Singles" ? "hidden" : ""
+                  }`}
+              />
+              <User
+                className={`w-5 h-5 text-gray-600 ${category.type === "Doubles" ? "hidden" : ""
+                  }`}
+              />
+              <span className="font-semibold text-gray-800 text-sm">
+                {category.name}
               </span>
-
-              {hasEarlyBird && tournament?.dates?.earlyBirdRegistrationEnd && (
-                <>
-                  <Badge className="bg-linear-to-r rounded-sm! from-green-500 to-emerald-500 text-white border-0 shadow-sm text-[10px]">
-                    Early Bird
-                  </Badge>
-
-                  <div className="flex items-center gap-1 text-gray-600 ml-4.5">
-                    <Clock className="size-3" />
-                    <span className="text-xs">Ends in</span>
-                  </div>
-                </>
-              )}
+              <Badge
+                variant="outline"
+                className="bg-yellow-100 text-yellow-800 text-xs"
+              >
+                {category.level || category.name.split(" ")[1]}
+              </Badge>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1">
-                    <User className="size-4 text-green-600" />
-                    <span className="text-gray-700 text-[13px]">
-                      Per Player Fee
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-md text-green-700 font-bold">
-                      {perPlayerPrice}
-                    </span>
-                    {hasEarlyBird &&
-                      category.pricePerPlayer &&
-                      category.earlyBirdPricePerPlayer && (
-                        <span className="text-gray-400 line-through text-xs">
-                          {symbol}
-                          {category.pricePerPlayer.toLocaleString()}
-                        </span>
-                      )}
-                  </div>
-                  {savingsPerPlayer > 0 && (
-                    <div className="flex items-center gap-1 text-green-600">
-                      <TrendingUp className="size-3" />
-                      <span className="text-xs font-medium">
-                        Save {symbol}
-                        {savingsPerPlayer.toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
+            <p className="text-sm text-gray-500">
+              {category.level || category.name.split(" ")[1]} level. This is a{" "}
+              {category.type.toLowerCase()} category where{" "}
+              {category.type === "Doubles" ? "pairs" : "players"} compete
+              together.
+            </p>
+          </div>
 
-                {hasEarlyBird &&
-                  tournament?.dates?.earlyBirdRegistrationEnd && (
-                    <div className="bg-green-50 border border-green-400 text-green-700 text-[12px] font-bold px-3 py-2 rounded-md">
-                      {format(
-                        new Date(tournament.dates.earlyBirdRegistrationEnd),
-                        "MMM dd, yyyy"
-                      )}
+          <div className="relative mb-6">
+            <div className="absolute -inset-2 bg-linear-to-r from-green-100 to-emerald-100 rounded-2xl blur opacity-60" />
+            <div className="relative bg-white rounded-2xl p-5 border-2 border-green-200 shadow-md">
+              <div className="flex items-center gap-1 mb-2">
+                <Sparkles className="size-4 text-yellow-500" />
+                <span className="text-gray-900 text-[12px] font-semibold">
+                  Registration Fee
+                </span>
+
+                {hasEarlyBird && tournament?.dates?.earlyBirdRegistrationEnd && (
+                  <>
+                    <Badge className="bg-linear-to-r rounded-sm! from-green-500 to-emerald-500 text-white border-0 shadow-sm text-[10px]">
+                      Early Bird
+                    </Badge>
+
+                    <div className="flex items-center gap-1 text-gray-600 ml-4.5">
+                      <Clock className="size-3" />
+                      <span className="text-xs">Ends in</span>
                     </div>
-                  )}
+                  </>
+                )}
               </div>
 
-              {perPairPrice && category.type === "Doubles" && (
-                <div className="pt-3 border-t border-gray-100">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <Users className="size-4 text-blue-600" />
-                      <span className="text-gray-700 text-sm">
-                        Per Pair Fee
+              <div className="space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1">
+                      <User className="size-4 text-green-600" />
+                      <span className="text-gray-700 text-[13px]">
+                        Per Player Fee
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-xl text-blue-700 font-bold">
-                        {perPairPrice}
+                      <span className="text-md text-green-700 font-bold">
+                        {perPlayerPrice}
                       </span>
                       {hasEarlyBird &&
                         category.pricePerPlayer &&
                         category.earlyBirdPricePerPlayer && (
                           <span className="text-gray-400 line-through text-xs">
                             {symbol}
-                            {(category.pricePerPlayer * 2).toLocaleString()}
+                            {category.pricePerPlayer.toLocaleString()}
                           </span>
                         )}
                     </div>
-                    {savingsPerPair > 0 && (
+                    {savingsPerPlayer > 0 && (
                       <div className="flex items-center gap-1 text-green-600">
                         <TrendingUp className="size-3" />
                         <span className="text-xs font-medium">
                           Save {symbol}
-                          {savingsPerPair.toLocaleString()}
+                          {savingsPerPlayer.toLocaleString()}
                         </span>
                       </div>
                     )}
                   </div>
-                </div>
-              )}
 
-              {/* Early Bird note when not active */}
-              {!hasEarlyBird && earlyBirdPerPlayer && (
-                <div className="pt-3 border-t border-gray-100">
-                  <div className="text-xs text-gray-500 italic">
-                    Early Bird was available at {earlyBirdPerPlayer}
-                  </div>
+                  {hasEarlyBird &&
+                    tournament?.dates?.earlyBirdRegistrationEnd && (
+                      <div className="bg-green-50 border border-green-400 text-green-700 text-[12px] font-bold px-3 py-2 rounded-md">
+                        {format(
+                          new Date(tournament.dates.earlyBirdRegistrationEnd),
+                          "MMM dd, yyyy"
+                        )}
+                      </div>
+                    )}
                 </div>
-              )}
+
+                {perPairPrice && category.type === "Doubles" && (
+                  <div className="pt-3 border-t border-gray-100">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <Users className="size-4 text-blue-600" />
+                        <span className="text-gray-700 text-sm">
+                          Per Pair Fee
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xl text-blue-700 font-bold">
+                          {perPairPrice}
+                        </span>
+                        {hasEarlyBird &&
+                          category.pricePerPlayer &&
+                          category.earlyBirdPricePerPlayer && (
+                            <span className="text-gray-400 line-through text-xs">
+                              {symbol}
+                              {(category.pricePerPlayer * 2).toLocaleString()}
+                            </span>
+                          )}
+                      </div>
+                      {savingsPerPair > 0 && (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <TrendingUp className="size-3" />
+                          <span className="text-xs font-medium">
+                            Save {symbol}
+                            {savingsPerPair.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Early Bird note when not active */}
+                {!hasEarlyBird && earlyBirdPerPlayer && (
+                  <div className="pt-3 border-t border-gray-100">
+                    <div className="text-xs text-gray-500 italic">
+                      Early Bird was available at {earlyBirdPerPlayer}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Tournament Details */}
-        <div className="bg-blue-50 p-4 rounded-md mb-6 text-left">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-gray-700 text-sm">📅</span>
-            <span className="font-semibold text-gray-800 text-sm">
-              Tournament Details
-            </span>
+          {/* Tournament Details */}
+          <div className="bg-blue-50 p-4 rounded-md mb-6 text-left">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-semibold text-gray-700 text-sm">📅</span>
+              <span className="font-semibold text-gray-800 text-sm">
+                Tournament Details
+              </span>
+            </div>
+            <p className="text-gray-700 text-xs font-medium mb-1">
+              {tournament?.name || "Tournament TBA"}
+            </p>
+            <p
+              className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"
+                }`}
+            >
+              {tournament?.isActive ? "Active" : "Inactive"}
+            </p>
+            <p className="text-gray-700 text-xs font-medium">
+              {tournament
+                ? `${format(
+                  new Date(tournament.dates.tournamentStart),
+                  "MMM dd, yyyy"
+                )} - ${format(
+                  new Date(tournament.dates.tournamentEnd),
+                  "MMM dd, yyyy"
+                )}`
+                : "Dates TBD"}
+            </p>
           </div>
-          <p className="text-gray-700 text-xs font-medium mb-1">
-            {tournament?.name || "Tournament TBA"}
-          </p>
-          <p
-            className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"
-              }`}
-          >
-            {tournament?.isActive ? "Active" : "Inactive"}
-          </p>
-          <p className="text-gray-700 text-xs font-medium">
-            {tournament
-              ? `${format(
-                new Date(tournament.dates.tournamentStart),
-                "MMM dd, yyyy"
-              )} - ${format(
-                new Date(tournament.dates.tournamentEnd),
-                "MMM dd, yyyy"
-              )}`
-              : "Dates TBD"}
-          </p>
-        </div>
 
-        <div className="flex gap-3">
-          <Link
-            href={`/sports-center/courts/registration/${tournament?._id}/${category.id}`}
-            className="flex-1"
-          >
-            <Button className="w-full bg-black text-white cursor-pointer hover:bg-gray-900 px-4 py-2">
+          <div className="flex gap-3">
+            <Button
+              onClick={handleRegisterClick}
+              className="flex-1 bg-black text-white cursor-pointer hover:bg-gray-900 px-4 py-2"
+            >
               Register Now
             </Button>
-          </Link>
 
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() =>
-              window.open(
-                "https://www.facebook.com/c.onebadmintonchallenge/",
-                "_blank"
-              )
-            }
-            className="cursor-pointer"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() =>
+                window.open(
+                  "https://www.facebook.com/c.onebadmintonchallenge/",
+                  "_blank"
+                )
+              }
+              className="cursor-pointer"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
-  )
+
+      <Guidelines
+        isOpen={showGuidelines}
+        onClose={() => setShowGuidelines(false)}
+        onAgree={handleAgreeToGuidelines}
+        categoryName={category.name}
+      />
+    </>
+  );
 }
 
 function SubmissionSuccessModal({
@@ -598,6 +630,13 @@ export function UploadProofMergedModal({
     paymentMethod: "",
   })
 
+  // New states for duplicate handling
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
+  const [duplicateReferenceNumber, setDuplicateReferenceNumber] = useState<string>("")
+  const [duplicatePaymentData, setDuplicatePaymentData] = useState<any | null>(null)
+  const [userConfirmedDuplicate, setUserConfirmedDuplicate] = useState(false)
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false)
+
   const {
     data: tournamentsData,
     loading: tournamentsLoading,
@@ -618,6 +657,13 @@ export function UploadProofMergedModal({
       error: entryAmountError,
     },
   ] = useLazyQuery<EntryAmountDetailsData>(ENTRY_EVENT_AMOUNT_DETAILS)
+
+  const [checkDuplicate, {
+    data: duplicatePaymentQueryData,
+    loading: duplicatePaymentLoading
+  }] = useLazyQuery<DuplicateCheckResponse>(CHECK_DUPLICATE_REFERENCE, {
+    fetchPolicy: "network-only",
+  })
 
   const sensors = useSensors(useSensor(PointerSensor))
 
@@ -646,12 +692,8 @@ export function UploadProofMergedModal({
       }
 
       const data = await response.json();
-      // console.log('Upload to PAYMENTS response:', data);
-
-      // toast.success("File uploaded successfully!");
       return data.url;
     } catch (error) {
-      // console.error("Error Uploading file to payments folder:", error);
       toast.error("Error uploading file. Please try again.");
       return null;
     } finally {
@@ -848,6 +890,12 @@ export function UploadProofMergedModal({
       file: "",
       paymentMethod: "",
     })
+    // Reset duplicate states
+    setShowDuplicateDialog(false)
+    setDuplicateReferenceNumber("")
+    setDuplicatePaymentData(null)
+    setUserConfirmedDuplicate(false)
+    setIsCheckingDuplicate(false)
   }
 
   const handleClose = () => {
@@ -1198,6 +1246,41 @@ export function UploadProofMergedModal({
     calculateTotal()
   }, [entryAmounts, amount])
 
+  const handleContinueAnyway = () => {
+    setUserConfirmedDuplicate(true)
+    setShowDuplicateDialog(false)
+    setShowConfirmationDialog(true)
+  }
+
+  const handleOpenDuplicateDialog = async (referenceNumber: string) => {
+    setDuplicateReferenceNumber(referenceNumber)
+    setIsCheckingDuplicate(true)
+
+    try {
+      // Execute the query
+      const { data } = await checkDuplicate({
+        variables: { referenceNumber },
+      })
+
+      if (data?.checkDuplicateReference && Array.isArray(data.checkDuplicateReference) && data.checkDuplicateReference.length > 0) {
+        setDuplicatePaymentData(data.checkDuplicateReference[0])
+        setShowDuplicateDialog(true)
+      } else {
+        setShowConfirmationDialog(true)
+      }
+    } catch (error: any) {
+      console.error("Error checking duplicate:", error)
+
+      toast.error("Unable to check for duplicate references. Please verify your reference number is unique.", {
+        duration: 5000,
+      })
+
+      setShowConfirmationDialog(true)
+    } finally {
+      setIsCheckingDuplicate(false)
+    }
+  }
+
   const handleSubmit = async () => {
     let foundRejected = false
 
@@ -1220,7 +1303,6 @@ export function UploadProofMergedModal({
         }
       }
     }
-
 
     if (foundRejected) {
       toast.error("Cannot Submit Payment", {
@@ -1285,7 +1367,17 @@ export function UploadProofMergedModal({
       return
     }
 
-    setShowConfirmationDialog(true)
+    const currentRef = reference && reference !== "Not found"
+      ? reference
+      : confirmationNumber && confirmationNumber !== "Not found"
+        ? confirmationNumber
+        : null
+
+    if (currentRef) {
+      await handleOpenDuplicateDialog(currentRef)
+    } else {
+      setShowConfirmationDialog(true)
+    }
   }
 
   const isAnyEntryLoading = () => {
@@ -1298,7 +1390,7 @@ export function UploadProofMergedModal({
       Object.values(entryErrors).some(
         (error) => error && !error.includes("REJECTED")
       )
-    ) // Dili i count ang Reject error twice
+    ) // Don't count Reject error twice
   }
 
   const handleConfirmPayment = async () => {
@@ -1307,10 +1399,6 @@ export function UploadProofMergedModal({
 
     try {
       setIsUploading(true)
-
-      // const loadingToastId = toast.loading("Processing payment...", {
-      //   description: "Please wait while we upload your receipt and process the payment.",
-      // })
 
       const imageUrl = await uploadFile(file!)
 
@@ -1624,6 +1712,192 @@ export function UploadProofMergedModal({
       </motion.div>
     </motion.div>
   )
+
+  const DuplicateReferenceDialog = () => {
+    const formatDate = (dateString: string) => {
+      return format(new Date(dateString), "MMM dd, yyyy")
+    }
+
+    const copyToClipboard = (text: string) => {
+      navigator.clipboard.writeText(text)
+      toast.success("Copied to clipboard!")
+    }
+
+    // Add a loading state
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+      if (duplicatePaymentData) {
+        setIsLoading(false)
+      }
+    }, [duplicatePaymentData])
+
+    return (
+      <motion.div
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <motion.div
+          className="bg-white rounded-xl shadow-xl w-full max-w-xl mx-4 p-6"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+        >
+          <div className="space-y-4">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-red-600 mb-2">
+                Duplicate Reference Number Found
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">
+                A payment with the reference number "{duplicateReferenceNumber}" already exists in the system.
+                Are you sure you want to proceed with this duplicate reference?
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-600 border-t-transparent mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading payment details...</p>
+                </div>
+              ) : duplicatePaymentData ? (
+                <>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium text-gray-500">Payer Name</Label>
+                        <div className="flex items-center gap-2">
+                          <p className="text-base font-medium">{duplicatePaymentData.payerName}</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => copyToClipboard(duplicatePaymentData.payerName)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium text-gray-500">Payment Amount</Label>
+                        <p className="text-base font-bold text-green-600">
+                          ₱{duplicatePaymentData.amount.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium text-gray-500">Payment Method</Label>
+                        <Badge variant="outline" className="capitalize">
+                          {duplicatePaymentData.method.replace("_", " ")}
+                        </Badge>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium text-gray-500">Payment Date</Label>
+                        <p className="text-base">{formatDate(duplicatePaymentData.paymentDate)}</p>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-500">Associated Entries</Label>
+                      <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                        {duplicatePaymentData.entryList.map((entryItem: any, index: number) => (
+                          <div key={index} className="p-3 border rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{entryItem.entry.entryNumber}</span>
+                                  {entryItem.isFullyPaid ? (
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                                      Fully Paid
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                                      Partial
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-500">Entry Key: {entryItem.entry.entryKey}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-500">Current Status</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {duplicatePaymentData.statuses.slice(-1).map((status: any, index: number) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className={cn(
+                              "capitalize",
+                              status.status === "VERIFIED" && "bg-green-50 text-green-700 border-green-200",
+                              status.status === "REJECTED" && "bg-red-50 text-red-700 border-red-200",
+                              status.status === "PAYMENT_PENDING" && "bg-yellow-50 text-yellow-700 border-yellow-200",
+                              status.status === "SENT" && "bg-blue-50 text-blue-700 border-blue-200",
+                              status.status === "DUPLICATE" && "bg-red-50 text-red-700 border-red-200"
+                            )}
+                          >
+                            {status.status.replace("_", " ")}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Unable to load payment details</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                onClick={() => setShowDuplicateDialog(false)}
+                className="flex-1 bg-gray-300 text-gray-700 hover:bg-gray-400"
+                disabled={isCheckingDuplicate}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleContinueAnyway}
+                className="flex-1 bg-red-600 text-white hover:bg-red-700 gap-2"
+                disabled={isCheckingDuplicate}
+              >
+                {isCheckingDuplicate ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Checking...</span>
+                  </div>
+                ) : (
+                  <>
+                    <AlertCircle className="h-4 w-4" />
+                    Continue Anyway
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    )
+  }
 
   const ConfirmationDialog = () => {
     if (!payerName.trim()) {
@@ -1998,7 +2272,7 @@ export function UploadProofMergedModal({
                               Amount retrieved successfully
                             </span>
                           ) : entryNumber && entryKey ? (
-                            <span className="text-amber-600 flex items-center gap-1">
+                            <span className="text-red-600 flex items-center gap-1">
                               <AlertCircle className="w-3 h-3" />
                               No amount associated with this entry
                             </span>
@@ -2078,7 +2352,7 @@ export function UploadProofMergedModal({
                             Reference detected
                           </span>
                         ) : confirmationNumber ? (
-                          <span className="text-amber-600 flex items-center gap-1">
+                          <span className="text-red-600 flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
                             Using confirmation number
                           </span>
@@ -2097,25 +2371,9 @@ export function UploadProofMergedModal({
                   </div>
                 </div>
               </div>
-              {/* <div className="px-6 pt-2 pb-1">
-                {error && (
-                  <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
-                    <p className="text-red-700 text-sm font-medium">{error}</p>
-                  </div>
-                )}
-                {createPaymentError && (
-                  <div className="p-3 bg-red-100 border border-red-300 rounded-lg mt-2">
-                    <p className="text-red-700 text-sm font-medium">
-                      Payment Error: {createPaymentError.message}
-                    </p>
-                  </div>
-                )}
-              </div> */}
             </div>
 
             <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1">
-
-
               <div className="w-full">
                 <Separator className="mx-2 mb-2" />
                 <div className="grid grid-cols-2 gap-14 px-14">
@@ -2331,39 +2589,6 @@ export function UploadProofMergedModal({
                   </p>
                 </div>
 
-                {/* {file && (
-                  <div className="w-full mb-4 p-3 bg-white border rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Paperclip className="w-4 h-4 text-gray-500" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium truncate">
-                          {file.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {(file.size / 1024).toFixed(2)} KB
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={handleRemoveFile}
-                        disabled={isUploading}
-                        className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    {isUploading && (
-                      <div className="mt-2">
-                        <div className="w-full bg-gray-200 rounded-full h-1">
-                          <div className="bg-green-600 h-1 rounded-full animate-pulse"></div>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">Uploading...</p>
-                      </div>
-                    )}
-                  </div>
-                )} */}
-
-                {/* IImprove ang file upload display pag mag upload */}
                 {file && (
                   <div className="w-full mb-4 p-3 bg-white border rounded-lg">
                     <div className="flex items-center gap-2">
@@ -2641,6 +2866,7 @@ export function UploadProofMergedModal({
               {success && <SuccessModal />}
               {showConfirmationDialog && <ConfirmationDialog />}
               {showRejectedModal && <RejectedEntryModal />}
+              {showDuplicateDialog && <DuplicateReferenceDialog />}
               {(isUploading || loading) && <UploadingOverlay message={loading ? "Scanning receipt..." : "Uploading file..."} />}
             </AnimatePresence>
           </motion.div>
@@ -2835,9 +3061,9 @@ export function CheckEntryModal({
                   Entry Status History
                 </h2>
 
-                <div className="mt-3 inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-sm font-medium px-4 py-2 rounded-full shadow-sm border border-amber-100">
+                <div className="mt-3 inline-flex items-center gap-1 bg-red-50 text-red-700 text-sm font-medium px-4 py-2 rounded-full shadow-sm border border-red-100">
                   Reference Number:&nbsp;
-                  <span className="font-semibold text-amber-800">
+                  <span className="font-semibold text-red-800">
                     {entryValue}
                   </span>
                 </div>

@@ -170,7 +170,7 @@ const RegistrationFeeModal = ({
                         </h4>
                         <p className="text-green-700 text-xs">
                             After submitting this registration, you will receive payment instructions via email.
-                            Please complete your payment within 24 hours to secure your spot.
+                            Please complete your payment within the payment deadline.
                         </p>
                     </div>
 
@@ -302,6 +302,7 @@ const UploadingOverlay = () => (
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        key="uploading-overlay"
     >
         <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-lg border">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-4"></div>
@@ -309,6 +310,45 @@ const UploadingOverlay = () => (
                 Uploading document...
             </p>
             <p className="text-sm text-gray-500">Please wait</p>
+        </div>
+    </motion.div>
+)
+
+const FormSubmittingOverlay = () => (
+    <motion.div
+        className="fixed inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        key="submitting-overlay"
+    >
+        <div className="flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-2xl border border-green-200 max-w-md mx-4">
+            <div className="relative mb-6">
+                <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-600 border-t-transparent"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-8 w-8 bg-green-600 rounded-full animate-pulse"></div>
+                </div>
+            </div>
+
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                Processing Registration
+            </h3>
+            <p className="text-gray-600 text-center mb-4">
+                Please wait while we submit your registration. This may take a few moments.
+            </p>
+
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <motion.div
+                    className="bg-green-600 h-2 rounded-full"
+                    initial={{ width: "0%" }}
+                    animate={{ width: "60%" }}
+                    transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                />
+            </div>
+
+            <p className="text-xs text-gray-500 mt-2">
+                Do not close or refresh this page
+            </p>
         </div>
     </motion.div>
 )
@@ -346,6 +386,7 @@ export default function Page({ params }: RegistrationPageProps) {
     const [selectedDocumentTypePlayer2, setSelectedDocumentTypePlayer2] = useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
     const [openDocumentTypesPlayer1, setOpenDocumentTypesPlayer1] = useState(false)
     const [openDocumentTypesPlayer2, setOpenDocumentTypesPlayer2] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const tournaments = data?.publicTournaments ?? []
     const tournament = tournaments.find((t: any) => t._id === tournamentId) ?? tournaments.find((t: any) => t.isActive)
@@ -668,176 +709,213 @@ export default function Page({ params }: RegistrationPageProps) {
             onSubmit: createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation) as any,
         },
         onSubmit: async ({ value }) => {
-            startTransition(async () => {
-                console.log("=== FORM SUBMISSION TRIGGERED ===");
-                console.log("Form Data:", JSON.stringify(value, null, 2));
+            console.log("=== FORM SUBMISSION TRIGGERED ===");
 
-                try {
-                    console.log("Preparing GraphQL mutation input...");
+            // Don't proceed if already submitting
+            if (isSubmitting || isUploading) {
+                console.log("Already submitting, skipping...");
+                return;
+            }
 
-                    const schema = createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation);
-                    const validationResult = schema.safeParse(value);
+            try {
+                console.log("Starting form submission...");
 
-                    if (!validationResult.success) {
-                        const ageErrors = validationResult.error.issues.filter((err: any) =>
-                            err.path.includes('Birthday') ||
-                            err.message.toLowerCase().includes('age')
-                        );
+                // Set submitting state immediately
+                setIsSubmitting(true);
 
-                        const genderErrors = validationResult.error.issues.filter((err: any) =>
-                            err.path.includes('Gender') ||
-                            err.message.toLowerCase().includes('gender') ||
-                            err.message.toLowerCase().includes('mixed')
-                        );
+                const schema = createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation);
+                const validationResult = schema.safeParse(value);
 
-                        if (ageErrors.length > 0) {
-                            const ageErrorMessages = ageErrors.map((err: any) => err.message);
-                            showValidationToast(ageErrorMessages, "Age Validation Failed");
+                if (!validationResult.success) {
+                    const ageErrors = validationResult.error.issues.filter((err: any) =>
+                        err.path.includes('Birthday') ||
+                        err.message.toLowerCase().includes('age')
+                    );
 
-                            console.log("Age validation failed, stopping submission");
-                            return;
-                        }
+                    const genderErrors = validationResult.error.issues.filter((err: any) =>
+                        err.path.includes('Gender') ||
+                        err.message.toLowerCase().includes('gender') ||
+                        err.message.toLowerCase().includes('mixed')
+                    );
 
-                        if (genderErrors.length > 0) {
-                            const genderErrorMessages = genderErrors.map((err: any) => err.message);
-                            showValidationToast(genderErrorMessages, "Gender Validation Failed");
-
-                            console.log("Gender validation failed, stopping submission");
-                            return;
-                        }
-
-                        console.log("Form validation failed:", validationResult.error);
-                        toast.error("Validation Error", {
-                            description: "Please check all required fields.",
-                            duration: 5000,
-                        });
+                    if (ageErrors.length > 0) {
+                        const ageErrorMessages = ageErrors.map((err: any) => err.message);
+                        showValidationToast(ageErrorMessages, "Age Validation Failed");
+                        console.log("Age validation failed, stopping submission");
+                        setIsSubmitting(false);
                         return;
                     }
 
-                    const finalFormData = {
-                        ...value,
-                        player1Gender: value.player1Gender || autoGender || "",
-                        player2Gender: value.player2Gender || autoGender || "",
-                    };
+                    if (genderErrors.length > 0) {
+                        const genderErrorMessages = genderErrors.map((err: any) => err.message);
+                        showValidationToast(genderErrorMessages, "Gender Validation Failed");
+                        console.log("Gender validation failed, stopping submission");
+                        setIsSubmitting(false);
+                        return;
+                    }
 
-                    const convertToISODateTime = (dateString?: string) => {
-                        if (!dateString) return "";
-                        return new Date(dateString + 'T00:00:00.000Z').toISOString();
-                    };
+                    console.log("Form validation failed:", validationResult.error);
+                    toast.error("Validation Error", {
+                        description: "Please check all required fields.",
+                        duration: 5000,
+                    });
+                    setIsSubmitting(false);
+                    return;
+                }
 
-                    // Upload documents if files are selected
-                    let documentUrlPlayer1 = ""
-                    let documentUrlPlayer2 = ""
+                console.log("Form validation passed, proceeding...");
 
-                    if (filePlayer1) {
+                const finalFormData = {
+                    ...value,
+                    player1Gender: value.player1Gender || autoGender || "",
+                    player2Gender: value.player2Gender || autoGender || "",
+                };
+
+                const convertToISODateTime = (dateString?: string) => {
+                    if (!dateString) return "";
+                    return new Date(dateString + 'T00:00:00.000Z').toISOString();
+                };
+
+                // Upload documents if files are selected
+                let documentUrlPlayer1 = ""
+                let documentUrlPlayer2 = ""
+
+                // Upload player 1 document
+                if (filePlayer1) {
+                    console.log("Uploading player 1 document...");
+                    setIsUploading(true);
+                    try {
                         const uploadedUrl = await uploadFile(filePlayer1, `registration-player1-${Date.now()}`)
                         if (uploadedUrl) {
                             documentUrlPlayer1 = uploadedUrl
+                            console.log("Player 1 document uploaded:", uploadedUrl);
                         }
+                    } catch (error) {
+                        console.error("Failed to upload player 1 document:", error);
+                        setIsSubmitting(false);
+                        return;
+                    } finally {
+                        setIsUploading(false);
                     }
+                }
 
-                    if (filePlayer2 && event?.type === "DOUBLES") {
+                // Upload player 2 document if doubles
+                if (filePlayer2 && event?.type === "DOUBLES") {
+                    console.log("Uploading player 2 document...");
+                    setIsUploading(true);
+                    try {
                         const uploadedUrl = await uploadFile(filePlayer2, `registration-player2-${Date.now()}`)
                         if (uploadedUrl) {
                             documentUrlPlayer2 = uploadedUrl
+                            console.log("Player 2 document uploaded:", uploadedUrl);
                         }
-                    }
-
-                    // Create player entries with document URLs
-                    const createPlayerEntry = (playerData: any, playerNum: number, documentUrl: string) => {
-                        const baseEntry = {
-                            firstName: playerData[`player${playerNum}FirstName`],
-                            lastName: playerData[`player${playerNum}LastName`],
-                            middleName: playerData[`player${playerNum}MiddleName`],
-                            suffix: playerData[`player${playerNum}Suffix`],
-                            birthDate: convertToISODateTime(playerData[`player${playerNum}Birthday`]),
-                            email: playerData[`player${playerNum}Email`],
-                            phoneNumber: playerData[`player${playerNum}ContactNumber`],
-                            gender: playerData[`player${playerNum}Gender`],
-                        };
-
-                        // Add validDocuments if file was uploaded
-                        if (documentUrl) {
-                            const documentType = playerNum === 1 ? selectedDocumentTypePlayer1 : selectedDocumentTypePlayer2;
-                            return {
-                                ...baseEntry,
-                                ...(hasFreeJersey && { jerseySize: playerData[`player${playerNum}JerseySize`] }),
-                                validDocuments: [{
-                                    documentURL: documentUrl,
-                                    documentType: documentType,
-                                    dateUploaded: new Date().toISOString(),
-                                }]
-                            };
-                        }
-
-                        return {
-                            ...baseEntry,
-                            ...(hasFreeJersey && { jerseySize: playerData[`player${playerNum}JerseySize`] })
-                        };
-                    };
-
-                    const input = {
-                        event: eventId,
-                        club: finalFormData.club,
-                        player1Entry: createPlayerEntry(finalFormData, 1, documentUrlPlayer1),
-                        ...(event?.type === "DOUBLES" && {
-                            player2Entry: createPlayerEntry(finalFormData, 2, documentUrlPlayer2)
-                        })
-                    }
-
-                    console.log("GraphQL Input:", JSON.stringify(input, null, 2));
-                    console.log("Calling registryEntry mutation...");
-
-                    const result = await registryEntry({
-                        variables: { input }
-                    })
-
-                    console.log("Mutation result:", result);
-
-                    if (result.data?.registerEntry?.ok) {
-                        console.log("Registration successful!", result.data.registerEntry.message)
-                        const successMessage =
-                            result.data?.registerEntry?.message ?? "You have been registered successfully."
-
-                        setSuccessMessage(successMessage);
-                        setShowSuccessModal(true);
-
-                    } else {
-                        console.error("Registration failed:", result.data?.registerEntry?.message);
-                        toast.error(`Registration failed: ${result.data?.registerEntry?.message || "Unknown error"}`);
-                    }
-                } catch (error: any) {
-                    console.error("Submission error:", error);
-
-                    if (error.graphQLErrors && error.graphQLErrors.length > 0) {
-                        const graphQLError = error.graphQLErrors[0];
-
-                        extractAndDisplayBackendErrors(graphQLError, form);
-
-                        if (graphQLError.message) {
-                            toast.error("Validation Error", {
-                                description: graphQLError.message,
-                                duration: 5000,
-                            });
-                        } else {
-                            toast.error("Validation failed", {
-                                description: "Please check all fields and try again.",
-                                duration: 5000,
-                            });
-                        }
-                    } else if (error.networkError) {
-                        toast.error("Network Error", {
-                            description: "Please check your internet connection and try again.",
-                            duration: 5000,
-                        });
-                    } else {
-                        toast.error("Submission Error", {
-                            description: "An unexpected error occurred. Please try again.",
-                            duration: 5000,
-                        });
+                    } catch (error) {
+                        console.error("Failed to upload player 2 document:", error);
+                        setIsSubmitting(false);
+                        return;
+                    } finally {
+                        setIsUploading(false);
                     }
                 }
-            });
+
+                // Create player entries with document URLs
+                const createPlayerEntry = (playerData: any, playerNum: number, documentUrl: string) => {
+                    const baseEntry = {
+                        firstName: playerData[`player${playerNum}FirstName`],
+                        lastName: playerData[`player${playerNum}LastName`],
+                        middleName: playerData[`player${playerNum}MiddleName`],
+                        suffix: playerData[`player${playerNum}Suffix`],
+                        birthDate: convertToISODateTime(playerData[`player${playerNum}Birthday`]),
+                        email: playerData[`player${playerNum}Email`],
+                        phoneNumber: playerData[`player${playerNum}ContactNumber`],
+                        gender: playerData[`player${playerNum}Gender`],
+                    };
+
+                    // Add validDocuments if file was uploaded
+                    if (documentUrl) {
+                        const documentType = playerNum === 1 ? selectedDocumentTypePlayer1 : selectedDocumentTypePlayer2;
+                        return {
+                            ...baseEntry,
+                            ...(hasFreeJersey && { jerseySize: playerData[`player${playerNum}JerseySize`] }),
+                            validDocuments: [{
+                                documentURL: documentUrl,
+                                documentType: documentType,
+                                dateUploaded: new Date().toISOString(),
+                            }]
+                        };
+                    }
+
+                    return {
+                        ...baseEntry,
+                        ...(hasFreeJersey && { jerseySize: playerData[`player${playerNum}JerseySize`] })
+                    };
+                };
+
+                const input = {
+                    event: eventId,
+                    club: finalFormData.club,
+                    player1Entry: createPlayerEntry(finalFormData, 1, documentUrlPlayer1),
+                    ...(event?.type === "DOUBLES" && {
+                        player2Entry: createPlayerEntry(finalFormData, 2, documentUrlPlayer2)
+                    })
+                }
+
+                console.log("GraphQL Input:", JSON.stringify(input, null, 2));
+                console.log("Calling registryEntry mutation...");
+
+                const result = await registryEntry({
+                    variables: { input }
+                })
+
+                console.log("Mutation result:", result);
+
+                if (result.data?.registerEntry?.ok) {
+                    console.log("Registration successful!", result.data.registerEntry.message)
+                    const successMessage =
+                        result.data?.registerEntry?.message ?? "You have been registered successfully."
+
+                    setSuccessMessage(successMessage);
+                    setShowSuccessModal(true);
+
+                } else {
+                    console.error("Registration failed:", result.data?.registerEntry?.message);
+                    toast.error(`Registration failed: ${result.data?.registerEntry?.message || "Unknown error"}`);
+                }
+            } catch (error: any) {
+                console.error("Submission error:", error);
+
+                if (error.graphQLErrors && error.graphQLErrors.length > 0) {
+                    const graphQLError = error.graphQLErrors[0];
+
+                    extractAndDisplayBackendErrors(graphQLError, form);
+
+                    if (graphQLError.message) {
+                        toast.error("Validation Error", {
+                            description: graphQLError.message,
+                            duration: 5000,
+                        });
+                    } else {
+                        toast.error("Validation failed", {
+                            description: "Please check all fields and try again.",
+                            duration: 5000,
+                        });
+                    }
+                } else if (error.networkError) {
+                    toast.error("Network Error", {
+                        description: "Please check your internet connection and try again.",
+                        duration: 5000,
+                    });
+                } else {
+                    toast.error("Submission Error", {
+                        description: "An unexpected error occurred. Please try again.",
+                        duration: 5000,
+                    });
+                }
+            } finally {
+                console.log("Submission process completed, resetting submitting state");
+                // Always reset submitting state when done
+                setIsSubmitting(false);
+            }
         },
     });
 
@@ -872,6 +950,7 @@ export default function Page({ params }: RegistrationPageProps) {
     ])
 
     const handleModalClose = () => {
+        setIsSubmitting(false);
         setShowSuccessModal(false);
         setSyncPlayer1(false);
         setSyncPlayer2(false);
@@ -999,7 +1078,7 @@ export default function Page({ params }: RegistrationPageProps) {
                         <Button
                             id={`documentType${playerNum}`}
                             name={`documentType${playerNum}`}
-                            disabled={isUploading}
+                            disabled={isUploading || submitting}
                             aria-expanded={openDocumentTypes}
                             variant="outline"
                             role="combobox"
@@ -1105,9 +1184,9 @@ export default function Page({ params }: RegistrationPageProps) {
                 onClose={handleModalClose}
                 message={successMessage}
             />
-
             <AnimatePresence>
-                {isUploading && <UploadingOverlay />}
+                {isUploading && <UploadingOverlay key="uploading-overlay" />}
+                {(isSubmitting || submitting) && <FormSubmittingOverlay key="submitting-overlay" />}
             </AnimatePresence>
 
             <div className="p-4 sm:p-6 pb-0 mt-20">
@@ -1139,10 +1218,10 @@ export default function Page({ params }: RegistrationPageProps) {
                 <CardContent>
                     <form
                         id="registration-form"
-                        onSubmit={(e) => {
+                        onSubmit={async (e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            form.handleSubmit()
+                            await form.handleSubmit()
                         }}
                         className="space-y-6"
                     >
@@ -1180,12 +1259,13 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             placeholder="Enter your Club Name or Affiliation Here"
                                                             aria-invalid={isInvalid}
                                                             className="!pl-5"
+                                                            disabled={isSubmitting || isUploading}
                                                         />
 
                                                         <InputGroupAddon align="inline-end">
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                    <InputGroupButton className="rounded-full" size="icon-xs">
+                                                                    <InputGroupButton className="rounded-full" size="icon-xs" disabled={isSubmitting || isUploading}>
                                                                         <InfoIcon />
                                                                     </InputGroupButton>
                                                                 </TooltipTrigger>
@@ -1216,13 +1296,9 @@ export default function Page({ params }: RegistrationPageProps) {
                                             key={name}
                                             name={name}
                                             children={(field) => {
-                                                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-                                                const label =
-                                                    name === "clubEmail" ? "Email Address" : "Contact Number"
-
-                                                const inputType = name === "clubEmail" ? "email" : "tel"
-                                                const placeholder =
-                                                    name === "clubEmail" ? "Enter your email" : "Enter contact number"
+                                                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                                                const label = name === "clubEmail" ? "Email Address" : "Contact Number";
+                                                const isEmail = name === "clubEmail";
 
                                                 return (
                                                     <Field data-invalid={isInvalid} className="text-left">
@@ -1237,16 +1313,41 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             <InputGroupInput
                                                                 id={field.name}
                                                                 name={field.name}
-                                                                type={inputType}
+                                                                type={isEmail ? "email" : "tel"}
                                                                 value={typeof field.state.value === "string" ? field.state.value : ""}
                                                                 onBlur={field.handleBlur}
-                                                                onChange={(e) => field.handleChange(e.target.value)}
-                                                                placeholder={placeholder}
+                                                                onChange={(e) => {
+                                                                    if (isEmail) {
+                                                                        field.handleChange(e.target.value);
+                                                                    } else {
+                                                                        // Phone number field - fixed for 11 digits starting with 09
+                                                                        // Remove any non-digit characters
+                                                                        const rawValue = e.target.value.replace(/\D/g, '');
+
+                                                                        // Ensure it starts with 09 and limit to 11 digits
+                                                                        let formattedValue = rawValue;
+                                                                        if (formattedValue && !formattedValue.startsWith('9')) {
+                                                                            // If it starts with just 9, make it 09
+                                                                            if (formattedValue.startsWith('9')) {
+                                                                                formattedValue = '0' + formattedValue;
+                                                                            } else {
+                                                                                formattedValue = '9' + formattedValue;
+                                                                            }
+                                                                        }
+                                                                        if (formattedValue.length > 10) {
+                                                                            formattedValue = formattedValue.substring(0, 10);
+                                                                        }
+
+                                                                        field.handleChange(formattedValue);
+                                                                    }
+                                                                }}
+                                                                placeholder={isEmail ? "Enter your email" : "Enter 10-digit number starting with 9"}
                                                                 aria-invalid={isInvalid}
                                                                 className="!pl-3"
+                                                                disabled={isSubmitting || isUploading}
                                                             />
                                                             <InputGroupAddon>
-                                                                {name === "clubEmail" ? (
+                                                                {isEmail ? (
                                                                     <MailIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
                                                                 ) : (
                                                                     <div className="flex items-center gap-1 text-gray-500">
@@ -1257,9 +1358,15 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             </InputGroupAddon>
                                                         </InputGroup>
 
+                                                        {!isEmail && (
+                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                Example: 9123456789
+                                                            </div>
+                                                        )}
+
                                                         {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} />}
                                                     </Field>
-                                                )
+                                                );
                                             }}
                                         />
                                     ))}
@@ -1304,6 +1411,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                         variant="ghost"
                                                         size="icon"
                                                         className="h-10 w-10 rounded-full bg-white/80 hover:bg-green-50 cursor-pointer"
+                                                        disabled={isSubmitting || isUploading}
                                                     >
                                                         <InfoIcon className="w-5 h-5 text-green-700" />
                                                     </Button>
@@ -1396,10 +1504,11 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                     value={typeof field.state.value === "string" ? field.state.value : ""}
                                                                                     onValueChange={field.handleChange}
                                                                                     aria-invalid={isInvalid}
+                                                                                    disabled={isSubmitting || isUploading}
                                                                                 >
                                                                                     <SelectTrigger
                                                                                         id={field.name}
-                                                                                        className={`flex-1 ${isInvalid ? 'border-red-300 bg-red-50' : 'border-green-200'}`}
+                                                                                        className={`flex-1 ${isInvalid ? 'border-red-300 bg-red-50' : 'border-green-200'} disabled:opacity-50 disabled:cursor-not-allowed`}
                                                                                     >
                                                                                         <SelectValue placeholder="Select Gender" />
                                                                                     </SelectTrigger>
@@ -1433,10 +1542,11 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                 value={typeof field.state.value === "string" ? field.state.value : ""}
                                                                                 onValueChange={field.handleChange}
                                                                                 aria-invalid={isInvalid}
+                                                                                disabled={isSubmitting || isUploading}
                                                                             >
                                                                                 <SelectTrigger
                                                                                     id={field.name}
-                                                                                    className={`flex-1 ${isInvalid ? 'border-red-300 bg-red-50' : 'border-green-200'}`}
+                                                                                    className={`flex-1 ${isInvalid ? 'border-red-300 bg-red-50' : 'border-green-200'} disabled:opacity-50 disabled:cursor-not-allowed`}
                                                                                 >
                                                                                     <SelectValue placeholder="Select Jersey Size" />
                                                                                 </SelectTrigger>
@@ -1457,7 +1567,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                 <PopoverTrigger asChild>
                                                                                     <Button
                                                                                         variant="outline"
-                                                                                        className={`w-full justify-start text-left font-normal ${isInvalid ? 'border-red-300 bg-red-50' : 'border-green-200 bg-white'} ${!field.state.value && "text-muted-foreground"}`}
+                                                                                        className={`w-full justify-start text-left font-normal ${isInvalid ? 'border-red-300 bg-red-50' : 'border-green-200 bg-white'} ${!field.state.value && "text-muted-foreground"} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                                                        disabled={isSubmitting || isUploading}
                                                                                     >
                                                                                         {typeof field.state.value === "string" && field.state.value
                                                                                             ? format(new Date(field.state.value), "PPP")
@@ -1481,6 +1592,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                         fromYear={1900}
                                                                                         toYear={new Date().getFullYear()}
                                                                                         className="rounded-md border cursor-pointer"
+                                                                                        disabled={isSubmitting || isUploading}
                                                                                     />
                                                                                 </PopoverContent>
                                                                             </Popover>
@@ -1496,7 +1608,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                 onChange={(e) => field.handleChange(e.target.value)}
                                                                                 placeholder={`Enter ${label}`}
                                                                                 aria-invalid={isInvalid}
-                                                                                className={`!pl-4 ${isInvalid ? 'border-red-300 bg-red-50' : ''}`}
+                                                                                className={`!pl-4 ${isInvalid ? 'border-red-300 bg-red-50' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                                                disabled={isSubmitting || isUploading}
                                                                             />
                                                                             <InputGroupAddon className="mx-auto px-3">
                                                                                 <User2 className="w-4 h-4" />
@@ -1555,8 +1668,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                 <Button
                                                                                     type="button"
                                                                                     onClick={() => handleRemoveFile(playerNum, field)}
-                                                                                    disabled={isUploading}
-                                                                                    className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                                                                                    disabled={isUploading || submitting}
+                                                                                    className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                                                 >
                                                                                     <XCircle className="w-4 h-4" />
                                                                                 </Button>
@@ -1607,7 +1720,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                         className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed rounded-xl transition ${fieldErrors[`filePlayer${playerNum}`]
                                                                             ? 'border-red-300 bg-red-50 hover:bg-red-100'
                                                                             : 'border-green-300 bg-green-50 hover:bg-green-100'
-                                                                            }`}
+                                                                            } ${(submitting || isUploading) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                                     >
                                                                         {isUploading && (playerNum === 1 && filePlayer1 || playerNum === 2 && filePlayer2) ? (
                                                                             <div className="flex flex-col items-center">
@@ -1635,7 +1748,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                             accept='image/*,.pdf'
                                                                             className='hidden'
                                                                             onChange={(e) => handleFileUpload(playerNum, e, field)}
-                                                                            disabled={isUploading}
+                                                                            disabled={isUploading || submitting}
                                                                         />
                                                                     </label>
 
@@ -1677,24 +1790,23 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             }
                                                         }
                                                     }}
-                                                    className="cursor-pointer flex-shrink-0 mt-1"
+                                                    className="cursor-pointer flex-shrink-0 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    disabled={isSubmitting || isUploading}
                                                 />
                                                 <label className="text-sm text-green-800 font-medium flex-1">
-                                                    Use Club Contact Information
+                                                    Use Club Contact Information <span className="text-xs text-muted-foreground"> (Toggle the Switch if you want to use the Inputted Email Address and Contact Number in the Club Contact Information on Top Earlier) </span>
                                                 </label>
                                             </div>
 
                                             <FieldGroup className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
-                                                {getContactFieldNames(playerKey).map((name) => (
+                                                {([`player${playerNum}Email`, `player${playerNum}ContactNumber`] as FormFieldNames[]).map((name) => (
                                                     <form.Field
                                                         key={name}
                                                         name={name}
                                                         children={(field) => {
-                                                            const isInvalid =
-                                                                field.state.meta.isTouched && !field.state.meta.isValid;
-                                                            const label = name.includes("Email")
-                                                                ? "Email Address"
-                                                                : "Contact Number"
+                                                            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                                                            const label = name.includes("Email") ? "Email Address" : "Contact Number";
+                                                            const isEmail = name.includes("Email");
 
                                                             return (
                                                                 <Field data-invalid={isInvalid} className="text-left">
@@ -1705,18 +1817,43 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                         <InputGroupInput
                                                                             id={field.name}
                                                                             name={field.name}
+                                                                            type={isEmail ? "email" : "tel"}
                                                                             value={typeof field.state.value === "string" ? field.state.value : ""}
                                                                             onBlur={field.handleBlur}
-                                                                            onChange={(e) => field.handleChange(e.target.value)}
-                                                                            placeholder={`Enter ${label}`}
+                                                                            onChange={(e) => {
+                                                                                if (isEmail) {
+                                                                                    field.handleChange(e.target.value);
+                                                                                } else {
+                                                                                    // Phone number field - fixed for 11 digits starting with 09
+                                                                                    // Remove any non-digit characters
+                                                                                    const rawValue = e.target.value.replace(/\D/g, '');
+
+                                                                                    // Ensure it starts with 09 and limit to 11 digits
+                                                                                    let formattedValue = rawValue;
+                                                                                    if (formattedValue && !formattedValue.startsWith('9')) {
+                                                                                        // If it starts with just 9, make it 09
+                                                                                        if (formattedValue.startsWith('9')) {
+                                                                                            formattedValue = '0' + formattedValue;
+                                                                                        } else {
+                                                                                            formattedValue = '9' + formattedValue;
+                                                                                        }
+                                                                                    }
+                                                                                    if (formattedValue.length > 10) {
+                                                                                        formattedValue = formattedValue.substring(0, 10);
+                                                                                    }
+
+                                                                                    field.handleChange(formattedValue);
+                                                                                }
+                                                                            }}
+                                                                            placeholder={isEmail ? "Enter email address" : "Enter 10-digit number starting with 9"}
                                                                             aria-invalid={isInvalid}
                                                                             disabled={
-                                                                                playerNum === 1 ? syncPlayer1 : syncPlayer2
+                                                                                (playerNum === 1 ? syncPlayer1 : syncPlayer2) || submitting || isUploading
                                                                             }
-                                                                            className={`!pl-3 ${isInvalid ? 'border-red-300 bg-red-50' : ''}`}
+                                                                            className={`!pl-3 ${isInvalid ? 'border-red-300 bg-red-50' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
                                                                         />
                                                                         <InputGroupAddon className="mx-auto px-3">
-                                                                            {name.includes("Email") ? (
+                                                                            {isEmail ? (
                                                                                 <MailIcon className="w-4 h-4" />
                                                                             ) : (
                                                                                 <PhoneIcon className="w-4 h-4" />
@@ -1724,11 +1861,18 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                         </InputGroupAddon>
                                                                     </InputGroup>
 
+                                                                    {/* Helper text for phone number only */}
+                                                                    {!isEmail && (
+                                                                        <div className="text-xs text-gray-500 mt-1">
+                                                                            Example: 9123456789
+                                                                        </div>
+                                                                    )}
+
                                                                     {isInvalid && (
                                                                         <EnhancedFieldError errors={field.state.meta.errors} />
                                                                     )}
                                                                 </Field>
-                                                            )
+                                                            );
                                                         }}
                                                     />
                                                 ))}
@@ -1743,16 +1887,30 @@ export default function Page({ params }: RegistrationPageProps) {
 
                 <CardFooter>
                     <div className="flex flex-col sm:flex-row justify-center gap-4 w-full">
-                        <Button type="button" variant="outline" onClick={() => form.reset()} className="lg:w-1/2! w-auto! px-6 py-5 cursor-pointer">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => form.reset()}
+                            disabled={isSubmitting || isUploading}
+                            className="lg:w-1/2! w-auto! px-6 py-5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                        >
                             Reset
                         </Button>
                         <Button
                             type="submit"
                             form="registration-form"
-                            disabled={submitting || isUploading}
-                            className="lg:w-1/2! w-auto!  px-6 py-5 cursor-pointer"
+                            disabled={isSubmitting || submitting || isUploading}
+                            className="lg:w-1/2! w-auto! px-6 py-5 cursor-pointer disabled:cursor-not-allowed relative overflow-hidden bg-green-600 hover:bg-green-700 text-white"
                         >
-                            {submitting ? "Submitting..." : isUploading ? "Uploading..." : "Submit"}
+                            <span className={`transition-opacity duration-200 ${isSubmitting || submitting ? 'opacity-0' : 'opacity-100'}`}>
+                                Submit Registration
+                            </span>
+                            {(isSubmitting || submitting) && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    <span className="ml-2">Submitting...</span>
+                                </div>
+                            )}
                         </Button>
                     </div>
                 </CardFooter>

@@ -209,7 +209,7 @@ const Page = () => {
             )
             if (newPaymentExists || search || sort || filter.length > 0)
               return prev
-            toast.success(`Payment (${newPayment?.name}) has been created.`)
+            toast.success(`Payment (${newPayment?.payerName}) has been created.`)
             return Object.assign({}, prev, {
               payments: {
                 ...prev.payments,

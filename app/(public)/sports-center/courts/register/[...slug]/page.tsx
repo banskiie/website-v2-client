@@ -352,10 +352,10 @@
 //                             <span>
 //                                 {`${new Date(
 //                                     tournament.dates.tournamentStart
-//                                 ).toLocaleString("default", { month: "long" })} 
+//                                 ).toLocaleString("default", { month: "long" })}
 //                 ${new Date(tournament.dates.tournamentStart).getDate()}–${new Date(
 //                                     tournament.dates.tournamentEnd
-//                                 ).getDate()}, 
+//                                 ).getDate()},
 //                 ${new Date(tournament.dates.tournamentStart).getFullYear()}`}
 //                             </span>
 //                         </div>

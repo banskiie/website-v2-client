@@ -45,7 +45,7 @@ function Page() {
 
         updateWidth()
         window.addEventListener('resize', updateWidth)
-        
+
         return () => window.removeEventListener('resize', updateWidth)
     }, [])
 
@@ -288,16 +288,16 @@ function Page() {
                         <div className="hidden sm:block w-px h-6 sm:h-8 bg-white/40"></div>
 
                         <div className="flex items-center gap-3">
-                            <Image 
-                                src="/assets/img/sports-center/suite/airbnb.png" 
-                                alt="Airbnb" 
-                                width={24} 
-                                height={24} 
+                            <Image
+                                src="/assets/img/sports-center/suite/airbnb.png"
+                                alt="Airbnb"
+                                width={24}
+                                height={24}
                                 className="rounded sm:w-7 sm:h-7"
                             />
-                            <Link 
-                                href="https://www.airbnb.com/rooms/1440871946921101799" 
-                                target="_blank" 
+                            <Link
+                                href="https://www.airbnb.com/rooms/1440871946921101799"
+                                target="_blank"
                                 className="underline hover:text-[#e2d1cb] transition-colors text-base sm:text-lg font-medium"
                             >
                                 Find us on Airbnb
