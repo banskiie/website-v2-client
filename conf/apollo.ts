@@ -13,14 +13,14 @@ import { createClient } from "graphql-ws"
 import { OperationTypeNode } from "graphql"
 
 const httpLink = new HttpLink({
-  uri: process.env.NEXT_PUBLIC_GRAPHQL_HTTP_URI!,
+  uri: process.env.NEXT_PUBLIC_GRAPHQL_HTTPS_URI!,
   credentials: "include",
 })
 
 const wsLink = new GraphQLWsLink(
   createClient({
-    url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_URI!,
-  })
+    url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_WSS_URI!,
+  }),
 )
 
 const authLink = new SetContextLink(({ headers }) => {
@@ -100,7 +100,7 @@ const splitLink = split(
     return operationType === OperationTypeNode.SUBSCRIPTION
   },
   wsLink,
-  errorLink.concat(authLink).concat(httpLink)
+  errorLink.concat(authLink).concat(httpLink),
 )
 
 export const client = new ApolloClient({

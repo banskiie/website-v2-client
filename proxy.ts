@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { Role } from "./types/user.interface"
 import jwt, { JwtPayload } from "jsonwebtoken"
+import { cookies } from "next/headers"
 
 const PUBLIC_ROUTES = ["/", "/login"]
 const PROTECTED_ROUTES = [
@@ -71,12 +72,14 @@ const PROTECTED_ROUTES = [
 ]
 
 export async function proxy(req: NextRequest) {
-  const REFRESH_TOKEN = req.cookies.get("refreshToken")?.value || null
+  const REFRESH_TOKEN = req.cookies.get("refreshToken")?.value
   const PATHNAME = req.nextUrl.pathname
   const ROLE = (jwt.decode(REFRESH_TOKEN || "") as JwtPayload)?.role || null
 
+  console.log(req.cookies.getAll())
+
   const PROTECTED_ROUTES_PATHS = PROTECTED_ROUTES.filter(
-    (route) => route.needsAuth
+    (route) => route.needsAuth,
   ).map((r) => r.path)
 
   // if (PUBLIC_ROUTES.includes(PATHNAME) && REFRESH_TOKEN)
@@ -89,7 +92,7 @@ export async function proxy(req: NextRequest) {
     // If invalid role permissions, redirect to dashboard
     if (route && ROLE && !route.roles.includes(ROLE as Role)) {
       console.warn(
-        "Invalid permission to access route, redirecting to dashboard..."
+        "Invalid permission to access route, redirecting to dashboard...",
       )
       return NextResponse.redirect(new URL("/dashboard", req.url))
     }

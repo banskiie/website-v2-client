@@ -1,7 +1,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { client } from "@/conf/apollo"
-import { gql } from "@apollo/client"
 import {
   REFRESH_ACCESS_TOKEN,
   SIGN_OUT,
@@ -35,17 +34,38 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       signIn: async ({ username, password, rememberMe }) => {
-        const response: any = await client.mutate({
-          mutation: SIGN_IN,
-          variables: { username, password, rememberMe },
+        // const response: any = await client.mutate({
+        //   mutation: SIGN_IN,
+        //   variables: { username, password, rememberMe },
+        // })
+
+        const response: any = await fetch("/api/auth", {
+          method: "POST",
+          credentials: "include", // 🔑 sends cookies automatically
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password, rememberMe }),
+        }).then((res) => {
+          console.log(res)
+          return res.json()
         })
-        if (response.data?.signIn.ok && response.data.signIn.data) {
+
+        // if (response.data?.signIn.ok && response.data.signIn.data) {
+        //   set({
+        //     accessToken: response.data.signIn.data.accessToken,
+        //     user: response.data.signIn.data.user,
+        //     isAuthenticated: true,
+        //   })
+
+        //   // Redirect to dashboard after successful sign in
+        //   window.location.href = "/dashboard"
+        // }
+
+        if (response.user && response.accessToken) {
           set({
-            accessToken: response.data.signIn.data.accessToken,
-            user: response.data.signIn.data.user,
+            accessToken: response.accessToken,
+            user: response.user,
             isAuthenticated: true,
           })
-          // Redirect to dashboard after successful sign in
           window.location.href = "/dashboard"
         }
 
@@ -89,6 +109,6 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
-    }
-  )
+    },
+  ),
 )
