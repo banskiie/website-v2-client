@@ -14,6 +14,7 @@ import { OperationTypeNode } from "graphql"
 
 const httpLink = new HttpLink({
   uri: process.env.NEXT_PUBLIC_GRAPHQL_HTTPS_URI!,
+  uri: process.env.NEXT_PUBLIC_GRAPHQL_HTTPS_URI!,
   credentials: "include",
 })
 
