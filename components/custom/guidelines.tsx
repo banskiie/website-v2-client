@@ -437,7 +437,7 @@ const Guidelines: React.FC<GuidelinesProps> = ({ isOpen, onClose, onAgree, categ
                 transition={{ duration: 0.4 }}
                 className="flex items-center justify-between border-b p-4 border-gray-200 bg-white sticky top-0 z-20 shadow-sm"
             >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full">
                     <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -450,25 +450,26 @@ const Guidelines: React.FC<GuidelinesProps> = ({ isOpen, onClose, onAgree, categ
                             className="w-full h-full object-contain"
                         />
                     </motion.div>
-                    <div className="min-w-0">
+
+                    <div className="flex-1 text-center">
                         <motion.h1
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.2, duration: 0.4 }}
-                            className="text-lg md:text-lg lg:text-xl font-bold text-center md:text-left mb-0"
+                            className="text-lg md:text-lg lg:text-xl font-bold mb-0 text-center"
                         >
                             C-ONE Badminton Challenge V9 Guidelines
                         </motion.h1>
                     </div>
                 </div>
-                <motion.div
+                {/* <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3, duration: 0.4 }}
-                    className="text-sm text-gray-500 font-medium"
+                    className="text-sm text-gray-500 font-medium "
                 >
                     Please read all sections below
-                </motion.div>
+                </motion.div> */}
             </motion.div>
 
             <div

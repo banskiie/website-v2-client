@@ -75,7 +75,20 @@ const RegistrationFeeModal = ({
 }) => {
     if (!isOpen || !event || !tournament) return null
 
-    const pricePerPlayer = tournament.settings?.hasEarlyBird && event.earlyBirdPricePerPlayer ?
+    // Calculate if early bird is active based on date
+    const hasEarlyBirdSetting = tournament.settings?.hasEarlyBird;
+    const earlyBirdEndDate = tournament.dates?.earlyBirdPaymentEnd;
+    const now = new Date();
+
+    let isEarlyBirdActive = false;
+
+    if (hasEarlyBirdSetting && earlyBirdEndDate) {
+        const endDate = new Date(earlyBirdEndDate);
+        isEarlyBirdActive = now <= endDate; // Early bird is active if current date is before/equal to end date
+    }
+
+    // Use early bird price only if early bird is active
+    const pricePerPlayer = isEarlyBirdActive && event.earlyBirdPricePerPlayer ?
         event.earlyBirdPricePerPlayer :
         event.pricePerPlayer
 
@@ -84,7 +97,7 @@ const RegistrationFeeModal = ({
         : pricePerPlayer
 
     const isDoubles = event.type === "DOUBLES"
-    const isEarlyBird = tournament.settings?.hasEarlyBird
+    const isEarlyBird = isEarlyBirdActive; // Use the calculated value
 
     const [dontShowChecked, setDontShowChecked] = useState(false)
 
@@ -117,10 +130,10 @@ const RegistrationFeeModal = ({
                         <div className="font-bold text-green-800 text-lg">
                             {event.name} ({event.type.charAt(0).toUpperCase() + event.type.slice(1).toLowerCase()})
                         </div>
-                        {isEarlyBird && (
+                        {isEarlyBirdActive && (
                             <div className="inline-block mt-2">
                                 <Badge className="bg-linear-to-r from-yellow-100 to-orange-100 text-orange-800 border-orange-200">
-                                    ⚡ Early Bird Discount Applied
+                                    Early Bird Discount Applied
                                 </Badge>
                             </div>
                         )}
@@ -169,7 +182,8 @@ const RegistrationFeeModal = ({
                             Payment Instructions
                         </h4>
                         <p className="text-green-700 text-xs">
-                            After submitting this registration, you will receive payment instructions via email.
+                            After submitting this registration, please wait for an approval notice via <strong className="underline underline-offset-2">email</strong> before making any payment.
+                            The <strong className="underline underline-offset-2">payment instructions</strong> will also be sent to your email. I advise <strong className="underline underline-offset-2">not to pay</strong> until you receive the approval notice.
                             Please complete your payment within the payment deadline.
                         </p>
                     </div>
@@ -438,15 +452,22 @@ export default function Page({ params }: RegistrationPageProps) {
 
     useEffect(() => {
         if (event && tournament) {
-            console.log("=== 🎯 AUTOMATIC EARLY BIRD PRICE CHECK ===");
-            console.log("Event:", event.name);
-            console.log("Event Type:", event.type);
-            console.log("Tournament settings.hasEarlyBird:", tournament.settings?.hasEarlyBird);
-
             const hasEarlyBird = tournament.settings?.hasEarlyBird;
-            console.log("✅ Early Bird Active:", hasEarlyBird ? "YES" : "NO");
+            const earlyBirdEndDate = tournament.dates?.earlyBirdPaymentEnd;
+            const now = new Date();
 
-            const actualPricePerPlayer = hasEarlyBird && event?.earlyBirdPricePerPlayer
+            let isEarlyBirdActive = false;
+
+            if (hasEarlyBird && earlyBirdEndDate) {
+                const endDate = new Date(earlyBirdEndDate);
+                isEarlyBirdActive = now <= endDate
+                console.log("Early Bird End Date:", endDate);
+                console.log("Current Date:", now);
+                console.log("Is Early Bird Active:", isEarlyBirdActive);
+            }
+            console.log("✅ Early Bird Active:", isEarlyBirdActive ? "YES" : "NO")
+
+            const actualPricePerPlayer = isEarlyBirdActive && event?.earlyBirdPricePerPlayer
                 ? event.earlyBirdPricePerPlayer
                 : event.pricePerPlayer
 
@@ -1189,11 +1210,11 @@ export default function Page({ params }: RegistrationPageProps) {
                 {(isSubmitting || submitting) && <FormSubmittingOverlay key="submitting-overlay" />}
             </AnimatePresence>
 
-            <div className="p-4 sm:p-6 pb-0 mt-20">
+            <div className="p-4 sm:p-6 pb-0 mt-20 mb-2 md:mb-0 lg:mb-0 xl:mb-0 2xl:mb-0">
                 <Button variant="ghost" asChild className="text-green-700 hover:text-green-800 hover:bg-green-200">
                     <Link href="/sports-center/courts/categories" className="flex items-center gap-2">
                         <ArrowLeftIcon className="w-6 h-6" />
-                        <span className="underline text-base">Back</span>
+                        <span className="underline text-md ">Back</span>
                     </Link>
                 </Button>
             </div>
@@ -1231,7 +1252,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                     <div className="p-2 bg-linear-to-r from-green-400 to-teal-500 rounded-lg shadow-md">
                                         <Users2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                     </div>
-                                    <span className="text-lg font-semibold">Club Information</span>
+                                    <span className="text-md md:text-md lg:text-lg xl:text-lg 2xl:text-lg font-semibold">Club Information</span>
                                 </CardTitle>
 
                                 <p className="text-green-800 text-xs">
@@ -1258,8 +1279,9 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             onChange={(e) => field.handleChange(e.target.value)}
                                                             placeholder="Enter your Club Name or Affiliation Here"
                                                             aria-invalid={isInvalid}
-                                                            className="!pl-5"
+                                                            className="!pl-5 pb-1.5 placeholder:text-sm"
                                                             disabled={isSubmitting || isUploading}
+
                                                         />
 
                                                         <InputGroupAddon align="inline-end">
@@ -1285,7 +1307,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                     <div className="p-2 bg-linear-to-r from-green-400 to-teal-500 rounded-lg">
                                         <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                     </div>
-                                    <span className="text-green-800 font-semibold text-lg">
+                                    <span className="text-green-800 font-semibold text-md md:text-md lg:text-lg xl:text-lg 2xl:text-lg">
                                         Club Contact Information (Optional)
                                     </span>
                                 </div>
@@ -1343,7 +1365,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                 }}
                                                                 placeholder={isEmail ? "Enter your email" : "Enter 10-digit number starting with 9"}
                                                                 aria-invalid={isInvalid}
-                                                                className="!pl-3"
+                                                                className="!pl-3 pb-1.5 placeholder:text-sm"
                                                                 disabled={isSubmitting || isUploading}
                                                             />
                                                             <InputGroupAddon>
@@ -1375,7 +1397,7 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                 <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200 max-w-2xl mx-auto">
                                     <p className="text-green-700 text-sm text-left">
-                                        💡 <strong>Tip:</strong> Use the <span className="font-medium">SWITCH</span> in <span className="font-bold">PLAYER CONTACT INFORMATION</span> below to automatically fill their contact information with these club details.
+                                        💡 <strong>Tip:</strong> Use the <span className="font-medium">Button</span> in <span className="font-bold">PLAYER CONTACT INFORMATION</span> below to automatically fill in their contact information with these club details that you input.
                                     </p>
                                 </div>
                             </div>
@@ -1608,7 +1630,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                 onChange={(e) => field.handleChange(e.target.value)}
                                                                                 placeholder={`Enter ${label}`}
                                                                                 aria-invalid={isInvalid}
-                                                                                className={`!pl-4 ${isInvalid ? 'border-red-300 bg-red-50' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                                                className={`${isInvalid ? 'border-red-300 bg-red-50' : ''} disabled:opacity-50 disabled:cursor-not-allowed pb-1.5 placeholder:text-sm`}
                                                                                 disabled={isSubmitting || isUploading}
                                                                             />
                                                                             <InputGroupAddon className="mx-auto px-3">
@@ -1644,10 +1666,10 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             <Field data-invalid={isInvalid} className="text-left">
                                                                 <div className="border-2 border-dashed border-green-300 rounded-2xl p-4 sm:p-6 bg-white flex flex-col items-center justify-center text-center gap-4">
                                                                     <div className="w-full flex flex-col text-left">
-                                                                        <FieldLabel htmlFor={field.name} className="text-green-800 font-bold text-lg">
-                                                                            Upload {selectedDocumentType.replaceAll("_", " ").toLowerCase()} for Verification <span className="text-red-500">*</span>
+                                                                        <FieldLabel htmlFor={field.name} className="text-green-800 font-bold text-md text-center md:text-lg lg:text-lg xl:text-lg 2xl:text-lg">
+                                                                            Upload your Document for Verification <span className="text-red-500">*</span>
                                                                         </FieldLabel>
-                                                                        <p className="text-gray-600 text-sm mt-1">
+                                                                        <p className="text-gray-600 text-xs md:text-sm lg:text-sm xl:text-sm 2xl:text-sm mt-1">
                                                                             To complete your registration, we need a clear copy of your {selectedDocumentType.replaceAll("_", " ").toLowerCase()}.
                                                                             Make sure the details are clearly visible and readable.
                                                                         </p>
@@ -1772,30 +1794,61 @@ export default function Page({ params }: RegistrationPageProps) {
                                                 </span>
                                             </div>
 
-                                            <div className="flex items-start space-x-2 p-3 bg-green-100/50 rounded-lg border border-green-200 mb-4">
-                                                <Switch
-                                                    checked={playerNum === 1 ? syncPlayer1 : syncPlayer2}
-                                                    onCheckedChange={(checked) => {
-                                                        if (playerNum === 1) {
-                                                            setSyncPlayer1(checked);
-                                                            if (checked) {
-                                                                form.setFieldValue("player1Email", form.getFieldValue("clubEmail") ?? "");
-                                                                form.setFieldValue("player1ContactNumber", form.getFieldValue("clubContactNumber") ?? "");
+                                            <div className="flex items-start gap-4 p-4 bg-green-100 rounded-lg border-2 border-green-300 mb-4">
+
+                                                <div className="flex flex-col items-center">
+                                                    <Switch
+                                                        checked={playerNum === 1 ? syncPlayer1 : syncPlayer2}
+                                                        onCheckedChange={(checked) => {
+                                                            if (playerNum === 1) {
+                                                                setSyncPlayer1(checked);
+                                                                if (checked) {
+                                                                    form.setFieldValue(
+                                                                        "player1Email",
+                                                                        form.getFieldValue("clubEmail") ?? ""
+                                                                    );
+                                                                    form.setFieldValue(
+                                                                        "player1ContactNumber",
+                                                                        form.getFieldValue("clubContactNumber") ?? ""
+                                                                    );
+                                                                }
+                                                            } else {
+                                                                setSyncPlayer2(checked);
+                                                                if (checked) {
+                                                                    form.setFieldValue(
+                                                                        "player2Email",
+                                                                        form.getFieldValue("clubEmail") ?? ""
+                                                                    );
+                                                                    form.setFieldValue(
+                                                                        "player2ContactNumber",
+                                                                        form.getFieldValue("clubContactNumber") ?? ""
+                                                                    );
+                                                                }
                                                             }
-                                                        } else {
-                                                            setSyncPlayer2(checked);
-                                                            if (checked) {
-                                                                form.setFieldValue("player2Email", form.getFieldValue("clubEmail") ?? "");
-                                                                form.setFieldValue("player2ContactNumber", form.getFieldValue("clubContactNumber") ?? "");
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="cursor-pointer flex-shrink-0 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    disabled={isSubmitting || isUploading}
-                                                />
-                                                <label className="text-sm text-green-800 font-medium flex-1">
-                                                    Use Club Contact Information <span className="text-xs text-muted-foreground"> (Toggle the Switch if you want to use the Inputted Email Address and Contact Number in the Club Contact Information on Top Earlier) </span>
-                                                </label>
+                                                        }}
+                                                        className="scale-110 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        disabled={isSubmitting || isUploading}
+                                                    />
+
+                                                    <span
+                                                        className={`mt-1 text-xs font-semibold ${(playerNum === 1 ? syncPlayer1 : syncPlayer2)
+                                                            ? "text-green-700"
+                                                            : "text-gray-500"
+                                                            }`}
+                                                    >
+                                                        {(playerNum === 1 ? syncPlayer1 : syncPlayer2) ? "ON" : "OFF"}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-semibold text-green-900">
+                                                        Use Club Contact Information
+                                                    </span>
+                                                    <span className="text-xs text-green-700">
+                                                        Click here to Turn <span className="font-semibold">ON</span> to <span className="italic font-medium underline underline-offset-2">copy the club email & contact number</span> from the <span className="font-medium underline underline-offset-2"> Club Contact Information </span> Above.
+                                                    </span>
+                                                </div>
+
                                             </div>
 
                                             <FieldGroup className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
@@ -1850,7 +1903,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                             disabled={
                                                                                 (playerNum === 1 ? syncPlayer1 : syncPlayer2) || submitting || isUploading
                                                                             }
-                                                                            className={`!pl-3 ${isInvalid ? 'border-red-300 bg-red-50' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                                            className={`!pl-3 ${isInvalid ? 'border-red-300 bg-red-50' : ''} disabled:opacity-50 disabled:cursor-not-allowed pb-1.5 placeholder:text-sm`}
                                                                         />
                                                                         <InputGroupAddon className="mx-auto px-3">
                                                                             {isEmail ? (

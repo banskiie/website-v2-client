@@ -205,13 +205,10 @@ export function CategoryModal({
   const { data, loading, error } = useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS);
 
   const handleRegisterClick = () => {
-    // Show guidelines modal instead of redirecting immediately
     setShowGuidelines(true);
   };
 
   const handleAgreeToGuidelines = () => {
-    // This will be called when user agrees to guidelines
-    // Now redirect to registration page
     const activeTournament = data?.publicTournaments?.find(
       (t: ITournament) => t.isActive
     );
@@ -231,10 +228,29 @@ export function CategoryModal({
   );
   const tournament = activeTournament || data?.publicTournaments?.[0];
 
-  const hasEarlyBird =
-    category.hasEarlyBird || tournament?.settings.hasEarlyBird;
+  // ✅ FIXED: Check both setting AND date
+  const checkEarlyBirdActive = () => {
+    // First check if early bird is enabled in settings
+    const hasEarlyBirdSetting = category.hasEarlyBird || tournament?.settings.hasEarlyBird;
+    if (!hasEarlyBirdSetting) return false;
+
+    // Then check if the early bird period has ended
+    const earlyBirdEndDate = tournament?.dates?.earlyBirdPaymentEnd;
+    if (!earlyBirdEndDate) return false;
+
+    // Get current date in UTC for comparison
+    const nowUTC = new Date().toISOString();
+    const now = new Date(nowUTC);
+    const endDate = new Date(earlyBirdEndDate);
+
+    // Early bird is active if current date is before/equal to end date
+    return now <= endDate;
+  };
+
+  const isEarlyBirdActive = checkEarlyBirdActive(); // ✅ Now includes date check
+
   const displayPricePerPlayer =
-    hasEarlyBird && category.earlyBirdPricePerPlayer
+    isEarlyBirdActive && category.earlyBirdPricePerPlayer // ✅ Use isEarlyBirdActive
       ? category.earlyBirdPricePerPlayer
       : category.pricePerPlayer;
 
@@ -264,16 +280,30 @@ export function CategoryModal({
 
   // Calculate savings if early bird is active
   const savingsPerPlayer =
-    hasEarlyBird && category.earlyBirdPricePerPlayer && category.pricePerPlayer
+    isEarlyBirdActive && category.earlyBirdPricePerPlayer && category.pricePerPlayer // ✅ Use isEarlyBirdActive
       ? category.pricePerPlayer - category.earlyBirdPricePerPlayer
       : 0;
 
   const savingsPerPair =
     category.type === "Doubles" && savingsPerPlayer ? savingsPerPlayer * 2 : 0;
 
+  // Helper to format remaining time (optional)
+  const getTimeRemaining = () => {
+    if (!tournament?.dates?.earlyBirdPaymentEnd || !isEarlyBirdActive) return null;
+
+    const endDate = new Date(tournament.dates.earlyBirdPaymentEnd);
+    const now = new Date();
+    const diffMs = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 0) return null;
+    return diffDays;
+  };
+
+  const daysRemaining = getTimeRemaining();
+
   return (
     <>
-      {/* Category Modal */}
       <div
         className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
         onClick={onClose}
@@ -332,7 +362,7 @@ export function CategoryModal({
                   Registration Fee
                 </span>
 
-                {hasEarlyBird && tournament?.dates?.earlyBirdRegistrationEnd && (
+                {isEarlyBirdActive && ( // ✅ Changed from hasEarlyBird to isEarlyBirdActive
                   <>
                     <Badge className="bg-linear-to-r rounded-sm! from-green-500 to-emerald-500 text-white border-0 shadow-sm text-[10px]">
                       Early Bird
@@ -340,7 +370,11 @@ export function CategoryModal({
 
                     <div className="flex items-center gap-1 text-gray-600 ml-4.5">
                       <Clock className="size-3" />
-                      <span className="text-xs">Ends in</span>
+                      <span className="text-xs">
+                        {daysRemaining
+                          ? `Ends in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`
+                          : "Ends soon"}
+                      </span>
                     </div>
                   </>
                 )}
@@ -359,7 +393,7 @@ export function CategoryModal({
                       <span className="text-md text-green-700 font-bold">
                         {perPlayerPrice}
                       </span>
-                      {hasEarlyBird &&
+                      {isEarlyBirdActive && // ✅ Changed from hasEarlyBird to isEarlyBirdActive
                         category.pricePerPlayer &&
                         category.earlyBirdPricePerPlayer && (
                           <span className="text-gray-400 line-through text-xs">
@@ -379,11 +413,11 @@ export function CategoryModal({
                     )}
                   </div>
 
-                  {hasEarlyBird &&
-                    tournament?.dates?.earlyBirdRegistrationEnd && (
+                  {isEarlyBirdActive && // ✅ Changed from hasEarlyBird to isEarlyBirdActive
+                    tournament?.dates?.earlyBirdPaymentEnd && (
                       <div className="bg-green-50 border border-green-400 text-green-700 text-[12px] font-bold px-3 py-2 rounded-md">
                         {format(
-                          new Date(tournament.dates.earlyBirdRegistrationEnd),
+                          new Date(tournament.dates.earlyBirdPaymentEnd),
                           "MMM dd, yyyy"
                         )}
                       </div>
@@ -403,7 +437,7 @@ export function CategoryModal({
                         <span className="text-xl text-blue-700 font-bold">
                           {perPairPrice}
                         </span>
-                        {hasEarlyBird &&
+                        {isEarlyBirdActive && // ✅ Changed from hasEarlyBird to isEarlyBirdActive
                           category.pricePerPlayer &&
                           category.earlyBirdPricePerPlayer && (
                             <span className="text-gray-400 line-through text-xs">
@@ -426,7 +460,7 @@ export function CategoryModal({
                 )}
 
                 {/* Early Bird note when not active */}
-                {!hasEarlyBird && earlyBirdPerPlayer && (
+                {!isEarlyBirdActive && earlyBirdPerPlayer && ( // ✅ Changed from hasEarlyBird to isEarlyBirdActive
                   <div className="pt-3 border-t border-gray-100">
                     <div className="text-xs text-gray-500 italic">
                       Early Bird was available at {earlyBirdPerPlayer}
@@ -2889,7 +2923,9 @@ export function CheckEntryModal({
   const [error, setError] = useState("")
 
   const [fetchStatusHistory, { loading, error: queryError }] =
-    useLazyQuery<EntryStatusHistoryData>(ENTRY_STATUS_HISTORY)
+    useLazyQuery<EntryStatusHistoryData>(ENTRY_STATUS_HISTORY, {
+      fetchPolicy: 'network-only'
+    })
 
   useEffect(() => {
     if (isOpen) {

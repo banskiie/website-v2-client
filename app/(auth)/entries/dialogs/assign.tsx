@@ -4011,9 +4011,9 @@ type DocumentInfo = {
 
 type DocumentSelection = {
   [documentType: string]: {
-    selectedSource: 'existing' | 'new' | ''
-    existingDoc?: DocumentInfo;
-    newDoc?: DocumentInfo;
+    selectedSource: string;
+    existingDocs: DocumentInfo[];
+    newDocs: DocumentInfo[];
   };
 };
 
@@ -4063,19 +4063,19 @@ const replaceDocumentsInDrive = async (
     if (documentSelection) {
       // Process based on document selection
       for (const [documentType, selection] of Object.entries(documentSelection)) {
-        const { selectedSource, existingDoc, newDoc } = selection;
+        const { selectedSource, existingDocs, newDocs } = selection;
 
-        if (selectedSource === 'existing' && existingDoc) {
+        if (selectedSource === 'existing' && existingDocs) {
           // Keep existing document - no action needed for Google Drive
           console.log(`✅ Keeping existing document: ${documentType}`);
           continue;
         }
 
-        if (selectedSource === 'new' && newDoc) {
-          const newFileId = extractFileIdFromUrl(newDoc.documentURL);
+        if (selectedSource === 'new' && newDocs) {
+          const newFileId = extractFileIdFromUrl(newDocs[0].documentURL);
 
           if (!newFileId) {
-            console.warn(`Could not extract file ID from new document: ${newDoc.documentURL}`);
+            console.warn(`Could not extract file ID from new document: ${newDocs[0].documentURL}`);
             failedReplacements.push({
               documentType,
               error: 'Invalid file URL'
@@ -4083,9 +4083,9 @@ const replaceDocumentsInDrive = async (
             continue;
           }
 
-          if (existingDoc) {
+          if (existingDocs) {
             // Replace existing document with new one
-            const oldFileId = extractFileIdFromUrl(existingDoc.documentURL);
+            const oldFileId = extractFileIdFromUrl(existingDocs[0].documentURL);
 
             if (oldFileId) {
               console.log(`🔄 Replacing ${documentType}: ${oldFileId} -> ${newFileId}`);
@@ -4503,28 +4503,27 @@ const DocumentSelectionDialog = ({
   } | null>(null);
 
   useEffect(() => {
+    console.log('Current selections:', selections);
+  }, [selections])
+
+  useEffect(() => {
     if (open) {
       const initialSelections: DocumentSelection = {};
 
-      const allDocumentTypes = [
-        ...existingDocuments.map(doc => doc.documentType),
-        ...newDocuments.map(doc => doc.documentType)
+      // Combine all documents into one group (no grouping by type)
+      const combinedDocuments = [
+        ...existingDocuments.map(doc => ({ ...doc, source: 'existing' as const })),
+        ...newDocuments.map(doc => ({ ...doc, source: 'new' as const }))
       ];
 
-      const uniqueDocumentTypes = Array.from(new Set(allDocumentTypes));
-
-      uniqueDocumentTypes.forEach(documentType => {
-        const existingDoc = existingDocuments.find(doc => doc.documentType === documentType);
-        const newDoc = newDocuments.find(doc => doc.documentType === documentType);
-
-        if (existingDoc || newDoc) {
-          initialSelections[documentType] = {
-            selectedSource: '',
-            existingDoc,
-            newDoc
-          };
-        }
-      });
+      // Create a single group for all documents
+      // You can customize this to create multiple groups if needed
+      const groupId = 'all-documents';
+      initialSelections[groupId] = {
+        selectedSource: '',
+        existingDocs: existingDocuments,
+        newDocs: newDocuments
+      };
 
       setSelections(initialSelections);
     } else {
@@ -4538,7 +4537,7 @@ const DocumentSelectionDialog = ({
     );
 
     if (!allSelected) {
-      toast.error('Please make a selection for all document types before saving');
+      toast.error('Please make a selection for all documents before saving');
       return;
     }
 
@@ -4608,22 +4607,30 @@ const DocumentSelectionDialog = ({
     return url;
   };
 
-  const renderDocumentPreview = (doc: DocumentInfo, source: 'existing' | 'new', documentType: string) => {
+  const renderDocumentPreview = (doc: DocumentInfo, source: 'existing' | 'new') => {
     const fileType = getFileType(doc.documentURL);
     const isGoogleDrive = fileType === 'googleDrive';
     const previewUrl = isGoogleDrive ? getGoogleDrivePreviewUrl(doc.documentURL) : doc.documentURL;
+    const documentTypeName = doc.documentType.replaceAll("_", " ");
 
     return (
       <div className="relative w-110 h-95 rounded-lg overflow-hidden bg-gray-50 border">
+        {/* Small document type label at the top */}
+        <div className="absolute top-2 left-2 right-2 z-10">
+          <div className="bg-black/70 text-white text-xs font-medium px-2 py-1 rounded-md text-center backdrop-blur-sm">
+            {documentTypeName}
+          </div>
+        </div>
+
         {fileType === 'image' ? (
           <div className="relative w-full h-full flex items-center justify-center">
             <img
               src={doc.documentURL}
-              alt={documentType}
+              alt={documentTypeName}
               className="max-w-full max-h-full object-contain"
               onClick={() => setExpandedPreview({
                 url: doc.documentURL,
-                type: documentType,
+                type: documentTypeName,
                 source
               })}
             />
@@ -4633,7 +4640,7 @@ const DocumentSelectionDialog = ({
             <iframe
               src={previewUrl}
               className="w-full h-full border-0"
-              title={`${source === 'existing' ? 'Existing' : 'New'}: ${documentType}`}
+              title={`${source === 'existing' ? 'Existing' : 'New'}: ${documentTypeName}`}
               sandbox="allow-same-origin allow-scripts"
               loading="lazy"
               allowFullScreen
@@ -4644,7 +4651,7 @@ const DocumentSelectionDialog = ({
             <iframe
               src={`https://docs.google.com/gview?url=${encodeURIComponent(doc.documentURL)}&embedded=true`}
               className="w-full h-full border-0"
-              title={`PDF: ${documentType}`}
+              title={`PDF: ${documentTypeName}`}
               loading="lazy"
               allowFullScreen
             />
@@ -4653,7 +4660,7 @@ const DocumentSelectionDialog = ({
           <div className="w-full h-full flex flex-col items-center justify-center p-4">
             <File className="h-16 w-16 text-blue-500 mb-2" />
             <span className="text-sm font-medium text-gray-700 text-center">
-              {documentType}
+              {documentTypeName}
             </span>
           </div>
         )}
@@ -4661,13 +4668,18 @@ const DocumentSelectionDialog = ({
     );
   };
 
+  // Calculate total documents for labeling
+  const totalExisting = existingDocuments.length;
+  const totalNew = newDocuments.length;
+  const totalDocuments = totalExisting + totalNew;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl! max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-lg">Select Documents for {playerName}</DialogTitle>
           <DialogDescription className="text-sm">
-            Choose which version to keep for each document type
+            Choose which version to keep for each document
           </DialogDescription>
         </DialogHeader>
 
@@ -4722,125 +4734,232 @@ const DocumentSelectionDialog = ({
           </div>
         ) : (
           <>
-            <div className="h-[60vh] grid grid-cols-2 gap-6 overflow-y-auto pr-2">
-              {Object.entries(selections).map(([documentType, selection]) => {
-                const documentTypeName = documentType.replaceAll("_", " ");
-                const hasExisting = !!selection.existingDoc;
-                const hasNew = !!selection.newDoc;
+            <div className="h-[60vh] overflow-y-auto pr-2">
+              <div className="space-y-6">
+                {Object.entries(selections).map(([groupId, selection]) => {
+                  const hasExisting = selection.existingDocs && selection.existingDocs.length > 0;
+                  const hasNew = selection.newDocs && selection.newDocs.length > 0;
 
-                return (
-                  <div key={documentType} className="space-y-4 p-4 border rounded-lg bg-gray-50/50">
-                    <h3 className="font-semibold text-lg text-center">
-                      {documentTypeName}
-                    </h3>
-
-                    <RadioGroup
-                      name={documentType}
-                      value={selection.selectedSource}
-                      onValueChange={(value: 'existing' | 'new') => {
-                        setSelections(prev => ({
-                          ...prev,
-                          [documentType]: {
-                            ...prev[documentType],
-                            selectedSource: value
-                          }
-                        }));
-                      }}
-                      className="grid grid-cols-2 gap-6"
-                    >
-                      {hasExisting && (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-center">
-                            <RadioGroupItem
-                              value="existing"
-                              id={`${documentType}-existing`}
-                              className="h-5 w-5"
-                            />
-                            <Label
-                              htmlFor={`${documentType}-existing`}
-                              className="ml-2 cursor-pointer font-medium"
-                            >
-                              Existing
-                            </Label>
-                          </div>
-                          {renderDocumentPreview(
-                            selection.existingDoc!,
-                            'existing',
-                            documentTypeName
-                          )}
+                  return (
+                    <div key={groupId} className="space-y-4">
+                      {/* Radio Group Container - now shows all options together in flex-col */}
+                      <div className="flex flex-col space-y-4 bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-base">Select Documents</h3>
+                          <span className="text-sm text-gray-500">
+                            {totalDocuments} documents total
+                          </span>
                         </div>
-                      )}
 
-                      {hasNew && (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-center">
-                            <RadioGroupItem
-                              value="new"
-                              id={`${documentType}-new`}
-                              className="h-5 w-5"
-                            />
-                            <Label
-                              htmlFor={`${documentType}-new`}
-                              className="ml-2 cursor-pointer font-medium"
-                            >
-                              New
-                            </Label>
+                        <RadioGroup
+                          value={selection.selectedSource}
+                          onValueChange={(value) => {
+                            setSelections(prev => ({
+                              ...prev,
+                              [groupId]: {
+                                ...prev[groupId],
+                                selectedSource: value
+                              }
+                            }));
+                          }}
+                          className="flex flex-row gap-76 ml-5"
+                        >
+                          <div className="flex flex-col space-y-3">
+                            <h4 className="font-medium text-sm text-gray-700 mb-1">
+                              Existing Documents ({totalExisting})
+                            </h4>
+                            {hasExisting && selection.existingDocs.map((doc, index) => {
+                              const optionId = `existing-${index}`;
+                              const documentTypeName = doc.documentType.replaceAll("_", " ");
+                              const label = totalExisting > 1
+                                ? `${documentTypeName} (Document ${index + 1})`
+                                : documentTypeName;
+
+                              return (
+                                <div key={optionId} className="flex items-start space-x-3">
+                                  <RadioGroupItem
+                                    value={`existing-${index}`}
+                                    id={optionId}
+                                    className="h-4 w-4 mt-0.5"
+                                  />
+                                  <div className="flex flex-col">
+                                    <Label
+                                      htmlFor={optionId}
+                                      className="cursor-pointer text-sm font-medium"
+                                    >
+                                      {label}
+                                    </Label>
+                                    <span className="text-xs text-gray-500 mt-0.5">
+                                      Existing version
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                          {renderDocumentPreview(
-                            selection.newDoc!,
-                            'new',
-                            documentTypeName
-                          )}
-                        </div>
-                      )}
-                    </RadioGroup>
 
-                    {/* Selection Status */}
-                    <div className="text-sm text-center pt-3">
-                      {selection.selectedSource === 'existing' && selection.existingDoc ? (
-                        <p className="text-green-800 bg-green-50 p-2 rounded">
-                          <Check className="h-4 w-4 inline mr-2" />
-                          <span>Existing will be kept</span>
-                        </p>
-                      ) : selection.selectedSource === 'new' && selection.newDoc ? (
-                        <p className={cn(
-                          "p-2 rounded",
-                          selection.existingDoc
-                            ? "text-amber-800 bg-amber-50"
-                            : "text-blue-800 bg-blue-50"
-                        )}>
-                          {selection.existingDoc ? (
-                            <>
-                              <AlertCircle className="h-4 w-4 inline mr-2" />
-                              <span>New will replace existing</span>
-                            </>
-                          ) : (
-                            <>
-                              <Check className="h-4 w-4 inline mr-2" />
-                              <span>New will be added</span>
-                            </>
-                          )}
-                        </p>
-                      ) : (
-                        <p className="text-gray-600 bg-gray-50 p-2 rounded">
-                          <AlertCircle className="h-4 w-4 inline mr-2" />
-                          <span>Please select an option</span>
-                        </p>
-                      )}
+                          <div className="flex flex-col space-y-3">
+                            <h4 className="font-medium text-sm text-gray-700 mb-1">
+                              New Documents ({totalNew})
+                            </h4>
+                            {hasNew && selection.newDocs.map((doc, index) => {
+                              const optionId = `new-${index}`;
+                              const documentTypeName = doc.documentType.replaceAll("_", " ");
+                              const label = totalNew > 1
+                                ? `${documentTypeName} (Document ${index + 1})`
+                                : documentTypeName;
+
+                              return (
+                                <div key={optionId} className="flex items-start space-x-3">
+                                  <RadioGroupItem
+                                    value={`new-${index}`}
+                                    id={optionId}
+                                    className="h-4 w-4 mt-0.5"
+                                  />
+                                  <div className="flex flex-col">
+                                    <Label
+                                      htmlFor={optionId}
+                                      className="cursor-pointer text-sm font-medium"
+                                    >
+                                      {label}
+                                    </Label>
+                                    <span className="text-xs text-gray-500 mt-0.5">
+                                      New version from entry
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      {/* Document Previews - side by side */}
+                      <div className="grid grid-cols-2 gap-6">
+                        {/* Existing Documents Previews */}
+                        {hasExisting && (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-sm text-gray-700">
+                                Existing Documents ({totalExisting})
+                              </h4>
+                              {totalExisting > 1 && (
+                                <span className="text-xs text-gray-500">
+                                  Hover to see document type
+                                </span>
+                              )}
+                            </div>
+                            <div className={`grid ${selection.existingDocs.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+                              {selection.existingDocs.map((doc, index) => (
+                                <div key={index} className="space-y-2 group">
+                                  {renderDocumentPreview(doc, 'existing')}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* New Documents Previews */}
+                        {hasNew && (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-sm text-gray-700">
+                                New Documents ({totalNew})
+                              </h4>
+                              {totalNew > 1 && (
+                                <span className="text-xs text-gray-500">
+                                  Hover to see document type
+                                </span>
+                              )}
+                            </div>
+                            <div className={`grid ${selection.newDocs.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+                              {selection.newDocs.map((doc, index) => (
+                                <div key={index} className="space-y-2 group">
+                                  {renderDocumentPreview(doc, 'new')}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Selection Status */}
+                      <div className="text-sm text-center pt-4">
+                        {selection.selectedSource ? (
+                          (() => {
+                            const [source, index] = selection.selectedSource.split('-');
+                            const isExisting = source === 'existing';
+                            const docIndex = parseInt(index);
+                            const doc = isExisting
+                              ? selection.existingDocs[docIndex]
+                              : selection.newDocs[docIndex];
+
+                            if (!doc) return null;
+
+                            const documentTypeName = doc.documentType.replaceAll("_", " ");
+
+                            if (isExisting) {
+                              return (
+                                <p className="text-green-800 bg-green-50 p-3 rounded">
+                                  <Check className="h-4 w-4 inline mr-2" />
+                                  <span>
+                                    Existing {documentTypeName} will be kept
+                                  </span>
+                                </p>
+                              );
+                            } else {
+                              const hasExistingDocs = selection.existingDocs && selection.existingDocs.length > 0;
+                              const existingDocOfSameType = selection.existingDocs.find(
+                                existing => existing.documentType === doc.documentType
+                              );
+
+                              return (
+                                <p className={cn(
+                                  "p-3 rounded",
+                                  existingDocOfSameType
+                                    ? "text-amber-800 bg-amber-50"
+                                    : "text-blue-800 bg-blue-50"
+                                )}>
+                                  {existingDocOfSameType ? (
+                                    <>
+                                      <AlertCircle className="h-4 w-4 inline mr-2" />
+                                      <span>
+                                        New {documentTypeName} will replace existing
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Check className="h-4 w-4 inline mr-2" />
+                                      <span>
+                                        New {documentTypeName} will be added
+                                      </span>
+                                    </>
+                                  )}
+                                </p>
+                              );
+                            }
+                          })()
+                        ) : (
+                          <p className="text-gray-600 bg-gray-50 p-3 rounded">
+                            <AlertCircle className="h-4 w-4 inline mr-2" />
+                            <span>Please select a document option</span>
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
 
-              {Object.keys(selections).length === 0 && (
-                <div className="col-span-2 text-center py-12">
-                  <FileText className="h-20 w-20 mx-auto text-gray-300 mb-5" />
-                  <p className="text-xl text-gray-600 font-medium">No documents to select</p>
-                  <p className="text-base text-gray-500 mt-2 max-w-md mx-auto">
-                    There are no documents that need selection for this player.
-                  </p>
-                </div>
-              )}
+                {Object.keys(selections).length === 0 && (
+                  <div className="text-center py-12">
+                    <FileText className="h-20 w-20 mx-auto text-gray-300 mb-5" />
+                    <p className="text-xl text-gray-600 font-medium">No documents to select</p>
+                    <p className="text-base text-gray-500 mt-2 max-w-md mx-auto">
+                      There are no documents that need selection for this player.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <DialogFooter className="pt-4 border-t">

@@ -49,19 +49,19 @@ function CategoryCard({
     return (
         <button
             onClick={onClick}
-            className="flex flex-col items-start p-4 rounded-lg border cursor-pointer border-gray-200 bg-white hover:shadow-md hover:border-gray-300 transition w-full sm:w-56"
+            className="flex flex-col items-start p-4 rounded-lg border cursor-pointer border-gray-200 bg-white hover:shadow-md hover:border-gray-300 transition w-full min-w-0"
         >
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2 w-full">
                 {type === "Doubles"
-                    ? <Users className="w-4 h-4 text-gray-600" />
-                    : <User className="w-4 h-4 text-gray-600" />}
-                <Badge className={`text-xs px-2 ${levelColor}`}>{level}</Badge>
-                <Badge className={`text-xs px-2 ${genderColor}`}>
+                    ? <Users className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                    : <User className="w-4 h-4 text-gray-600 flex-shrink-0" />}
+                <Badge className={`text-xs px-2 py-0.5 ${levelColor} flex-shrink-0`}>{level}</Badge>
+                <Badge className={`text-xs px-2 py-0.5 ${genderColor} flex-shrink-0`}>
                     {gender}
                 </Badge>
             </div>
-            <span className="font-medium text-gray-800 text-base text-left">{name}</span>
-            <div className="text-xs text-gray-500">{type}</div>
+            <span className="font-medium text-gray-800 text-sm md:text-base lg:text-base xl:text-base 2xl:text-base text-left break-words w-full">{name}</span>
+            <div className="text-xs text-gray-500 mt-1">{type}</div>
         </button>
     )
 }
@@ -232,7 +232,7 @@ export default function CategoriesPage() {
                     <div className={`w-2 h-2 rounded-full ${colorClass}`} />
                     {group} {title}
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {groupCategories.map((category: any, idx: any) => (
                         <CategoryCard
                             key={idx}
@@ -247,6 +247,7 @@ export default function CategoriesPage() {
             </div>
         )
     }
+
 
     if (loading) {
         return (
@@ -321,7 +322,22 @@ export default function CategoriesPage() {
         <div className="min-h-screen bg-linear-to-b from-green-50/30 to-green-100/30 relative">
             <Header />
             <div className="relative bg-white border-b shadow-sm overflow-hidden mt-16">
-                <div className="absolute top-12 right-[-76px] rotate-45 bg-linear-to-br from-green-600 to-green-800 text-white text-base font-semibold py-5 px-16 shadow-md">
+                <div
+                    className="
+    absolute
+    top-8 md:top-12
+    right-[-40px] md:right-[-76px]
+    rotate-45
+    bg-linear-to-br from-green-600 to-green-800
+    text-white
+    text-[10px] md:text-base
+    font-medium md:font-semibold
+    py-2 sm:py-3 md:py-5
+    px-8 sm:px-12 md:px-16
+    shadow-md
+    whitespace-nowrap
+  "
+                >
                     {formattedRange}
                 </div>
 

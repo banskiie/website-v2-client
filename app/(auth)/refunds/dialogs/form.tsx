@@ -14,7 +14,7 @@ import { UserSchema } from "@/validators/user.validator"
 import { gql } from "@apollo/client"
 import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
-import React, { useEffect, useState, useTransition } from "react"
+import React, { useEffect, useState, useTransition, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   CalendarIcon,
@@ -28,6 +28,9 @@ import {
   Video,
   XIcon,
   AlertCircle,
+  UploadIcon,
+  Loader2,
+  XCircle,
 } from "lucide-react"
 import {
   Field,
@@ -147,6 +150,40 @@ type Props = {
   existingRefunds?: ExistingRefund[]
 }
 
+// UploadingOverlay component - EXACTLY from payment form
+const UploadingOverlay = ({ message, progress }: { message?: string; progress?: number }) => (
+  <motion.div
+    className="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-[100]"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-lg border">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-4"></div>
+      <p className="text-lg font-medium text-gray-800 mb-2">
+        {message || "Processing..."}
+      </p>
+      {progress !== undefined && (
+        <div className="w-64 mt-4">
+          <div className="flex justify-between text-sm text-gray-600 mb-1">
+            <span>Uploading</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <motion.div
+              className="bg-green-600 h-2 rounded-full"
+              initial={{ width: "0%" }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        </div>
+      )}
+      <p className="text-sm text-gray-500 mt-4">Please don't close this window</p>
+    </div>
+  </motion.div>
+)
+
 const FormDialog = (props: Props) => {
   const [open, setOpen] = useState(false)
   const isUpdate = Boolean(props._id)
@@ -160,9 +197,18 @@ const FormDialog = (props: Props) => {
   })
   const refund = data?.refund as IRefund
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
-  const isLoading = isUpdate ? isPending || fetchLoading : false
 
-  const loading = isPending || fetchLoading
+  // Loading states - EXACTLY like payment form
+  const [isUploading, setIsUploading] = useState(false)
+  const [loading, setLoading] = useState(false) // For scanning
+  const [referenceLoading, setReferenceLoading] = useState(false)
+  const [imageLoading, setImageLoading] = useState(true)
+  const [uploadProgress, setUploadProgress] = useState(0)
+
+  // const isLoading = isPending || (isUpdate && fetchLoading)
+  const isLoading = isPending || isUploading || (isUpdate && fetchLoading)
+
+  const formLoading = isPending || isUploading
 
   const { data: entryOptionsData, loading: optionsLoading } = useQuery(
     ALL_ACTIVE_ENTRIES,
@@ -182,13 +228,10 @@ const FormDialog = (props: Props) => {
 
   const [files, setFiles] = useState<any[]>([])
   const [preview, setPreview] = useState<string | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
   const [scannedAmount, setScannedAmount] = useState<string | null>(null)
   const [scannedReference, setScannedReference] = useState<string | null>(null)
   const [amountLabel, setAmountLabel] = useState("Total")
   const [referenceLabel, setReferenceLabel] = useState("Reference No.")
-  const [referenceLoading, setReferenceLoading] = useState(false)
-  const [imageLoading, setImageLoading] = useState(true)
   const [scannedText, setScannedText] = useState<string>("")
 
   const checkForDuplicateReference = (referenceNumber: string): boolean => {
@@ -208,6 +251,55 @@ const FormDialog = (props: Props) => {
     return props.existingRefunds?.find(refund =>
       refund.referenceNumber.trim().toUpperCase() === normalizedRef
     )
+  }
+
+  // File upload function - EXACTLY like payment form
+  const uploadFile = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      const formData = new FormData();
+      const fileExt = file.name.split('.').pop() || '';
+      const fileName = `refund-${Date.now()}.${fileExt}`;
+      formData.append("file", file, fileName);
+
+      // Simulate progress updates - same as payment form
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return prev
+          }
+          return prev + 10
+        })
+      }, 200)
+
+      const response = await fetch("/api/upload/refund", {
+        method: "POST",
+        body: formData,
+      });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (!response.ok) {
+        throw new Error("Upload Failed");
+      }
+
+      const data = await response.json();
+      toast.success("File uploaded successfully!");
+      return data.url;
+    } catch (error) {
+      console.error("Error Uploading file to refund folder:", error);
+      toast.error("Error uploading file. Please try again.");
+      return null;
+    } finally {
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 500);
+    }
   }
 
   const { getRootProps, getInputProps } = useDropzone({
@@ -234,6 +326,7 @@ const FormDialog = (props: Props) => {
 
   const scanReceipt = async (file: File) => {
     setReferenceLoading(true)
+    setLoading(true)
     setScannedAmount(null)
     setScannedReference(null)
     setDuplicateError(null)
@@ -243,7 +336,7 @@ const FormDialog = (props: Props) => {
       reader.onload = async () => {
         const imageData = reader.result as string
 
-        // Preprocess image
+        // Preprocess image - SAME as payment form
         const preprocessedData = await preprocessImage(imageData)
 
         // Perform OCR
@@ -330,16 +423,19 @@ const FormDialog = (props: Props) => {
         }
 
         setReferenceLoading(false)
+        setLoading(false)
       }
       reader.readAsDataURL(file)
     } catch (err) {
       console.error("Error scanning receipt:", err)
       setReferenceLoading(false)
+      setLoading(false)
       setScannedAmount("Error")
       setScannedReference("Error")
     }
   }
 
+  // EXACTLY the same preprocessImage as payment form
   const preprocessImage = (imageData: string): Promise<string> => {
     return new Promise((resolve) => {
       const img = new window.Image()
@@ -352,7 +448,10 @@ const FormDialog = (props: Props) => {
 
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
-        // Enhance image for better OCR
+        // SAME as payment form
+        ctx.fillStyle = "white"
+        ctx.fillRect(canvas.width * 0.8, canvas.height * 0.7, 50, 50)
+
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
         for (let i = 0; i < imgData.data.length; i += 4) {
           const avg = (imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2]) / 3
@@ -434,25 +533,32 @@ const FormDialog = (props: Props) => {
           }
 
           const payload = value
+          let proofOfRefundURL = value.proofOfRefundURL
+
+          // EXACTLY same upload logic as payment form
           if (files.length > 0) {
-            const formData = new FormData()
-            const file = files[0]
-
-            formData.append(
-              "file",
-              file,
-              `REFUND${payload.entryList.join("-").toUpperCase()}-${Date.now()}`
-            )
-
-            await fetch("/api/upload/refund", {
-              method: "POST",
-              body: formData,
-            }).then(async (res) => {
-              const data = await res.json()
-              if (!res.ok) throw new Error("Upload failed")
-              payload.proofOfRefundURL = data.url
-            })
+            console.log("Uploading file...")
+            const uploadedUrl = await uploadFile(files[0])
+            if (!uploadedUrl) {
+              toast.error("Failed to upload receipt image. Please try again.")
+              return
+            }
+            proofOfRefundURL = uploadedUrl
+            console.log("File uploaded, URL:", proofOfRefundURL)
           }
+
+          if (!proofOfRefundURL && isUpdate && refund?.proofOfRefundURL) {
+            proofOfRefundURL = refund.proofOfRefundURL
+            console.log("Using existing URL:", proofOfRefundURL)
+          }
+
+          if (!isUpdate && !proofOfRefundURL) {
+            toast.error("Please upload proof of refund")
+            setActiveTab("refund-reference")
+            return
+          }
+
+          payload.proofOfRefundURL = proofOfRefundURL || ''
 
           const response = await submitForm({
             variables: {
@@ -460,7 +566,12 @@ const FormDialog = (props: Props) => {
             },
           })
 
-          if (response) onClose()
+          if (response) {
+            toast.success(isUpdate ? "Refund updated successfully!" : "Refund created successfully!")
+            setTimeout(() => {
+              onClose()
+            }, 1000)
+          }
         } catch (error: any) {
           console.error(error.errors)
           if (error.name == "CombinedGraphQLErrors") {
@@ -489,6 +600,10 @@ const FormDialog = (props: Props) => {
     setScannedAmount(null)
     setScannedReference(null)
     setDuplicateError(null)
+    setIsUploading(false)
+    setLoading(false)
+    setReferenceLoading(false)
+    setUploadProgress(0)
   }
 
   const getSelectedEntriesText = () => {
@@ -530,6 +645,33 @@ const FormDialog = (props: Props) => {
       <span className="text-red-500">*</span>
     </div>
   )
+
+  // File remove handler - same as payment form
+  const handleRemoveFile = () => {
+    setFiles([])
+    setPreview(null)
+    setReferenceLoading(false)
+    setScannedAmount(null)
+    setScannedReference(null)
+    setLoading(false)
+    form.setFieldValue("proofOfRefundURL", "")
+  }
+
+  // Check if submit should be disabled
+  const isSubmitDisabled = () => {
+    const payerName = form.getFieldValue("payerName")?.toString().trim()
+    const amount = form.getFieldValue("amount")
+    const method = form.getFieldValue("method")?.toString().trim()
+    const entryList = form.getFieldValue("entryList") || []
+
+    // Basic validation
+    if (entryList.length === 0) return true
+    if (!payerName) return true
+    if (!amount || amount <= 0) return true
+    if (!method) return true
+
+    return false
+  }
 
   return (
     <Dialog modal open={open} onOpenChange={setOpen}>
@@ -597,7 +739,7 @@ const FormDialog = (props: Props) => {
                             <InputGroupInput
                               required
                               placeholder="Payer Name"
-                              disabled={loading}
+                              disabled={isLoading}
                               id={field.name}
                               name={field.name}
                               value={field.state.value}
@@ -625,7 +767,7 @@ const FormDialog = (props: Props) => {
                           <Select
                             value={field.state.value}
                             onValueChange={(value: PaymentMethod) => field.handleChange(value)}
-                            disabled={loading}
+                            disabled={isLoading}
                           >
                             <SelectTrigger className="w-full uppercase">
                               <SelectValue placeholder="Select method" />
@@ -662,7 +804,7 @@ const FormDialog = (props: Props) => {
                                 variant="outline"
                                 data-empty={!field.state.value}
                                 className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex"
-                                disabled={loading}
+                                disabled={isLoading}
                               >
                                 <CalendarIcon className="size-3.5 mr-2" />
                                 {field.state.value ? (
@@ -721,7 +863,7 @@ const FormDialog = (props: Props) => {
                                     !entryList.length && "text-muted-foreground"
                                   )}
                                   type="button"
-                                  disabled={loading}
+                                  disabled={isLoading}
                                 >
                                   <span className="truncate text-left">
                                     {getSelectedEntriesText()}
@@ -806,7 +948,7 @@ const FormDialog = (props: Props) => {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => field.handleChange([])}
-                                    disabled={loading}
+                                    disabled={isLoading}
                                   >
                                     Clear All
                                   </Button>
@@ -849,7 +991,7 @@ const FormDialog = (props: Props) => {
                                             size="sm"
                                             onClick={() => handleRemoveEntry(entryNumber)}
                                             className="h-8 w-8 p-0"
-                                            disabled={loading}
+                                            disabled={isLoading}
                                           >
                                             <XIcon className="h-4 w-4" />
                                           </Button>
@@ -888,7 +1030,7 @@ const FormDialog = (props: Props) => {
                               </InputGroupAddon>
                               <InputGroupInput
                                 placeholder="Amount"
-                                disabled={loading}
+                                disabled={isLoading}
                                 id={field.name}
                                 name={field.name}
                                 value={field.state.value}
@@ -948,7 +1090,7 @@ const FormDialog = (props: Props) => {
                                 <InputGroup>
                                   <InputGroupInput
                                     placeholder="Reference No."
-                                    disabled={loading}
+                                    disabled={isLoading}
                                     id={field.name}
                                     name={field.name}
                                     value={field.state.value}
@@ -1032,15 +1174,11 @@ const FormDialog = (props: Props) => {
                         </div>
                         <Button
                           type="button"
-                          onClick={() => {
-                            setFiles([])
-                            setPreview(null)
-                            setDuplicateError(null)
-                          }}
+                          onClick={handleRemoveFile}
                           disabled={isUploading}
                           className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
                         >
-                          <XIcon className="w-4 h-4" />
+                          <XCircle className="w-4 h-4" />
                         </Button>
                       </div>
                       {isUploading && (
@@ -1073,6 +1211,7 @@ const FormDialog = (props: Props) => {
                   <div className="w-full flex justify-center mb-4">
                     {preview || refund?.proofOfRefundURL ? (
                       <div className="w-full max-w-[300px] relative">
+
                         {imageLoading && (
                           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border bg-gray-100">
                             <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-green-500" />
@@ -1088,15 +1227,27 @@ const FormDialog = (props: Props) => {
                           height={300}
                           onLoad={() => setImageLoading(false)}
                           onError={(e) => {
-                            console.error("Failed to load image:", e.currentTarget.src)
+                            console.error("Failed to load image:", e.currentTarget.src);
                             setImageLoading(false)
+                            e.currentTarget.style.display = 'none';
+                            const fallbackDiv = document.createElement('div');
+                            fallbackDiv.className = 'w-full max-w-[300px] h-[200px] rounded-lg border bg-gray-50 flex items-center justify-center';
+                            fallbackDiv.innerHTML = `
+            <div class="text-center">
+              <svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+              <p class="text-sm text-gray-500">Failed to load image</p>
+            </div>
+          `;
+                            e.currentTarget.parentNode?.appendChild(fallbackDiv);
                           }}
                         />
                       </div>
                     ) : (
                       <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
                         <div className="text-center">
-                          <Paperclip className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <UploadIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                           <p className="text-sm text-gray-500">Receipt preview will appear here</p>
                         </div>
                       </div>
@@ -1105,23 +1256,24 @@ const FormDialog = (props: Props) => {
 
                   <div
                     {...getRootProps()}
-                    className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${files.length > 0 ? 'border-green-400 hover:bg-green-50' : 'border-gray-300 hover:bg-gray-50'
+                    className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${files.length > 0 ? 'border-green-400 hover:bg-green-50' : 'border-green-400 hover:bg-green-50'
                       }`}
                   >
                     {isUploading ? (
                       <div className="flex flex-col items-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-4 border-green-600 border-t-transparent mb-2" />
+                        <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
                         <span className="font-medium text-sm text-green-700">Uploading...</span>
+                        <span className="text-xs text-gray-500 mt-1">Please wait</span>
                       </div>
-                    ) : referenceLoading ? (
+                    ) : loading ? (
                       <div className="flex flex-col items-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-4 border-green-600 border-t-transparent mb-2" />
+                        <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
                         <span className="font-medium text-sm text-green-700">Scanning receipt...</span>
                       </div>
                     ) : (
                       <>
-                        <Paperclip className={`w-6 h-6 mb-2 ${files.length > 0 ? 'text-green-600' : 'text-gray-600'}`} />
-                        <span className={`font-medium text-sm ${files.length > 0 ? 'text-green-700' : 'text-gray-700'}`}>
+                        <UploadIcon className="w-6 h-6 mb-2 text-green-600" />
+                        <span className="font-medium text-sm text-green-700">
                           {files.length > 0 ? "Drag & drop new file or click to replace" : "Drag & drop your receipt or click to browse"}
                         </span>
                         <input {...getInputProps()} />
@@ -1154,31 +1306,21 @@ const FormDialog = (props: Props) => {
           </DialogClose>
           <Button
             className="w-20"
-            loading={isLoading}
+            loading={formLoading}
             type="submit"
             form="refund-form"
-            disabled={!isUpdate && duplicateError !== null}
+            disabled={isSubmitDisabled() || (!isUpdate && duplicateError !== null) || formLoading}
           >
             Submit
           </Button>
         </DialogFooter>
 
         <AnimatePresence>
-          {(isUploading || referenceLoading) && (
-            <motion.div
-              className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl z-50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-lg border">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-4"></div>
-                <p className="text-lg font-medium text-gray-800 mb-2">
-                  {referenceLoading ? "Scanning receipt..." : "Uploading..."}
-                </p>
-                <p className="text-sm text-gray-500">Please don't close this window</p>
-              </div>
-            </motion.div>
+          {(isUploading || loading) && (
+            <UploadingOverlay
+              message={loading ? "Scanning receipt..." : "Uploading..."}
+              progress={isUploading ? uploadProgress : undefined}
+            />
           )}
         </AnimatePresence>
       </DialogContent>
