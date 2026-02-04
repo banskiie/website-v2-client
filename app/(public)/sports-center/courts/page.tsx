@@ -1,6 +1,5 @@
 "use client"
 
-import CategorySelection from '@/components/custom/category-selection'
 import EventsSection from '@/components/custom/event-section'
 import Footer from '@/components/custom/footer'
 import Header from '@/components/custom/header'
@@ -311,10 +310,15 @@ function page() {
                         Register now and secure your spot in the upcoming tournament.
                     </p>
 
-                    <div className="flex justify-center">
+                    <div className="flex flex-row justify-center gap-5">
                         <Link href="/sports-center/courts/categories/">
                             <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
                                 Register Now
+                            </button>
+                        </Link>
+                        <Link href="/sports-center/v9-verified/">
+                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
+                                View Verified Entries
                             </button>
                         </Link>
                     </div>

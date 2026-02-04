@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Verified Entries",
+    title: "V9 Verified Entries",
     description:
         "Welcome to C-ONE - Verified Entries",
 };

@@ -1,11 +1,11 @@
-// app/(public)/guidelines/page.tsx
 "use client"
 
 import { motion } from 'framer-motion'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function GuidelinesPage() {
+// Create a separate component for the main content
+function GuidelinesContent() {
     const [hasAgreed, setHasAgreed] = useState(false)
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false)
     const [activeTab, setActiveTab] = useState<'mens-womens' | 'mixed'>('mens-womens')
@@ -573,5 +573,20 @@ export default function GuidelinesPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function GuidelinesPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading guidelines...</p>
+                </div>
+            </div>
+        }>
+            <GuidelinesContent />
+        </Suspense>
     )
 }
