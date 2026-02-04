@@ -18,7 +18,7 @@ import {
     FieldLabel,
 } from "@/components/ui/field"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon, AlertCircle, ArrowLeftIcon, Loader2, Paperclip, XCircle, ChevronsUpDown, CheckIcon } from "lucide-react"
+import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon, AlertCircle, ArrowLeftIcon, Loader2, Paperclip, XCircle, ChevronsUpDown, CheckIcon, File, Maximize2, ExternalLink, Download, Eye } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { startTransition, use, useEffect, useState } from "react"
 import Header from "@/components/custom/header-white"
@@ -55,6 +55,13 @@ import {
 } from "@/components/ui/command"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 
 interface RegistrationPageProps {
     params: Promise<{ slug: string[] }>
@@ -373,6 +380,93 @@ const documentTypes = Object.values(ValidDocumentType).map((type) => ({
     value: type,
 }))
 
+// Document Preview Dialog Component
+const DocumentPreviewDialog = ({
+    open,
+    onOpenChange,
+    file,
+    documentType
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    file: File | null;
+    documentType: string;
+}) => {
+    if (!file) return null;
+
+    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf';
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-5xl max-h-[90vh]">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Eye className="w-5 h-5" />
+                        Document Preview: {documentType}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {file.name} - {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="flex-1 overflow-auto bg-gray-50 rounded-lg p-4">
+                    {isImage ? (
+                        <div className="flex items-center justify-center min-h-[60vh]">
+                            <img
+                                src={URL.createObjectURL(file)}
+                                alt="Document Preview"
+                                className="max-w-full max-h-full object-contain"
+                            />
+                        </div>
+                    ) : isPDF ? (
+                        <div className="w-full h-[120vh]">
+                            <iframe
+                                src={URL.createObjectURL(file)}
+                                className="w-full h-full border-0"
+                                title={`PDF Preview: ${file.name}`}
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-[60vh]">
+                            <File className="w-24 h-24 text-gray-400 mb-4" />
+                            <p className="text-gray-600">This file type cannot be previewed</p>
+                            <Button
+                                variant="outline"
+                                className="mt-4"
+                                onClick={() => window.open(URL.createObjectURL(file), '_blank')}
+                            >
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Open in new tab
+                            </Button>
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Close
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = URL.createObjectURL(file);
+                            link.download = file.name;
+                            link.click();
+                        }}
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 export default function Page({ params }: RegistrationPageProps) {
     const paramData = use(params)
     const [tournamentId, eventId] = paramData.slug ?? []
@@ -401,6 +495,9 @@ export default function Page({ params }: RegistrationPageProps) {
     const [openDocumentTypesPlayer1, setOpenDocumentTypesPlayer1] = useState(false)
     const [openDocumentTypesPlayer2, setOpenDocumentTypesPlayer2] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
+    const [previewFile, setPreviewFile] = useState<File | null>(null)
+    const [previewDocumentType, setPreviewDocumentType] = useState("")
 
     const tournaments = data?.publicTournaments ?? []
     const tournament = tournaments.find((t: any) => t._id === tournamentId) ?? tournaments.find((t: any) => t.isActive)
@@ -588,7 +685,7 @@ export default function Page({ params }: RegistrationPageProps) {
                 showValidationToast(genderErrorMessages, "Gender Validation Failed");
             }
 
-            return { hasAgeError, hasGenderError };
+            return { hasAgeError: false, hasGenderError: false };
         }
         return { hasAgeError: false, hasGenderError: false };
     };
@@ -671,6 +768,7 @@ export default function Page({ params }: RegistrationPageProps) {
             }
             reader.readAsDataURL(uploadedFile)
         } else {
+            // For PDFs, clear the image preview
             if (playerNum === 1) {
                 setPlayer1IdPreview(null)
             } else {
@@ -697,6 +795,12 @@ export default function Page({ params }: RegistrationPageProps) {
         if (fileInput) {
             fileInput.value = ''
         }
+    }
+
+    const handlePreviewFile = (file: File, documentType: string) => {
+        setPreviewFile(file)
+        setPreviewDocumentType(documentType)
+        setPreviewDialogOpen(true)
     }
 
     const form = useForm({
@@ -1205,6 +1309,14 @@ export default function Page({ params }: RegistrationPageProps) {
                 onClose={handleModalClose}
                 message={successMessage}
             />
+
+            <DocumentPreviewDialog
+                open={previewDialogOpen}
+                onOpenChange={setPreviewDialogOpen}
+                file={previewFile}
+                documentType={previewDocumentType}
+            />
+
             <AnimatePresence>
                 {isUploading && <UploadingOverlay key="uploading-overlay" />}
                 {(isSubmitting || submitting) && <FormSubmittingOverlay key="submitting-overlay" />}
@@ -1684,17 +1796,20 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                         {file.name}
                                                                                     </p>
                                                                                     <p className="text-xs text-gray-500">
-                                                                                        {(file.size / 1024).toFixed(2)} KB • {file.type}
+                                                                                        {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type}
                                                                                     </p>
                                                                                 </div>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    onClick={() => handleRemoveFile(playerNum, field)}
-                                                                                    disabled={isUploading || submitting}
-                                                                                    className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                                >
-                                                                                    <XCircle className="w-4 h-4" />
-                                                                                </Button>
+                                                                                <div className="flex items-center gap-1">
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        onClick={() => handleRemoveFile(playerNum, field)}
+                                                                                        disabled={isUploading || submitting}
+                                                                                        className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed p-1"
+                                                                                        size="icon"
+                                                                                    >
+                                                                                        <XCircle className="w-4 h-4" />
+                                                                                    </Button>
+                                                                                </div>
                                                                             </div>
                                                                             {isUploading && (
                                                                                 <div className="mt-2">
@@ -1708,21 +1823,67 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                     )}
 
                                                                     <div className="w-full flex justify-center mb-4">
-                                                                        {preview && (file?.type?.startsWith('image/')) ? (
+                                                                        {preview && file?.type?.startsWith('image/') ? (
                                                                             <Image
                                                                                 src={preview}
                                                                                 alt={`Uploaded ${selectedDocumentType} Preview`}
                                                                                 width={400}
                                                                                 height={250}
-                                                                                className="max-w-full h-auto rounded-lg border shadow"
+                                                                                className="max-w-full h-auto rounded-lg border shadow cursor-pointer hover:opacity-90 transition-opacity"
                                                                                 style={{ maxWidth: 'min(400px, 100%)' }}
+                                                                                onClick={() => file && handlePreviewFile(file, selectedDocumentType.replaceAll("_", " "))}
                                                                             />
+                                                                        ) : file && file.type === 'application/pdf' ? (
+                                                                            <div className="w-[70%]">
+                                                                                <div className="h-[500px] border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+                                                                                    <iframe
+                                                                                        src={URL.createObjectURL(file)}
+                                                                                        className="w-full h-full border-0"
+                                                                                        title={`PDF Preview: ${file.name}`}
+                                                                                    />
+                                                                                </div>
+                                                                                {/* <div className="mt-2 text-center">
+                                                                                    <p className="text-sm font-medium text-gray-700">{file.name}</p>
+                                                                                    <p className="text-xs text-gray-500 mt-1">PDF Document</p>
+                                                                                    <div className="mt-2 flex items-center justify-center gap-2">
+                                                                                        <Button
+                                                                                            type="button"
+                                                                                            variant="outline"
+                                                                                            size="sm"
+                                                                                            onClick={() => handlePreviewFile(file, selectedDocumentType.replaceAll("_", " "))}
+                                                                                            className="text-xs"
+                                                                                        >
+                                                                                            <Maximize2 className="w-3 h-3 mr-1" />
+                                                                                            Full Screen
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                            type="button"
+                                                                                            variant="outline"
+                                                                                            size="sm"
+                                                                                            onClick={() => {
+                                                                                                const link = document.createElement('a');
+                                                                                                link.href = URL.createObjectURL(file);
+                                                                                                link.download = file.name;
+                                                                                                link.click();
+                                                                                            }}
+                                                                                            className="text-xs"
+                                                                                        >
+                                                                                            <Download className="w-3 h-3 mr-1" />
+                                                                                            Download
+                                                                                        </Button>
+                                                                                    </div>
+                                                                                </div> */}
+                                                                            </div>
                                                                         ) : file && !file.type?.startsWith('image/') ? (
                                                                             <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
                                                                                 <div className="text-center">
-                                                                                    <Paperclip className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                                                                    <File className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                                                                                     <p className="text-sm font-medium text-gray-700">{file.name}</p>
-                                                                                    <p className="text-xs text-gray-500 mt-1">PDF Document</p>
+                                                                                    <p className="text-xs text-gray-500 mt-1">Document</p>
+                                                                                    <div className="mt-2 flex items-center justify-center gap-1 text-blue-600 text-xs">
+                                                                                        <Eye className="w-3 h-3" />
+                                                                                        <span>Uploaded successfully</span>
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
                                                                         ) : (
