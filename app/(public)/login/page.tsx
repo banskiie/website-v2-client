@@ -168,7 +168,7 @@ const Login = () => {
                         side="bottom"
                         className="px-2 py-1.5 text-xs text-muted-foreground w-fit"
                       >
-                        Stay logged in for the Next 90 days.
+                        Stay logged in for the next 90 days.
                       </HoverCardContent>
                     </HoverCard>
                     <FieldContent>
