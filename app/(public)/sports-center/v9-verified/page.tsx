@@ -6,13 +6,15 @@ import Header from "@/components/custom/header-white"
 import FloatingChatWidget from '@/components/custom/ticket'
 import { VERIFIED_ENTRIES_BY_TOURNAMENT } from "@/graphql/verified-entries/queries"
 import { useQuery } from "@apollo/client/react"
-import { Box, ChevronDown, RefreshCw, Search, Filter, X, ChevronUp } from "lucide-react"
+import { Box, ChevronDown, RefreshCw, Search, Filter, X, ChevronUp, ArrowLeft, ArrowLeftIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import router from "next/router"
+import Link from "next/link"
 
 interface VerifiedEntryEvent {
     eventId: string
@@ -141,7 +143,15 @@ export default function VerifiedEntriesPage() {
         <div className="min-h-screen flex flex-col bg-gradient-to-b from-[#eef3ff] to-[#e2e8ff] relative overflow-hidden">
             <Header />
 
-            <main className="flex-1 container mx-auto px-4 py-8 mt-15">
+            <div className="p-4 sm:p-6 pb-0 mt-20 mb-2 md:mb-0 lg:mb-0 xl:mb-0 2xl:mb-0">
+                <Button variant="ghost" asChild className="text-green-700 hover:text-green-800 hover:bg-green-200">
+                    <Link href="/sports-center/courts" className="flex items-center gap-2">
+                        <ArrowLeftIcon className="w-6 h-6" />
+                        <span className="underline text-md ">Back</span>
+                    </Link>
+                </Button>
+            </div>
+            <main className="flex-1 container mx-auto px-4 py-8 mt-5">
                 <div className="mb-8">
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div>

@@ -44,8 +44,8 @@ import Image from "next/image"
 import { PaymentMethod } from "@/types/payment.interface"
 
 const CREATE_PAYMENT = gql`
-  mutation CreatePayment($input: CreatePaymentInput!) {
-    createPayment(input: $input) {
+  mutation CreatePaymentByAdmin($input: CreatePaymentInput!) {
+    createPaymentByAdmin(input: $input) {
       ok
       message
     }
@@ -271,7 +271,7 @@ interface EntryInput {
 }
 
 interface CreatePaymentResponse {
-  createPayment: {
+  createPaymentByAdmin: {
     ok: boolean
     message: string
   }
@@ -1285,7 +1285,7 @@ const FormDialog = (props: Props) => {
 
             console.log("Create response:", response)
 
-            if (response.data?.createPayment?.ok) {
+            if (response.data?.createPaymentByAdmin?.ok) {
               setSuccess(true)
               toast.success("Payment created successfully!")
               setTimeout(() => {
@@ -1293,7 +1293,7 @@ const FormDialog = (props: Props) => {
                 props.refetchPayments?.()
               }, 2000)
             } else {
-              throw new Error(response.data?.createPayment?.message || "Creation failed")
+              throw new Error(response.data?.createPaymentByAdmin?.message || "Creation failed")
             }
           }
         } catch (error: any) {
