@@ -13,12 +13,18 @@ import { createClient } from "graphql-ws"
 import { OperationTypeNode } from "graphql"
 
 const httpLink = new HttpLink({
+  // Test Local
+  // uri: process.env.NEXT_PUBLIC_GRAPHQL_HTTP_URI!,
+  // deployment
   uri: process.env.NEXT_PUBLIC_GRAPHQL_HTTPS_URI!,
   credentials: "include",
 })
 
 const wsLink = new GraphQLWsLink(
   createClient({
+    // Test Local
+    // url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_URI!,
+    // deployment
     url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_WSS_URI!,
   }),
 )

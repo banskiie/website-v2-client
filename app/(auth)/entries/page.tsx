@@ -146,6 +146,7 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
   const entry = useMemo(() => data, [data])
   const [menuOpen, setMenuOpen] = useState(false)
   const status = useMemo(() => entry?.currentStatus, [entry])
+
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
