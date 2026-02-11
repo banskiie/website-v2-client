@@ -57,6 +57,7 @@ import AssignDialog from "./dialogs/assign"
 import ApproveDialog from "./dialogs/approve"
 import RejectDialog from "./dialogs/reject"
 import TransferDialog from "./dialogs/transfer-payment"
+import ExportMenu from "./dialogs/export"
 
 const ENTRIES = gql`
   query Entries(
@@ -161,7 +162,9 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
           <ViewDialog _id={entry?._id} />
           <FormDialog _id={entry?._id} onClose={() => setMenuOpen(false)} />
 
-          {(status === "PAYMENT_PENDING" || status === "PAYMENT_PAID" || status === "PAYMENT_PARTIALLY_PAID") && (
+          {(status === "PAYMENT_PENDING" ||
+            status === "PAYMENT_PAID" ||
+            status === "PAYMENT_PARTIALLY_PAID") && (
             <TransferDialog
               entryId={entry?._id}
               onClose={() => setMenuOpen(false)}
@@ -254,7 +257,7 @@ const Page = () => {
             // Add the new entry to the top of the list
             const newEntry = entry
             const newEntryExists = prev.entries.edges.find(
-              (edge: any) => edge.node._id === newEntry?._id
+              (edge: any) => edge.node._id === newEntry?._id,
             )
             if (newEntryExists || search || sort || filter.length > 0)
               return prev // Skip updating during search/sort/filter
@@ -274,11 +277,11 @@ const Page = () => {
             const updatedEntry = entry
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.success(
-              `Entry (${updatedEntry?.entryNumber}) has been updated.`
+              `Entry (${updatedEntry?.entryNumber}) has been updated.`,
             )
             // Remove the updated entry from its current position and add it to the top
             const filteredUpdatedEdges = prev.entries.edges.filter(
-              (edge: any) => edge.node._id !== updatedEntry._id
+              (edge: any) => edge.node._id !== updatedEntry._id,
             )
             return Object.assign({}, prev, {
               entries: {
@@ -297,11 +300,11 @@ const Page = () => {
             const assignedEntry = entry
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.info(
-              `Entry (${assignedEntry?.entryNumber}) has updated to have assigned players.`
+              `Entry (${assignedEntry?.entryNumber}) has updated to have assigned players.`,
             )
             // Remove the updated entry from its current position and add it to the top
             const filteredAssignedEdges = prev.entries.edges.filter(
-              (edge: any) => edge.node._id !== assignedEntry._id
+              (edge: any) => edge.node._id !== assignedEntry._id,
             )
             return Object.assign({}, prev, {
               entries: {
@@ -320,11 +323,11 @@ const Page = () => {
             const approvedEntry = entry
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.success(
-              `Entry (${approvedEntry?.entryNumber}) has been approved.`
+              `Entry (${approvedEntry?.entryNumber}) has been approved.`,
             )
             // Remove the updated entry from its current position and add it to the top
             const filteredApprovedEdges = prev.entries.edges.filter(
-              (edge: any) => edge.node._id !== approvedEntry._id
+              (edge: any) => edge.node._id !== approvedEntry._id,
             )
             return Object.assign({}, prev, {
               entries: {
@@ -343,11 +346,11 @@ const Page = () => {
             const paidEntry = entry
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.success(
-              `Entry (${paidEntry?.entryNumber}) has been paid, and needs verification.`
+              `Entry (${paidEntry?.entryNumber}) has been paid, and needs verification.`,
             )
             // Remove the updated entry from its current position and add it to the top
             const filteredPaidEdges = prev.entries.edges.filter(
-              (edge: any) => edge.node._id !== paidEntry._id
+              (edge: any) => edge.node._id !== paidEntry._id,
             )
             return Object.assign({}, prev, {
               entries: {
@@ -366,11 +369,11 @@ const Page = () => {
             const partiallyPaidEntry = entry
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.success(
-              `Entry (${partiallyPaidEntry?.entryNumber}) has been paid, and needs verification.`
+              `Entry (${partiallyPaidEntry?.entryNumber}) has been paid, and needs verification.`,
             )
             // Remove the updated entry from its current position and add it to the top
             const filteredPartiallyPaidEdges = prev.entries.edges.filter(
-              (edge: any) => edge.node._id !== partiallyPaidEntry._id
+              (edge: any) => edge.node._id !== partiallyPaidEntry._id,
             )
             return Object.assign({}, prev, {
               entries: {
@@ -389,11 +392,11 @@ const Page = () => {
             const rejectedEntry = entry
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.warning(
-              `Entry (${rejectedEntry?.entryNumber}) has been rejected.`
+              `Entry (${rejectedEntry?.entryNumber}) has been rejected.`,
             )
             // Remove the updated entry from its current position and add it to the top
             const filteredRejectedEdges = prev.entries.edges.filter(
-              (edge: any) => edge.node._id !== rejectedEntry._id
+              (edge: any) => edge.node._id !== rejectedEntry._id,
             )
             return Object.assign({}, prev, {
               entries: {
@@ -418,7 +421,7 @@ const Page = () => {
                 ...prev.entries,
                 total: prev.entries.total - 1,
                 edges: prev.entries.edges.filter(
-                  (edge: any) => edge.node._id !== deletedEntry._id
+                  (edge: any) => edge.node._id !== deletedEntry._id,
                 ),
               },
             })
@@ -426,7 +429,7 @@ const Page = () => {
             const updatedEntries = entries
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.success(
-              `Batch update successful for ${updatedEntries.length} entries.`
+              `Batch update successful for ${updatedEntries.length} entries.`,
             )
             const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
             return Object.assign({}, prev, {
@@ -435,15 +438,15 @@ const Page = () => {
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...updatedEntries.find(
-                          (u: any) => u._id === edge.node._id
-                        ),
-                      },
-                    }
-                    : edge
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedEntries.find(
+                            (u: any) => u._id === edge.node._id,
+                          ),
+                        },
+                      }
+                    : edge,
                 ),
               },
             })
@@ -509,7 +512,7 @@ const Page = () => {
               onCheckedChange={(value: boolean) => {
                 if (value) {
                   const allIds = new Set<string>(
-                    data?.entries.edges.map((edge: any) => edge.node._id)
+                    data?.entries.edges.map((edge: any) => edge.node._id),
                   )
                   setSelectedIds(allIds)
                 } else {
@@ -563,7 +566,10 @@ const Page = () => {
         cell: ({ row }) => (
           <div className="h-full flex flex-col items-start">
             <span className="block">
-              {format(new Date((row.original as any).dateUpdated), "MMM dd, p")}{" "}
+              {format(
+                new Date((row.original as any).dateUpdated),
+                "MMM dd, p",
+              )}{" "}
             </span>
             <div className="inline-flex gap-1">
               {row.original.isEarlyBird && (
@@ -707,7 +713,7 @@ const Page = () => {
         size: 20,
       },
     ],
-    [sort, onSort, filter, onFilter, selectedIds, data?.entries]
+    [sort, onSort, filter, onFilter, selectedIds, data?.entries],
   )
 
   // Next Page
@@ -799,6 +805,7 @@ const Page = () => {
           )}
         </InputGroup>
         <div className="flex items-center gap-2">
+          <ExportMenu />
           {selectedIds.size > 0 && (
             <>
               <BatchMenu

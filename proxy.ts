@@ -76,8 +76,6 @@ export async function proxy(req: NextRequest) {
   const PATHNAME = req.nextUrl.pathname
   const ROLE = (jwt.decode(REFRESH_TOKEN || "") as JwtPayload)?.role || null
 
-  console.log(req.cookies.getAll())
-
   const PROTECTED_ROUTES_PATHS = PROTECTED_ROUTES.filter(
     (route) => route.needsAuth,
   ).map((r) => r.path)
