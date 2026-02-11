@@ -23,9 +23,9 @@ const httpLink = new HttpLink({
 const wsLink = new GraphQLWsLink(
   createClient({
     // Test Local
-    // url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_URI!,
+    url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_URI!,
     // deployment
-    url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_WSS_URI!,
+    // url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_WSS_URI!,
   }),
 )
 

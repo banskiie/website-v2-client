@@ -37,9 +37,6 @@ const Login = () => {
       onChange: LoginSchema,
     },
     listeners: {
-      onChange: ({ formApi, fieldApi }) => {
-        // console.log(fieldApi.name, fieldApi.state.value)
-      },
       onChangeDebounceMs: 300,
     }, // this is just for demo purposes
     onSubmit: ({ value, formApi }) =>
@@ -52,7 +49,7 @@ const Login = () => {
           })
           console.log(res)
         } catch (error: any) {
-          console.error(error.errors)
+          console.error(error)
           if (error.name == "CombinedGraphQLErrors") {
             if (error.errors[0].extensions.code == "INVALID_CREDENTIALS")
               formApi.fieldInfo.username.instance?.setErrorMap({
