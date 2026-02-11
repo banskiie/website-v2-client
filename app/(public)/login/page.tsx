@@ -45,11 +45,12 @@ const Login = () => {
     onSubmit: ({ value, formApi }) =>
       startTransition(async () => {
         try {
-          await signIn({
+          const res = await signIn({
             username: value.username,
             password: value.password,
             rememberMe: value.rememberMe,
           })
+          console.log(res)
         } catch (error: any) {
           console.error(error.errors)
           if (error.name == "CombinedGraphQLErrors") {
@@ -65,7 +66,7 @@ const Login = () => {
                     path as keyof typeof formApi.fieldInfo
                   ].instance?.setErrorMap({
                     onSubmit: { message },
-                  })
+                  }),
               )
             }
           }

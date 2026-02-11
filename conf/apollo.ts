@@ -23,10 +23,10 @@ const httpLink = new HttpLink({
 const wsLink = new GraphQLWsLink(
   createClient({
     // Test Local
-    url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_URI!,
-    // deployments
-    // url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_WSS_URI!,
-  })
+    // url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_URI!,
+    // deployment
+    url: process.env.NEXT_PUBLIC_GRAPHQL_SUBSCRIPTION_WSS_URI!,
+  }),
 )
 
 const authLink = new SetContextLink(({ headers }) => {
@@ -106,7 +106,7 @@ const splitLink = split(
     return operationType === OperationTypeNode.SUBSCRIPTION
   },
   wsLink,
-  errorLink.concat(authLink).concat(httpLink)
+  errorLink.concat(authLink).concat(httpLink),
 )
 
 export const client = new ApolloClient({

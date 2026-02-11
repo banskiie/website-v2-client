@@ -11,6 +11,7 @@ export const SIGN_IN = gql`
       message
       data {
         accessToken
+        refreshToken
         user {
           _id
           name
