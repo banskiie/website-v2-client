@@ -299,7 +299,7 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
 
                 <div className="space-y-6">
                     <div className="space-y-3">
-                        <Label className="text-sm font-medium">Select Payment to Transfer</Label>
+                        <Label className="text-sm font-medium">Payment Details</Label>
                         {paymentsLoading ? (
                             <div className="text-sm text-muted-foreground">Loading payments...</div>
                         ) : paymentsError ? (
@@ -351,13 +351,13 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                                     </div>
                                                 </div>
 
-                                                {selectedPaymentId === payment._id && (
+                                                {/* {selectedPaymentId === payment._id && (
                                                     <div className="flex-shrink-0">
                                                         <div className="rounded-full bg-primary p-1">
                                                             <Check className="h-3 w-3 text-primary-foreground" />
                                                         </div>
                                                     </div>
-                                                )}
+                                                )} */}
                                             </div>
                                         </CardContent>
                                     </Card>

@@ -588,48 +588,72 @@ const checkAndMoveDocuments = async (
     const movedDocuments: any[] = []
     const replacedDocuments: any[] = []
 
+    // Helper function to move documents
+    const moveDocumentsToRequirements = async (docs: any[], player: string) => {
+      for (const doc of docs) {
+        const fileId = extractFileIdFromUrl(doc.documentURL);
+        if (fileId) {
+          try {
+            console.log(`📦 Moving ${doc.documentType} for ${player} from entry_requirement to requirements...`);
+
+            const moveResponse = await fetch('/api/transfer/entry_requirement', {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ fileId }),
+            });
+
+            if (moveResponse.ok) {
+              movedDocuments.push({
+                documentType: doc.documentType,
+                fileId,
+                status: "moved",
+                player: player,
+                message: "Successfully moved to requirements folder"
+              });
+              console.log(`✅ Successfully moved ${doc.documentType} for ${player}`);
+            } else {
+              console.error(`❌ Failed to move ${doc.documentType} for ${player}`);
+            }
+          } catch (error) {
+            console.error(`❌ Error moving document ${doc.documentType}:`, error);
+          }
+        }
+      }
+    };
+
     // Process Player 1 documents
     if (entry.player1Entry?.validDocuments && entry.player1Entry.validDocuments.length > 0) {
       const player1Docs = entry.player1Entry.validDocuments
 
-      if (connectedPlayer1?.validDocuments?.length > 0) {
-        const player1Result = await replaceDocumentsInDrive(
-          connectedPlayer1.validDocuments,
-          player1Docs,
-          'player1',
-          documentSelections.player1
-        )
-        replacedDocuments.push(...player1Result.replacedDocuments)
+      // Check if player has existing documents in the database
+      const hasExistingPlayer1Docs = connectedPlayer1?.validDocuments?.length > 0;
 
-        if (player1Result.failedReplacements.length > 0) {
-          console.warn(`⚠️ Some Player 1 documents failed to replace:`, player1Result.failedReplacements)
-        }
-      } else {
-        // For new player, just move documents
-        for (const doc of player1Docs) {
-          const fileId = extractFileIdFromUrl(doc.documentURL);
-          if (fileId) {
-            try {
-              const moveResponse = await fetch('/api/transfer/entry_requirement', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileId }),
-              });
+      if (hasExistingPlayer1Docs) {
+        // REASSIGN CASE: First move the new documents, then handle replacement if needed
+        console.log(`🔄 Player 1 has existing documents - moving new documents first`);
 
-              if (moveResponse.ok) {
-                movedDocuments.push({
-                  documentType: doc.documentType,
-                  fileId,
-                  status: 'moved',
-                  player: 'player1',
-                  message: 'Successfully moved to requirements folder'
-                });
-              }
-            } catch (error) {
-              console.error(`❌ Error moving document ${doc.documentType}:`, error);
-            }
+        // Step 1: Move all new documents from entry_requirement to requirements
+        await moveDocumentsToRequirements(player1Docs, 'player1');
+
+        // Step 2: If we have document selections, handle replacements
+        if (documentSelections.player1) {
+          console.log(`🔄 Processing document selections for Player 1`);
+          const player1Result = await replaceDocumentsInDrive(
+            connectedPlayer1.validDocuments,
+            player1Docs,
+            'player1',
+            documentSelections.player1
+          )
+          replacedDocuments.push(...player1Result.replacedDocuments)
+
+          if (player1Result.failedReplacements.length > 0) {
+            console.warn(`⚠️ Some Player 1 documents failed to replace:`, player1Result.failedReplacements)
           }
         }
+      } else {
+        // ASSIGN CASE: Just move documents from entry_requirement to requirements
+        console.log(`📦 Player 1 has NO existing documents - moving documents directly`);
+        await moveDocumentsToRequirements(player1Docs, 'player1');
       }
     }
 
@@ -637,49 +661,40 @@ const checkAndMoveDocuments = async (
     if (entry.player2Entry?.validDocuments && entry.player2Entry.validDocuments.length > 0) {
       const player2Docs = entry.player2Entry.validDocuments
 
-      if (connectedPlayer2?.validDocuments?.length > 0) {
-        const player2Result = await replaceDocumentsInDrive(
-          connectedPlayer2.validDocuments,
-          player2Docs,
-          'player2',
-          documentSelections.player2
-        )
-        replacedDocuments.push(...player2Result.replacedDocuments)
+      // Check if player has existing documents in the database
+      const hasExistingPlayer2Docs = connectedPlayer2?.validDocuments?.length > 0;
 
-        if (player2Result.failedReplacements.length > 0) {
-          console.warn(`⚠️ Some Player 2 documents failed to replace:`, player2Result.failedReplacements)
-        }
-      } else {
-        // For new player, just move documents
-        for (const doc of player2Docs) {
-          const fileId = extractFileIdFromUrl(doc.documentURL);
-          if (fileId) {
-            try {
-              const moveResponse = await fetch('/api/transfer/entry_requirement', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileId }),
-              });
+      if (hasExistingPlayer2Docs) {
+        // REASSIGN CASE: First move the new documents, then handle replacement if needed
+        console.log(`🔄 Player 2 has existing documents - moving new documents first`);
 
-              if (moveResponse.ok) {
-                movedDocuments.push({
-                  documentType: doc.documentType,
-                  fileId,
-                  status: 'moved',
-                  player: 'player2',
-                  message: 'Successfully moved to requirements folder'
-                });
-              }
-            } catch (error) {
-              console.error(`❌ Error moving document ${doc.documentType}:`, error);
-            }
+        // Step 1: Move all new documents from entry_requirement to requirements
+        await moveDocumentsToRequirements(player2Docs, 'player2');
+
+        // Step 2: If we have document selections, handle replacements
+        if (documentSelections.player2) {
+          console.log(`🔄 Processing document selections for Player 2`);
+          const player2Result = await replaceDocumentsInDrive(
+            connectedPlayer2.validDocuments,
+            player2Docs,
+            'player2',
+            documentSelections.player2
+          )
+          replacedDocuments.push(...player2Result.replacedDocuments)
+
+          if (player2Result.failedReplacements.length > 0) {
+            console.warn(`⚠️ Some Player 2 documents failed to replace:`, player2Result.failedReplacements)
           }
         }
+      } else {
+        // ASSIGN CASE: Just move documents from entry_requirement to requirements
+        console.log(`📦 Player 2 has NO existing documents - moving documents directly`);
+        await moveDocumentsToRequirements(player2Docs, 'player2');
       }
     }
 
     console.log(`📊 Document processing completed:`)
-    console.log(`   - Moved/Added: ${movedDocuments.length} documents`)
+    console.log(`   - Moved: ${movedDocuments.length} documents`)
     console.log(`   - Replaced: ${replacedDocuments.length} documents`)
     console.log(`   - Total: ${movedDocuments.length + replacedDocuments.length} documents processed`)
 
@@ -698,7 +713,6 @@ const checkAndMoveDocuments = async (
     }
   }
 }
-
 const DocumentSelectionDialog = ({
   open,
   onOpenChange,
@@ -1912,8 +1926,13 @@ const AssignDialog = (props: Props) => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={tab === 'player1' ? handleDocumentSelection1 : handleDocumentSelection2}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          tab === 'player1' ? handleDocumentSelection1() : handleDocumentSelection2();
+                        }}
                         disabled={isLoading}
+                        type="button"
                       >
                         {(tab === 'player1'
                           ? documentSelections.player1
@@ -1930,11 +1949,11 @@ const AssignDialog = (props: Props) => {
                             <Check className="h-4 w-4 mr-2 text-green-600" />
                             <div>
                               <p className="text-sm font-medium text-blue-800">Document selections saved</p>
-                              <p className="text-xs text-blue-600">
+                              {/* <p className="text-xs text-blue-600">
                                 {getDocumentSelectionSummary(
                                   tab === 'player1' ? documentSelections.player1 : documentSelections.player2
                                 )} documents selected
-                              </p>
+                              </p> */}
                             </div>
                           </div>
                           <Button
@@ -1942,6 +1961,7 @@ const AssignDialog = (props: Props) => {
                             size="sm"
                             onClick={tab === 'player1' ? handleDocumentSelection1 : handleDocumentSelection2}
                             className="text-xs"
+                            type="button"
                           >
                             Edit
                           </Button>
@@ -2854,8 +2874,13 @@ const AssignDialog = (props: Props) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={tab === 'player1' ? handleDocumentSelection1 : handleDocumentSelection2}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    tab === 'player1' ? handleDocumentSelection1 : handleDocumentSelection2
+                  }}
                   disabled={isLoading}
+                  type="button"
                 >
                   {(tab === 'player1'
                     ? documentSelections.player1
@@ -2875,13 +2900,13 @@ const AssignDialog = (props: Props) => {
                         <p className="text-sm font-medium text-blue-800">
                           Document selections saved
                         </p>
-                        <p className="text-xs text-blue-600">
+                        {/* <p className="text-xs text-blue-600">
                           {getDocumentSelectionSummary(
                             tab === 'player1'
                               ? documentSelections.player1
                               : documentSelections.player2
                           )} documents selected
-                        </p>
+                        </p> */}
                       </div>
                     </div>
 
@@ -2892,6 +2917,7 @@ const AssignDialog = (props: Props) => {
                         ? handleDocumentSelection1
                         : handleDocumentSelection2}
                       className="text-xs"
+                      type="button"
                     >
                       Edit
                     </Button>
