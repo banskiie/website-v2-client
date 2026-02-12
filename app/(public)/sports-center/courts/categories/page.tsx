@@ -15,6 +15,7 @@ import Header from "@/components/custom/header-white"
 import { PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
 import FloatingTicketing from "@/components/custom/ticket"
 import Image from "next/image"
+import { useSearchParams } from "next/navigation"
 
 function CategoryCard({
     name,
@@ -67,6 +68,9 @@ function CategoryCard({
 }
 
 export default function CategoriesPage() {
+
+    const searchParams = useSearchParams()
+    const tournamentId = searchParams.get("tournament")
     const [selectedCategory, setSelectedCategory] = useState<{
         id: string
         name: string
@@ -101,7 +105,9 @@ export default function CategoriesPage() {
 
     const { data, loading, error } = useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
 
-    const activeTournament = data?.publicTournaments?.find((t: any) => t.isActive)
+    const activeTournament = tournamentId
+        ? data?.publicTournaments?.find((t: any) => t._id === tournamentId)
+        : data?.publicTournaments?.find((t: any) => t.isActive)
 
     useEffect(() => {
         if (activeTournament && activeTournament.events) {

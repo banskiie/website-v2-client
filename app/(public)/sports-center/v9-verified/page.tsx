@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import router from "next/router"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 
 interface VerifiedEntryEvent {
     eventId: string
@@ -32,7 +33,8 @@ export default function VerifiedEntriesPage() {
     const [selectedEventFilter, setSelectedEventFilter] = useState<string>("all")
     const [accordionValue, setAccordionValue] = useState<string[]>([])
 
-    const tournamentId = "68f89331ee08f676e59a469a"
+    const searchParams = useSearchParams()
+    const tournamentId = searchParams.get('tournament') || "68f89331ee08f676e59a469a"
 
     const { data, loading, error, refetch } = useQuery<VerifiedEntriesResponse>(
         VERIFIED_ENTRIES_BY_TOURNAMENT,
@@ -157,6 +159,11 @@ export default function VerifiedEntriesPage() {
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900 mb-2">Verified Entries</h1>
                             <p className="text-gray-600">View all verified tournament entries by event</p>
+                            <div className="mt-2">
+                                <Badge variant="outline" className="text-blue-600 border-blue-300">
+                                    Tournament ID: {tournamentId}
+                                </Badge>
+                            </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
                             <Button
@@ -371,7 +378,6 @@ export default function VerifiedEntriesPage() {
                     )}
                 </div>
 
-                {/* Empty State if no events at all */}
                 {!loading && !data?.verifiedEntriesByTournament?.length && !searchQuery && selectedEventFilter === "all" && (
                     <Card>
                         <CardContent className="py-12">
