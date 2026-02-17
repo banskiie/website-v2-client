@@ -125,33 +125,52 @@ const Home = () => {
 
       <div className="flex-grow">
         <HeroCarousel />
-        <div className="relative w-full overflow-hidden py-12 bg-white">
-          <div className="absolute left-0 top-0 h-full w-40 bg-gradient-to-r from-[#F4F3EE] via-[#F4F3EE]/80 to-transparent z-10 backdrop-blur-md" />
+        <div className="relative w-full overflow-hidden py-8 sm:py-10 md:py-12 bg-white">
+          {/* Left Gradient */}
+          <div className="absolute left-0 top-0 h-full 
+                  w-16 sm:w-24 md:w-32 lg:w-40
+                  bg-gradient-to-r from-[#F4F3EE] via-[#F4F3EE]/80 to-transparent 
+                  z-10 backdrop-blur-md" />
 
-          <div className="absolute right-0 top-0 h-full w-40 bg-gradient-to-l from-[#F4F3EE] via-[#F4F3EE]/80 to-transparent z-10 backdrop-blur-md" />
+          {/* Right Gradient */}
+          <div className="absolute right-0 top-0 h-full 
+                  w-16 sm:w-24 md:w-32 lg:w-40
+                  bg-gradient-to-l from-[#F4F3EE] via-[#F4F3EE]/80 to-transparent 
+                  z-10 backdrop-blur-md" />
 
           <motion.div
-            className="flex items-center gap-16 w-max"
-            animate={{ x: ["0%", "-33.333%"] }}
+            className="flex items-center 
+               gap-6 sm:gap-10 md:gap-14 lg:gap-16 
+               w-max"
+            animate={{ x: ["0%", "-50%"] }}
             transition={{
-              duration: 20,
+              duration: 25,
               ease: "linear",
               repeat: Infinity,
             }}
           >
             {infiniteImages.map((img, index) => (
-              <div key={index} className="flex-shrink-0 h-20 w-40 flex items-center justify-center">
+              <div
+                key={index}
+                className="flex-shrink-0 
+                   h-12 w-24 
+                   sm:h-14 sm:w-28
+                   md:h-16 md:w-32
+                   lg:h-20 lg:w-40
+                   flex items-center justify-center"
+              >
                 <Image
                   src={img.src}
                   alt={img.alt}
                   width={160}
                   height={80}
-                  className="object-contain"
+                  className="object-contain w-full h-full"
                 />
               </div>
             ))}
           </motion.div>
         </div>
+
 
         <div className="bg-[#F4F3EE]">
           <div className="w-full max-w-none mx-auto px-6 md:px-8 py-10 flex flex-col items-center text-center">

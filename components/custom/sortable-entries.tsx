@@ -2,6 +2,8 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { GripVertical, Trash } from "lucide-react"
+import { Input } from "../ui/input"
+import { Button } from "../ui/button"
 
 interface SortableEntryProps {
     id: string
@@ -42,36 +44,36 @@ export default function SortableEntry({
                 <GripVertical className="w-4 h-4 text-gray-500" />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 flex-1 items-end">
+            <div className="grid grid-cols-2 gap-2 flex-1 items-end">
                 <div>
-
-                    <input
+                    <Input
                         type="text"
                         value={entry.entryNumber}
                         onChange={(e) => onChange(index, "entryNumber", e.target.value)}
                         placeholder="Example: 000V8_0001"
-                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 border-gray-300 placeholder:text-sm"
+                        className="w-full placeholder:text-sm"
                     />
                 </div>
 
                 <div className="relative">
-                    <input
+                    <Input
                         type="text"
                         value={entry.entryKey}
                         onChange={(e) => onChange(index, "entryKey", e.target.value)}
                         placeholder="Example: ABC123"
-                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 border-gray-300 placeholder:text-sm pr-10"
+                        className="w-full placeholder:text-sm pr-10"
                     />
 
                     {isJointPayment && index > 0 && (
-                        <button
-                            type="button"
+                        <Button
+                            variant="destructive"
+                            size="icon"
                             onClick={() => onDelete(index)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white hover:text-white rounded-md cursor-pointer p-1 transition"
-                            title="Remove Entry"
+                            className="absolute right-1 cursor-pointer top-1/2 -translate-y-1/2 h-7! w-7! hover:bg-red-500"
+                            aria-label="Remove Entry"
                         >
-                            <Trash className="w-4 h-4" />
-                        </button>
+                            <Trash className="w-3.5 h-3.5" />
+                        </Button>
                     )}
                 </div>
             </div>

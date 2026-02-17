@@ -262,8 +262,8 @@ const [heroLoaded, setHeroLoaded] = useState(false)
   id="second-section"
   className="relative w-full min-h-screen overflow-hidden bg-[#FFF2E6] flex flex-col xl:flex-row items-center justify-between px-4 sm:px-6 md:px-10 lg:px-20 py-16 lg:py-20"
 >
-  <div className="absolute inset-0 pointer-events-none overflow-hidden">
-    {[...Array(20)].map((_, i) => (
+  {/* <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    {[...Array(2)].map((_, i) => (
       <motion.div
         key={`bean-${i}`}
         className="absolute"
@@ -294,7 +294,7 @@ const [heroLoaded, setHeroLoaded] = useState(false)
       </motion.div>
     ))}
 
-    {[...Array(15)].map((_, i) => (
+    {[...Array(2)].map((_, i) => (
       <motion.div
         key={`cup-${i}`}
         className="absolute"
@@ -319,7 +319,7 @@ const [heroLoaded, setHeroLoaded] = useState(false)
         />
       </motion.div>
     ))}
-  </div>
+  </div> */}
 
   <motion.h1
     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[120%] text-[4rem] xs:text-[5rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] xl:text-[14rem] 2xl:text-[18rem] font-extrabold text-[#d6bfa6]/30 opacity-10 select-none pointer-events-none whitespace-nowrap z-0"
@@ -344,7 +344,7 @@ const [heroLoaded, setHeroLoaded] = useState(false)
       alt="ShuttleBrew Gallery"
       width={900}
       height={1100}
-      loading="lazy"
+      priority
       className="object-cover shadow-lg w-full h-[970px] xl:w-[900px]"
       blurDataURL={`${CLOUD}/v1764116604/_ALP9323_uewrgm.jpg`}
     />

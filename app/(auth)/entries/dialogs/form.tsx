@@ -505,7 +505,7 @@ const DocumentUploadTab = ({
                   }`} />
                 <span className={`font-medium text-sm ${fieldErrors[`filePlayer${playerNumber}`] ? 'text-red-700' : 'text-green-700'
                   }`}>
-                  {isUpdate ? "Upload New Document or Browse" : "Drag & Drop your document or Browse"}
+                  {isUpdate ? "Upload New Document or Browse" : "Upload your document or Browse"}
                 </span>
                 <span className="text-xs text-gray-500 mt-1">
                   Supports images (JPEG, PNG, JPG, WEBP) and PDF files up to 10MB
@@ -2059,7 +2059,7 @@ const FormDialog = (props: Props) => {
                                                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
                                               </PopoverTrigger>
-                                              <PopoverContent className="w-full p-0">
+                                              <PopoverContent className="w-full p-0 max-h-80 overflow-hidden" onWheel={(e) => e.stopPropagation()}>
                                                 <Command
                                                   filter={(value, search) =>
                                                     players
@@ -2800,7 +2800,7 @@ const FormDialog = (props: Props) => {
                                                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
                                               </PopoverTrigger>
-                                              <PopoverContent className="w-full p-0">
+                                              <PopoverContent className="w-full p-0" onWheel={(e) => e.stopPropagation()}>
                                                 <Command
                                                   filter={(value, search) =>
                                                     players
@@ -2817,7 +2817,7 @@ const FormDialog = (props: Props) => {
                                                   }
                                                 >
                                                   <CommandInput placeholder="Select Player" />
-                                                  <CommandList className="max-h-72 overflow-y-auto">
+                                                  <CommandList className="h-72 overflow-y-auto">
                                                     <CommandEmpty>
                                                       No player found.
                                                     </CommandEmpty>

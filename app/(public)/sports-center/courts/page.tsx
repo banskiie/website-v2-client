@@ -750,7 +750,7 @@ function Page() {
                                                 >
                                                     <Button
                                                         size="sm"
-                                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 h-9 text-sm font-medium rounded-full shadow-sm"
+                                                        className="w-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 h-9 text-sm font-medium rounded-full shadow-sm"
                                                     >
                                                         <Users className="w-4 h-4 mr-1.5" />
                                                         View Verified Entries

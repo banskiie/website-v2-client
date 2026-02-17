@@ -481,7 +481,7 @@ const ViewDialog = (props: Props) => {
                       ) : (
                         <span className="block text-sm">
                           {entry?.player1Entry.phoneNumber
-                            ? `+63 ${entry.player1Entry.phoneNumber}`
+                            ? `${entry.player1Entry.phoneNumber}`
                             : "N/A"}
                         </span>
                       )}

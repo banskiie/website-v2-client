@@ -947,8 +947,8 @@ export default function Page({ params }: RegistrationPageProps) {
                 const createPlayerEntry = (playerData: any, playerNum: number, documentUrl: string) => {
                     const baseEntry = {
                         firstName: playerData[`player${playerNum}FirstName`],
-                        lastName: playerData[`player${playerNum}LastName`],
                         middleName: playerData[`player${playerNum}MiddleName`],
+                        lastName: playerData[`player${playerNum}LastName`],
                         suffix: playerData[`player${playerNum}Suffix`],
                         birthDate: convertToISODateTime(playerData[`player${playerNum}Birthday`]),
                         email: playerData[`player${playerNum}Email`],
@@ -956,12 +956,15 @@ export default function Page({ params }: RegistrationPageProps) {
                         gender: playerData[`player${playerNum}Gender`],
                     };
 
-                    // Add validDocuments if file was uploaded
+                    const jerseySize = playerData[`player${playerNum}JerseySize`];
+                    const entryWithJersey = jerseySize
+                        ? { ...baseEntry, jerseySize }
+                        : baseEntry
+
                     if (documentUrl) {
                         const documentType = playerNum === 1 ? selectedDocumentTypePlayer1 : selectedDocumentTypePlayer2;
                         return {
-                            ...baseEntry,
-                            ...(hasFreeJersey && { jerseySize: playerData[`player${playerNum}JerseySize`] }),
+                            ...entryWithJersey,
                             validDocuments: [{
                                 documentURL: documentUrl,
                                 documentType: documentType,
@@ -970,10 +973,7 @@ export default function Page({ params }: RegistrationPageProps) {
                         };
                     }
 
-                    return {
-                        ...baseEntry,
-                        ...(hasFreeJersey && { jerseySize: playerData[`player${playerNum}JerseySize`] })
-                    };
+                    return entryWithJersey;
                 };
 
                 const input = {
@@ -1122,8 +1122,8 @@ export default function Page({ params }: RegistrationPageProps) {
     const getPlayerFieldNames = (playerKey: string): FormFieldNames[] => {
         const baseFields: FormFieldNames[] = [
             `${playerKey}FirstName` as FormFieldNames,
-            `${playerKey}LastName` as FormFieldNames,
             `${playerKey}MiddleName` as FormFieldNames,
+            `${playerKey}LastName` as FormFieldNames,
             `${playerKey}Suffix` as FormFieldNames,
             `${playerKey}Birthday` as FormFieldNames,
             `${playerKey}Gender` as FormFieldNames,
@@ -1583,10 +1583,10 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             const label =
                                                                 name.includes("FirstName")
                                                                     ? "First Name"
-                                                                    : name.includes("LastName")
-                                                                        ? "Last Name"
-                                                                        : name.includes("MiddleName")
-                                                                            ? "Middle Name"
+                                                                    : name.includes("MiddleName")
+                                                                        ? "Middle Name"
+                                                                        : name.includes("LastName")
+                                                                            ? "Last Name"
                                                                             : name.includes("Birthday")
                                                                                 ? "Birthday"
                                                                                 : name.includes("Gender")
@@ -1917,7 +1917,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                     }`} />
                                                                                 <span className={`font-medium text-sm ${fieldErrors[`filePlayer${playerNum}`] ? 'text-red-700' : 'text-green-700'
                                                                                     }`}>
-                                                                                    Drag & Drop your files or <span className="underline">Browse</span>
+                                                                                    Upload your files or <span className="underline">Browse</span>
                                                                                 </span>
                                                                                 <span className="text-xs text-gray-500 mt-1">
                                                                                     Supports images (JPEG, PNG, JPG, WEBP) and PDF files up to 10MB

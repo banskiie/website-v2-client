@@ -2034,7 +2034,7 @@ const AssignDialog = (props: Props) => {
                                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-full p-0">
+                            <PopoverContent className="w-full p-0 max-h-80" onWheel={(e) => e.stopPropagation()}>
                               <Command
                                 filter={(value, search) =>
                                   players
@@ -2877,7 +2877,7 @@ const AssignDialog = (props: Props) => {
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
-                    tab === 'player1' ? handleDocumentSelection1 : handleDocumentSelection2
+                    tab === 'player1' ? handleDocumentSelection1() : handleDocumentSelection2()
                   }}
                   disabled={isLoading}
                   type="button"

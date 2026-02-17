@@ -165,11 +165,11 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
           {(status === "PAYMENT_PENDING" ||
             status === "PAYMENT_PAID" ||
             status === "PAYMENT_PARTIALLY_PAID") && (
-            <TransferDialog
-              entryId={entry?._id}
-              onClose={() => setMenuOpen(false)}
-            />
-          )}
+              <TransferDialog
+                entryId={entry?._id}
+                onClose={() => setMenuOpen(false)}
+              />
+            )}
 
           {status === "LEVEL_PENDING" && (
             <>
@@ -288,7 +288,8 @@ const Page = () => {
                 ...prev.entries,
                 edges: [
                   {
-                    ...filteredUpdatedEdges.find(() => true),
+                    // ...filteredUpdatedEdges.find(() => true),
+                    cursor: updatedEntry?._id,
                     node: updatedEntry,
                   },
                   ...filteredUpdatedEdges,
@@ -311,7 +312,8 @@ const Page = () => {
                 ...prev.entries,
                 edges: [
                   {
-                    ...filteredAssignedEdges.find(() => true),
+                    // ...filteredAssignedEdges.find(() => true),
+                    cursor: assignedEntry?._id,
                     node: assignedEntry,
                   },
                   ...filteredAssignedEdges,
@@ -334,7 +336,8 @@ const Page = () => {
                 ...prev.entries,
                 edges: [
                   {
-                    ...filteredApprovedEdges.find(() => true),
+                    // ...filteredApprovedEdges.find(() => true),
+                    cursor: approvedEntry?._id,
                     node: approvedEntry,
                   },
                   ...filteredApprovedEdges,
@@ -357,7 +360,8 @@ const Page = () => {
                 ...prev.entries,
                 edges: [
                   {
-                    ...filteredPaidEdges.find(() => true),
+                    // ...filteredPaidEdges.find(() => true),
+                    cursor: paidEntry?._id,
                     node: paidEntry,
                   },
                   ...filteredPaidEdges,
@@ -380,7 +384,8 @@ const Page = () => {
                 ...prev.entries,
                 edges: [
                   {
-                    ...filteredPartiallyPaidEdges.find(() => true),
+                    // ...filteredPartiallyPaidEdges.find(() => true),
+                    cursor: partiallyPaidEntry?._id,
                     node: partiallyPaidEntry,
                   },
                   ...filteredPartiallyPaidEdges,
@@ -403,7 +408,8 @@ const Page = () => {
                 ...prev.entries,
                 edges: [
                   {
-                    ...filteredRejectedEdges.find(() => true),
+                    // ...filteredRejectedEdges.find(() => true),
+                    cursor: rejectedEntry?._id,
                     node: rejectedEntry,
                   },
                   ...filteredRejectedEdges,
@@ -438,14 +444,14 @@ const Page = () => {
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                        ...edge,
-                        node: {
-                          ...edge.node,
-                          ...updatedEntries.find(
-                            (u: any) => u._id === edge.node._id,
-                          ),
-                        },
-                      }
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...updatedEntries.find(
+                          (u: any) => u._id === edge.node._id,
+                        ),
+                      },
+                    }
                     : edge,
                 ),
               },

@@ -2173,7 +2173,7 @@ const FormDialog = (props: Props) => {
                           <>
                             <UploadIcon className={`w-6 h-6 mb-2 ${fieldErrors.file ? 'text-red-500' : 'text-green-600'}`} />
                             <span className={`font-medium text-sm ${fieldErrors.file ? 'text-red-700' : 'text-green-700'}`}>
-                              {isEditMode ? "Upload New Receipt or Browse" : "Drag & Drop your receipt or Browse"}
+                              {isEditMode ? "Upload New Receipt or Browse" : "Upload your receipt or Browse"}
                             </span>
                           </>
                         )}

@@ -331,8 +331,8 @@ export default function CategoriesPage() {
                 <div
                     className="
     absolute
-    top-8 md:top-12
-    right-[-40px] md:right-[-76px]
+    top-5 md:top-7
+    right-[-39px] md:right-[-70px] lg:top-9 lg:right-[-65px]
     rotate-45
     bg-linear-to-br from-green-600 to-green-800
     text-white
