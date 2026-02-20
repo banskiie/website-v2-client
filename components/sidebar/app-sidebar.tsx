@@ -40,8 +40,8 @@ const MAIN_ITEMS = [
     allowedRoles: ["*"],
   },
   {
-    title: "Tickets",
-    url: "/tickets",
+    title: "Conversations",
+    url: "/conversations",
     icon: Ticket,
     allowedRoles: [Role.ADMIN, Role.ORGANIZER, Role.SUPPORT],
   },

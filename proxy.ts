@@ -5,7 +5,6 @@ import { Role } from "./types/user.interface"
 import jwt, { JwtPayload } from "jsonwebtoken"
 import { cookies } from "next/headers"
 
-const PUBLIC_ROUTES = ["/", "/login"]
 const PROTECTED_ROUTES = [
   {
     path: "/dashboard",
@@ -65,23 +64,21 @@ const PROTECTED_ROUTES = [
     needsAuth: true,
   },
   {
-    path: "/tickets",
+    path: "/conversations",
     roles: [Role.ADMIN, Role.ORGANIZER, Role.SUPPORT],
     needsAuth: true,
   },
 ]
 
 export async function proxy(req: NextRequest) {
-  const REFRESH_TOKEN = req.cookies.get("refreshToken")?.value
+  const COOKIES = await cookies()
+  const REFRESH_TOKEN = COOKIES.get("refreshToken")?.value
   const PATHNAME = req.nextUrl.pathname
   const ROLE = (jwt.decode(REFRESH_TOKEN || "") as JwtPayload)?.role || null
 
   const PROTECTED_ROUTES_PATHS = PROTECTED_ROUTES.filter(
     (route) => route.needsAuth,
   ).map((r) => r.path)
-
-  // if (PUBLIC_ROUTES.includes(PATHNAME) && REFRESH_TOKEN)
-  //   return NextResponse.redirect(new URL("/dashboard", req.url))
 
   if (PROTECTED_ROUTES_PATHS.includes(PATHNAME)) {
     // If no refresh token, redirect to login
@@ -115,6 +112,6 @@ export const config = {
     "/tournaments/:path*",
     "/users/:path*",
     "/videos/:path*",
-    "/tickets/:path*",
+    "/conversations/:path*",
   ],
 }

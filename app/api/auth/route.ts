@@ -13,28 +13,22 @@ export async function POST(req: Request) {
 
   if (response.data?.signIn.ok && response.data.signIn.data) {
     // Set HttpOnly cookies
-    const accessToken = (await cookies()).set(
-      "accessToken",
-      response.data.signIn.data.accessToken,
-      {
-        httpOnly: true, // inaccessible by JS
-        secure: true, // always secure when sameSite is "none"
-        sameSite: "none", // cross-site allowed (ngrok / Vercel)
-        path: "/", // available on all routes
-        maxAge: 15 * 60, // 15 minutes
-      },
-    )
-    const refreshToken = (await cookies()).set(
-      "refreshToken",
-      response.data.signIn.data.refreshToken,
-      {
-        httpOnly: true, // inaccessible by JS
-        secure: true, // always secure when sameSite is "none"
-        sameSite: "none", // cross-site allowed (ngrok / Vercel)
-        path: "/", // available on all routes
-        maxAge: 24 * 60 * 60 * 1000, // 1 day
-      },
-    )
+    const cookieStore = await cookies()
+
+    cookieStore.set("accessToken", response.data.signIn.data.accessToken, {
+      httpOnly: true, // inaccessible by JS
+      secure: true, // always secure when sameSite is "none"
+      sameSite: "none", // cross-site allowed (ngrok / Vercel)
+      path: "/", // available on all routes
+      maxAge: 15 * 60, // 15 minutes
+    })
+    cookieStore.set("refreshToken", response.data.signIn.data.refreshToken, {
+      httpOnly: true, // inaccessible by JS
+      secure: true, // always secure when sameSite is "none"
+      sameSite: "none", // cross-site allowed (ngrok / Vercel)
+      path: "/", // available on all routes
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    })
   }
 
   return NextResponse.json({
