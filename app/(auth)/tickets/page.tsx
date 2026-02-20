@@ -97,6 +97,7 @@ const TICKET_UPDATED = gql`
         lastSentAt
         hasNewMessages
         lastMessageSent
+        lastMessageSentIsAttachment   # wala diay ni gi add
         assignedAgent
       }
     }

@@ -64,7 +64,7 @@ const PROTECTED_ROUTES = [
     needsAuth: true,
   },
   {
-    path: "/conversations",
+    path: "/tickets",
     roles: [Role.ADMIN, Role.ORGANIZER, Role.SUPPORT],
     needsAuth: true,
   },
@@ -112,6 +112,6 @@ export const config = {
     "/tournaments/:path*",
     "/users/:path*",
     "/videos/:path*",
-    "/conversations/:path*",
+    "/tickets/:path*",
   ],
 }
