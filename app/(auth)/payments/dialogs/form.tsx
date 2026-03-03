@@ -1311,15 +1311,12 @@ const FormDialog = (props: Props) => {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Form submitted - handleFormSubmit called")
-    console.log("Selected entries count:", selectedEntries.length)
-    console.log("Selected entries:", selectedEntries)
 
-    // Basic validation
     const payerName = form.getFieldValue("payerName")?.toString().trim()
     const amount = form.getFieldValue("amount")
     const method = form.getFieldValue("method")?.toString().trim()
     const paymentDate = form.getFieldValue("paymentDate")
+    const referenceNumber = form.getFieldValue("referenceNumber")?.toString().trim()
 
     if (!payerName) {
       toast.error("Payer name is required")
@@ -1345,36 +1342,31 @@ const FormDialog = (props: Props) => {
       return
     }
 
+    if (!referenceNumber) {
+      toast.error("Reference number is required")
+      setActiveTab("payment-reference")
+      return
+    }
+
     if (selectedEntries.length === 0) {
       toast.error("At least one entry must be selected")
       setActiveTab("payment-details")
       return
     }
 
-    // Check for duplicates before showing confirmation dialog
-    const currentRef = form.getFieldValue("referenceNumber")?.toString().trim()
-    console.log("Current reference:", currentRef)
+    if (!isEditMode && referenceNumber) {
+      console.log("Checking for duplicate reference:", referenceNumber)
 
-    if (!isEditMode && currentRef) {
-      // Check for duplicates first
-      if (checkForDuplicateReference(currentRef)) {
-        // Show duplicate dialog first
-        await handleOpenDuplicateDialog(currentRef)
+      if (checkForDuplicateReference(referenceNumber)) {
+        await handleOpenDuplicateDialog(referenceNumber)
       } else {
-        // No duplicate, proceed directly to confirmation
-        console.log("No duplicate found, showing confirmation dialog")
         setShowConfirmationDialog(true)
       }
     } else {
-      // No reference number or edit mode, proceed directly to confirmation
-      console.log("Form submitted, showing confirmation dialog")
       setShowConfirmationDialog(true)
     }
   }
-
   const handleConfirmPayment = async () => {
-    console.log("Confirming payment...")
-    console.log("Selected entries before confirm:", selectedEntries)
 
     setShowConfirmationDialog(false)
     await handleSubmitPayment()
@@ -1436,9 +1428,11 @@ const FormDialog = (props: Props) => {
               </div>
 
               <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-sm font-medium text-gray-700 mb-1">Entries:</div>
+                <div className="text-sm font-medium text-gray-700 mb-1">
+                  {selectedEntries.length === 1 ? "Entry:" : "Entries:"}
+                </div>
                 <div className="text-base font-bold text-blue-600">
-                  {selectedEntries.length} entries
+                  {selectedEntries.length} {selectedEntries.length === 1 ? "entry" : "entries"}
                 </div>
               </div>
             </div>
@@ -1590,12 +1584,14 @@ const FormDialog = (props: Props) => {
     const payerName = form.getFieldValue("payerName")?.toString().trim()
     const amount = form.getFieldValue("amount")
     const method = form.getFieldValue("method")?.toString().trim()
+    const referenceNumber = form.getFieldValue("referenceNumber")?.toString().trim()
 
-    // Basic validation
     if (selectedEntries.length === 0) return true
     if (!payerName) return true
     if (!amount || amount <= 0) return true
     if (!method) return true
+
+    if (!referenceNumber) return true
 
     return false
   }
@@ -1773,7 +1769,8 @@ const FormDialog = (props: Props) => {
                           <PopoverContent
                             className="p-0"
                             align="start"
-                            style={{ width: popoverWidth ? `${popoverWidth}px` : '100%' }}
+                            style={{ width: popoverWidth ? `${popoverWidth}px` : '100%' }
+                            } onWheel={(e) => e.stopPropagation()}
                           >
                             <div className="p-2 border-b">
                               <Input
@@ -1951,16 +1948,20 @@ const FormDialog = (props: Props) => {
                                   </div>
                                   <Input
                                     type="number"
+                                    step="0.01"
+                                    min="0"
                                     placeholder="0.00"
                                     disabled={isLoading}
                                     id={field.name}
                                     name={field.name}
-                                    value={field.state.value}
+                                    value={field.state.value || ''}
                                     onBlur={field.handleBlur}
                                     onChange={(e) => {
-                                      field.handleChange(Number(e.target.value))
+                                      const value = e.target.value === '' ? 0 : Number(e.target.value)
+                                      field.handleChange(value)
                                       const error = validateAmount(e.target.value)
                                       setFieldErrors(prev => ({ ...prev, amount: error }))
+                                      setFieldErrors(prev => ({ ...prev }))
                                     }}
                                     aria-invalid={!!isInvalid}
                                     className="pl-7"
@@ -1982,11 +1983,7 @@ const FormDialog = (props: Props) => {
                       <form.Field
                         name="referenceNumber"
                         children={(field) => {
-                          const inputValue =
-                            (reference && reference !== "Not found") ? reference :
-                              confirmationNumber || field.state.value;
-
-                          const currentRef = inputValue
+                          const inputValue = field.state.value || ''
 
                           return (
                             <Field>
@@ -2017,11 +2014,12 @@ const FormDialog = (props: Props) => {
                                       onBlur={field.handleBlur}
                                       onChange={(e) => {
                                         const value = e.target.value
-                                        field.handleChange(value);
-                                        if (e.target.value !== reference && e.target.value !== confirmationNumber) {
-                                          setReference(null);
-                                          setConfirmationNumber("");
+                                        field.handleChange(value)
+                                        if (value !== reference && value !== confirmationNumber) {
+                                          setReference(null)
+                                          setConfirmationNumber("")
                                         }
+                                        setFieldErrors(prev => ({ ...prev }))
                                       }}
                                     />
 

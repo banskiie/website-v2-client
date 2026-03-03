@@ -753,7 +753,7 @@ function Page() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
-                  className="bg-linear-to-r from-yellow-400 to-yellow-500 text-black font-semibold px-5 py-2.5 rounded-md shadow hover:from-yellow-300 hover:to-yellow-400 transition"
+                  className="bg-linear-to-r cursor-pointer transition-transform ease-in-out from-yellow-400 to-yellow-500 text-black font-semibold px-5 py-2.5 rounded-md shadow hover:from-yellow-300 hover:to-yellow-400 transition"
                 >
                   Get a Quote Now
                 </motion.button>
@@ -762,7 +762,7 @@ function Page() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleScrollToRentals}
-                  className="border border-gray-500 text-gray-300 px-5 py-2.5 rounded-md hover:border-yellow-400 hover:text-yellow-400 transition"
+                  className="border border-gray-500 transition-transform ease-in-out cursor-pointer text-gray-300 px-5 py-2.5 rounded-md hover:border-yellow-400 hover:text-yellow-400 transition"
                 >
                   View Rentals
                 </motion.button>

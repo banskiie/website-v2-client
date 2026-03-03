@@ -2,7 +2,7 @@
 
 import { useField, useForm } from "@tanstack/react-form"
 import { createFormSchema } from "@/components/custom/data/reg_validator"
-import { toast } from "sonner"
+import { toast, Toaster } from "sonner"
 import {
     Card,
     CardContent,
@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon, AlertCircle, ArrowLeftIcon, Loader2, Paperclip, XCircle, ChevronsUpDown, CheckIcon, File, Maximize2, ExternalLink, Download, Eye } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
-import { startTransition, use, useEffect, useState } from "react"
+import { startTransition, use, useEffect, useRef, useState } from "react"
 import Header from "@/components/custom/header-white"
 import {
     Select,
@@ -266,56 +266,92 @@ const SuccessModal = ({ isOpen, onClose, message }: {
     )
 }
 
-const ValidationToast = ({ errors, title = "Validation Failed" }: { errors: string[], title?: string }) => {
-    return (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg max-w-md">
-            <div className="flex items-start gap-3">
-                <div className="bg-red-100 p-2 rounded-full">
-                    <AlertCircle className="w-5 h-5 text-red-600" />
-                </div>
-                <div className="flex-1">
-                    <h4 className="font-semibold text-red-800 mb-2">{title}</h4>
-                    <div className="space-y-1">
-                        {errors.map((error, index) => (
-                            <p key={index} className="text-sm text-red-700">
-                                • {error}
-                            </p>
-                        ))}
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-700 border-red-300 hover:bg-red-100"
-                            onClick={() => toast.dismiss()}
-                        >
-                            Dismiss
-                        </Button>
-                        <Button
-                            size="sm"
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                            onClick={() => {
-                                const firstError = document.querySelector('[data-invalid="true"]');
-                                if (firstError) {
-                                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                }
-                                toast.dismiss();
-                            }}
-                        >
-                            View Details
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-}
-
 const showValidationToast = (errors: string[], title?: string) => {
-    toast.custom((t) => <ValidationToast errors={errors} title={title} />, {
-        duration: 10000,
-    });
-}
+    // console.log("Showing Validation toast:", title, errors);
+
+    if (!errors || errors.length === 0) return;
+
+    toast.error(
+        <div className="py-2">
+            <h4 className="font-semibold text-red-800 mb-2">{title || "Validation Failed"}</h4>
+            <div className="space-y-1 max-h-60 overflow-y-auto">
+                {errors.slice(0, 5).map((error, index) => (
+                    <p key={index} className="text-sm text-red-700">
+                        • {error}
+                    </p>
+                ))}
+                {errors.length > 5 && (
+                    <p className="text-xs text-red-600 mt-1">
+                        ...and {errors.length - 5} more errors
+                    </p>
+                )}
+            </div>
+            <div className="mt-3 flex gap-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-700 border-red-300 hover:bg-red-100"
+                    onClick={() => toast.dismiss()}
+                >
+                    Dismiss
+                </Button>
+                <Button
+                    size="sm"
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={() => {
+                        const firstError = document.querySelector('[data-invalid="true"]');
+                        if (firstError) {
+                            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        toast.dismiss();
+                    }}
+                >
+                    View Details
+                </Button>
+            </div>
+        </div>,
+        {
+            duration: 10000,
+            position: 'bottom-right',
+            icon: <AlertCircle className="w-5 h-5 text-red-600" />,
+        }
+    );
+};
+
+// New function to show field-specific toast
+const showFieldErrorToast = (fieldName: string, errors: any[]) => {
+    if (!errors || errors.length === 0) return;
+
+    const errorMessages = errors.map(err =>
+        typeof err === 'object' && err.message ? err.message : String(err)
+    );
+
+    // Format field name for display
+    const displayFieldName = fieldName
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, str => str.toUpperCase())
+        .replace('player1', 'Player 1')
+        .replace('player2', 'Player 2');
+
+    toast.warning(
+        <div className="py-2">
+            <h4 className="font-semibold text-amber-800 mb-2">{displayFieldName}</h4>
+            <div className="space-y-1">
+                {errorMessages.map((error, index) => (
+                    <p key={index} className="text-sm text-amber-700">
+                        • {error}
+                    </p>
+                ))}
+            </div>
+        </div>,
+        {
+            duration: 6000,
+            position: 'bottom-right',
+            icon: <AlertCircle className="w-5 h-5 text-amber-600" />,
+            id: `field-${fieldName}-${Date.now()}`,
+        }
+    );
+};
 
 const UploadingOverlay = () => (
     <motion.div
@@ -499,6 +535,9 @@ export default function Page({ params }: RegistrationPageProps) {
     const [previewFile, setPreviewFile] = useState<File | null>(null)
     const [previewDocumentType, setPreviewDocumentType] = useState("")
 
+    // Track shown field errors to prevent duplicate toasts
+    const [shownFieldErrors, setShownFieldErrors] = useState<Set<string>>(new Set());
+
     const tournaments = data?.publicTournaments ?? []
     const tournament = tournaments.find((t: any) => t._id === tournamentId) ?? tournaments.find((t: any) => t.isActive)
     const event = tournament?.events?.find((e: any) => e._id === eventId) ?? tournament?.events?.[0]
@@ -527,22 +566,17 @@ export default function Page({ params }: RegistrationPageProps) {
     }, [event, tournament, showSuccessModal, tournamentId, eventId])
 
     const handleFeeModalClose = () => {
-        // Mark as seen for this session
         const sessionKey = `registrationFeeModalSession-${tournamentId}-${eventId}`
         sessionStorage.setItem(sessionKey, 'true')
         setShowFeeModal(false)
     }
 
     const handleDontShowAgain = () => {
-        // Mark as permanently seen in localStorage
         const modalKey = `registrationFeeModalShown-${tournamentId}-${eventId}`
         localStorage.setItem(modalKey, 'true')
     }
 
-    // Reset modal preferences when tournament/event changes
     useEffect(() => {
-        // Clear any existing modal preferences when component mounts
-        // This ensures modal shows when user visits a different tournament/event
         const modalKey = `registrationFeeModalSession-${tournamentId}-${eventId}`
         sessionStorage.removeItem(modalKey)
     }, [tournamentId, eventId])
@@ -558,11 +592,11 @@ export default function Page({ params }: RegistrationPageProps) {
             if (hasEarlyBird && earlyBirdEndDate) {
                 const endDate = new Date(earlyBirdEndDate);
                 isEarlyBirdActive = now <= endDate
-                console.log("Early Bird End Date:", endDate);
-                console.log("Current Date:", now);
-                console.log("Is Early Bird Active:", isEarlyBirdActive);
+                // console.log("Early Bird End Date:", endDate);
+                // console.log("Current Date:", now);
+                // console.log("Is Early Bird Active:", isEarlyBirdActive);
             }
-            console.log("✅ Early Bird Active:", isEarlyBirdActive ? "YES" : "NO")
+            // console.log("✅ Early Bird Active:", isEarlyBirdActive ? "YES" : "NO")
 
             const actualPricePerPlayer = isEarlyBirdActive && event?.earlyBirdPricePerPlayer
                 ? event.earlyBirdPricePerPlayer
@@ -572,7 +606,7 @@ export default function Page({ params }: RegistrationPageProps) {
                 const totalPrice = event.type === "DOUBLES"
                     ? actualPricePerPlayer * 2
                     : actualPricePerPlayer;
-                console.log("💵 Total Amount:", totalPrice, event.currency)
+                // console.log("💵 Total Amount:", totalPrice, event.currency)
             }
 
         }
@@ -618,7 +652,7 @@ export default function Page({ params }: RegistrationPageProps) {
         const validationErrors = graphQLError?.extensions?.validationErrors;
 
         if (validationErrors && Array.isArray(validationErrors)) {
-            console.log("Backend validation errors:", validationErrors);
+            // console.log("Backend validation errors:", validationErrors);
 
             const fieldMapping: Record<string, string> = {
                 'player1Entry.birthDate': 'player1Birthday',
@@ -652,7 +686,7 @@ export default function Page({ params }: RegistrationPageProps) {
                 const frontendFieldName = fieldMapping[backendPath] || err.path?.[0];
 
                 if (frontendFieldName) {
-                    console.log(`Mapping backend error: ${backendPath} -> ${frontendFieldName}`);
+                    // console.log(`Mapping backend error: ${backendPath} -> ${frontendFieldName}`);
 
                     if (backendPath.includes('birthDate') || backendPath.includes('birthdate') ||
                         err.message.toLowerCase().includes('age') ||
@@ -834,61 +868,179 @@ export default function Page({ params }: RegistrationPageProps) {
             onSubmit: createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation) as any,
         },
         onSubmit: async ({ value }) => {
-            console.log("=== FORM SUBMISSION TRIGGERED ===");
+            // console.log("=== FORM SUBMISSION TRIGGERED ===");
 
             // Don't proceed if already submitting
             if (isSubmitting || isUploading) {
-                console.log("Already submitting, skipping...");
+                // console.log("Already submitting, skipping...");
                 return;
             }
 
             try {
-                console.log("Starting form submission...");
+                // console.log("Starting form submission...");
 
-                // Set submitting state immediately
                 setIsSubmitting(true);
+
+                setShownFieldErrors(new Set());
 
                 const schema = createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation);
                 const validationResult = schema.safeParse(value);
 
                 if (!validationResult.success) {
+                    // console.log("Form validation failed:", validationResult.error);
+                    // console.log("Number of errors:", validationResult.error.issues.length);
+
+                    const allErrors = validationResult.error.issues.map((err: any) => err.message);
+
+                    const fieldErrors: Record<string, string[]> = {};
+                    validationResult.error.issues.forEach((err: any) => {
+                        const fieldPath = err.path.join('.');
+                        if (!fieldErrors[fieldPath]) {
+                            fieldErrors[fieldPath] = [];
+                        }
+                        fieldErrors[fieldPath].push(err.message);
+                    });
+
                     const ageErrors = validationResult.error.issues.filter((err: any) =>
-                        err.path.includes('Birthday') ||
-                        err.message.toLowerCase().includes('age')
+                        err.path.some(path =>
+                            String(path).toLowerCase().includes('birthday') ||
+                            String(path).toLowerCase().includes('age') ||
+                            String(path).toLowerCase().includes('birth')
+                        ) ||
+                        err.message.toLowerCase().includes('age') ||
+                        err.message.toLowerCase().includes('birth year') ||
+                        err.message.toLowerCase().includes('minimum age') ||
+                        err.message.toLowerCase().includes('maximum age')
                     );
 
                     const genderErrors = validationResult.error.issues.filter((err: any) =>
-                        err.path.includes('Gender') ||
+                        err.path.some(path =>
+                            String(path).toLowerCase().includes('gender')
+                        ) ||
                         err.message.toLowerCase().includes('gender') ||
-                        err.message.toLowerCase().includes('mixed')
+                        err.message.toLowerCase().includes('mixed') ||
+                        err.message.toLowerCase().includes('male') ||
+                        err.message.toLowerCase().includes('female')
                     );
 
+                    const requiredFieldErrors = validationResult.error.issues.filter((err: any) =>
+                        err.message.toLowerCase().includes('required') ||
+                        err.code === 'invalid_type' && err.message.includes('Required')
+                    );
+
+                    const documentErrors = validationResult.error.issues.filter((err: any) =>
+                        err.path.some(path =>
+                            String(path).toLowerCase().includes('upload') ||
+                            String(path).toLowerCase().includes('document') ||
+                            String(path).toLowerCase().includes('file')
+                        ) ||
+                        err.message.toLowerCase().includes('upload') ||
+                        err.message.toLowerCase().includes('document') ||
+                        err.message.toLowerCase().includes('file')
+                    );
+
+                    const contactErrors = validationResult.error.issues.filter((err: any) =>
+                        err.path.some(path =>
+                            String(path).toLowerCase().includes('email') ||
+                            String(path).toLowerCase().includes('contact') ||
+                            String(path).toLowerCase().includes('phone')
+                        ) ||
+                        err.message.toLowerCase().includes('email') ||
+                        err.message.toLowerCase().includes('phone') ||
+                        err.message.toLowerCase().includes('contact')
+                    );
+
+                    // Show appropriate toast based on error types
                     if (ageErrors.length > 0) {
                         const ageErrorMessages = ageErrors.map((err: any) => err.message);
-                        showValidationToast(ageErrorMessages, "Age Validation Failed");
-                        console.log("Age validation failed, stopping submission");
-                        setIsSubmitting(false);
-                        return;
+                        showValidationToast(ageErrorMessages, "🎂 Age Validation Failed");
+
+                        // Also scroll to the first age-related field
+                        setTimeout(() => {
+                            const firstAgeField = document.querySelector('[name*="Birthday"]');
+                            if (firstAgeField) {
+                                firstAgeField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }, 100);
                     }
 
                     if (genderErrors.length > 0) {
                         const genderErrorMessages = genderErrors.map((err: any) => err.message);
-                        showValidationToast(genderErrorMessages, "Gender Validation Failed");
-                        console.log("Gender validation failed, stopping submission");
-                        setIsSubmitting(false);
-                        return;
+                        showValidationToast(genderErrorMessages, "⚥ Gender Validation Failed");
                     }
 
-                    console.log("Form validation failed:", validationResult.error);
-                    toast.error("Validation Error", {
-                        description: "Please check all required fields.",
-                        duration: 5000,
+                    if (documentErrors.length > 0) {
+                        const documentErrorMessages = documentErrors.map((err: any) => err.message);
+                        showValidationToast(documentErrorMessages, "📄 Document Upload Required");
+                    }
+
+                    if (contactErrors.length > 0) {
+                        const contactErrorMessages = contactErrors.map((err: any) => err.message);
+                        showValidationToast(contactErrorMessages, "📞 Contact Information Error");
+                    }
+
+                    // If there are other errors but no specific categories, show a general validation toast
+                    const otherErrors = validationResult.error.issues.filter((err: any) =>
+                        !ageErrors.includes(err) &&
+                        !genderErrors.includes(err) &&
+                        !documentErrors.includes(err) &&
+                        !contactErrors.includes(err)
+                    );
+
+                    if (otherErrors.length > 0) {
+                        const otherErrorMessages = otherErrors.map((err: any) => err.message);
+                        showValidationToast(otherErrorMessages, "❌ Validation Failed");
+                    } else if (requiredFieldErrors.length > 0 &&
+                        ageErrors.length === 0 &&
+                        genderErrors.length === 0 &&
+                        documentErrors.length === 0 &&
+                        contactErrors.length === 0) {
+                        showValidationToast(
+                            requiredFieldErrors.map((err: any) => err.message),
+                            "⚠️ Required Fields Missing"
+                        );
+                    }
+
+                    Object.entries(fieldErrors).forEach(([fieldPath, errors]) => {
+                        const fieldName = fieldPath as any;
+
+                        try {
+                            // @ts-ignore - Bypass TypeScript for this line if needed
+                            form.setFieldMeta(fieldName, {
+                                isTouched: true,
+                                errorMap: {
+                                    onBlur: errors[0],
+                                    onChange: errors[0]
+                                }
+                            });
+                        } catch (e) {
+                            console.log("Error setting field meta:", e);
+                        }
+
+                        const currentValue = form.getFieldValue(fieldName);
+                        if (currentValue !== undefined) {
+                            form.setFieldValue(fieldName, currentValue);
+                        }
                     });
+
+                    if (allErrors.length > 3) {
+                        toast.error(
+                            <div>
+                                <strong>Multiple Fields Need Attention</strong>
+                                <p className="text-sm mt-1">Found {allErrors.length} validation error(s). Please check the highlighted fields below.</p>
+                            </div>,
+                            {
+                                duration: 8000,
+                                position: 'bottom-right',
+                            }
+                        );
+                    }
+
                     setIsSubmitting(false);
                     return;
                 }
 
-                console.log("Form validation passed, proceeding...");
+                // console.log("Form validation passed, proceeding...");
 
                 const finalFormData = {
                     ...value,
@@ -901,22 +1053,24 @@ export default function Page({ params }: RegistrationPageProps) {
                     return new Date(dateString + 'T00:00:00.000Z').toISOString();
                 };
 
-                // Upload documents if files are selected
                 let documentUrlPlayer1 = ""
                 let documentUrlPlayer2 = ""
 
-                // Upload player 1 document
                 if (filePlayer1) {
-                    console.log("Uploading player 1 document...");
+                    // console.log("Uploading player 1 document...");
                     setIsUploading(true);
                     try {
                         const uploadedUrl = await uploadFile(filePlayer1, `registration-player1-${Date.now()}`)
                         if (uploadedUrl) {
                             documentUrlPlayer1 = uploadedUrl
-                            console.log("Player 1 document uploaded:", uploadedUrl);
+                            // console.log("Player 1 document uploaded:", uploadedUrl);
                         }
                     } catch (error) {
-                        console.error("Failed to upload player 1 document:", error);
+                        // console.error("Failed to upload player 1 document:", error);
+                        toast.error("Failed to upload document for Player 1", {
+                            description: "Please try again or contact support if the issue persists.",
+                            duration: 5000,
+                        });
                         setIsSubmitting(false);
                         return;
                     } finally {
@@ -924,18 +1078,21 @@ export default function Page({ params }: RegistrationPageProps) {
                     }
                 }
 
-                // Upload player 2 document if doubles
                 if (filePlayer2 && event?.type === "DOUBLES") {
-                    console.log("Uploading player 2 document...");
+                    // console.log("Uploading player 2 document...");
                     setIsUploading(true);
                     try {
                         const uploadedUrl = await uploadFile(filePlayer2, `registration-player2-${Date.now()}`)
                         if (uploadedUrl) {
                             documentUrlPlayer2 = uploadedUrl
-                            console.log("Player 2 document uploaded:", uploadedUrl);
+                            // console.log("Player 2 document uploaded:", uploadedUrl);
                         }
                     } catch (error) {
-                        console.error("Failed to upload player 2 document:", error);
+                        // console.error("Failed to upload player 2 document:", error);
+                        toast.error("Failed to upload document for Player 2", {
+                            description: "Please try again or contact support if the issue persists.",
+                            duration: 5000,
+                        });
                         setIsSubmitting(false);
                         return;
                     } finally {
@@ -943,7 +1100,6 @@ export default function Page({ params }: RegistrationPageProps) {
                     }
                 }
 
-                // Create player entries with document URLs
                 const createPlayerEntry = (playerData: any, playerNum: number, documentUrl: string) => {
                     const baseEntry = {
                         firstName: playerData[`player${playerNum}FirstName`],
@@ -985,22 +1141,27 @@ export default function Page({ params }: RegistrationPageProps) {
                     })
                 }
 
-                console.log("GraphQL Input:", JSON.stringify(input, null, 2));
-                console.log("Calling registryEntry mutation...");
+                // console.log("GraphQL Input:", JSON.stringify(input, null, 2));
+                // console.log("Calling registryEntry mutation...");
 
                 const result = await registryEntry({
                     variables: { input }
                 })
 
-                console.log("Mutation result:", result);
+                // console.log("Mutation result:", result);
 
                 if (result.data?.registerEntry?.ok) {
-                    console.log("Registration successful!", result.data.registerEntry.message)
+                    // console.log("Registration successful!", result.data.registerEntry.message)
                     const successMessage =
                         result.data?.registerEntry?.message ?? "You have been registered successfully."
 
                     setSuccessMessage(successMessage);
                     setShowSuccessModal(true);
+
+                    toast.success("Registration Successful!", {
+                        description: successMessage,
+                        duration: 5000,
+                    });
 
                 } else {
                     console.error("Registration failed:", result.data?.registerEntry?.message);
@@ -1037,8 +1198,7 @@ export default function Page({ params }: RegistrationPageProps) {
                     });
                 }
             } finally {
-                console.log("Submission process completed, resetting submitting state");
-                // Always reset submitting state when done
+                // console.log("Submission process completed, resetting submitting state");
                 setIsSubmitting(false);
             }
         },
@@ -1159,11 +1319,32 @@ export default function Page({ params }: RegistrationPageProps) {
         return null;
     };
 
-    const EnhancedFieldError = ({ errors }: { errors: any[] }) => {
+    const EnhancedFieldError = ({ errors, fieldName }: { errors: any[], fieldName?: string }) => {
+        const hasShownToast = useRef(false);
+
+        useEffect(() => {
+            if (errors && errors.length > 0 && fieldName && !hasShownToast.current) {
+                const firstError = typeof errors[0] === 'object' && errors[0].message
+                    ? errors[0].message
+                    : String(errors[0]);
+
+                const errorKey = `${fieldName}-${firstError}`;
+
+                if (!shownFieldErrors.has(errorKey)) {
+                    showFieldErrorToast(fieldName, errors);
+
+                    setShownFieldErrors(prev => new Set(prev).add(errorKey));
+                    hasShownToast.current = true;
+                }
+            } else if (!errors || errors.length === 0) {
+                hasShownToast.current = false;
+            }
+        }, [errors, fieldName]);
+
         if (!errors || errors.length === 0) return null;
 
         return (
-            <div className="mt-2 space-y-1">
+            <div className="space-y-1">
                 {errors.map((error, index) => {
                     const errorMessage = typeof error === 'object' && error.message
                         ? error.message
@@ -1172,9 +1353,9 @@ export default function Page({ params }: RegistrationPageProps) {
                     return (
                         <div
                             key={index}
-                            className="flex items-start gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200"
+                            className="flex items-start gap-2 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200"
                         >
-                            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
                             <span>{errorMessage}</span>
                         </div>
                     );
@@ -1296,6 +1477,21 @@ export default function Page({ params }: RegistrationPageProps) {
         <div className="bg-linear-to-br from-green-50 to-emerald-100">
             <Header />
 
+            <Toaster
+                position="bottom-right"
+                richColors
+                closeButton
+                theme="light"
+                expand={true}
+                duration={5000}
+                visibleToasts={5}
+                toastOptions={{
+                    style: {
+                        zIndex: 9999,
+                    },
+                }}
+            />
+
             <RegistrationFeeModal
                 isOpen={showFeeModal}
                 onClose={handleFeeModalClose}
@@ -1409,7 +1605,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             </Tooltip>
                                                         </InputGroupAddon>
                                                     </InputGroup>
-                                                    {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} />}
+                                                    {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} fieldName={field.name} />}
                                                 </Field>
                                             )
                                         }}
@@ -1498,7 +1694,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                             </div>
                                                         )}
 
-                                                        {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} />}
+                                                        {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} fieldName={field.name} />}
                                                     </Field>
                                                 );
                                             }}
@@ -1544,6 +1740,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                         onClick={() => setShowFeeModal(true)}
                                                         variant="ghost"
                                                         size="icon"
+                                                        type="button"
                                                         className="h-10 w-10 rounded-full bg-white/80 hover:bg-green-50 cursor-pointer"
                                                         disabled={isSubmitting || isUploading}
                                                     >
@@ -1613,7 +1810,7 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                                                         {name.includes("Birthday") && birthdayString && tournament?.dates?.tournamentStart && (
                                                                             <div className="flex items-center gap-1">
-                                                                                <span className={`text-xs font-medium px-2 py-0.5 rounded ${minAge !== undefined && maxAge !== undefined &&
+                                                                                <span className={`text-xs font-medium px-2 rounded ${minAge !== undefined && maxAge !== undefined &&
                                                                                     calculatedAge !== null &&
                                                                                     calculatedAge >= minAge &&
                                                                                     calculatedAge <= maxAge
@@ -1752,7 +1949,7 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                                                     )}
 
-                                                                    {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} />}
+                                                                    {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} fieldName={field.name} />}
                                                                 </Field>
                                                             );
                                                         }}
@@ -1842,37 +2039,6 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                                         title={`PDF Preview: ${file.name}`}
                                                                                     />
                                                                                 </div>
-                                                                                {/* <div className="mt-2 text-center">
-                                                                                    <p className="text-sm font-medium text-gray-700">{file.name}</p>
-                                                                                    <p className="text-xs text-gray-500 mt-1">PDF Document</p>
-                                                                                    <div className="mt-2 flex items-center justify-center gap-2">
-                                                                                        <Button
-                                                                                            type="button"
-                                                                                            variant="outline"
-                                                                                            size="sm"
-                                                                                            onClick={() => handlePreviewFile(file, selectedDocumentType.replaceAll("_", " "))}
-                                                                                            className="text-xs"
-                                                                                        >
-                                                                                            <Maximize2 className="w-3 h-3 mr-1" />
-                                                                                            Full Screen
-                                                                                        </Button>
-                                                                                        <Button
-                                                                                            type="button"
-                                                                                            variant="outline"
-                                                                                            size="sm"
-                                                                                            onClick={() => {
-                                                                                                const link = document.createElement('a');
-                                                                                                link.href = URL.createObjectURL(file);
-                                                                                                link.download = file.name;
-                                                                                                link.click();
-                                                                                            }}
-                                                                                            className="text-xs"
-                                                                                        >
-                                                                                            <Download className="w-3 h-3 mr-1" />
-                                                                                            Download
-                                                                                        </Button>
-                                                                                    </div>
-                                                                                </div> */}
                                                                             </div>
                                                                         ) : file && !file.type?.startsWith('image/') ? (
                                                                             <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
@@ -1939,7 +2105,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                         <p className="text-xs text-red-500 mt-2">{fieldErrors[`filePlayer${playerNum}`]}</p>
                                                                     )}
                                                                 </div>
-                                                                {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} />}
+                                                                {isInvalid && <EnhancedFieldError errors={field.state.meta.errors} fieldName={field.name} />}
                                                             </Field>
                                                         );
                                                     }}
@@ -2083,7 +2249,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                     )}
 
                                                                     {isInvalid && (
-                                                                        <EnhancedFieldError errors={field.state.meta.errors} />
+                                                                        <EnhancedFieldError errors={field.state.meta.errors} fieldName={field.name} />
                                                                     )}
                                                                 </Field>
                                                             );

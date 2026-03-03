@@ -114,16 +114,34 @@ const UPDATE = gql`
 
 const ALL_ACTIVE_ENTRIES = gql`
   query RefundActiveEntryOptions {
-    activeRefundEntryOptions {
-      event
-      players {
-        firstName
-        lastName
-      }
-      entryNumber
+   activeRefundEntryOptions {
+        entryNumber
+        eventName
+        currentStatus
+        remainingFee
+        players {
+            firstName
+            lastName
+        }
+        paymentInfo {
+            totalPaid
+            currentPendingAmount
+            refundableAmount
+            latestPayment {
+                amount
+                referenceNumber
+                method
+                date
+            }
+            payments {
+                amount
+                referenceNumber
+                method
+                date
+            }
+        }
     }
-  }
-`
+}`
 
 const CHECK_DUPLICATE_REFERENCE = gql`
   query CheckDuplicateReferenceRefund($referenceNumber: String!) {
@@ -165,6 +183,32 @@ interface RefundData {
 interface CheckDuplicateReferenceResponse {
   checkDuplicateReferenceRefund: RefundData[]
 }
+
+interface EntryWithPaymentInfo {
+  entryNumber: string
+  eventName: string
+  currentStatus: string
+  remainingFee: number
+  players: Array<{ firstName: string; lastName: string }>
+  paymentInfo: {
+    totalPaid: number
+    currentPendingAmount: number
+    refundableAmount: number
+    latestPayment?: {
+      amount: number
+      referenceNumber: string
+      method: string
+      date: string
+    }
+    payments?: Array<{
+      amount: number
+      referenceNumber: string
+      method: string
+      date: string
+    }>
+  }
+}
+
 type Props = {
   _id?: string
   onClose?: () => void
@@ -304,6 +348,119 @@ const DuplicateReferenceDialog = ({
   )
 }
 
+// NEW: Over Refund Error Dialog Component
+interface OverRefundDialogProps {
+  isOpen: boolean
+  onClose: () => void
+  totalRefundableAmount: number
+  attemptedAmount: number
+  excessByEntry?: Array<{
+    entryNumber: string
+    refundableAmount: number
+    attemptedAmount?: number
+  }>
+}
+
+const OverRefundDialog = ({
+  isOpen,
+  onClose,
+  totalRefundableAmount,
+  attemptedAmount,
+  excessByEntry,
+}: OverRefundDialogProps) => {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md!">
+        <DialogHeader>
+          <DialogTitle className="flex items-center text-md gap-2 text-red-600">
+            <AlertCircle className="h-5 w-5" />
+            Refund Amount Exceeds Available Amount
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            The refund amount you're trying to process exceeds the total refundable amount for the selected entries.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">Attempted Refund:</span>
+              <span className="text-md font-bold text-red-600">
+                ₱{attemptedAmount.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-700">Maximum Refundable:</span>
+              <span className="text-md font-bold text-green-600">
+                ₱{totalRefundableAmount.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-red-200">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Excess Amount:</span>
+                <span className="text-md font-bold text-orange-600">
+                  ₱{totalRefundableAmount.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  })}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {excessByEntry && excessByEntry.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Per Entry Breakdown:</Label>
+                <ScrollArea className="max-h-40">
+                  <div className="space-y-2">
+                    {excessByEntry.map((entry, index) => (
+                      <div key={index} className="p-2 bg-gray-50 rounded border text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{entry.entryNumber}</span>
+                          <span className="text-green-600 font-medium">
+                            ₱{entry.refundableAmount.toLocaleString()}
+                          </span>
+                        </div>
+                        {entry.attemptedAmount && entry.attemptedAmount > entry.refundableAmount && (
+                          <div className="text-xs text-red-500 mt-1">
+                            Attempted Paid: <span className="underline font-medium">₱{entry.attemptedAmount.toLocaleString()}</span> {" "}
+                            (Exceeds by <span className="underline font-medium">₱{(entry.refundableAmount).toLocaleString()})</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            </>
+          )}
+
+          <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+            <p className="font-medium mb-1">Suggestion:</p>
+            <p>Please Adjust the Refund Amount to not Exceed ₱{totalRefundableAmount.toLocaleString()} or Re-Check if the Entries Selected is Right.</p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="default" className="w-full cursor-pointer">
+              Got it
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // UploadingOverlay component
 const UploadingOverlay = ({ message, progress }: { message?: string; progress?: number }) => (
   <motion.div
@@ -367,6 +524,18 @@ const FormDialog = (props: Props) => {
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
   const [success, setSuccess] = useState(false)
 
+  // NEW: States for over refund validation
+  const [showOverRefundDialog, setShowOverRefundDialog] = useState(false)
+  const [overRefundData, setOverRefundData] = useState<{
+    totalRefundableAmount: number
+    attemptedAmount: number
+    excessByEntry?: Array<{
+      entryNumber: string
+      refundableAmount: number
+      attemptedAmount?: number
+    }>
+  } | null>(null)
+
   const isLoading = isPending || isUploading || (isUpdate && fetchLoading)
   const formLoading = isPending || isUploading
 
@@ -377,7 +546,8 @@ const FormDialog = (props: Props) => {
     }
   )
   const [openFilteredEntries, setOpenFilteredEntries] = useState(false)
-  const entryOptions = (entryOptionsData as any)?.activeRefundEntryOptions || []
+  const entryOptions = ((entryOptionsData as any)?.activeRefundEntryOptions || [])
+    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   const Methods = Object.values(PaymentMethod).map((method) => ({
     label: method.toLocaleLowerCase().replaceAll("_", " "),
     value: method,
@@ -391,7 +561,7 @@ const FormDialog = (props: Props) => {
   const [scannedReference, setScannedReference] = useState<string | null>(null)
   const [amountLabel, setAmountLabel] = useState("Total")
   const [scannedText, setScannedText] = useState<string>("")
-
+  const [forceUpdate, setForceUpdate] = useState(0)
   const { data: duplicateRefundQueryData, loading: duplicateRefundLoading } = useQuery<CheckDuplicateReferenceResponse>(
     CHECK_DUPLICATE_REFERENCE,
     {
@@ -420,6 +590,93 @@ const FormDialog = (props: Props) => {
     return {
       isDuplicate: !!duplicate,
       payerName: duplicate?.payerName
+    };
+  }
+
+  // Replace the validateRefundAmount function with this updated version:
+
+  const validateRefundAmount = (
+    refundAmount: number,
+    selectedEntryNumbers: string[]
+  ): { isValid: boolean; totalRefundable: number; excessByEntry?: Array<{ entryNumber: string; refundableAmount: number; attemptedAmount?: number }> } => {
+    if (!entryOptions || selectedEntryNumbers.length === 0) {
+      return { isValid: true, totalRefundable: 0 };
+    }
+
+    // Filter the selected entries with their payment info
+    const selectedEntries = entryOptions.filter((entry: EntryWithPaymentInfo) =>
+      selectedEntryNumbers.includes(entry.entryNumber)
+    );
+
+    // Calculate total refundable amount from all selected entries
+    // Based on your entry data, we should calculate refundable amount differently
+    let totalRefundable = 0;
+    const excessByEntry: Array<{ entryNumber: string; refundableAmount: number; attemptedAmount?: number }> = [];
+
+    selectedEntries.forEach((entry: EntryWithPaymentInfo) => {
+      // IMPORTANT FIX: For entries that have already been partially refunded,
+      // we need to calculate the remaining refundable amount differently
+
+      // From your entry data:
+      // - Total paid: ₱3200 (2500 + 700)
+      // - Current pending amount after refund: ₱100 (positive means balance due, not refundable)
+      // - Event price: ₱3000 (from INITIAL_FEE transaction)
+
+      // The refundable amount should be: totalPaid - (eventPrice + currentExcess)
+      // But in your case, since pendingAmount is positive (₱100), there's actually NO refundable amount
+      // because the entry still owes money (₱100 balance due)
+
+      let refundableAmount = 0;
+
+      // If pendingAmount is positive (balance due), refundableAmount should be 0
+      // If pendingAmount is negative (overpayment), refundableAmount is the absolute value
+      if (entry.paymentInfo?.currentPendingAmount < 0) {
+        // Overpayment case - can refund the overpaid amount
+        refundableAmount = Math.abs(entry.paymentInfo.currentPendingAmount);
+      } else if (entry.paymentInfo?.currentPendingAmount === 0) {
+        // Exactly paid - can refund up to totalPaid? This depends on business logic
+        // Usually you wouldn't refund from fully paid entries unless cancelling
+        refundableAmount = 0;
+      } else {
+        // Positive pending amount (balance due) - cannot refund anything
+        refundableAmount = 0;
+      }
+
+      // Alternative calculation using the data structure from your query
+      // If paymentInfo.refundableAmount exists, use that as a base but validate it
+      const queryRefundableAmount = entry.paymentInfo?.refundableAmount || 0;
+
+      // Log for debugging
+      console.log('Entry validation:', {
+        entryNumber: entry.entryNumber,
+        queryRefundableAmount,
+        calculatedRefundableAmount: refundableAmount,
+        currentPendingAmount: entry.paymentInfo?.currentPendingAmount,
+        totalPaid: entry.paymentInfo?.totalPaid
+      });
+
+      // Use the more accurate calculation
+      totalRefundable += refundableAmount;
+      excessByEntry.push({
+        entryNumber: entry.entryNumber,
+        refundableAmount,
+      });
+    });
+
+    // Check if refund amount exceeds total refundable
+    const isValid = refundAmount <= totalRefundable;
+
+    // For debugging/showing per-entry breakdown
+    if (!isValid) {
+      excessByEntry.forEach(entry => {
+        entry.attemptedAmount = refundAmount;
+      });
+    }
+
+    return {
+      isValid,
+      totalRefundable,
+      excessByEntry: !isValid ? excessByEntry : undefined
     };
   }
 
@@ -785,6 +1042,19 @@ const FormDialog = (props: Props) => {
       return
     }
 
+    // NEW: Validate refund amount against total refundable
+    const refundValidation = validateRefundAmount(amount, entryList);
+
+    if (!refundValidation.isValid) {
+      setOverRefundData({
+        totalRefundableAmount: refundValidation.totalRefundable,
+        attemptedAmount: amount,
+        excessByEntry: refundValidation.excessByEntry
+      });
+      setShowOverRefundDialog(true);
+      return; // Stop form submission
+    }
+
     if (!isUpdate && currentRef) {
       const { isDuplicate } = checkDuplicateReference(currentRef)
       if (isDuplicate && !userConfirmedDuplicate) {
@@ -820,6 +1090,9 @@ const FormDialog = (props: Props) => {
     setUserConfirmedDuplicate(false)
     setShowConfirmationDialog(false)
     setSuccess(false)
+    // NEW: Reset over refund dialog state
+    setShowOverRefundDialog(false)
+    setOverRefundData(null)
   }
 
   const getSelectedEntriesText = () => {
@@ -875,6 +1148,10 @@ const FormDialog = (props: Props) => {
   const ConfirmationDialog = () => {
     const totalAmount = form.getFieldValue("amount") || 0
     const entryList = form.getFieldValue("entryList") || []
+
+    const totalRefundable = entryOptions
+      .filter((e: EntryWithPaymentInfo) => entryList.includes(e.entryNumber))
+      .reduce((sum: number, e: EntryWithPaymentInfo) => sum + (e.paymentInfo?.refundableAmount || 0), 0)
 
     return (
       <motion.div
@@ -966,6 +1243,16 @@ const FormDialog = (props: Props) => {
                 })}
               </span>
             </div>
+
+            {/* <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <span className="text-sm font-bold text-blue-700">Total Refundable Amount </span>
+              <span className="text-lg font-bold text-blue-700">
+                ₱{totalRefundable.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </span>
+            </div> */}
           </div>
 
           <div className="flex gap-3">
@@ -978,7 +1265,7 @@ const FormDialog = (props: Props) => {
             </Button>
             <Button
               onClick={handleConfirmRefund}
-              className="flex-1 bg-green-600 text-white hover:bg-green-700"
+              className="flex-1 bg-green-600 cursor-pointer text-white hover:bg-green-700"
               disabled={isUploading || isPending || isCheckingDuplicate}
             >
               {isUploading ? (
@@ -1178,12 +1465,34 @@ const FormDialog = (props: Props) => {
                         const isInvalid =
                           field.state.meta.isTouched && !field.state.meta.isValid
                         const entryList = field.state.value || []
+
+                        // NEW: Calculate total refundable amount for selected entries
+                        const totalRefundableSelected = entryList.length > 0
+                          ? entryOptions
+                            .filter((e: EntryWithPaymentInfo) => entryList.includes(e.entryNumber))
+                            .reduce((sum: number, e: EntryWithPaymentInfo) => sum + (e.paymentInfo?.refundableAmount || 0), 0)
+                          : 0
+
                         return (
                           <Field data-invalid={isInvalid} className="col-span-2">
                             <div className="flex items-center gap-1">
                               <Label className="text-sm font-medium">Select Entries</Label>
                               <span className="text-red-500">*</span>
                             </div>
+
+                            {entryList.length > 0 && (
+                              <div className="mb-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="font-medium text-blue-700">Total Refundable Amount:</span>
+                                  <span className="font-bold text-blue-700">
+                                    ₱{totalRefundableSelected.toLocaleString('en-US', {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
 
                             <div className="space-y-3">
                               <Popover
@@ -1220,9 +1529,12 @@ const FormDialog = (props: Props) => {
                                     />
                                     <CommandList>
                                       <CommandEmpty>No entry found.</CommandEmpty>
-                                      <CommandGroup>
+                                      <CommandGroup className="p-1">
                                         {entryOptions.map((entry: any) => {
                                           const isSelected = entryList.includes(entry.entryNumber)
+                                          const paymentInfo = entry.paymentInfo
+                                          const hasPositiveRefundable = paymentInfo?.refundableAmount > 0
+
                                           return (
                                             <CommandItem
                                               key={entry.entryNumber}
@@ -1230,43 +1542,46 @@ const FormDialog = (props: Props) => {
                                               onSelect={(currentValue: any) => {
                                                 field.handleChange((prev: string[]) => {
                                                   if (prev.includes(currentValue))
-                                                    return prev.filter(
-                                                      (e: string) => e != currentValue
-                                                    )
+                                                    return prev.filter((e: string) => e != currentValue)
                                                   else return [...prev, currentValue]
                                                 })
                                                 setOpenFilteredEntries(false)
                                               }}
+                                              className="py-1.5 px-2 cursor-pointer"
                                             >
-                                              <div
-                                                className={cn(
-                                                  "flex justify-between w-full items-center"
-                                                )}
-                                              >
-                                                <div className="flex flex-col">
-                                                  <span className="block">
-                                                    {entry.entryNumber}
-                                                  </span>
-                                                  <span className="block text-xs">
-                                                    {entry.event}
-                                                  </span>
-                                                  <span className="block text-xs">
-                                                    {entry.players
-                                                      .map(
-                                                        (p: any) =>
-                                                          `${p.firstName} ${p.lastName}`
-                                                      )
-                                                      .join(", ")}
-                                                  </span>
+                                              <div className="flex items-center justify-between w-full gap-2">
+                                                <div className="flex flex-col min-w-0 flex-1">
+                                                  <div className="flex items-center text-xs">
+                                                    <span className="font-medium">{entry.entryNumber}</span>
+                                                  </div>
+
+                                                  <div className="text-[11px] text-muted-foreground truncate">
+                                                    {entry.players.map((p: any) => `${p.firstName} ${p.lastName}`).join(', ')}
+                                                  </div>
+
+                                                  <div className="text-[11px] text-muted-foreground">
+                                                    {entry.eventName}
+                                                    {paymentInfo && (
+                                                      <span className="ml-1">
+                                                        <span className="text-green-600">(Paid: ₱{(paymentInfo.totalPaid || 0).toLocaleString()}</span>
+                                                        <span className="text-orange-600"> • Exceeded Paid: ₱{(paymentInfo.currentPendingAmount || 0).toLocaleString()})</span>
+                                                      </span>
+                                                    )}
+                                                  </div>
                                                 </div>
-                                                <Check
-                                                  className={cn(
-                                                    "ml-auto",
-                                                    isSelected
-                                                      ? "opacity-100"
-                                                      : "opacity-0"
+
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                  {hasPositiveRefundable ? (
+                                                    <Badge variant="success" className="text-[11px] px-1.5 py-0 h-4 font-medium whitespace-nowrap">
+                                                      Refundable: ₱{(paymentInfo?.refundableAmount || 0).toLocaleString()}
+                                                    </Badge>
+                                                  ) : (
+                                                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 whitespace-nowrap">
+                                                      Not Yet Paid Amount
+                                                    </Badge>
                                                   )}
-                                                />
+                                                  {isSelected && <Check className="h-3.5 w-3.5 text-primary" />}
+                                                </div>
                                               </div>
                                             </CommandItem>
                                           )
@@ -1302,36 +1617,67 @@ const FormDialog = (props: Props) => {
                                       )
                                       if (!selectedEntry) return null
 
+                                      const paymentInfo = selectedEntry.paymentInfo
+                                      const hasPositiveRefundable = paymentInfo?.refundableAmount > 0
+
                                       return (
                                         <div
                                           key={entryNumber}
-                                          className="p-3 border rounded-lg space-y-2"
+                                          className="p-3 border rounded-lg space-y-2 hover:bg-gray-50 transition-colors"
                                         >
                                           <div className="flex items-start justify-between">
                                             <div className="flex-1">
-                                              <div className="flex items-center gap-2">
+                                              <div className="flex items-center gap-2 flex-wrap">
                                                 <span className="font-medium text-sm">
                                                   {selectedEntry.entryNumber}
                                                 </span>
+                                                {hasPositiveRefundable ? (
+                                                  <Badge variant="success" className="text-[11px] px-1.5 py-0 h-4 font-medium whitespace-nowrap">
+                                                    Refundable: ₱{(paymentInfo?.refundableAmount || 0).toLocaleString()}
+                                                  </Badge>
+                                                ) : (
+                                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 whitespace-nowrap">
+                                                    Not Yet Paid Amount
+                                                  </Badge>
+                                                )}
                                               </div>
-                                              <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                                                <div>
-                                                  <strong>Players:</strong>{" "}
-                                                  {selectedEntry.players
-                                                    .map((p: any) => `${p.firstName} ${p.lastName}`)
-                                                    .join(", ")}
-                                                </div>
-                                                <div>
-                                                  <strong>Event:</strong> {selectedEntry.event}
-                                                </div>
+
+                                              <div className="text-[11px] text-muted-foreground truncate mt-1">
+                                                {selectedEntry.players
+                                                  .map((p: any) => `${p.firstName} ${p.lastName}`)
+                                                  .join(', ')}
                                               </div>
+
+                                              <div className="text-[11px] text-muted-foreground mt-0.5">
+                                                {selectedEntry.eventName}
+                                                {paymentInfo && (
+                                                  <span className="ml-1">
+                                                    <span className="text-green-600">(Paid: ₱{(paymentInfo.totalPaid || 0).toLocaleString()}</span>
+                                                    <span className="text-orange-600"> • Exceeded Pay: ₱{(paymentInfo.currentPendingAmount || 0).toLocaleString()})</span>
+                                                  </span>
+                                                )}
+                                              </div>
+
+                                              {paymentInfo?.latestPayment && (
+                                                <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                                                  <span>Latest:</span>
+                                                  <span className="text-green-600">
+                                                    ₱{(paymentInfo.latestPayment.amount || 0).toLocaleString()}
+                                                  </span>
+                                                  <span>•</span>
+                                                  <span className="truncate max-w-[100px]" title={paymentInfo.latestPayment.referenceNumber}>
+                                                    {paymentInfo.latestPayment.referenceNumber || 'N/A'}
+                                                  </span>
+                                                </div>
+                                              )}
                                             </div>
+
                                             <Button
                                               type="button"
                                               variant="ghost"
                                               size="sm"
                                               onClick={() => handleRemoveEntry(entryNumber)}
-                                              className="h-8 w-8 p-0"
+                                              className="h-8 w-8 p-0 ml-2 flex-shrink-0"
                                               disabled={isLoading}
                                             >
                                               <XIcon className="h-4 w-4" />
@@ -1482,10 +1828,10 @@ const FormDialog = (props: Props) => {
 
                     {files.length > 0 && (
                       <div className="w-full mb-4 p-3 bg-white border rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <Paperclip className="w-4 h-4 text-gray-500" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium truncate">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Paperclip className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                          <div className="flex-1 max-w-xs">
+                            <p className="text-sm font-medium truncate w-full">
                               {files[0].name}
                             </p>
                             <p className="text-xs text-gray-500">
@@ -1496,7 +1842,7 @@ const FormDialog = (props: Props) => {
                             type="button"
                             onClick={handleRemoveFile}
                             disabled={isUploading}
-                            className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                            className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer flex-shrink-0"
                           >
                             <XCircle className="w-4 h-4" />
                           </Button>
@@ -1654,6 +2000,16 @@ const FormDialog = (props: Props) => {
         referenceNumber={duplicateReferenceNumber}
         existingRefundData={duplicateRefundData}
       />
+
+      {overRefundData && (
+        <OverRefundDialog
+          isOpen={showOverRefundDialog}
+          onClose={() => setShowOverRefundDialog(false)}
+          totalRefundableAmount={overRefundData.totalRefundableAmount}
+          attemptedAmount={overRefundData.attemptedAmount}
+          excessByEntry={overRefundData.excessByEntry}
+        />
+      )}
     </>
   )
 }

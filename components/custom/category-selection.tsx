@@ -200,6 +200,7 @@ export function CategoryModal({
     earlyBirdPricePerPlayer?: number
     hasEarlyBird?: boolean
     currency?: string
+    isDissolved?: boolean
   } | null
 }) {
   const [showGuidelines, setShowGuidelines] = useState(false);
@@ -363,7 +364,7 @@ export function CategoryModal({
                   Registration Fee
                 </span>
 
-                {isEarlyBirdActive && ( // ✅ Changed from hasEarlyBird to isEarlyBirdActive
+                {isEarlyBirdActive && (
                   <>
                     <Badge className="bg-linear-to-r rounded-sm! from-green-500 to-emerald-500 text-white border-0 shadow-sm text-[10px]">
                       Early Bird
@@ -394,7 +395,7 @@ export function CategoryModal({
                       <span className="text-md text-green-700 font-bold">
                         {perPlayerPrice}
                       </span>
-                      {isEarlyBirdActive && // ✅ Changed from hasEarlyBird to isEarlyBirdActive
+                      {isEarlyBirdActive &&
                         category.pricePerPlayer &&
                         category.earlyBirdPricePerPlayer && (
                           <span className="text-gray-400 line-through text-xs">
@@ -414,7 +415,7 @@ export function CategoryModal({
                     )}
                   </div>
 
-                  {isEarlyBirdActive && // ✅ Changed from hasEarlyBird to isEarlyBirdActive
+                  {isEarlyBirdActive &&
                     tournament?.dates?.earlyBirdPaymentEnd && (
                       <div className="bg-green-50 border border-green-400 text-green-700 text-[12px] font-bold px-3 py-2 rounded-md">
                         {format(
@@ -438,7 +439,7 @@ export function CategoryModal({
                         <span className="text-xl text-blue-700 font-bold">
                           {perPairPrice}
                         </span>
-                        {isEarlyBirdActive && // ✅ Changed from hasEarlyBird to isEarlyBirdActive
+                        {isEarlyBirdActive &&
                           category.pricePerPlayer &&
                           category.earlyBirdPricePerPlayer && (
                             <span className="text-gray-400 line-through text-xs">
@@ -460,8 +461,7 @@ export function CategoryModal({
                   </div>
                 )}
 
-                {/* Early Bird note when not active */}
-                {!isEarlyBirdActive && earlyBirdPerPlayer && ( // ✅ Changed from hasEarlyBird to isEarlyBirdActive
+                {!isEarlyBirdActive && earlyBirdPerPlayer && (
                   <div className="pt-3 border-t border-gray-100">
                     <div className="text-xs text-gray-500 italic">
                       Early Bird was available at {earlyBirdPerPlayer}
@@ -472,7 +472,6 @@ export function CategoryModal({
             </div>
           </div>
 
-          {/* Tournament Details */}
           <div className="bg-blue-50 p-4 rounded-md mb-6 text-left">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-semibold text-gray-700 text-sm">📅</span>
@@ -503,12 +502,18 @@ export function CategoryModal({
           </div>
 
           <div className="flex gap-3">
-            <Button
-              onClick={handleRegisterClick}
-              className="flex-1 bg-black text-white cursor-pointer hover:bg-gray-900 px-4 py-2"
-            >
-              Register Now
-            </Button>
+            {!category?.isDissolved ? (
+              <Button
+                onClick={handleRegisterClick}
+                className="flex-1 bg-black text-white cursor-pointer hover:bg-gray-900 px-4 py-2"
+              >
+                Register Now
+              </Button>
+            ) : (
+              <div className="flex-1 bg-gray-200 text-gray-500 px-4 py-2 rounded-md text-center text-sm font-medium cursor-not-allowed">
+                Registration Closed
+              </div>
+            )}
 
             <Button
               variant="outline"
@@ -2238,13 +2243,13 @@ export function UploadProofMergedModal({
                   {Object.values(entryAmounts).some(
                     (amount) => amount !== null
                   ) ? (
-                    <div className="text-sm font-medium text-black">
-                      <div className="font-semibold mb-1">
+                    <div className="font-medium text-black">
+                      <div className="font-semibold mb-1 text-sm">
                         Total Amount Required
                       </div>
                       {totalRequired > 0 && (
                         <div
-                          className={`inline-block w-full text-sm bg-gray-50 border border-gray-200 underline underline-offset-2 mb-1 px-3 py-2 rounded-md font-semibold ${amount && Number(amount) < totalRequired
+                          className={`inline-block w-full text-md bg-gray-50 border border-gray-200 underline underline-offset-2 mb-1 px-3 py-[6.2px] rounded-md font-semibold ${amount && Number(amount) < totalRequired
                             ? "text-red-600"
                             : "text-green-600"
                             }`}
@@ -2278,12 +2283,12 @@ export function UploadProofMergedModal({
                       </div>
                     </div>
                   ) : (
-                    <div className="text-sm font-medium text-gray-600">
-                      <div className="text-blue-600 font-semibold mb-1">
-                        Payment Amount <span className="text-red-500">*</span>
+                    <div className="text-xs md:text-sm lg:text-sm xl:text-sm font-medium text-gray-600">
+                      <div className="text-black font-semibold mb-1">
+                        Total Amount Required <span className="text-red-500">*</span>
                       </div>
 
-                      <div className="min-h-10 mb-1">
+                      <div className="min-h-10 mb-0.5">
                         {amountLoading ? (
                           <div className="flex items-center gap-3 p-2 border border-gray-200 rounded bg-gray-50">
                             <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
@@ -2332,9 +2337,8 @@ export function UploadProofMergedModal({
 
                 <div>
                   <div className="text-sm font-medium text-black">
-                    <div className="font-semibold mb-1 flex items-center flex-wrap gap-1">
+                    <div className="font-semibold mb-0.5 flex items-center flex-wrap gap-1">
                       {referenceLabel} <span className="text-red-500">*</span>
-                      <span className="text-[11px] text-gray-500 underline underline-offset-2">You can<span className="font-bold text-black"> Edit </span>if Ref. No. is missing digits from image.</span>
                       {referenceLoading && (
                         <span className="text-xs font-normal text-blue-500 animate-pulse ml-auto">
                           Scanning...
@@ -2363,7 +2367,7 @@ export function UploadProofMergedModal({
                             }}
                             placeholder="Enter reference number"
                             className={cn(
-                              "w-full",
+                              "w-full rounded-md! text-sm! lg:text-base! xl:text-base! placeholder:text-xs! p-3!",
                               duplicateReferenceError && "border-red-500 focus:ring-red-500"
                             )}
                           />

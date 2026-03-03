@@ -232,35 +232,78 @@ export default function PaymentSection() {
                                 </div>
                             </div>
 
-                            <div className={`relative flex justify-center lg:justify-start my-12 transform transition-all duration-900 ease-out delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-                                <div className="relative w-48 h-32">
-                                    <div className={`w-44 h-28 bg-gradient-to-br from-emerald-600 via-green-600 to-teal-700 rounded-xl shadow-2xl p-4 flex flex-col justify-between transform -rotate-6 absolute top-0 left-0 border border-emerald-400/30 transition-all duration-700 ease-out delay-500 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-6 opacity-0'}`}>
+                            <div
+                                className={`relative flex justify-center items-center w-full my-12
+      transform transition-all duration-900 ease-out delay-400
+      ${isVisible
+                                        ? "translate-y-0 opacity-100"
+                                        : "translate-y-8 opacity-0"
+                                    }`}
+                            >
+
+                                <div className="relative w-48 h-32 sm:w-56 sm:h-36 md:w-64 md:h-40">
+                                    <div
+                                        className={`w-44 h-28 sm:w-52 sm:h-32 md:w-60 md:h-36
+          bg-gradient-to-r from-gray-400 via-white to-gray-400
+          rounded-xl shadow-2xl p-4 flex flex-col justify-between
+          transform -rotate-6 absolute top-0 left-0
+          border border-emerald-400/30
+          transition-all duration-700 ease-out delay-500
+          ${isVisible
+                                                ? "translate-y-0 opacity-100"
+                                                : "-translate-y-6 opacity-0"
+                                            }`}
+                                    >
                                         <div className="flex justify-between items-start">
-                                            <div className="w-8 h-8 bg-yellow-400/20 rounded backdrop-blur-sm"></div>
-                                            <div className="flex gap-[-4px]">
-                                                <div className="w-7 h-7 rounded-full bg-red-500"></div>
-                                                <div className="w-7 h-7 rounded-full bg-yellow-400 -ml-3"></div>
+                                            <div className="w-7 h-6 bg-yellow-400/30 rounded-md"></div>
+                                            <div className="flex">
+                                                <div className="w-6 h-6 bg-red-500 rounded-full"></div>
+                                                <div className="w-6 h-6 bg-yellow-400 rounded-full -ml-3"></div>
                                             </div>
                                         </div>
                                         <div>
-                                            <div className="text-xs tracking-wider mb-1">•••• •••• •••• ••••</div>
-                                            <div className="text-[10px] font-semibold">MASTERCARD</div>
+                                            <div className="text-xs tracking-widest mb-1 text-gray-800">
+                                                •••• •••• •••• ••••
+                                            </div>
+                                            <div className="text-[10px] font-semibold text-gray-700">
+                                                MASTERCARD
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <div className={`w-44 h-28 bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 rounded-xl shadow-2xl p-4 flex flex-col justify-between absolute top-6 left-8 transform rotate-6 border border-purple-400/30 transition-all duration-700 ease-out delay-600 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-6 opacity-0'}`}>
+                                    <div
+                                        className={`w-44 h-28 sm:w-52 sm:h-32 md:w-60 md:h-36
+          bg-gradient-to-br from-[#1A1F71] via-[#1A1F71] to-[#0057A0]
+          rounded-xl shadow-2xl p-4 flex flex-col justify-between
+          absolute top-6 left-8
+          transform rotate-6 border border-yellow-400/30
+          transition-all duration-700 ease-out delay-700
+          ${isVisible
+                                                ? "translate-y-0 opacity-100"
+                                                : "-translate-y-6 opacity-0"
+                                            }`}
+                                    >
                                         <div className="flex justify-between items-start">
-                                            <div className="w-8 h-8 bg-white/20 rounded backdrop-blur-sm"></div>
-                                            <CreditCard className="w-6 h-6" />
+                                            <div className="w-7 h-6 bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600 rounded-md p-[2px]">
+                                                <div className="w-full h-full grid grid-cols-2 grid-rows-2">
+                                                    <div className="border border-yellow-700 border-r-0 border-b-0 rounded-tl-sm"></div>
+                                                    <div className="border border-yellow-700 border-b-0 rounded-tr-sm"></div>
+                                                    <div className="border border-yellow-700 border-r-0 rounded-bl-sm"></div>
+                                                    <div className="border border-yellow-700 rounded-br-sm"></div>
+                                                </div>
+                                            </div>
+                                            <CreditCard className="w-6 h-6 text-white" />
                                         </div>
                                         <div>
-                                            <div className="text-xs tracking-wider mb-1">•••• •••• •••• ••••</div>
-                                            <div className="text-[10px] font-semibold">CREDIT CARD</div>
+                                            <div className="text-xs tracking-widest mb-1 text-white">
+                                                •••• •••• •••• ••••
+                                            </div>
+                                            <div className="text-[10px] font-semibold text-white italic">
+                                                VISA
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
                             <div className={`text-sm leading-relaxed text-gray-300 bg-white/5 p-6 rounded-xl backdrop-blur-sm border border-white/10 transform transition-all duration-800 ease-out delay-700 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}>
                                 <p>
                                     To better serve you, we are now accepting all major credit cards.
@@ -271,12 +314,30 @@ export default function PaymentSection() {
                             <div className={`mt-6 transform transition-all duration-800 ease-out delay-800 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}>
                                 <p className="text-emerald-300 text-sm font-medium mb-4 text-center">WE ACCEPT:</p>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <div className={`h-10 bg-white rounded flex items-center justify-center shadow-sm transform transition-all duration-600 ease-out delay-900 ${isVisible ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}>
-                                        <span className="text-xs font-bold text-blue-600">VISA</span>
+                                    <div
+                                        className={`h-10 bg-white rounded-md flex items-center justify-center shadow-sm transform transition-all duration-600 ease-out delay-900 ${isVisible ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                                            }`}
+                                    >
+                                        <Image
+                                            src="/assets/card/visa.jpg"
+                                            alt="Visa"
+                                            width={70}
+                                            height={24}
+                                            className="object-contain"
+                                        />
                                     </div>
-                                    <div className={`h-10 bg-white rounded flex items-center justify-center shadow-sm transform transition-all duration-600 ease-out delay-1000 ${isVisible ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}>
-                                        <span className="text-xs font-bold text-blue-400">MASTERCARD</span>
+                                    <div
+                                        className={`h-10 bg-black rounded-md flex items-center justify-center gap-2 shadow-sm transform transition-all duration-600 ease-out delay-1000 ${isVisible ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                                            }`}
+                                    >
+                                        <div className="flex items-center">
+                                            <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                                            <div className="w-4 h-4 bg-yellow-400 rounded-full -ml-2"></div>
+                                        </div>
+
+                                        <span className="text-xs font-bold text-white">MASTERCARD</span>
                                     </div>
+
                                 </div>
                             </div>
 
@@ -292,6 +353,6 @@ export default function PaymentSection() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

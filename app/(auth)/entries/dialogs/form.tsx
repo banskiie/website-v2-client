@@ -160,6 +160,7 @@ const OPTIONS = gql`
   }
 `
 
+// UPDATED: Added pricePerPlayer and earlyBirdPricePerPlayer to the query
 const EVENT_OPTIONS_BY_TOURNAMENT = gql`
   query Options($tournamentId: ID!) {
     eventOptionsByTournament(tournamentId: $tournamentId) {
@@ -167,6 +168,8 @@ const EVENT_OPTIONS_BY_TOURNAMENT = gql`
       value
       type
       gender
+      pricePerPlayer
+      earlyBirdPricePerPlayer
     }
   }
 `
@@ -221,6 +224,16 @@ type SuggestPlayer = {
 
 type SuggestPlayersResponse = {
   suggestPlayers: SuggestPlayer[];
+}
+
+// UPDATED: Extended event option type to include price information
+type ExtendedEventOption = {
+  label: string;
+  value: string;
+  type: EventType;
+  gender: EventGender;
+  pricePerPlayer: number;
+  earlyBirdPricePerPlayer?: number;
 }
 
 type Props = {
@@ -457,13 +470,13 @@ const DocumentUploadTab = ({
                         const fallbackDiv = document.createElement('div');
                         fallbackDiv.className = 'absolute inset-0 flex items-center justify-center bg-gray-50';
                         fallbackDiv.innerHTML = `
-                <div class="text-center">
-                  <svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                  </svg>
-                  <p class="text-sm text-gray-500">Failed to load image</p>
-                </div>
-              `;
+                          <div class="text-center">
+                            <svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                            <p class="text-sm text-gray-500">Failed to load image</p>
+                          </div>
+                        `;
                         e.currentTarget.parentNode?.appendChild(fallbackDiv);
                       }}
                     />
@@ -590,7 +603,10 @@ const FormDialog = (props: Props) => {
       fetchPolicy: "network-only",
       variables: { tournamentId },
     })
-  const events = eventOptionsData?.eventOptionsByTournament || []
+  const events: ExtendedEventOption[] = eventOptionsData?.eventOptionsByTournament || []
+
+  // NEW: State to track selected event price information
+  const [selectedEvent, setSelectedEvent] = useState<ExtendedEventOption | null>(null)
 
   // Jersey Size Options
   const [openJerseySizes, setOpenJerseySizes] = useState(false)
@@ -645,6 +661,8 @@ const FormDialog = (props: Props) => {
 
   // Add a ref to track if submission is in progress
   const isSubmittingRef = useRef(false)
+
+
 
   const form = useForm({
     defaultValues: {
@@ -718,6 +736,7 @@ const FormDialog = (props: Props) => {
             if (fieldValue === "") {
               setTournamentId(null)
               formApi.resetField("event")
+              setSelectedEvent(null)
             } else {
               setTournamentId(fieldValue as string)
               const { hasEarlyBird, earlyBirdRegistrationEnd } =
@@ -729,12 +748,29 @@ const FormDialog = (props: Props) => {
                     earlyBirdRegistrationEnd: Date
                   }) => t.value === fieldValue
                 )
-              const isEarlyBird =
-                hasEarlyBird &&
-                earlyBirdRegistrationEnd &&
-                new Date() <= new Date(earlyBirdRegistrationEnd)
-              formApi.setFieldValue("isEarlyBird", isEarlyBird)
+
+              if (!isUpdate) {
+                const isEarlyBirdBasedOnDate =
+                  hasEarlyBird &&
+                  earlyBirdRegistrationEnd &&
+                  new Date() <= new Date(earlyBirdRegistrationEnd)
+
+                const currentIsEarlyBird = formApi.getFieldValue("isEarlyBird")
+                if (currentIsEarlyBird === false || currentIsEarlyBird === undefined) {
+                  formApi.setFieldValue("isEarlyBird", isEarlyBirdBasedOnDate)
+                }
+              }
+
               formApi.resetField("event")
+              setSelectedEvent(null)
+            }
+            break
+          case "event":
+            if (fieldValue) {
+              const event = events.find(e => e.value === fieldValue);
+              setSelectedEvent(event || null);
+            } else {
+              setSelectedEvent(null);
             }
             break
           case "connectedPlayer1":
@@ -883,6 +919,8 @@ const FormDialog = (props: Props) => {
       },
     },
     onSubmit: async ({ value: payload, formApi }) => {
+      console.log('SUBMITTING WITH PAYLOAD:', payload);
+      console.log('isEarlyBird value:', payload.isEarlyBird);
       if (isSubmittingRef.current) {
         console.log('Submission already in progress, skipping...')
         return
@@ -980,7 +1018,25 @@ const FormDialog = (props: Props) => {
       }
     },
   })
+  const calculateEntryAmount = useCallback(() => {
+    if (!selectedEvent) return null;
 
+    const pricePerPlayer = form.getFieldValue("isEarlyBird") && selectedEvent.earlyBirdPricePerPlayer
+      ? selectedEvent.earlyBirdPricePerPlayer
+      : selectedEvent.pricePerPlayer;
+
+    if (selectedEvent.type === EventType.DOUBLES) {
+      return {
+        perPlayer: pricePerPlayer,
+        total: pricePerPlayer * 2
+      };
+    } else {
+      return {
+        perPlayer: pricePerPlayer,
+        total: pricePerPlayer
+      };
+    }
+  }, [selectedEvent, form]);
   useEffect(() => {
     if (entry && isUpdate && form) {
       console.log("Updating form with entry data:", entry);
@@ -1115,6 +1171,15 @@ const FormDialog = (props: Props) => {
     }
   }, [data, tournamentId])
 
+  // NEW: Update selected event when form event changes
+  useEffect(() => {
+    const eventId = form.getFieldValue("event");
+    if (eventId) {
+      const event = events.find(e => e.value === eventId);
+      setSelectedEvent(event || null);
+    }
+  }, [form.getFieldValue("event"), events]);
+
   const onClose = () => {
     setOpen(false)
     props.onClose?.()
@@ -1139,6 +1204,8 @@ const FormDialog = (props: Props) => {
     isSubmittingRef.current = false
     // Reset initialization state
     setIsInitializing(false)
+    // Reset selected event
+    setSelectedEvent(null)
   }
 
   const uploadFile = async (file: File, folder: string): Promise<string | null> => {
@@ -1799,6 +1866,8 @@ const FormDialog = (props: Props) => {
                                                 label: string
                                                 gender: EventGender
                                                 type: EventType
+                                                pricePerPlayer: number
+                                                earlyBirdPricePerPlayer?: number
                                               }) => o.value === field.state.value
                                             )
                                             return (
@@ -1847,6 +1916,8 @@ const FormDialog = (props: Props) => {
                                               label: string
                                               gender: EventGender
                                               type: EventType
+                                              pricePerPlayer: number
+                                              earlyBirdPricePerPlayer?: number
                                             }) => (
                                               <CommandItem
                                                 key={o.value}
@@ -1872,6 +1943,14 @@ const FormDialog = (props: Props) => {
                                                   <span className="block text-xs text-muted-foreground capitalize">
                                                     {o.gender.toLocaleLowerCase()} (
                                                     {o.type.toLowerCase()})
+                                                  </span>
+                                                  <span className="block text-xs text-green-600">
+                                                    ₱{o.pricePerPlayer.toLocaleString()} per player
+                                                    {o.earlyBirdPricePerPlayer && (
+                                                      <span className="ml-2 text-orange-600">
+                                                        (Early Bird: ₱{o.earlyBirdPricePerPlayer.toLocaleString()})
+                                                      </span>
+                                                    )}
                                                   </span>
                                                 </div>
                                               </CommandItem>
@@ -1925,45 +2004,85 @@ const FormDialog = (props: Props) => {
                             )
                           }}
                         />
+
                         <form.Field
                           name="isEarlyBird"
                           children={(field) => {
                             const isInvalid = field.state.meta.errors.length > 0
-                            return (
-                              <Field
-                                className="px-1 py-3 border rounded-md"
-                                data-invalid={isInvalid}
-                              >
-                                <div className="flex items-center">
-                                  <Checkbox
-                                    id={field.name}
-                                    name={field.name}
-                                    checked={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onCheckedChange={(checked) =>
-                                      field.handleChange(checked === true)
-                                    }
-                                    className="mx-2"
-                                    aria-invalid={isInvalid}
-                                    disabled={isLoading}
-                                  />
-                                  <div className="grid">
-                                    <FieldLabel htmlFor={field.name}>
-                                      Early Bird
-                                    </FieldLabel>
-                                    <span className="text-muted-foreground text-xs">
-                                      Indicates if the entry qualifies for early
-                                      bird.
-                                    </span>
-                                  </div>
-                                </div>
-                                {isInvalid && (
-                                  <FieldError errors={field.state.meta.errors.map((err) =>
-                                    typeof err === "string" ? { message: err } : err
+                            const amount = calculateEntryAmount();
 
-                                  )} />
+                            // Log the current field value whenever it changes
+                            console.log('isEarlyBird field value:', field.state.value);
+
+                            return (
+                              <div className="space-y-3">
+                                <Field
+                                  className="px-1 py-3 border rounded-md"
+                                  data-invalid={isInvalid}
+                                >
+                                  <div className="flex items-center">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(checked) => {
+                                        console.log('Checkbox clicked, new value:', checked);
+                                        field.handleChange(checked === true);
+                                        // Force a re-render to see the updated value
+                                        setTimeout(() => {
+                                          console.log('After handleChange, field value:', field.state.value);
+                                        }, 100);
+                                      }}
+                                      className="mx-2"
+                                      aria-invalid={isInvalid}
+                                    />
+                                    <div className="grid">
+                                      <FieldLabel htmlFor={field.name}>
+                                        Early Bird
+                                      </FieldLabel>
+                                      <span className="text-muted-foreground text-xs">
+                                        {!isUpdate
+                                          ? "Manually override early bird status"
+                                          : "Indicates if the entry qualifies for early bird."}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {isInvalid && (
+                                    <FieldError errors={field.state.meta.errors.map((err) =>
+                                      typeof err === "string" ? { message: err } : err
+                                    )} />
+                                  )}
+                                </Field>
+
+                                {/* Show the price based on checkbox state */}
+                                {selectedEvent && amount && (
+                                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h4 className="font-medium text-blue-800">Entry Fee</h4>
+                                        <p className="text-sm text-blue-600">
+                                          {field.state.value
+                                            ? "Early Bird Rate Applied"
+                                            : "Regular Rate"}
+                                        </p>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="text-2xl font-bold text-blue-800">
+                                          ₱{amount.total.toLocaleString()}
+                                        </div>
+                                        {field.state.value && selectedEvent.earlyBirdPricePerPlayer && (
+                                          <div className="text-xs text-blue-600 line-through">
+                                            ₱{(selectedEvent.type === EventType.DOUBLES
+                                              ? selectedEvent.pricePerPlayer * 2
+                                              : selectedEvent.pricePerPlayer).toLocaleString()}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
                                 )}
-                              </Field>
+                              </div>
                             )
                           }}
                         />
@@ -3512,7 +3631,6 @@ const FormDialog = (props: Props) => {
         )}
 
         <DialogFooter>
-
           <DialogClose asChild>
             <Button className="w-20" onClick={onClose} variant="outline">
               Cancel

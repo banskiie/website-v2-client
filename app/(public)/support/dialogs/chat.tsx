@@ -1063,7 +1063,6 @@ export default function ChatStep({
     if (!inputMessage.trim() && files.length === 0) return
 
     if (!email) {
-      // Handle error
       return
     }
 
@@ -1089,7 +1088,7 @@ export default function ChatStep({
       }
     }
 
-    // Create temporary message with a unique identifier
+    // Create temporary message. Katong mag reply sa chat na static
     const now = new Date()
     const tempMessageId = `temp-${now.getTime()}-${Math.random().toString(36).substr(2, 9)}`
 
@@ -1247,14 +1246,14 @@ export default function ChatStep({
             <MessageCircle className="w-4 h-4 mr-2" />
             New Chat
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             className="w-full justify-start text-green-700 border-green-300 hover:bg-green-100 text-sm"
             onClick={handleDownloadChat}
           >
             <File className="w-4 h-4 mr-2" />
             Download Chat
-          </Button>
+          </Button> */}
         </div>
       </div>
 

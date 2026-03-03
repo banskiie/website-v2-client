@@ -4,30 +4,45 @@ import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Trophy, ExternalLink, Users, User, Search, UploadIcon } from "lucide-react"
+import { Trophy, ExternalLink, Users, User, Search, UploadIcon, Calendar, Ampersand } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { useQuery } from "@apollo/client/react"
+import { useQuery, useSubscription } from "@apollo/client/react"
 import { CategoryModal, CheckEntryModal, PublicTournamentsData, UploadProofMergedModal } from "@/components/custom/category-selection"
 import { DataReconciliationModal } from "@/components/custom/data-reconciliation"
 import { format, isSameMonth, isSameYear } from "date-fns"
 import Header from "@/components/custom/header-white"
-import { PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
+import { EVENT_CHANGED_SUBSCRIPTION, PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
 import FloatingTicketing from "@/components/custom/ticket"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
+
+interface EventChangedResponse {
+    eventChanged: {
+        type: string;
+        event: {
+            _id: string;
+            name: string;
+            gender: string;
+            type: string;
+            isDissolved: boolean;
+        };
+    };
+}
 
 function CategoryCard({
     name,
     type,
     level,
     gender,
+    isDissolved,
     onClick
 }: {
     name: string
     type: "Doubles" | "Singles"
     level: string
     gender: string
+    isDissolved?: boolean
     onClick: () => void
 }) {
     const levelColor = {
@@ -50,9 +65,12 @@ function CategoryCard({
     return (
         <button
             onClick={onClick}
-            className="flex flex-col items-start p-4 rounded-lg border cursor-pointer border-gray-200 bg-white hover:shadow-md hover:border-gray-300 transition w-full min-w-0"
+            className={`flex flex-col items-start p-4 rounded-lg border cursor-pointer transition w-full min-w-0 ${isDissolved
+                ? 'border-red-200 bg-red-50/50 hover:bg-red-100/50'
+                : 'border-gray-200 bg-white hover:shadow-md hover:border-gray-300'
+                }`}
         >
-            <div className="flex flex-wrap items-center gap-2 mb-2 w-full">
+            <div className="flex flex-wrap items-center gap-2 mb-2 w-full relative">
                 {type === "Doubles"
                     ? <Users className="w-4 h-4 text-gray-600 flex-shrink-0" />
                     : <User className="w-4 h-4 text-gray-600 flex-shrink-0" />}
@@ -60,6 +78,11 @@ function CategoryCard({
                 <Badge className={`text-xs px-2 py-0.5 ${genderColor} flex-shrink-0`}>
                     {gender}
                 </Badge>
+                {isDissolved && (
+                    <Badge className="absolute top-0 right-0 bg-red-100 text-red-800 text-xs px-2 py-0.5 border border-red-300">
+                        Dissolved
+                    </Badge>
+                )}
             </div>
             <span className="font-medium text-gray-800 text-sm md:text-base lg:text-base xl:text-base 2xl:text-base text-left break-words w-full">{name}</span>
             <div className="text-xs text-gray-500 mt-1">{type}</div>
@@ -77,12 +100,14 @@ export default function CategoriesPage() {
         type: "Doubles" | "Singles"
         level?: string
         gender?: string
+        isDissolved?: boolean
     } | null>(null)
 
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
     const [isCheckEntryModalOpen, setIsCheckEntryModalOpen] = useState(false)
     const [showReconciliation, setShowReconciliation] = useState(false)
+    const [localEvents, setLocalEvents] = useState<any[]>([])
 
     const oldData = {
         firstName: "Juan",
@@ -104,6 +129,33 @@ export default function CategoriesPage() {
     }
 
     const { data, loading, error } = useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
+
+    // Subscribe to event changes
+    useSubscription<EventChangedResponse>(EVENT_CHANGED_SUBSCRIPTION, {
+        onData: ({ data }) => {
+            const eventChanged = data.data?.eventChanged;
+
+            if (eventChanged) {
+                const { type, event } = eventChanged;
+
+                // Update local events based on subscription
+                setLocalEvents(prevEvents => {
+                    const updatedEvents = prevEvents.map(e => {
+                        if (e.id === event._id) {
+                            return {
+                                ...e,
+                                isDissolved: event.isDissolved
+                            };
+                        }
+                        return e;
+                    });
+                    return updatedEvents;
+                });
+
+                console.log(`Event ${type}: ${event.name} - Dissolved: ${event.isDissolved}`);
+            }
+        }
+    })
 
     const activeTournament = tournamentId
         ? data?.publicTournaments?.find((t: any) => t._id === tournamentId)
@@ -151,6 +203,35 @@ export default function CategoriesPage() {
         }
     }, [activeTournament])
 
+    // Initialize localEvents from query data
+    useEffect(() => {
+        if (activeTournament?.events) {
+            const mappedEvents = activeTournament.events.map((event: any) => {
+                const rawGender = event.gender?.toLowerCase()
+                let gender = "Mixed"
+
+                if (rawGender === "m" || rawGender === "male") gender = "Men's"
+                else if (rawGender === "w" || rawGender === "f" || rawGender === "female") gender = "Women's"
+                else if (rawGender === "x" || rawGender === "mixed") gender = "Mixed"
+
+                const type = event.type?.toUpperCase() === "DOUBLES" ? "Doubles" : "Singles"
+
+                return {
+                    id: event._id,
+                    name: event.name,
+                    level: event.level || "Open",
+                    type,
+                    gender,
+                    pricePerPlayer: event.pricePerPlayer,
+                    earlyBirdPricePerPlayer: event.earlyBirdPricePerPlayer,
+                    currency: event.currency,
+                    isDissolved: event.isDissolved,
+                }
+            });
+            setLocalEvents(mappedEvents);
+        }
+    }, [activeTournament]);
+
     function formatDateRange(start?: string | number | null, end?: string | number | null): string {
         if (!start || !end) return ""
 
@@ -173,30 +254,9 @@ export default function CategoriesPage() {
         activeTournament?.dates?.tournamentStart?.toString(),
         activeTournament?.dates?.tournamentEnd?.toString()
     )
-    const events = activeTournament?.events?.map((event: any) => {
-        const rawGender = event.gender?.toLowerCase()
-        let gender = "Mixed"
 
-        if (rawGender === "m" || rawGender === "male") gender = "Men's"
-        else if (rawGender === "w" || rawGender === "f" || rawGender === "female") gender = "Women's"
-        else if (rawGender === "x" || rawGender === "mixed") gender = "Mixed"
-
-        const type =
-            event.type?.toUpperCase() === "DOUBLES" ? "Doubles" : "Singles"
-
-        return {
-            id: event._id,
-            name: event.name,
-            level: event.level || "Open",
-            type,
-            gender,
-            pricePerPlayer: event.pricePerPlayer,
-            earlyBirdPricePerPlayer: event.earlyBirdPricePerPlayer,
-            // hasEarlyBird: event.hasEarlyBird, it is in the event tourtnament foreign key id and teh settings hasearlybird
-            currency: event.currency,
-            isDissolved: event.isDissolved,
-        }
-    }) || []
+    // Use localEvents instead of directly mapping from activeTournament
+    const events = localEvents
 
     const sortCategoriesByGender = (list: typeof events) => {
         const mens = list.filter((level: any) => level.gender === "Men's")
@@ -213,7 +273,14 @@ export default function CategoriesPage() {
     )
 
     const handleCategoryClick = (category: any) => {
-        setSelectedCategory(category)
+        setSelectedCategory({
+            id: category.id,
+            name: category.name,
+            type: category.type,
+            level: category.level,
+            gender: category.gender,
+            isDissolved: category.isDissolved
+        })
         setIsModalOpen(true)
     }
 
@@ -241,11 +308,12 @@ export default function CategoriesPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {groupCategories.map((category: any, idx: any) => (
                         <CategoryCard
-                            key={idx}
+                            key={category.id || idx}
                             name={category.name}
                             type={category.type}
                             level={category.level}
                             gender={category.gender}
+                            isDissolved={category.isDissolved}
                             onClick={() => handleCategoryClick(category)}
                         />
                     ))}
@@ -253,7 +321,6 @@ export default function CategoriesPage() {
             </div>
         )
     }
-
 
     if (loading) {
         return (
@@ -321,8 +388,6 @@ export default function CategoriesPage() {
             </div>
         )
     }
-
-
 
     return (
         <div className="min-h-screen bg-linear-to-b from-green-50/30 to-green-100/30 relative">
@@ -394,11 +459,13 @@ export default function CategoriesPage() {
                             Upload Payment
                         </Button>
                     </div>
+
                 </div>
+
             </div>
 
             <div className="container mx-auto px-4 py-12">
-                <div className="text-center mb-12">
+                <div className="text-center mb-5">
                     <motion.h2
                         className="text-3xl font-extrabold text-gray-900"
                         initial={{ opacity: 0, y: 20 }}
@@ -417,6 +484,120 @@ export default function CategoriesPage() {
                         Choose your category below and click on any category to view details and register.
                     </p>
                 </div>
+
+                {activeTournament?.settings?.hasEarlyBird && (
+                    <div className="container mx-auto px-4 mb-6">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                            className="max-w-2xl mx-auto"
+                        >
+                            <div className="text-center mb-4">
+                                <div className="inline-flex items-center gap-1.5 bg-yellow-100 text-yellow-800 px-2.5 py-1 rounded-full mb-2">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span className="font-medium text-xs">Important Dates</span>
+                                </div>
+                                <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-0.5">
+                                    Registration Deadlines
+                                </h2>
+                                <p className="text-xs text-gray-600">Mark your calendar and don't miss out!</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+                                <motion.div
+                                    initial={{ opacity: 0, x: -50 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.2, duration: 0.6 }}
+                                    className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg shadow-md p-4 border-2 border-yellow-400 relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-[8px] font-bold px-2 py-0.5 rounded-bl-lg">
+                                        Early Bird
+                                    </div>
+                                    <div className="mt-3">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="bg-yellow-400 p-1.5 rounded-md shadow-sm">
+                                                <Calendar className="w-4 h-4 text-yellow-900" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[8px] text-yellow-700 uppercase tracking-wider font-semibold">
+                                                    Save More Payment
+                                                </p>
+                                                <h3 className="text-sm font-bold text-gray-900">
+                                                    Early Bird Payment End
+                                                </h3>
+                                            </div>
+                                        </div>
+                                        <div className="text-center bg-white rounded-lg p-3 shadow-inner">
+                                            <p className="text-[10px] text-gray-500 mb-0.5">Early Bird Payment Closes On</p>
+                                            <p className="text-2xl font-bold text-yellow-600 mb-0.5">
+                                                {activeTournament?.dates?.earlyBirdPaymentEnd ?
+                                                    format(new Date(activeTournament.dates.earlyBirdPaymentEnd), "dd") : "—"}
+                                            </p>
+                                            <p className="text-xs font-semibold text-yellow-700">
+                                                {activeTournament?.dates?.earlyBirdPaymentEnd ?
+                                                    format(new Date(activeTournament.dates.earlyBirdPaymentEnd), "MMMM yyyy") : "—"}
+                                            </p>
+                                            <div className="mt-2 pt-2 border-t border-yellow-200">
+                                                <p className="text-[10px] text-gray-600">
+                                                    Register now to enjoy discounted rates!
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                <motion.div
+                                    initial={{ opacity: 0, x: 50 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.4, duration: 0.6 }}
+                                    className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-md p-4 border-2 border-green-400 relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 bg-green-400 text-green-900 text-[8px] font-bold px-2 py-0.5 rounded-bl-lg">
+                                        Final Deadline
+                                    </div>
+                                    <div className="mt-3">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="bg-green-400 p-1.5 rounded-md shadow-sm">
+                                                <Calendar className="w-4 h-4 text-green-900" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[8px] text-green-700 uppercase tracking-wider font-semibold">
+                                                    Last Chance Payment
+                                                </p>
+                                                <h3 className="text-sm font-bold text-gray-900">
+                                                    Registration Closes
+                                                </h3>
+                                            </div>
+                                        </div>
+                                        <div className="text-center bg-white rounded-lg p-3 shadow-inner">
+                                            <p className="text-[10px] text-gray-500 mb-0.5">Final Date</p>
+                                            <p className="text-2xl font-bold text-green-600 mb-0.5">
+                                                {activeTournament?.dates?.registrationEnd ?
+                                                    format(new Date(activeTournament.dates.registrationEnd), "dd") : "—"}
+                                            </p>
+                                            <p className="text-xs font-semibold text-green-700">
+                                                {activeTournament?.dates?.registrationEnd ?
+                                                    format(new Date(activeTournament.dates.registrationEnd), "MMMM yyyy") : "—"}
+                                            </p>
+                                            <div className="mt-2 pt-2 border-t border-green-200">
+                                                <p className="text-[10px] text-gray-600">
+                                                    No registrations accepted after this date
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                <div className="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                                    <div className="bg-white rounded-full p-1.5 shadow-sm border border-gray-300">
+                                        <Ampersand className="h-4 w-4" />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
 
                 <div className="mb-12">
                     <div className="flex items-center gap-3 mb-6">

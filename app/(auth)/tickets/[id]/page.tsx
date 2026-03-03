@@ -310,7 +310,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
           const showTimestamp =
             !pastTimestamp ||
             Math.abs(Number(latestTimestamp) - Number(pastTimestamp)) >=
-              5 * 60 * 1000
+            5 * 60 * 1000
 
           const addSpace =
             currentSenderType !== pastSenderType ||
@@ -366,14 +366,13 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                                     width={500}
                                     height={500}
                                     className="rounded-md h-fit w-96"
-                                    title={`Sent by ${
-                                      isUser
+                                    title={`Sent by ${isUser
                                         ? ticketData?.ticket?.name
                                         : msg?.agent?.name
-                                    } on ${format(
-                                      new Date(Number(msg?.timestamp)),
-                                      "PPp"
-                                    )}`}
+                                      } on ${format(
+                                        new Date(Number(msg?.timestamp)),
+                                        "PPp"
+                                      )}`}
                                   />
                                 ) : (
                                   <div className="flex items-center justify-center">
@@ -410,14 +409,13 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               rel="noopener noreferrer"
                               className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center"
                               title={`
-                              Sent by ${
-                                isUser
+                              Sent by ${isUser
                                   ? ticketData?.ticket?.name
                                   : msg?.agent?.name
-                              } on ${format(
-                                new Date(Number(msg?.timestamp)),
-                                "PPp"
-                              )}`}
+                                } on ${format(
+                                  new Date(Number(msg?.timestamp)),
+                                  "PPp"
+                                )}`}
                             >
                               <FileText className="size-12 text-muted-foreground" />
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
@@ -426,12 +424,12 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
                                 {msg?.attachment?.size >= 1024 * 1024
                                   ? `${(
-                                      msg?.attachment?.size /
-                                      (1024 * 1024)
-                                    ).toFixed(2)} MB`
+                                    msg?.attachment?.size /
+                                    (1024 * 1024)
+                                  ).toFixed(2)} MB`
                                   : `${(msg?.attachment?.size / 1024).toFixed(
-                                      2
-                                    )} KB`}
+                                    2
+                                  )} KB`}
                               </span>
                             </Link>
                           )
@@ -444,14 +442,13 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               rel="noopener noreferrer"
                               className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center"
                               title={`
-                              Sent by ${
-                                isUser
+                              Sent by ${isUser
                                   ? ticketData?.ticket?.name
                                   : msg?.agent?.name
-                              } on ${format(
-                                new Date(Number(msg?.timestamp)),
-                                "PPp"
-                              )}`}
+                                } on ${format(
+                                  new Date(Number(msg?.timestamp)),
+                                  "PPp"
+                                )}`}
                             >
                               <FileText className="size-12 text-muted-foreground" />
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
@@ -460,12 +457,12 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
                                 {msg?.attachment?.size >= 1024 * 1024
                                   ? `${(
-                                      msg?.attachment?.size /
-                                      (1024 * 1024)
-                                    ).toFixed(2)} MB`
+                                    msg?.attachment?.size /
+                                    (1024 * 1024)
+                                  ).toFixed(2)} MB`
                                   : `${(msg?.attachment?.size / 1024).toFixed(
-                                      2
-                                    )} KB`}
+                                    2
+                                  )} KB`}
                               </span>
                             </Link>
                           )
@@ -481,14 +478,13 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               rel="noopener noreferrer"
                               className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center hover:bg-slate-300"
                               title={`
-                              Sent by ${
-                                isUser
+                              Sent by ${isUser
                                   ? ticketData?.ticket?.name
                                   : msg?.agent?.name
-                              } on ${format(
-                                new Date(Number(msg?.timestamp)),
-                                "PPp"
-                              )}`}
+                                } on ${format(
+                                  new Date(Number(msg?.timestamp)),
+                                  "PPp"
+                                )}`}
                             >
                               <Video className="size-12 text-muted-foreground" />
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
@@ -497,12 +493,12 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
                                 {msg?.attachment?.size >= 1024 * 1024
                                   ? `${(
-                                      msg?.attachment?.size /
-                                      (1024 * 1024)
-                                    ).toFixed(2)} MB`
+                                    msg?.attachment?.size /
+                                    (1024 * 1024)
+                                  ).toFixed(2)} MB`
                                   : `${(msg?.attachment?.size / 1024).toFixed(
-                                      2
-                                    )} KB`}
+                                    2
+                                  )} KB`}
                               </span>
                             </Link>
                           )
@@ -515,14 +511,13 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                         isUser ? "bg-green-200" : "bg-slate-200"
                       )}
                       title={`
-                            Sent by ${
-                              isUser
-                                ? ticketData?.ticket?.name
-                                : msg?.agent?.name
-                            } on ${format(
-                        new Date(Number(msg?.timestamp)),
-                        "PPp"
-                      )}`}
+                            Sent by ${isUser
+                          ? ticketData?.ticket?.name
+                          : msg?.agent?.name
+                        } on ${format(
+                          new Date(Number(msg?.timestamp)),
+                          "PPp"
+                        )}`}
                     >
                       {msg?.message}
                     </div>

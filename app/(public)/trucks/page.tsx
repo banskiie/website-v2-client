@@ -270,7 +270,8 @@ function page() {
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.6, delay: i * 0.2 }}
               >
-                <div className="bg-green-600 rounded-2xl p-6 mb-4 flex items-center justify-center w-28 h-28 shadow-md">
+                <div className="bg-green-600 rounded-2xl p-6 mb-4 flex items-center justify-center w-28 h-28 shadow-md 
+                transform transition-transform duration-300 ease-in-out hover:scale-105">
                   <Icon className="h-16 w-16 text-white" />
                 </div>
 
@@ -475,7 +476,7 @@ function page() {
                   viewport={{ once: true, amount: 0.3 }}
                   transition={{ duration: 0.6, delay: i * 0.1 }}
                 >
-                  <div className="bg-[#DCFCE7] rounded-full p-6 flex items-center justify-center w-24 h-24 mb-6">
+                  <div className="bg-[#DCFCE7] rounded-full p-6 flex items-center justify-center w-24 h-24 mb-6 transition transition-transform ease-in-out hover:scale-105">
                     <Icon className="w-20! h-20! text-[#00BF63]" strokeWidth={2} />
                   </div>
                   <h3 className="text-lg font-semibold text-white mb-2">
@@ -487,7 +488,6 @@ function page() {
           </div>
         </div>
       </div>
-
 
       <div className="relative w-full py-16 px-6 md:px-20 bg-[#F9F9F9] overflow-hidden">
         <div
