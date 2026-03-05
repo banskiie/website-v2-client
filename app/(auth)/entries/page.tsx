@@ -470,15 +470,38 @@ const Page = () => {
           case "REJECT":
             const updatedEntry = entry
 
-            if (type === "APPROVE" && !search && !sort && filter.length === 0) {
+            // Handle early bird expiry updates specifically
+            if (type === "UPDATE" && updatedEntry?.isEarlyBird === false && updatedEntry?.pendingAmount > 0) {
+              console.log('🕒 Early bird expired for entry:', {
+                entryNumber: updatedEntry.entryNumber,
+                newAmount: updatedEntry.pendingAmount
+              });
+
+              if (!search && !sort && filter.length === 0) {
+                toast.info(
+                  `⏰ Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
+                  `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`
+                );
+              }
+            }
+            // Handle regular approve
+            else if (type === "APPROVE" && !search && !sort && filter.length === 0) {
               toast.success(`Entry (${updatedEntry?.entryNumber}) has been approved.`)
-            } else if (type === "PAID" && !search && !sort && filter.length === 0) {
+            }
+            // Handle paid
+            else if (type === "PAID" && !search && !sort && filter.length === 0) {
               toast.success(`Entry (${updatedEntry?.entryNumber}) has been paid.`)
-            } else if (type === "REJECT" && !search && !sort && filter.length === 0) {
+            }
+            // Handle reject
+            else if (type === "REJECT" && !search && !sort && filter.length === 0) {
               toast.warning(`Entry (${updatedEntry?.entryNumber}) has been rejected.`)
-            } else if (type === "ASSIGN" && !search && !sort && filter.length === 0) {
+            }
+            // Handle assign
+            else if (type === "ASSIGN" && !search && !sort && filter.length === 0) {
               toast.info(`Entry (${updatedEntry?.entryNumber}) has been assigned.`)
-            } else if (type === "UPDATE" && !search && !sort && filter.length === 0) {
+            }
+            // Handle regular updates (including refunds)
+            else if (type === "UPDATE" && !search && !sort && filter.length === 0) {
               if (updatedEntry?.hasRefunds || updatedEntry?.totalRefundAmount > 0) {
                 const refundMessage = updatedEntry?.hasOverpayment
                   ? `Entry (${updatedEntry?.entryNumber}) refund processed. Excess amount: ₱${updatedEntry?.totalExcess?.toLocaleString()}`
@@ -489,11 +512,29 @@ const Page = () => {
               }
             }
 
-            const updatedEdges = prev.entries.edges.map((edge: any) =>
-              edge.node._id === updatedEntry._id
-                ? { ...edge, node: { ...updatedEntry } }
-                : edge
-            )
+            const updatedEdges = prev.entries.edges.map((edge: any) => {
+              if (edge.node._id === updatedEntry._id) {
+                // Merge the updated data with existing data to ensure all fields are preserved
+                return {
+                  ...edge,
+                  node: {
+                    ...edge.node,
+                    ...updatedEntry,
+                    // Ensure these fields are properly updated
+                    hasOverpayment: updatedEntry.hasOverpayment ?? edge.node.hasOverpayment,
+                    totalExcess: updatedEntry.totalExcess ?? edge.node.totalExcess,
+                    pendingAmount: updatedEntry.pendingAmount ?? edge.node.pendingAmount,
+                    totalRefundAmount: updatedEntry.totalRefundAmount ?? edge.node.totalRefundAmount,
+                    hasRefunds: updatedEntry.hasRefunds ?? edge.node.hasRefunds,
+                    totalPaid: updatedEntry.totalPaid ?? edge.node.totalPaid,
+                    latestPaymentAmount: updatedEntry.latestPaymentAmount ?? edge.node.latestPaymentAmount,
+                    currentStatus: updatedEntry.currentStatus ?? edge.node.currentStatus,
+                    isEarlyBird: updatedEntry.isEarlyBird ?? edge.node.isEarlyBird
+                  }
+                }
+              }
+              return edge
+            })
 
             return {
               entries: {

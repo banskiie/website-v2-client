@@ -1129,12 +1129,85 @@ const FormDialog = (props: Props) => {
     form.setFieldValue("proofOfRefundURL", "")
   }
 
+  // const isSubmitDisabled = () => {
+  //   const payerName = form.getFieldValue("payerName")?.toString().trim()
+  //   const amount = form.getFieldValue("amount")
+  //   const method = form.getFieldValue("method")?.toString().trim()
+  //   const entryList = form.getFieldValue("entryList") || []
+  //   const referenceNumber = form.getFieldValue("referenceNumber")?.toString().trim()
+
+  //   if (entryList.length === 0) return true
+  //   if (!payerName) return true
+  //   if (!amount || amount <= 0) return true
+  //   if (!method) return true
+  //   if (!referenceNumber) return true
+
+  //   return false
+  // }
+
+  const [formValues, setFormValues] = useState({
+    payerName: "",
+    referenceNumber: "",
+    amount: 0,
+    method: "",
+    entryList: [] as string[]
+  })
+
+  useEffect(() => {
+    const initialValues = {
+      payerName: form.getFieldValue("payerName") || "",
+      referenceNumber: form.getFieldValue("referenceNumber") || "",
+      amount: form.getFieldValue("amount") || 0,
+      method: form.getFieldValue("method") || "",
+      entryList: form.getFieldValue("entryList") || []
+    }
+    setFormValues(initialValues)
+
+    const unsubscribe = form.store.subscribe(() => {
+      const newValues = {
+        payerName: form.getFieldValue("payerName") || "",
+        referenceNumber: form.getFieldValue("referenceNumber") || "",
+        amount: form.getFieldValue("amount") || 0,
+        method: form.getFieldValue("method") || "",
+        entryList: form.getFieldValue("entryList") || []
+      }
+
+      setFormValues(prev => {
+        if (
+          prev.payerName === newValues.payerName &&
+          prev.referenceNumber === newValues.referenceNumber &&
+          prev.amount === newValues.amount &&
+          prev.method === newValues.method &&
+          JSON.stringify(prev.entryList) === JSON.stringify(newValues.entryList)
+        ) {
+          return prev
+        }
+        return newValues
+      })
+    })
+
+    return () => unsubscribe()
+  }, [form])
+
   const isSubmitDisabled = () => {
-    const payerName = form.getFieldValue("payerName")?.toString().trim()
-    const amount = form.getFieldValue("amount")
-    const method = form.getFieldValue("method")?.toString().trim()
-    const entryList = form.getFieldValue("entryList") || []
-    const referenceNumber = form.getFieldValue("referenceNumber")?.toString().trim()
+    const payerName = formValues.payerName?.toString().trim()
+    const amount = formValues.amount
+    const method = formValues.method?.toString().trim()
+    const entryList = formValues.entryList || []
+    const referenceNumber = formValues.referenceNumber?.toString().trim()
+
+    console.log('Form validation check:', { // Add this for debugging
+      payerName,
+      amount,
+      method,
+      entryList,
+      referenceNumber,
+      hasEntries: entryList.length > 0,
+      hasPayerName: !!payerName,
+      hasAmount: amount > 0,
+      hasMethod: !!method,
+      hasReference: !!referenceNumber
+    })
 
     if (entryList.length === 0) return true
     if (!payerName) return true
@@ -1144,6 +1217,8 @@ const FormDialog = (props: Props) => {
 
     return false
   }
+
+
 
   const ConfirmationDialog = () => {
     const totalAmount = form.getFieldValue("amount") || 0
