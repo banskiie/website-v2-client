@@ -101,6 +101,10 @@ export default function CategoriesPage() {
         level?: string
         gender?: string
         isDissolved?: boolean
+        pricePerPlayer?: number
+        earlyBirdPricePerPlayer?: number
+        currency?: string
+        hasEarlyBird?: boolean
     } | null>(null)
 
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -279,7 +283,11 @@ export default function CategoriesPage() {
             type: category.type,
             level: category.level,
             gender: category.gender,
-            isDissolved: category.isDissolved
+            isDissolved: category.isDissolved,
+            pricePerPlayer: category.pricePerPlayer,
+            earlyBirdPricePerPlayer: category.earlyBirdPricePerPlayer,
+            currency: category.currency,
+            hasEarlyBird: activeTournament?.settings?.hasEarlyBird
         })
         setIsModalOpen(true)
     }
