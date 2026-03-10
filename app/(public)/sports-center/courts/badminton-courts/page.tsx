@@ -40,7 +40,7 @@ const locations = [
         map: "C-ONE Trading Corporation, Zone 1, Rodolfo N. Pelaez St,. Kauswagan"
     },
     {
-        name: "Uptown Court",
+        name: "SM Uptown Court",
         img: `${CLOUD}/v1764120984/uptown_a1vgyb.png`,
         hours: "6:00 AM - 10:00 PM",
         fields: 2,

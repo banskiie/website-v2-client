@@ -671,7 +671,7 @@ function Page() {
             className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 w-full max-w-lg md:max-w-2xl lg:max-w-[750px]"
           >
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3879.292081809595!2d124.6394518!3d8.5001149!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32fff30019327e95%3A0xf0787044cac856fe!2sC-ONE%20Sports%20Center!5e0!3m2!1sen!2sph!4v1694420000000!5m2!1sen!2sph"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3879.081809595!2d124.5376731!3d8.5400149!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32fff53ca949a1d7%3A0x776357fb78fef53!2sC-ONE%20STEEL!5e0!3m2!1sen!2sph!4v1694420000000!5m2!1sen!2sph"
               allowFullScreen
               loading="lazy"
               className="border-0 w-full h-[350px] md:h-[450px] lg:h-[500px]"

@@ -26,9 +26,9 @@ const Pacific = localFont({
 })
 
 const stats = [
-  { label: "Coffee Drinks", value: 50 },
-  { label: "Refresher Drinks", value: 50 },
-  { label: "Happy Customers", value: 5000 },
+  { label: "Coffee Drinks", value: 0 },
+  { label: "Refresher Drinks", value: 0 },
+  { label: "Happy Customers", value: 0 },
 ]
 
 export default function page() {

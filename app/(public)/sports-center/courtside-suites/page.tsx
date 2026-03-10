@@ -716,13 +716,13 @@ const features = [
   },
   {
     img: `${CLOUD}/v1764211578/_ALP9615-Enhanced-NR_ksjfjg.jpg`,
-    title: "World-Class Service",
-    desc: "Our dedicated staff ensures a seamless and unforgettable experience.",
+    title: "Premium Court Experience",
+    desc: "State-of-the-art badminton courts with professional-grade flooring and lighting for optimal play.",
   },
   {
     img: `${CLOUD}/v1764211816/_ALP9608-Enhanced-NR_te67tf.jpg`,
-    title: "World-Class Service",
-    desc: "Our dedicated staff ensures a seamless and unforgettable experience.",
+    title: "Vibrant Community Hub",
+    desc: "Join our thriving badminton community with regular social games, leagues, and friendly tournaments.",
   },
 ]
 
@@ -826,9 +826,9 @@ function Counter({ target, duration = 2, images }: { target: number; duration?: 
 export default function Page() {
   useSmoothScroll()
   const stats = [
-    { label: "VIP Seats", value: 30 },
-    { label: "Exclusive Lounges", value: 4 },
-    { label: "Catering Options", value: 15 },
+    { label: "VIP Seats", value: 0 },
+    { label: "Exclusive Lounges", value: 0 },
+    { label: "Catering Options", value: 0 },
   ]
   const carouselRef = useRef<HTMLDivElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)

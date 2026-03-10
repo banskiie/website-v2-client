@@ -242,7 +242,7 @@
 // }
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, easeOut } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -291,7 +291,7 @@ export default function FeatureSection({
             />
 
             <div className="absolute top-4 left-4 bg-white/90 text-gray-800 text-xs font-medium px-3 py-1 rounded shadow">
-              {activeItem.title.toLowerCase() === "steel"
+              {activeItem.title.toLowerCase() === "steel" || activeItem.title.toLowerCase() === "trucks & equipment" || activeItem.title.toLowerCase() === "rentals"
                 ? "Taytay, El Salvador"
                 : "Zone 1, Kauswagan, Cagayan De Oro"}
             </div>
@@ -320,7 +320,7 @@ export default function FeatureSection({
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 50 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          transition={{ duration: 0.6, ease: easeOut }}
           className="p-10 md:p-16 flex flex-col justify-center text-left"
         >
           <h3 className="text-xl md:text-2xl font-bold text-gray-900 uppercase mb-3 border-l-4 pl-3 border-yellow-500">
@@ -333,9 +333,18 @@ export default function FeatureSection({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm text-gray-800 mb-8">
             <div>
-              <p className="font-semibold mb-1">Location</p>
-              <p>Zone A1, Taytay City of El Salvador</p>
-              <p>9017 Misamis Oriental</p>
+              {activeItem.title === "Sports Center" ? (
+                <>
+                  <p>Zone 1, Kauswagan, Cagayan De Oro</p>
+                  <p>Cagayan de Oro City</p>
+                  <p>9000 Misamis Oriental</p>
+                </>
+              ) : (
+                <>
+                  <p>Zone A1, Taytay City of El Salvador</p>
+                  <p>9017 Misamis Oriental</p>
+                </>
+              )}
             </div>
             <div>
               <p className="font-semibold mb-1">Business Hours</p>
