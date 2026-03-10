@@ -178,7 +178,7 @@ export default function ShuttleBrewExperience() {
                     delay={0}
                 />
                 <FloatingCard
-                    img={`${CLOUD}/v1764119176/beans_q4flfw.png`}
+                    img={`${CLOUD}/v1773111910/beans_q4flfw.png`}
                     title="Freshly Roasted Beans"
                     description="Only the finest beans are hand-selected and roasted for peak flavor."
                     delay={0.2}

@@ -9,8 +9,8 @@ export const items = [
     id: 1,
     title: "Steel",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    img: `${DRIVE}/img/steel/category/category3.png`,
+      "C-One Steel provides durable and high-quality steel products for construction, industrial, and commercial applications. With a commitment to reliability and competitive pricing, C-One continues to support infrastructure development and businesses across Mindanao.",
+    img: `${DRIVE}/img/steel/category/category-3.png`,
     badgeColor: "#FEBA00",
     badgeNum: "01",
     activeColor: "#FEBA00",
@@ -20,7 +20,7 @@ export const items = [
     id: 2,
     title: "Trucks & Equipment",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "C-One Trading Corporation imports surplus trucks and heavy equipment from Japan through trusted partners in Fukuoka and Kobe. Units arrive as CKD (Complete Knock Down), are carefully reassembled, converted from right-hand to left-hand drive, restored by skilled technicians, and tested through strict quality control before being offered to customers.",
     img: `${DRIVE}/img/steel/category/XIASHENG XM935-4.jpg`,
     badgeColor: "#FF3300",
     badgeNum: "02",
@@ -31,7 +31,7 @@ export const items = [
     id: 3,
     title: "Sports Center",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "C-One Sports Center provides modern badminton courts and recreational facilities designed for athletes, enthusiasts, and the local community. It serves as a venue for training, tournaments, and sports activities that promote an active and healthy lifestyle.",
     img: `${DRIVE}/img/steel/category/Background-Badminton.png`,
     badgeColor: "#2AFE00",
     badgeNum: "03",
@@ -42,8 +42,8 @@ export const items = [
     id: 4,
     title: "Rentals",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    img: `${DRIVE}/img/steel/category/rentals-bg-2.png`,
+      "C-One offers equipment and vehicle rental services for construction, logistics, and industrial operations. Customers can access reliable machinery and trucks that have undergone professional rebuilding, inspection, and testing to ensure dependable performance.",
+    img: `${DRIVE}/img/steel/category/rentals-bg.png`,
     badgeColor: "#00B3EF",
     badgeNum: "04",
     activeColor: "#00B3EF",

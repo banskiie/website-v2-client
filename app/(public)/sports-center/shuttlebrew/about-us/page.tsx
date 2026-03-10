@@ -167,8 +167,10 @@ function Page() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start">
             <p className="text-gray-700 text-base md:text-xl leading-relaxed md:leading-loose">
               This is ShuttleBrew Café—born from the love of coffee and community. A cozy nook where players unwind after a match, friends gather for warm conversations, and every cup is brewed with passion.
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nunc ut aliquam lacinia  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nunc ut aliquam lacinia
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nunc ut aliquam lacinia
+
+              At ShuttleBrew, the aroma of freshly ground beans blends with the energy of the game. Whether you&apos;re celebrating a hard-fought victory, cooling down after a rally, or simply looking for a quiet place to relax, our space welcomes everyone. From athletes and students to families and coffee lovers, ShuttleBrew is a place where stories are shared and connections are made.
+
+              Our menu is crafted with care—from bold espresso drinks to smooth handcrafted brews and comforting snacks that pair perfectly with every sip. Each cup reflects our dedication to quality, warmth, and the joy of bringing people together.
             </p>
 
             <div className="relative w-full h-48 md:h-64">
@@ -198,14 +200,15 @@ function Page() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="md:col-span-2 flex flex-col">
-            <p className="text-lg tracking-widest uppercase font-semibold">Lorem ipsum dolor sit amet</p>
+            <p className="text-lg tracking-widest uppercase font-semibold">
+              Beginning of the ShuttleBrew
+            </p>
             <p className="mt-2 text-gray-300 line-clamp-4">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nunc ut aliquam lacinia
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nunc ut aliquam lacinia
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nunc ut aliquam lacinia
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nunc ut aliquam lacinia
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nunc ut aliquam lacinia
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nunc ut aliquam lacinia
+              ShuttleBrew Café was created during the V7 Tournament of the C-ONE Badminton Challenge, where the passion for badminton and the love for great coffee came together. What started as a simple idea to give players and spectators a place to relax between matches quickly grew into a space where the community could gather and connect.
+
+              During the tournament, athletes, friends, and supporters needed a place to recharge, share stories from the court, and enjoy a good cup of coffee. ShuttleBrew was inspired by those moments — the laughter after intense rallies, the strategy talks between teammates, and the celebrations after every hard-earned victory.
+
+              Today, ShuttleBrew continues that same spirit. It stands as a place where the badminton community and coffee lovers meet, bringing together the energy of the game and the comfort of a freshly brewed cup.
             </p>
             <button onClick={() => setLearnMoreModal(true)} className="mt-4 px-6 py-2 bg-[#914b1d] hover:bg-[#723d19] text-white rounded-lg shadow-md transition-colors cursor-pointer self-start">
               Learn More +
@@ -352,7 +355,7 @@ function Page() {
                 </div>
               </div>
               <div className="md:w-[45%] p-4 md:p-8 flex flex-col justify-start ml-4 h-full">
-                <div className="mb-31 sticky top-0 bg-white z-10 pt-2">
+                <div className="mb-15 sticky top-0 bg-white z-10 pt-2">
                   <h3 className="text-lg md:text-xl font-medium tracking-wide text-gray-800">
                     C-ONE ShuttleBrew
                   </h3>
@@ -361,15 +364,13 @@ function Page() {
                   <p className="text-xs md:text-sm text-gray-600 tracking-wide"> Cozy Café & Community Hub
                   </p>
                 </div>
-                <h2 className="text-xl md:text-2xl font-base tracking-widest mb-10 text-gray-800">
-                  Lorem ipsum dolor sit amet
+                <h2 className="text-xl md:text-2xl font-base tracking-widest mb-6 text-gray-800">
+                  Improving Comfort for Players and Coffee Lovers
                 </h2>
                 <p className="text-gray-700 text-base md:text-lg leading-relaxed md:leading-loose tracking-wider">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                  Sed euismod, nunc ut aliquam lacinia, nunc nisl aliquet nunc,
-                  eu aliquam nisl nunc euismod nunc. Nunc nisl aliquet nunc, eu
-                  aliquam nisl nunc euismod nunc. Nunc nisl aliquet nunc, eu aliquam
-                  nisl nunc euismod nunc. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  At ShuttleBrew Café, we are always working to improve and create a better experience for everyone who visits. Inspired by the energy of the badminton community and the love of great coffee, we continuously enhance our space to make it more comfortable and welcoming for both players and customers.
+
+                  Whether you&apos;re stopping by to relax after an intense match, meeting friends for a conversation, or simply enjoying a quiet moment with a cup of coffee, ShuttleBrew aims to provide an environment where everyone feels at home. Every improvement we make is focused on comfort, quality, and building a place where the community can gather and recharge.
                 </p>
               </div>
             </motion.div>

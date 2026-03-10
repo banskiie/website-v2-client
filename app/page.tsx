@@ -181,7 +181,7 @@ const Home = () => {
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="text-[#2FB44D] text-base sm:text-lg font-semibold mb-1"
             >
-              More Information About C-ONE
+              More Information About C-ONE Steel
             </motion.p>
 
             <motion.h2
@@ -191,7 +191,7 @@ const Home = () => {
               transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
               className="text-[26px] sm:text-[34px] font-bold text-gray-900 leading-tight mb-4"
             >
-              Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum
+              Producing High-Quality Steel Products Since 2013
             </motion.h2>
 
             <motion.p
@@ -201,9 +201,7 @@ const Home = () => {
               transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
               className="max-w-2xl text-[#777676] text-[15px] leading-snug mb-10"
             >
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-              incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-              exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+              One of the leading steel manufacturers in Mindanao, C-One Steel has been committed to providing high-quality products at affordable prices. Our dedication to excellence ensures that every steel product meets the highest standards for durability and reliability.
             </motion.p>
 
             {/* <motion.button
@@ -278,13 +276,14 @@ const Home = () => {
                 transition={{ duration: 0.8 }}
               >
                 <span className="block">
-                  FOR THE LAST <span className="text-green-500">(25)</span> YEARS WE
+                  A FILIPINO-OWNED <span className="text-green-500">TRADING COMPANY</span>
                 </span>
                 <span className="block">
-                  LOREM IPSUM{" "}
-                  <span className="text-green-500">DOLOR SIT AMET</span> BUSINESS
+                  SERVING MINDANAO SINCE <span className="text-green-500">1988</span>
                 </span>
-                <span className="block">WITH OUR PRODUCTS & SERVICES</span>
+                <span className="block">
+                  IMPORTING QUALITY SURPLUS FROM JAPAN
+                </span>
               </motion.h2>
 
               <motion.p
@@ -294,10 +293,16 @@ const Home = () => {
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-                minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-                ex ea commodo consequat.
+                C-One Trading Corporation is a Filipino-Owned company with main branches in
+                Cagayan de Oro City and Davao City. The company is engaged in the import,
+                sale, and light manufacturing of surplus products from Japan, providing
+                reliable and affordable equipment and materials to businesses across the
+                region.
+
+                The company began its journey in 1988 as a lumber production business in
+                Cagayan de Oro City, Misamis Oriental, under the name PLYTRACO. Over the years, the company
+                evolved into what is now known as C-One Trading Corporation, continuing its
+                Commitment to Quality Products and Dependable Service.
               </motion.p>
 
               <div ref={ref} className="grid grid-cols-2 gap-x-8 sm:gap-x-16 gap-y-10 sm:gap-y-14 md:gap-y-16 max-w-md sm:max-w-lg md:max-w-4xl mx-auto lg:mx-0 mt-10 sm:mt-14 md:mt-20">
@@ -361,7 +366,10 @@ const Home = () => {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            C-One Trading Corporation provides reliable surplus trucks and heavy equipment
+            imported from Japan. Through careful acquisition, expert assembly and
+            conversion, and strict quality control, C-One ensures every unit meets the
+            performance and reliability standards expected by customers across Mindanao.
           </motion.p>
 
           <div className="flex flex-col lg:flex-row justify-center items-start gap-12 w-full">
@@ -386,8 +394,10 @@ const Home = () => {
                       <span className="text-white font-bold text-base">C-ONE</span>
                     </div>
                     <p className="text-white text-xs leading-relaxed text-left mr-2">
-                      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-                      eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                      From sourcing surplus trucks and heavy equipment in Japan to
+                      reassembling and converting them in our Cagayan de Oro and Davao work yards,
+                      C-One ensures every unit is carefully restored and prepared for Philippine
+                      road and operational standards.
                     </p>
                   </div>
                   <div className="w-40 h-24 flex-shrink-0 relative hidden sm:block">
@@ -407,26 +417,26 @@ const Home = () => {
               {[
                 {
                   icon: "/three-squares-svgrepo-com.svg",
-                  title: "Uncompromising Quality",
-                  text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
+                  title: "Global Acquisition",
+                  text: "Surplus trucks and heavy equipment are carefully acquired from Japan through auctions and partner companies in Fukuoka and Kobe.",
                   delay: 0.1,
                 },
                 {
                   icon: "/bulb-on-svgrepo-com.svg",
-                  title: "Innovative Solutions",
-                  text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
+                  title: "Expert Assembly",
+                  text: "Units arrive as CKD and are professionally reassembled, converted from right-hand to left-hand drive, and restored by skilled technicians.",
                   delay: 0.2,
                 },
                 {
                   icon: "/diamond-svgrepo-com.svg",
-                  title: "Extensive Range",
-                  text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
+                  title: "Comprehensive Restoration",
+                  text: "Each unit undergoes repairs, repainting, electrical rewiring, upholstery improvements, and part replacements when necessary.",
                   delay: 0.3,
                 },
                 {
                   icon: "/launcher-settings-svgrepo-com.svg",
-                  title: "Customized Services",
-                  text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
+                  title: "Strict Quality Control",
+                  text: "Every truck and machine passes rigorous inspections and tests including engine, electrical, brake, radiator, and performance testing.",
                   delay: 0.4,
                 },
               ].map((card, i) => (

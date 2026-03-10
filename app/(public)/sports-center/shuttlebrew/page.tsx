@@ -172,7 +172,7 @@ const [heroLoaded, setHeroLoaded] = useState(false)
     <Skeleton className="w-full h-full absolute inset-0 rounded-none" />
   )}
   <Image
-    src={`${CLOUD}/v1764115964/_ALP1992_mygjrm.jpg`}
+    src={`${CLOUD}/v1773107892/_ALP1992_mygjrm.png`}
     alt="ShuttleBrew"
     fill
     className={`object-cover w-full h-full transition-opacity duration-700 ${heroLoaded ? "opacity-100" : "opacity-0"}`}
@@ -340,7 +340,7 @@ const [heroLoaded, setHeroLoaded] = useState(false)
   >
     <div className="absolute inset-0 bg-black/40 z-10"></div>
     <Image
-      src={`${CLOUD}/v1764116604/_ALP9323_uewrgm.jpg`}
+      src={`${CLOUD}/v1773108148/_ALP9323_uewrgm.png`}
       alt="ShuttleBrew Gallery"
       width={900}
       height={1100}

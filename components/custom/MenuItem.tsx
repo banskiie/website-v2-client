@@ -1,7 +1,7 @@
 "use client"
 
 import React, { Ref, useEffect, useRef, useState } from "react"
-import { motion, useScroll, useTransform } from "framer-motion"
+import { easeInOut, motion, useScroll, useTransform } from "framer-motion"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -25,7 +25,7 @@ export default function MenuItem({
   href?: string
 }) {
   const internalRef = useRef<HTMLDivElement>(null)
-  const [_mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const targetRef =
     forwardRef && typeof forwardRef !== "function"
       ? (forwardRef as React.RefObject<HTMLDivElement>)
@@ -37,151 +37,128 @@ export default function MenuItem({
   })
 
   const yText = useTransform(scrollYProgress, [0, 1], [50, 0])
-  const yImg = useTransform(scrollYProgress, [0, 1], ["-30%", "0%"])
-  const rotateImg = useTransform(scrollYProgress, [0, 1], [-20, 0])
+  const yImg = useTransform(scrollYProgress, [0, 1], ["-15%", "0%"])
+  const rotateImg = useTransform(scrollYProgress, [0, 1], [-10, 0])
   const scaleImg = useTransform(
     scrollYProgress,
     [0, 1],
-    bigger ? [1.05, 1.2] : [0.9, 1]
+    bigger ? [1.05, 1.15] : [0.95, 1]
   )
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  // Responsive image sizes based on screen size and 'bigger' prop
+  const getImageSize = () => {
+    if (bigger) {
+      return "w-[220px] h-[220px] md:w-[280px] md:h-[280px] lg:w-[400px] lg:h-[400px] xl:w-[500px] xl:h-[500px]"
+    }
+    return "w-[200px] h-[200px] md:w-[250px] md:h-[250px] lg:w-[350px] lg:h-[350px] xl:w-[450px] xl:h-[450px]"
+  }
+
   return (
     <div
       ref={targetRef}
-      className={`relative w-full max-w-7xl mx-auto flex flex-col items-center justify-between px-4 sm:px-6 md:px-12 mt-20 sm:mt-24 md:mt-32 scroll-mt-20 md:scroll-mt-32
-        ${reverse ? "lg:flex-row-reverse" : "lg:flex-row"}`}
+      className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:py-24 lg:py-32 scroll-mt-20 md:scroll-mt-32"
     >
+      {/* Background number - only visible on desktop */}
       <motion.span
         style={{ y: yText }}
-        className="hidden lg:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/10 font-extrabold text-[5rem] md:text-[6rem] lg:text-[8rem] select-none z-0 whitespace-nowrap pointer-events-none"
+        className="hidden lg:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/5 font-extrabold text-[8rem] xl:text-[10rem] select-none z-0 whitespace-nowrap pointer-events-none"
         initial={{ opacity: 0, x: reverse ? -80 : 80 }}
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: false, amount: 0.4 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
+        transition={{ duration: 1.2, ease: easeInOut }}
       >
         {title}
       </motion.span>
 
-      <div className="flex flex-col items-center w-full lg:hidden">
-        <motion.div
-          style={{ y: yText }}
-          className="bg-[#20140c]/90 backdrop-blur-md rounded-3xl shadow-2xl p-6 sm:p-7 md:p-8 text-white border border-white/10 relative z-10 w-full max-w-sm sm:max-w-md mx-auto mb-10 sm:mb-12"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: false, amount: 0.4 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-        >
-          <div className="absolute -top-5 -left-5 sm:-top-6 sm:-left-6 w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-[#ffbc52] to-[#b45309] text-white font-bold text-base sm:text-lg md:text-xl shadow-lg">
-            {number}
-          </div>
+      {/* Main content container - responsive layout */}
+      <div className={`relative z-10 flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-8 md:gap-12 lg:gap-16`}>
 
-          <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold mb-3 sm:mb-4 bg-gradient-to-r from-[#fff8f0] to-[#fada8a] bg-clip-text text-transparent text-center px-2">
-            {title}
-          </h3>
-
-          <p
-            className="text-sm sm:text-base md:text-lg mb-4 sm:mb-6 text-gray-200 leading-relaxed text-center px-2"
-            dangerouslySetInnerHTML={{ __html: description || "" }}
-          />
-
-          {href && (
-            <div className="text-center">
-              <Link href={href}>
-                <span className="inline-block px-4 py-2 bg-gradient-to-r from-[#ffbc52] to-[#b45309] text-white rounded-full font-semibold shadow-lg hover:scale-105 transition-transform duration-200 text-sm sm:text-base">
-                  See More →
-                </span>
-              </Link>
-            </div>
-          )}
-        </motion.div>
-
-        <div className="flex justify-center items-center relative w-full">
-          <div className="absolute w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-full bg-gradient-to-br from-[#ffbc52]/30 to-[#b45309]/30 z-0" />
-          <motion.div
-            style={{ y: yImg, rotate: rotateImg, scale: scaleImg }}
-            className={`relative z-10 ${bigger
-              ? "w-[240px] h-[240px] sm:w-[280px] sm:h-[280px] md:w-[320px] md:h-[320px]"
-              : "w-[220px] h-[220px] sm:w-[250px] sm:h-[250px] md:w-[280px] md:h-[280px]"
-              }`}
-          >
-            <Image
-              src={img}
-              alt={title}
-              fill
-              loading="lazy"
-              className="object-contain drop-shadow-2xl"
-            />
-          </motion.div>
-        </div>
-
-        <div className="absolute bottom-[-70px] sm:bottom-[-80px] left-1/2 -translate-x-1/2 flex flex-col items-center z-0">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#ffbc52]/50 to-[#b45309]/50 shadow-2xl" />
-          <div className="w-1 h-14 sm:h-16 bg-gradient-to-b from-[#ffbc52]/50 to-[#b45309]/50 mt-1" />
-        </div>
-      </div>
-
-      <div className={`hidden lg:flex w-full ${reverse ? "lg:flex-row-reverse" : "lg:flex-row"} items-center justify-between`}>
-        <div className={`lg:w-1/2 ${reverse ? "-mr-40" : "-ml-40"} relative`}>
+        {/* Text content section */}
+        <div className="w-full lg:w-1/2">
           <motion.div
             style={{ y: yText }}
-            className="bg-[#20140c]/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 md:p-12 text-white border border-white/10 relative z-10 pb-28"
-            initial={{ opacity: 0, x: reverse ? 80 : -80 }}
+            className="relative bg-[#20140c]/90 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 md:p-10 lg:p-12 text-white border border-white/10"
+            initial={{ opacity: 0, x: reverse ? 50 : -50 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: false, amount: 0.4 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
+            viewport={{ once: false, amount: 0.3 }}
+            transition={{ duration: 1, ease: "easeOut" }}
           >
-            <div className="absolute -top-8 -left-8 w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-full bg-gradient-to-br from-[#ffbc52] to-[#b45309] text-white font-bold text-xl md:text-2xl shadow-lg">
+            {/* Number badge - responsive positioning */}
+            <div className={`absolute -top-4 -left-4 sm:-top-5 sm:-left-5 md:-top-6 md:-left-6 lg:-top-8 lg:-left-8 
+              w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 
+              flex items-center justify-center rounded-full bg-gradient-to-br from-[#ffbc52] to-[#b45309] 
+              text-white font-bold text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl shadow-lg`}
+            >
               {number}
             </div>
 
-            <h3 className="text-3xl md:text-4xl font-extrabold mb-6 bg-gradient-to-r from-[#fff8f0] to-[#fada8a] bg-clip-text text-transparent">
+            {/* Title */}
+            <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold mb-4 sm:mb-5 md:mb-6 lg:mb-8 
+              bg-gradient-to-r from-[#fff8f0] to-[#fada8a] bg-clip-text text-transparent pr-4">
               {title}
             </h3>
 
+            {/* Description */}
             <p
-              className="text-lg md:text-xl mb-8 text-gray-200 leading-relaxed"
+              className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-200 leading-relaxed mb-6 sm:mb-8 lg:mb-10"
               dangerouslySetInnerHTML={{ __html: description || "" }}
             />
 
             {href && (
               <Link href={href}>
-                <span className="self-start mt-4 px-4 py-2 bg-gradient-to-r from-[#ffbc52] to-[#b45309] text-white rounded-full font-semibold shadow-lg hover:scale-105 transition-transform duration-200">
+                <span className="inline-block px-4 py-2 sm:px-5 sm:py-2.5 md:px-6 md:py-3 
+                  bg-gradient-to-r from-[#ffbc52] to-[#b45309] text-white rounded-full 
+                  font-semibold text-sm sm:text-base md:text-lg shadow-lg 
+                  hover:scale-105 transition-transform duration-200">
                   See More →
                 </span>
               </Link>
             )}
 
-            <div className="absolute bottom-[-104px] left-1/2 -translate-x-1/2 flex flex-col items-center z-0">
-              <div className="w-10 h-10 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-[#ffbc52]/50 to-[#b45309]/50 shadow-2xl" />
-              <div className="w-1 h-20 bg-gradient-to-b from-[#ffbc52]/50 to-[#b45309]/50 mt-1" />
+            {/* Decorative vertical line - hidden on small screens */}
+            <div className="hidden lg:block absolute -bottom-16 left-1/2 -translate-x-1/2">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-[#ffbc52]/50 to-[#b45309]/50 shadow-2xl" />
+              <div className="w-1 h-16 md:h-20 bg-gradient-to-b from-[#ffbc52]/50 to-[#b45309]/50 mx-auto mt-1" />
             </div>
           </motion.div>
         </div>
 
-        <div
-          className={`lg:w-1/2 flex justify-center items-center relative ${reverse ? "-ml-35" : "-mr-35"
-            }`}
-        >
-          <div className="absolute w-56 h-56 md:w-72 md:h-72 lg:w-96 lg:h-96 rounded-full bg-gradient-to-br from-[#ffbc52]/30 to-[#b45309]/30 z-0" />
+        {/* Image section */}
+        <div className="w-full lg:w-1/2 flex justify-center items-center relative min-h-[200px] sm:min-h-[250px] md:min-h-[300px] lg:min-h-[400px]">
+          {/* Decorative background circle - responsive sizing */}
+          <div className="absolute w-40 h-40 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 
+            rounded-full bg-gradient-to-br from-[#ffbc52]/20 to-[#b45309]/20 blur-xl sm:blur-2xl z-0" />
+
+          {/* Second decorative circle */}
+          <div className="absolute w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 lg:w-72 lg:h-72 xl:w-80 xl:h-80 
+            rounded-full bg-gradient-to-br from-[#ffbc52]/10 to-[#b45309]/10 blur-lg z-0" />
+
+          {/* Image with animations */}
           <motion.div
             style={{ y: yImg, rotate: rotateImg, scale: scaleImg }}
-            className={`relative z-10 ${bigger
-              ? "w-[420px] h-[420px] md:w-[580px] md:h-[580px] lg:w-[700px] lg:h-[700px]"
-              : "w-[380px] h-[380px] md:w-[520px] md:h-[520px] lg:w-[600px] lg:h-[600px]"
-              }`}
+            className={`relative z-10 ${getImageSize()}`}
           >
             <Image
               src={img}
               alt={title}
               fill
-              loading="lazy"
+              sizes="(max-width: 640px) 250px, (max-width: 768px) 280px, (max-width: 1024px) 350px, (max-width: 1280px) 400px, 500px"
+              priority={number <= 2}
               className="object-contain drop-shadow-2xl"
             />
           </motion.div>
+        </div>
+      </div>
+
+      {/* Mobile decorative line - only visible on small screens */}
+      <div className="lg:hidden flex justify-center mt-12 sm:mt-16">
+        <div className="flex flex-col items-center">
+          <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#ffbc52]/50 to-[#b45309]/50 shadow-2xl" />
+          <div className="w-1 h-12 sm:h-14 md:h-16 bg-gradient-to-b from-[#ffbc52]/50 to-[#b45309]/50 mt-1" />
         </div>
       </div>
     </div>

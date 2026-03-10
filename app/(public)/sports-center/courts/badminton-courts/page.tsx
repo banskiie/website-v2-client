@@ -323,7 +323,7 @@ function page() {
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.2 }}
                         >
-                            Learn the core aspects that help elevate your badminton game, from skill to strategy. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus.
+                            Learn the core aspects that help elevate your badminton game, from skill to strategy. Improve your badminton performance by focusing on the fundamentals of the game—from footwork and racket control to match strategy and court awareness. Whether you&apos;re a beginner learning the basics or an experienced player sharpening your skills, our courts and facilities provide the perfect environment to train, compete, and enjoy the sport.
                         </motion.p>
                     </div>
 
