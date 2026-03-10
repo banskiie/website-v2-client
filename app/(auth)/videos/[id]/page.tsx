@@ -44,7 +44,16 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
     fetchPolicy: "network-only",
   })
 
-  if (loading) return <div>Loading...</div>
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen gap-4">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-4 border-green-200"></div>
+          <div className="w-16 h-16 rounded-full border-4 border-green-600 border-t-transparent animate-spin absolute top-0 left-0"></div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex gap-3 flex-col xl:flex-row ">

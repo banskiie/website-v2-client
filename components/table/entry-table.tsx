@@ -72,9 +72,9 @@ const DataTable = <TData, TValue>({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 )
               })}
@@ -93,9 +93,9 @@ const DataTable = <TData, TValue>({
                     {footer.isPlaceholder
                       ? null
                       : flexRender(
-                          footer.column.columnDef.footer,
-                          footer.getContext()
-                        )}
+                        footer.column.columnDef.footer,
+                        footer.getContext()
+                      )}
                   </TableHead>
                 )
               })}
@@ -112,7 +112,7 @@ const DataTable = <TData, TValue>({
                   (row.original as any).isInSoftware
                     ? "bg-amber-50 hover:bg-amber-100"
                     : (row.original as any).isEarlyBird &&
-                        "bg-cyan-50 hover:bg-cyan-100"
+                    "bg-cyan-50 hover:bg-cyan-100"
                 )}
               >
                 {row.getVisibleCells().map((cell) => (
@@ -139,13 +139,11 @@ const DataTable = <TData, TValue>({
                           onClick={(e) => {
                             e.stopPropagation()
                             navigator.clipboard.writeText(
-                              `${(row.original as any).entryNumber}_${
-                                (row.original as any).entryKey
+                              `${(row.original as any).entryNumber}_${(row.original as any).entryKey
                               }`
                             )
                             toast.success(
-                              `${(row.original as any).entryNumber}_${
-                                (row.original as any).entryKey
+                              `${(row.original as any).entryNumber}_${(row.original as any).entryKey
                               }` + " copied to clipboard!"
                             )
                           }}

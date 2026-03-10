@@ -3291,7 +3291,11 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex flex-col justify-center items-center h-screen gap-4">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-4 border-green-200"></div>
+          <div className="w-16 h-16 rounded-full border-4 border-green-600 border-t-transparent animate-spin absolute top-0 left-0"></div>
+        </div>
         <div className="text-gray-500">Loading tournament details...</div>
       </div>
     )
