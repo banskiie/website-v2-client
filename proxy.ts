@@ -69,6 +69,7 @@ const PROTECTED_ROUTES = [
     needsAuth: true,
   },
 ]
+ 
 
 export async function proxy(req: NextRequest) {
   const COOKIES = await cookies()
