@@ -9,7 +9,7 @@ export default function VisitUsSection() {
   >([])
 
   useEffect(() => {
-    const generatedBeans = Array.from({ length: 15 }, () => ({
+    const generatedBeans = Array.from({ length: 13 }, () => ({
       size: Math.floor(Math.random() * 30) + 20,
       top: Math.floor(Math.random() * 90),
       left: Math.floor(Math.random() * 100),

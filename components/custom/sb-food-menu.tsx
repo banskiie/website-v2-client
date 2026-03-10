@@ -1,7 +1,7 @@
 "use client"
 
 import React, { ReactNode, Ref, useRef, useState } from "react"
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
+import { motion, useScroll, useTransform, AnimatePresence, useSpring } from "framer-motion"
 import Image from "next/image"
 import Link from "next/link"
 import { CLOUD } from "./main-faq"
@@ -103,23 +103,29 @@ function FoodMenuItem({
 
     const { scrollYProgress } = useScroll({
         target: targetRef,
-        offset: ["start 80%", "end 20%"],
+        // offset: ["start 80%", "end 20%"],
+        offset: ["start 90%", "end 10%"],
     })
 
-    const yText = useTransform(scrollYProgress, [0, 1], [50, 0])
-    const yImg = useTransform(scrollYProgress, [0, 1], ["-15%", "0%"])
-    const rotateImg = useTransform(scrollYProgress, [0, 1], [-10, 0])
-    const scaleImg = useTransform(
+    const yTextRaw = useTransform(scrollYProgress, [0, 1], [40, 0])
+    const yImgRaw = useTransform(scrollYProgress, [0, 1], ["-10%", "0%"])
+    const rotateImgRaw = useTransform(scrollYProgress, [0, 1], [-6, 0])
+    const scaleImgRaw = useTransform(
         scrollYProgress,
         [0, 1],
-        bigger ? [1.05, 1.15] : [0.95, 1]
+        bigger ? [1.03, 1.1] : [0.97, 1]
     )
+
+    const yText = useSpring(yTextRaw, { stiffness: 80, damping: 20 })
+    const yImg = useSpring(yImgRaw, { stiffness: 80, damping: 20 })
+    const rotateImg = useSpring(rotateImgRaw, { stiffness: 80, damping: 20 })
+    const scaleImg = useSpring(scaleImgRaw, { stiffness: 80, damping: 20 })
 
     const getImageSize = () => {
         if (bigger) {
-            return "w-[250px] h-[250px] md:w-[280px] md:h-[280px] lg:w-[400px] lg:h-[400px] xl:w-[500px] xl:h-[500px]"
+            return "w-[280px] h-[280px] lg:w-[400px] lg:h-[400px] xl:w-[500px] xl:h-[500px]"
         }
-        return "w-[250px] h-[250px] md:w-[250px] md:h-[250px] lg:w-[350px] lg:h-[350px] xl:w-[450px] xl:h-[450px]"
+        return "w-[280px] h-[280px] lg:w-[350px] lg:h-[350px] xl:w-[450px] xl:h-[450px]"
     }
 
     return (
@@ -196,10 +202,10 @@ function FoodMenuItem({
                     <div className="absolute w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 lg:w-72 lg:h-72 xl:w-80 xl:h-80 
                         rounded-full bg-gradient-to-br from-[#ffbc52]/10 to-[#b45309]/10 blur-lg z-0" />
 
-                    {/* Image with animations */}
                     <motion.div
                         style={{ y: yImg, rotate: rotateImg, scale: scaleImg }}
-                        className={`relative z-10 ${getImageSize()}`}
+                        // className={`relative z-10 ${getImageSize()}`}
+                        className={`relative z-10 ${getImageSize()} will-change-transform`}
                     >
                         <Image
                             src={img}

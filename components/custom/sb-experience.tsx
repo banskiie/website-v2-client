@@ -2,7 +2,7 @@
 
 "use client"
 
-import { motion } from "framer-motion"
+import { easeInOut, motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import FloatingCard from "@/components/custom/floating-card"
 import { CLOUD } from "./main-faq"
@@ -26,7 +26,7 @@ export default function ShuttleBrewExperience() {
     >([])
 
     useEffect(() => {
-        const generated = Array.from({ length: 20 }, () => {
+        const generated = Array.from({ length: 17 }, () => {
             const rand = Math.random()
             const type: ElementType = rand < 0.3 ? "cup" : "light"
             return {
@@ -142,7 +142,7 @@ export default function ShuttleBrewExperience() {
                     transition={{
                         duration: el.duration,
                         repeat: Infinity,
-                        ease: "easeInOut",
+                        ease: easeInOut,
                         delay: i * 0.1,
                     }}
                 >

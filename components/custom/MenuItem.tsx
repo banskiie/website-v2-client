@@ -1,7 +1,7 @@
 "use client"
 
 import React, { Ref, useEffect, useRef, useState } from "react"
-import { easeInOut, motion, useScroll, useTransform } from "framer-motion"
+import { easeInOut, easeOut, motion, useScroll, useSpring, useTransform } from "framer-motion"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -36,14 +36,19 @@ export default function MenuItem({
     offset: ["start 80%", "end 20%"],
   })
 
-  const yText = useTransform(scrollYProgress, [0, 1], [50, 0])
-  const yImg = useTransform(scrollYProgress, [0, 1], ["-15%", "0%"])
-  const rotateImg = useTransform(scrollYProgress, [0, 1], [-10, 0])
-  const scaleImg = useTransform(
+  const yTextRaw = useTransform(scrollYProgress, [0, 1], [40, 0])
+  const yImgRaw = useTransform(scrollYProgress, [0, 1], ["-10%", "0%"])
+  const rotateImgRaw = useTransform(scrollYProgress, [0, 1], [-6, 0])
+  const scaleImgRaw = useTransform(
     scrollYProgress,
     [0, 1],
-    bigger ? [1.05, 1.15] : [0.95, 1]
+    bigger ? [1.05, 1.12] : [0.96, 1]
   )
+
+  const yText = useSpring(yTextRaw, { stiffness: 80, damping: 20 })
+  const yImg = useSpring(yImgRaw, { stiffness: 80, damping: 20 })
+  const rotateImg = useSpring(rotateImgRaw, { stiffness: 80, damping: 20 })
+  const scaleImg = useSpring(scaleImgRaw, { stiffness: 80, damping: 20 })
 
   useEffect(() => {
     setMounted(true)
@@ -85,7 +90,7 @@ export default function MenuItem({
             initial={{ opacity: 0, x: reverse ? 50 : -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: false, amount: 0.3 }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            transition={{ duration: 1, ease: easeOut }}
           >
             {/* Number badge - responsive positioning */}
             <div className={`absolute -top-4 -left-4 sm:-top-5 sm:-left-5 md:-top-6 md:-left-6 lg:-top-8 lg:-left-8 
@@ -96,13 +101,11 @@ export default function MenuItem({
               {number}
             </div>
 
-            {/* Title */}
             <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold mb-4 sm:mb-5 md:mb-6 lg:mb-8 
               bg-gradient-to-r from-[#fff8f0] to-[#fada8a] bg-clip-text text-transparent pr-4">
               {title}
             </h3>
 
-            {/* Description */}
             <p
               className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-200 leading-relaxed mb-6 sm:mb-8 lg:mb-10"
               dangerouslySetInnerHTML={{ __html: description || "" }}
@@ -137,7 +140,6 @@ export default function MenuItem({
           <div className="absolute w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 lg:w-72 lg:h-72 xl:w-80 xl:h-80 
             rounded-full bg-gradient-to-br from-[#ffbc52]/10 to-[#b45309]/10 blur-lg z-0" />
 
-          {/* Image with animations */}
           <motion.div
             style={{ y: yImg, rotate: rotateImg, scale: scaleImg }}
             className={`relative z-10 ${getImageSize()}`}
