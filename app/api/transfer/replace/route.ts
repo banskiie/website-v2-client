@@ -472,18 +472,18 @@ type DriveFile = {
 }
 
 export async function POST(request: Request) {
-  console.log("🔄 /api/transfer/replace called - UPDATE CONTENT STRATEGY")
+  // console.log("🔄 /api/transfer/replace called - UPDATE CONTENT STRATEGY")
 
   try {
     const { oldFileId, newFileId, documentType, playerType } =
       await request.json()
 
-    console.log("📁 Request data:", {
-      oldFileId,
-      newFileId,
-      documentType,
-      playerType,
-    })
+    // console.log("📁 Request data:", {
+    //   oldFileId,
+    //   newFileId,
+    //   documentType,
+    //   playerType,
+    // })
 
     if (!oldFileId || !newFileId) {
       return NextResponse.json(
@@ -533,9 +533,9 @@ export async function POST(request: Request) {
     const drive = google.drive({ version: "v3", auth })
 
     // Step 1: Check if old file exists in requirements folder
-    console.log(
-      `🔍 Checking if old file ${oldFileId} exists in requirements folder...`,
-    )
+    // console.log(
+    //   `🔍 Checking if old file ${oldFileId} exists in requirements folder...`,
+    // )
     let oldFileMetadata: DriveFile | null = null
 
     try {
@@ -550,10 +550,10 @@ export async function POST(request: Request) {
         oldFileMetadata.parents?.includes(requirementsFolder) || false
 
       if (!oldFileInRequirements) {
-        console.log(
-          `⚠️ Old file ${oldFileId} not in requirements folder, it's in:`,
-          oldFileMetadata.parents,
-        )
+        // console.log(
+        //   `⚠️ Old file ${oldFileId} not in requirements folder, it's in:`,
+        //   oldFileMetadata.parents,
+        // )
         return NextResponse.json(
           {
             success: false,
@@ -564,14 +564,14 @@ export async function POST(request: Request) {
         )
       }
 
-      console.log(
-        `✅ Old file ${oldFileId} found in requirements folder: ${oldFileMetadata.name}`,
-      )
+      // console.log(
+      //   `✅ Old file ${oldFileId} found in requirements folder: ${oldFileMetadata.name}`,
+      // )
     } catch (error: any) {
-      console.log(
-        `⚠️ Old file ${oldFileId} not found or inaccessible:`,
-        error.message,
-      )
+      // console.log(
+      //   `⚠️ Old file ${oldFileId} not found or inaccessible:`,
+      //   error.message,
+      // )
       return NextResponse.json(
         {
           success: false,
@@ -582,10 +582,9 @@ export async function POST(request: Request) {
       )
     }
 
-    // Step 2: Check if new file exists in entry_requirements folder
-    console.log(
-      `🔍 Checking if new file ${newFileId} exists in entry_requirements folder...`,
-    )
+    // console.log(
+    //   `🔍 Checking if new file ${newFileId} exists in entry_requirements folder...`,
+    // )
     let newFileMetadata: DriveFile | null = null
 
     try {
@@ -600,10 +599,10 @@ export async function POST(request: Request) {
         newFileMetadata.parents?.includes(entryRequirementsFolder) || false
 
       if (!newFileInEntryRequirements) {
-        console.log(
-          `❌ New file ${newFileId} not in entry_requirements folder, it's in:`,
-          newFileMetadata.parents,
-        )
+        // console.log(
+        //   `New file ${newFileId} not in entry_requirements folder, it's in:`,
+        //   newFileMetadata.parents,
+        // )
         return NextResponse.json(
           {
             success: false,
@@ -613,14 +612,14 @@ export async function POST(request: Request) {
         )
       }
 
-      console.log(
-        `✅ New file ${newFileId} found in entry_requirements folder: ${newFileMetadata.name}`,
-      )
+      // console.log(
+      //   ` New file ${newFileId} found in entry_requirements folder: ${newFileMetadata.name}`,
+      // )
     } catch (error: any) {
-      console.log(
-        `❌ New file ${newFileId} not found or inaccessible:`,
-        error.message,
-      )
+      // console.log(
+      //   `New file ${newFileId} not found or inaccessible:`,
+      //   error.message,
+      // )
       return NextResponse.json(
         {
           success: false,
@@ -630,9 +629,9 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log(
-      `✅ Both files found, starting CONTENT UPDATE replacement process...`,
-    )
+    // console.log(
+    //   `✅ Both files found, starting CONTENT UPDATE replacement process...`,
+    // )
 
     // Step 3: UPDATE CONTENT STRATEGY - Update the old file with new content
     let contentUpdated = false
@@ -641,12 +640,12 @@ export async function POST(request: Request) {
 
     // Method 1: Try to update the file content directly
     try {
-      console.log(
-        `🔄 METHOD 1: Attempting to UPDATE old file content with new file data...`,
-      )
+      // console.log(
+      //   `🔄 METHOD 1: Attempting to UPDATE old file content with new file data...`,
+      // )
 
-      // First, get the new file content as a stream
-      console.log(`📥 Downloading new file content from ${newFileId}...`)
+      // // First, get the new file content as a stream
+      // console.log(`📥 Downloading new file content from ${newFileId}...`)
       const newFileResponse = await drive.files.get(
         {
           fileId: newFileId,
@@ -657,7 +656,7 @@ export async function POST(request: Request) {
         },
       )
 
-      console.log(`📤 Uploading new content to old file ${oldFileId}...`)
+      // console.log(`📤 Uploading new content to old file ${oldFileId}...`)
       // Update the old file with new content
       await drive.files.update({
         fileId: oldFileId,
@@ -670,27 +669,27 @@ export async function POST(request: Request) {
 
       contentUpdated = true
       updateMethod = "content_updated"
-      console.log(
-        `✅ Old file ${oldFileId} CONTENT UPDATED with new file data (kept same ID)`,
-      )
+      // console.log(
+      //   `✅ Old file ${oldFileId} CONTENT UPDATED with new file data (kept same ID)`,
+      // )
     } catch (contentError: any) {
       console.error(`❌ Content update failed:`, contentError.message)
       updateError = contentError.message
 
       // Method 2: If content update fails, try to update file name and metadata
       try {
-        console.log(
-          `📝 METHOD 2: Attempting to update file metadata and move new file...`,
-        )
+        // console.log(
+        //   `📝 METHOD 2: Attempting to update file metadata and move new file...`,
+        // )
 
         // Optionally update the old file name with new file name
         if (
           newFileMetadata?.name &&
           oldFileMetadata?.name !== newFileMetadata.name
         ) {
-          console.log(
-            `📝 Updating file name: "${oldFileMetadata?.name}" -> "${newFileMetadata.name}"`,
-          )
+          // console.log(
+          //   `📝 Updating file name: "${oldFileMetadata?.name}" -> "${newFileMetadata.name}"`,
+          // )
           await drive.files.update({
             fileId: oldFileId,
             requestBody: {
@@ -701,7 +700,7 @@ export async function POST(request: Request) {
         }
 
         // Move the new file to requirements folder (keeping the old file too)
-        console.log(`🔄 Moving new file ${newFileId} to requirements folder...`)
+        // console.log(`🔄 Moving new file ${newFileId} to requirements folder...`)
         await drive.files.update({
           fileId: newFileId,
           removeParents: entryRequirementsFolder,
@@ -711,16 +710,15 @@ export async function POST(request: Request) {
 
         contentUpdated = true
         updateMethod = "new_file_moved_alongside_old"
-        console.log(
-          `✅ New file ${newFileId} moved to requirements folder (kept old file ${oldFileId})`,
-        )
+        // console.log(
+        //   `✅ New file ${newFileId} moved to requirements folder (kept old file ${oldFileId})`,
+        // )
       } catch (moveError: any) {
         console.error(`❌ Move failed:`, moveError.message)
         updateError = moveError.message
 
-        // Method 3: Copy new file instead
         try {
-          console.log(`📋 METHOD 3: Copying new file to requirements folder...`)
+          // console.log(`📋 METHOD 3: Copying new file to requirements folder...`)
 
           const copyResponse = await drive.files.copy({
             fileId: newFileId,
@@ -734,11 +732,11 @@ export async function POST(request: Request) {
           const copiedFile = copyResponse.data as DriveFile
           contentUpdated = true
           updateMethod = "new_file_copied_alongside_old"
-          console.log(
-            `✅ New file copied to requirements folder: ${copiedFile.id} (kept old file ${oldFileId})`,
-          )
+          // console.log(
+          //   `✅ New file copied to requirements folder: ${copiedFile.id} (kept old file ${oldFileId})`,
+          // )
         } catch (copyError: any) {
-          console.error(`❌ All update methods failed:`, copyError.message)
+          // console.error(`❌ All update methods failed:`, copyError.message)
           updateError = copyError.message
           contentUpdated = false
           updateMethod = "failed_all_methods"
@@ -746,7 +744,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Return success response based on which method worked
     return NextResponse.json(
       {
         success: contentUpdated,
@@ -762,7 +759,7 @@ export async function POST(request: Request) {
           updateMethod === "content_updated" ||
           updateMethod === "new_file_moved_alongside_old" ||
           updateMethod === "new_file_copied_alongside_old",
-        newUrl: `https://drive.google.com/uc?id=${oldFileId}`, // Always return the OLD file URL (if content was updated)
+        newUrl: `https://drive.google.com/uc?id=${oldFileId}`,
       },
       { status: contentUpdated ? 200 : 500 },
     )

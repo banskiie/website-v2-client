@@ -295,7 +295,7 @@ export default function GCashScanner() {
         })
 
         const text = result.data.text
-        console.log("🧾 Extracted text:", text)
+        // console.log("🧾 Extracted text:", text)
         setScannedText(text)
 
         const confirmationMatch = text.match(/confirmation[\s#:=-]*no\.?\s*([A-Z0-9-]{5,})/i)
@@ -329,7 +329,7 @@ export default function GCashScanner() {
         const transferMatch = text.match(
           new RegExp(`transfer\\s*amount[\\s\\S]*?${currencyPattern}\\s?([\\d,]+\\.\\d{2})`, "i")
         )
-        
+
         const totalMatch =
           text.match(new RegExp(`total[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i")) ||
           text.match(new RegExp(`amount[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i")) ||

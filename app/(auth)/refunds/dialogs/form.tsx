@@ -634,28 +634,22 @@ const FormDialog = (props: Props) => {
         // Overpayment case - can refund the overpaid amount
         refundableAmount = Math.abs(entry.paymentInfo.currentPendingAmount);
       } else if (entry.paymentInfo?.currentPendingAmount === 0) {
-        // Exactly paid - can refund up to totalPaid? This depends on business logic
-        // Usually you wouldn't refund from fully paid entries unless cancelling
         refundableAmount = 0;
       } else {
-        // Positive pending amount (balance due) - cannot refund anything
         refundableAmount = 0;
       }
 
-      // Alternative calculation using the data structure from your query
-      // If paymentInfo.refundableAmount exists, use that as a base but validate it
       const queryRefundableAmount = entry.paymentInfo?.refundableAmount || 0;
 
       // Log for debugging
-      console.log('Entry validation:', {
-        entryNumber: entry.entryNumber,
-        queryRefundableAmount,
-        calculatedRefundableAmount: refundableAmount,
-        currentPendingAmount: entry.paymentInfo?.currentPendingAmount,
-        totalPaid: entry.paymentInfo?.totalPaid
-      });
+      // console.log('Entry validation:', {
+      //   entryNumber: entry.entryNumber,
+      //   queryRefundableAmount,
+      //   calculatedRefundableAmount: refundableAmount,
+      //   currentPendingAmount: entry.paymentInfo?.currentPendingAmount,
+      //   totalPaid: entry.paymentInfo?.totalPaid
+      // });
 
-      // Use the more accurate calculation
       totalRefundable += refundableAmount;
       excessByEntry.push({
         entryNumber: entry.entryNumber,
@@ -942,19 +936,19 @@ const FormDialog = (props: Props) => {
           let proofOfRefundURL = value.proofOfRefundURL
 
           if (files.length > 0) {
-            console.log("Uploading file...")
+            // console.log("Uploading file...")
             const uploadedUrl = await uploadFile(files[0])
             if (!uploadedUrl) {
               toast.error("Failed to upload receipt image. Please try again.")
               return
             }
             proofOfRefundURL = uploadedUrl
-            console.log("File uploaded, URL:", proofOfRefundURL)
+            // console.log("File uploaded, URL:", proofOfRefundURL)
           }
 
           if (!proofOfRefundURL && isUpdate && refund?.proofOfRefundURL) {
             proofOfRefundURL = refund.proofOfRefundURL
-            console.log("Using existing URL:", proofOfRefundURL)
+            // console.log("Using existing URL:", proofOfRefundURL)
           }
 
           if (!isUpdate && !proofOfRefundURL) {
@@ -1196,18 +1190,18 @@ const FormDialog = (props: Props) => {
     const entryList = formValues.entryList || []
     const referenceNumber = formValues.referenceNumber?.toString().trim()
 
-    console.log('Form validation check:', { // Add this for debugging
-      payerName,
-      amount,
-      method,
-      entryList,
-      referenceNumber,
-      hasEntries: entryList.length > 0,
-      hasPayerName: !!payerName,
-      hasAmount: amount > 0,
-      hasMethod: !!method,
-      hasReference: !!referenceNumber
-    })
+    // console.log('Form validation check:', {
+    //   payerName,
+    //   amount,
+    //   method,
+    //   entryList,
+    //   referenceNumber,
+    //   hasEntries: entryList.length > 0,
+    //   hasPayerName: !!payerName,
+    //   hasAmount: amount > 0,
+    //   hasMethod: !!method,
+    //   hasReference: !!referenceNumber
+    // })
 
     if (entryList.length === 0) return true
     if (!payerName) return true

@@ -96,16 +96,14 @@ const VerifyDialog = (props: Props) => {
     skip: !open || !Boolean(props._id),
     fetchPolicy: "network-only",
   })
-  console.log(data, error)
+  // console.log(data, error)
 
-  // Mutation for changing status
   const [verifyPayment, { loading: changeStatusLoading }] = useMutation(
     VERIFY,
     {
       variables: { _id: props._id },
     }
   )
-  // Loading State
   const loading = paymentLoading || changeStatusLoading
 
   const onSubmit = async () => {

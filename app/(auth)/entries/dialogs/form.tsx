@@ -919,15 +919,15 @@ const FormDialog = (props: Props) => {
       },
     },
     onSubmit: async ({ value: payload, formApi }) => {
-      console.log('SUBMITTING WITH PAYLOAD:', payload);
-      console.log('isEarlyBird value:', payload.isEarlyBird);
+      // console.log('SUBMITTING WITH PAYLOAD:', payload);
+      // console.log('isEarlyBird value:', payload.isEarlyBird);
       if (isSubmittingRef.current) {
-        console.log('Submission already in progress, skipping...')
+        // console.log('Submission already in progress, skipping...')
         return
       }
 
       isSubmittingRef.current = true
-      console.log('Form submission started at:', new Date().toISOString())
+      // console.log('Form submission started at:', new Date().toISOString())
 
       try {
         let documentUrlPlayer1 = initialDocumentUrlPlayer1
@@ -979,7 +979,7 @@ const FormDialog = (props: Props) => {
 
         const { tournament, ...finalPayload } = modifiedPayload
 
-        console.log('Submitting form with payload:', finalPayload)
+        // console.log('Submitting form with payload:', finalPayload)
 
         const response: any = await submitForm({
           variables: {
@@ -989,10 +989,9 @@ const FormDialog = (props: Props) => {
           },
         })
 
-        console.log('Form submission response:', response)
+        // console.log('Form submission response:', response)
 
         if (response) {
-          // Call onClose directly without waiting for transition
           onClose()
         }
       } catch (error: any) {
@@ -1014,7 +1013,7 @@ const FormDialog = (props: Props) => {
       } finally {
         // Reset the submission flag
         isSubmittingRef.current = false
-        console.log('Submission flag reset at:', new Date().toISOString())
+        // console.log('Submission flag reset at:', new Date().toISOString())
       }
     },
   })
@@ -1039,7 +1038,7 @@ const FormDialog = (props: Props) => {
   }, [selectedEvent, form]);
   useEffect(() => {
     if (entry && isUpdate && form) {
-      console.log("Updating form with entry data:", entry);
+      // console.log("Updating form with entry data:", entry);
       setIsInitializing(true);
 
       // First, set the tournamentId immediately
@@ -1624,11 +1623,11 @@ const FormDialog = (props: Props) => {
     e.preventDefault()
     e.stopPropagation()
 
-    console.log('Submit button clicked at:', new Date().toISOString())
+    // console.log('Submit button clicked at:', new Date().toISOString())
 
     // Check if already submitting
     if (isSubmittingRef.current) {
-      console.log('Already submitting, ignoring click')
+      // console.log('Already submitting, ignoring click')
       toast.warning('Submission already in progress. Please wait.')
       return
     }
@@ -2010,10 +2009,8 @@ const FormDialog = (props: Props) => {
                           children={(field) => {
                             const isInvalid = field.state.meta.errors.length > 0
                             const amount = calculateEntryAmount();
-
                             // Log the current field value whenever it changes
-                            console.log('isEarlyBird field value:', field.state.value);
-
+                            // console.log('isEarlyBird field value:', field.state.value);
                             return (
                               <div className="space-y-3">
                                 <Field
@@ -2027,12 +2024,11 @@ const FormDialog = (props: Props) => {
                                       checked={field.state.value}
                                       onBlur={field.handleBlur}
                                       onCheckedChange={(checked) => {
-                                        console.log('Checkbox clicked, new value:', checked);
+                                        // console.log('Checkbox clicked, new value:', checked);
                                         field.handleChange(checked === true);
-                                        // Force a re-render to see the updated value
-                                        setTimeout(() => {
-                                          console.log('After handleChange, field value:', field.state.value);
-                                        }, 100);
+                                        // setTimeout(() => {
+                                        //   console.log('After handleChange, field value:', field.state.value);
+                                        // }, 100);
                                       }}
                                       className="mx-2"
                                       aria-invalid={isInvalid}

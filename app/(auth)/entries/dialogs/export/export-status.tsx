@@ -76,7 +76,7 @@ const BatchStatusDialog = (props: Props) => {
       const result: any = await exportEntries({
         variables: { tournamentId: selectedTournament },
       })
-      console.log(result)
+      // console.log(result)
       const response = await fetch("/api/export/entries", {
         method: "POST",
         headers: {

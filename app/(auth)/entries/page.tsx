@@ -379,16 +379,16 @@ const Page = () => {
               })
             }
 
-            console.log('Entry cancelled:', {
-              entryNumber: cancelledEntry?.entryNumber,
-              hasOverpayment: cancelledEntry?.hasOverpayment,
-              totalExcess: cancelledEntry?.totalExcess,
-              pendingAmount: cancelledEntry?.pendingAmount,
-              totalRefundAmount: cancelledEntry?.totalRefundAmount,
-              hasRefunds: cancelledEntry?.hasRefunds,
-              totalPaid: cancelledEntry?.totalPaid,
-              currentStatus: cancelledEntry?.currentStatus
-            })
+            // console.log('Entry cancelled:', {
+            //   entryNumber: cancelledEntry?.entryNumber,
+            //   hasOverpayment: cancelledEntry?.hasOverpayment,
+            //   totalExcess: cancelledEntry?.totalExcess,
+            //   pendingAmount: cancelledEntry?.pendingAmount,
+            //   totalRefundAmount: cancelledEntry?.totalRefundAmount,
+            //   hasRefunds: cancelledEntry?.hasRefunds,
+            //   totalPaid: cancelledEntry?.totalPaid,
+            //   currentStatus: cancelledEntry?.currentStatus
+            // })
 
             const cancelledEdges = prev.entries.edges.map((edge: any) =>
               edge.node._id === cancelledEntry._id
@@ -417,13 +417,13 @@ const Page = () => {
             }
 
           case "REFUND":
-            console.log('🟢 REFUND subscription received:', {
-              entryNumber: entry?.entryNumber,
-              totalRefundAmount: entry?.totalRefundAmount,
-              hasRefunds: entry?.hasRefunds,
-              totalPaid: entry?.totalPaid,
-              pendingAmount: entry?.pendingAmount
-            });
+            // console.log('🟢 REFUND subscription received:', {
+            //   entryNumber: entry?.entryNumber,
+            //   totalRefundAmount: entry?.totalRefundAmount,
+            //   hasRefunds: entry?.hasRefunds,
+            //   totalPaid: entry?.totalPaid,
+            //   pendingAmount: entry?.pendingAmount
+            // });
 
             const refundedEntry = entry
 
@@ -435,7 +435,7 @@ const Page = () => {
 
             const refundEdges = prev.entries.edges.map((edge: any) => {
               if (edge.node._id === refundedEntry._id) {
-                console.log('🟢 Updating edge for entry:', refundedEntry.entryNumber, 'with data:', refundedEntry);
+                // console.log('🟢 Updating edge for entry:', refundedEntry.entryNumber, 'with data:', refundedEntry);
                 return {
                   ...edge,
                   node: {
@@ -470,12 +470,11 @@ const Page = () => {
           case "REJECT":
             const updatedEntry = entry
 
-            // Handle early bird expiry updates specifically
             if (type === "UPDATE" && updatedEntry?.isEarlyBird === false && updatedEntry?.pendingAmount > 0) {
-              console.log('🕒 Early bird expired for entry:', {
-                entryNumber: updatedEntry.entryNumber,
-                newAmount: updatedEntry.pendingAmount
-              });
+              // console.log('🕒 Early bird expired for entry:', {
+              //   entryNumber: updatedEntry.entryNumber,
+              //   newAmount: updatedEntry.pendingAmount
+              // });
 
               if (!search && !sort && filter.length === 0) {
                 toast.info(

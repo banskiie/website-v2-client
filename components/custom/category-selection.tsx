@@ -717,12 +717,12 @@ export function UploadProofMergedModal({
       const fileName = `payment-${Date.now()}.${fileExt}`;
       formData.append("file", file, fileName);
 
-      console.log("Uploading file to PAYMENTS folder:", {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        fileName: fileName
-      });
+      // console.log("Uploading file to PAYMENTS folder:", {
+      //   name: file.name,
+      //   size: file.size,
+      //   type: file.type,
+      //   fileName: fileName
+      // });
 
       const response = await fetch("/api/upload/payment", {
         method: "POST",
@@ -809,7 +809,7 @@ export function UploadProofMergedModal({
     index: number
   ) => {
     const referenceNumber = `${entryNumber}_${entryKey}`
-    console.log("Fetching amount details for reference:", referenceNumber)
+    // console.log("Fetching amount details for reference:", referenceNumber)
 
     try {
       const result = await fetchEntryAmount({
@@ -817,7 +817,7 @@ export function UploadProofMergedModal({
       })
 
       if (result.error) {
-        console.log("GraphQL errors:", result.error)
+        // console.log("GraphQL errors:", result.error)
         const errorMessage = result.error.message || ""
 
         if (
@@ -1492,7 +1492,7 @@ export function UploadProofMergedModal({
         entryList,
       };
 
-      console.log("Submitting payment:", input);
+      // console.log("Submitting payment:", input);
 
       const result = await createPayment({
         variables: { input },
@@ -3235,7 +3235,7 @@ export default function App() {
   }
 
   const handleMerge = (mergedData: Record<string, any>) => {
-    console.log("✅ Merged Data:", mergedData)
+    // console.log("✅ Merged Data:", mergedData)
     setShowReconciliation(false)
   }
 
@@ -3268,7 +3268,7 @@ export default function App() {
       }
     }) || []
 
-  console.log("Fetched events from GraphQL:", events)
+  // console.log("Fetched events from GraphQL:", events)
 
   const sortCategoriesByGender = (list: typeof events) => {
     const mens = list.filter((level: any) => level.gender === "Men's")

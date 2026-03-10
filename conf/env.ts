@@ -10,4 +10,4 @@ export const {
   NEXT_PUBLIC_GRAPHQL_WS_URI,
 } = process.env
 
-console.log("Environment variables loaded for client...")
+// console.log("Environment variables loaded for client...")

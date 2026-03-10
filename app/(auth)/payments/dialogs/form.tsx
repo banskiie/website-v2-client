@@ -1092,7 +1092,7 @@ const FormDialog = (props: Props) => {
   }
 
   const handleEntrySelect = (entry: ActivePaymentEntryOption) => {
-    console.log("Selecting entry:", entry.entryNumber)
+    // console.log("Selecting entry:", entry.entryNumber)
 
     if (!selectedEntries.find(e => e.entryNumber === entry.entryNumber)) {
       const entryKey = entry.entryNumber.includes('_')
@@ -1113,7 +1113,7 @@ const FormDialog = (props: Props) => {
         amount: entry.remainingFee
       };
 
-      console.log("New entry object:", newEntry)
+      // console.log("New entry object:", newEntry)
 
       setSelectedEntries([...selectedEntries, newEntry]);
     }
@@ -1147,7 +1147,7 @@ const FormDialog = (props: Props) => {
   }, [selectedEntries, form.getFieldValue("amount")])
 
   const handleSubmitPayment = async () => {
-    console.log("Starting payment submission...")
+    // console.log("Starting payment submission...")
 
     const payerName = form.getFieldValue("payerName")
     const amount = form.getFieldValue("amount")
@@ -1156,10 +1156,10 @@ const FormDialog = (props: Props) => {
     const referenceNumber = form.getFieldValue("referenceNumber")
     let proofOfPaymentURL = form.getFieldValue("proofOfPaymentURL")
 
-    console.log("Form values:", { payerName, amount, method, paymentDate, referenceNumber, proofOfPaymentURL })
-    console.log("Selected entries:", selectedEntries)
-    console.log("File:", file)
-    console.log("Is edit mode:", isEditMode)
+    // console.log("Form values:", { payerName, amount, method, paymentDate, referenceNumber, proofOfPaymentURL })
+    // console.log("Selected entries:", selectedEntries)
+    // console.log("File:", file)
+    // console.log("Is edit mode:", isEditMode)
 
     if (!payerName?.trim()) {
       toast.error("Payer name is required")
@@ -1195,7 +1195,7 @@ const FormDialog = (props: Props) => {
       setIsUploading(true)
 
       if (!proofOfPaymentURL && file) {
-        console.log("Uploading file...")
+        // console.log("Uploading file...")
         const uploadedUrl = await uploadFile(file)
         if (!uploadedUrl) {
           toast.error("Failed to upload receipt image. Please try again.")
@@ -1203,12 +1203,12 @@ const FormDialog = (props: Props) => {
           return
         }
         proofOfPaymentURL = uploadedUrl
-        console.log("File uploaded, URL:", proofOfPaymentURL)
+        // console.log("File uploaded, URL:", proofOfPaymentURL)
       }
 
       if (!proofOfPaymentURL && isEditMode && existingPaymentData?.proofOfPaymentURL) {
         proofOfPaymentURL = existingPaymentData.proofOfPaymentURL
-        console.log("Using existing URL:", proofOfPaymentURL)
+        // console.log("Using existing URL:", proofOfPaymentURL)
       }
 
       if (!isEditMode && !proofOfPaymentURL) {
@@ -1223,20 +1223,20 @@ const FormDialog = (props: Props) => {
         isFullyPaid: false
       }))
 
-      console.log("Entry list to send (backend will calculate distribution):", entryList)
+      // console.log("Entry list to send (backend will calculate distribution):", entryList)
       const finalReferenceNumber = reference && reference !== "Not found"
         ? reference
         : confirmationNumber || referenceNumber || `ref_${Date.now()}`
 
-      console.log("Submitting payment with data:", {
-        payerName,
-        referenceNumber: finalReferenceNumber,
-        amount,
-        method,
-        proofOfPaymentURL: proofOfPaymentURL || '',
-        paymentDate,
-        entryList
-      })
+      // console.log("Submitting payment with data:", {
+      //   payerName,
+      //   referenceNumber: finalReferenceNumber,
+      //   amount,
+      //   method,
+      //   proofOfPaymentURL: proofOfPaymentURL || '',
+      //   paymentDate,
+      //   entryList
+      // })
 
       startTransition(async () => {
         try {
@@ -1256,7 +1256,7 @@ const FormDialog = (props: Props) => {
               },
             })
 
-            console.log("Update response:", response)
+            // console.log("Update response:", response)
 
             if (response.data?.updatePayment?.ok) {
               setSuccess(true)
@@ -1283,7 +1283,7 @@ const FormDialog = (props: Props) => {
               },
             })
 
-            console.log("Create response:", response)
+            // console.log("Create response:", response)
 
             if (response.data?.createPaymentByAdmin?.ok) {
               setSuccess(true)
@@ -1355,7 +1355,7 @@ const FormDialog = (props: Props) => {
     }
 
     if (!isEditMode && referenceNumber) {
-      console.log("Checking for duplicate reference:", referenceNumber)
+      // console.log("Checking for duplicate reference:", referenceNumber)
 
       if (checkForDuplicateReference(referenceNumber)) {
         await handleOpenDuplicateDialog(referenceNumber)

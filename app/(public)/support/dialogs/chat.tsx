@@ -219,12 +219,12 @@ export default function ChatStep({
       const fileName = `${ticketId}-${Date.now()}.${fileExt}`
       formData.append("file", file, fileName)
 
-      console.log('Uploading file:', {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        fileName: fileName
-      })
+      // console.log('Uploading file:', {
+      //   name: file.name,
+      //   size: file.size,
+      //   type: file.type,
+      //   fileName: fileName
+      // })
 
       const response = await fetch("/api/upload/attachment", {
         method: "POST",
@@ -236,7 +236,7 @@ export default function ChatStep({
       }
 
       const data = await response.json()
-      console.log('Upload API response:', data)
+      // console.log('Upload API response:', data)
 
       // Ensure size is properly handled - use file.size as fallback
       const fileSize = Number(data.size) || file.size

@@ -12,4 +12,4 @@ const authUrl = oauth2Client.generateAuthUrl({
   scope: ["https://www.googleapis.com/auth/youtube.upload"],
 })
 
-console.log("Open this URL in your browser:\n", authUrl)
+// console.log("Open this URL in your browser:\n", authUrl)

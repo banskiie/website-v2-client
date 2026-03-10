@@ -124,9 +124,9 @@ const ActionsColumn = ({ data }: { data?: ILog }) => {
       <Button
         variant="ghost"
         size="icon-sm"
-        onClick={() => {
-          console.log("View log:", log)
-        }}
+      // onClick={() => {
+      //   console.log("View log:", log)
+      // }}
       >
         <Settings className="h-4 w-4" />
       </Button>

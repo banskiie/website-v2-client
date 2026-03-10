@@ -2,14 +2,14 @@ import { NextResponse } from "next/server"
 import { google } from "googleapis"
 
 export async function POST(request: Request) {
-    console.log("📦 /api/transfer/requirement called")
+    // console.log("/api/transfer/requirement called")
 
     try {
         const { fileId } = await request.json()
-        console.log("📁 Received fileId:", fileId)
+        // console.log(" Received fileId:", fileId)
 
         if (!fileId) {
-            console.error("❌ No fileId provided")
+            // console.error("No fileId provided")
             return NextResponse.json(
                 { error: "File ID is required" },
                 { status: 400 }
@@ -21,9 +21,9 @@ export async function POST(request: Request) {
         const privateKey = process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY
         const requirementsFolder = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_REQUIREMENT_FOLDER
 
-        console.log("🔑 Client email exists:", !!clientEmail)
-        console.log("🔑 Private key exists:", !!privateKey?.substring(0, 20) + "...")
-        console.log("📁 Requirements folder:", requirementsFolder)
+        // console.log("🔑 Client email exists:", !!clientEmail)
+        // console.log("🔑 Private key exists:", !!privateKey?.substring(0, 20) + "...")
+        // console.log("📁 Requirements folder:", requirementsFolder)
 
         if (!clientEmail || !privateKey) {
             console.error("❌ Missing Google Drive credentials")
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         }
 
         try {
-            console.log("🔐 Attempting Google Drive authentication...")
+            // console.log("🔐 Attempting Google Drive authentication...")
             const auth = new google.auth.JWT({
                 email: clientEmail,
                 key: privateKey.replace(/\\n/g, "\n"),
@@ -51,32 +51,32 @@ export async function POST(request: Request) {
 
             const drive = google.drive({ version: "v3", auth })
 
-            console.log("🔍 Testing authentication...")
+            // console.log("🔍 Testing authentication...")
             const about = await drive.about.get({
                 fields: 'user'
             })
-            console.log("✅ Authenticated as:", about.data.user?.emailAddress)
+            // console.log("✅ Authenticated as:", about.data.user?.emailAddress)
 
             try {
-                console.log(`🔍 Checking if file ${fileId} exists...`)
+                // console.log(`🔍 Checking if file ${fileId} exists...`)
                 const file = await drive.files.get({
                     fileId: fileId,
                     fields: 'id, name, mimeType, parents',
                     supportsAllDrives: true,
                 })
 
-                console.log("✅ File found:", {
-                    id: file.data.id,
-                    name: file.data.name,
-                    mimeType: file.data.mimeType,
-                    parents: file.data.parents
-                })
+                // console.log("✅ File found:", {
+                //     id: file.data.id,
+                //     name: file.data.name,
+                //     mimeType: file.data.mimeType,
+                //     parents: file.data.parents
+                // })
 
-                console.log(`🔍 Checking if file is in requirements folder ${requirementsFolder}...`)
+                // console.log(`🔍 Checking if file is in requirements folder ${requirementsFolder}...`)
 
                 const query = `'${requirementsFolder}' in parents and trashed = false`
 
-                console.log("🔍 Search query:", query)
+                // console.log("🔍 Search query:", query)
 
                 const searchResponse = await drive.files.list({
                     q: query,
@@ -87,15 +87,15 @@ export async function POST(request: Request) {
                 })
 
                 const files = searchResponse.data.files || []
-                console.log(`📊 Found ${files.length} files in requirements folder`)
+                // console.log(`📊 Found ${files.length} files in requirements folder`)
 
                 const fileExists = files.some(f => f.id === fileId)
 
-                console.log("📊 Search result:", {
-                    exists: fileExists,
-                    filesFound: files.length,
-                    fileInResults: files.find(f => f.id === fileId)
-                })
+                // console.log("📊 Search result:", {
+                //     exists: fileExists,
+                //     filesFound: files.length,
+                //     fileInResults: files.find(f => f.id === fileId)
+                // })
 
                 return NextResponse.json(
                     {
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
                 )
 
             } catch (driveError: any) {
-                console.error("❌ Google Drive API error:", {
+                console.error("Google Drive API error:", {
                     message: driveError.message,
                     code: driveError.code,
                     errors: driveError.errors,

@@ -418,7 +418,7 @@ const replaceDocumentsInDrive = async (
                     action: "added",
                     message: "No existing file found, added new document",
                   })
-                  console.log(`✅ Added new document: ${documentType}`)
+                  // console.log(`✅ Added new document: ${documentType}`)
                 }
               } catch (moveError) {
                 console.error(`❌ Error adding new document:`, moveError)
@@ -444,7 +444,7 @@ const replaceDocumentsInDrive = async (
                   action: "added",
                   message: "Added new document type",
                 })
-                console.log(`✅ Added new document type: ${documentType}`)
+                // console.log(`✅ Added new document type: ${documentType}`)
               }
             } catch (moveError) {
               console.error(
@@ -479,9 +479,9 @@ const replaceDocumentsInDrive = async (
           const oldFileId = extractFileIdFromUrl(existingDoc.documentURL)
 
           if (oldFileId) {
-            console.log(
-              `🔄 Replacing ${existingDoc.documentType}: ${oldFileId} -> ${newFileId}`,
-            )
+            // console.log(
+            //   `🔄 Replacing ${existingDoc.documentType}: ${oldFileId} -> ${newFileId}`,
+            // )
 
             try {
               const replaceResponse = await fetch("/api/transfer/replace", {
@@ -506,9 +506,9 @@ const replaceDocumentsInDrive = async (
                   action: replaceResult.action,
                   message: replaceResult.message,
                 })
-                console.log(
-                  `✅ Successfully replaced in Google Drive: ${newDoc.documentType}`,
-                )
+                // console.log(
+                //   `✅ Successfully replaced in Google Drive: ${newDoc.documentType}`,
+                // )
               } else {
                 console.error(
                   `❌ Failed to replace ${newDoc.documentType}:`,
@@ -539,9 +539,9 @@ const replaceDocumentsInDrive = async (
                       action: "moved",
                       message: "Replacement failed, moved new document instead",
                     })
-                    console.log(
-                      `✅ Moved new document instead: ${newDoc.documentType}`,
-                    )
+                    // console.log(
+                    //   `✅ Moved new document instead: ${newDoc.documentType}`,
+                    // )
                   }
                 } catch (moveError) {
                   console.error(`❌ Failed to move new document:`, moveError)
@@ -558,9 +558,9 @@ const replaceDocumentsInDrive = async (
               })
             }
           } else {
-            console.log(
-              `⚠️ Could not extract old file ID, moving new document...`,
-            )
+            // console.log(
+            //   `⚠️ Could not extract old file ID, moving new document...`,
+            // )
 
             try {
               const moveResponse = await fetch(
@@ -580,10 +580,10 @@ const replaceDocumentsInDrive = async (
                   action: "added",
                   message: "No existing file found, added new document",
                 })
-                console.log(`✅ Added new document: ${newDoc.documentType}`)
+                // console.log(`✅ Added new document: ${newDoc.documentType}`)
               }
             } catch (moveError) {
-              console.error(`❌ Error adding new document:`, moveError)
+              console.error(`Error adding new document:`, moveError)
             }
           }
         } else {
@@ -606,11 +606,11 @@ const replaceDocumentsInDrive = async (
                 action: "added",
                 message: "Added new document type",
               })
-              console.log(`✅ Added new document type: ${newDoc.documentType}`)
+              // console.log(`✅ Added new document type: ${newDoc.documentType}`)
             }
           } catch (moveError) {
             console.error(
-              `❌ Error moving new document ${newDoc.documentType}:`,
+              `Error moving new document ${newDoc.documentType}:`,
               moveError,
             )
           }
@@ -618,9 +618,9 @@ const replaceDocumentsInDrive = async (
       }
     }
 
-    console.log(
-      `✅ Google Drive replacement completed for ${playerType}: ${replacedDocuments.length} documents processed`,
-    )
+    // console.log(
+    //   `✅ Google Drive replacement completed for ${playerType}: ${replacedDocuments.length} documents processed`,
+    // )
 
     return {
       replacedDocuments,
@@ -659,9 +659,9 @@ const checkAndMoveDocuments = async (
         const fileId = extractFileIdFromUrl(doc.documentURL)
         if (fileId) {
           try {
-            console.log(
-              `📦 Moving ${doc.documentType} for ${player} from entry_requirement to requirements...`,
-            )
+            // console.log(
+            //   `📦 Moving ${doc.documentType} for ${player} from entry_requirement to requirements...`,
+            // )
 
             const moveResponse = await fetch(
               "/api/transfer/entry_requirement",
@@ -680,17 +680,17 @@ const checkAndMoveDocuments = async (
                 player: player,
                 message: "Successfully moved to requirements folder",
               })
-              console.log(
-                `✅ Successfully moved ${doc.documentType} for ${player}`,
-              )
+              // console.log(
+              //   `✅ Successfully moved ${doc.documentType} for ${player}`,
+              // )
             } else {
               console.error(
-                `❌ Failed to move ${doc.documentType} for ${player}`,
+                `Failed to move ${doc.documentType} for ${player}`,
               )
             }
           } catch (error) {
             console.error(
-              `❌ Error moving document ${doc.documentType}:`,
+              `Error moving document ${doc.documentType}:`,
               error,
             )
           }
@@ -711,16 +711,16 @@ const checkAndMoveDocuments = async (
 
       if (hasExistingPlayer1Docs) {
         // REASSIGN CASE: First move the new documents, then handle replacement if needed
-        console.log(
-          `🔄 Player 1 has existing documents - moving new documents first`,
-        )
+        // console.log(
+        //   `🔄 Player 1 has existing documents - moving new documents first`,
+        // )
 
         // Step 1: Move all new documents from entry_requirement to requirements
         await moveDocumentsToRequirements(player1Docs, "player1")
 
         // Step 2: If we have document selections, handle replacements
         if (documentSelections.player1) {
-          console.log(`🔄 Processing document selections for Player 1`)
+          // console.log(`🔄 Processing document selections for Player 1`)
           const player1Result = await replaceDocumentsInDrive(
             connectedPlayer1.validDocuments,
             player1Docs,
@@ -737,10 +737,9 @@ const checkAndMoveDocuments = async (
           }
         }
       } else {
-        // ASSIGN CASE: Just move documents from entry_requirement to requirements
-        console.log(
-          `📦 Player 1 has NO existing documents - moving documents directly`,
-        )
+        // console.log(
+        //   `📦 Player 1 has NO existing documents - moving documents directly`,
+        // )
         await moveDocumentsToRequirements(player1Docs, "player1")
       }
     }
@@ -757,17 +756,15 @@ const checkAndMoveDocuments = async (
         connectedPlayer2?.validDocuments?.length > 0
 
       if (hasExistingPlayer2Docs) {
-        // REASSIGN CASE: First move the new documents, then handle replacement if needed
-        console.log(
-          `🔄 Player 2 has existing documents - moving new documents first`,
-        )
+        // // REASSIGN CASE: First move the new documents, then handle replacement if needed
+        // console.log(
+        //   `🔄 Player 2 has existing documents - moving new documents first`,
+        // )
 
-        // Step 1: Move all new documents from entry_requirement to requirements
         await moveDocumentsToRequirements(player2Docs, "player2")
 
-        // Step 2: If we have document selections, handle replacements
         if (documentSelections.player2) {
-          console.log(`🔄 Processing document selections for Player 2`)
+          // console.log(`🔄 Processing document selections for Player 2`)
           const player2Result = await replaceDocumentsInDrive(
             connectedPlayer2.validDocuments,
             player2Docs,
@@ -784,21 +781,18 @@ const checkAndMoveDocuments = async (
           }
         }
       } else {
-        // ASSIGN CASE: Just move documents from entry_requirement to requirements
-        console.log(
-          `📦 Player 2 has NO existing documents - moving documents directly`,
-        )
+        // console.log(
+        //   `📦 Player 2 has NO existing documents - moving documents directly`,
+        // )
         await moveDocumentsToRequirements(player2Docs, "player2")
       }
     }
-
-    console.log(`📊 Document processing completed:`)
-    console.log(`   - Moved: ${movedDocuments.length} documents`)
-    console.log(`   - Replaced: ${replacedDocuments.length} documents`)
-    console.log(
-      `   - Total: ${movedDocuments.length + replacedDocuments.length} documents processed`,
-    )
-
+    // console.log(`📊 Document processing completed:`)
+    // console.log(`   - Moved: ${movedDocuments.length} documents`)
+    // console.log(`   - Replaced: ${replacedDocuments.length} documents`)
+    // console.log(
+    //   `   - Total: ${movedDocuments.length + replacedDocuments.length} documents processed`,
+    // )
     return {
       moved: movedDocuments,
       replaced: replacedDocuments,
@@ -837,9 +831,9 @@ const DocumentSelectionDialog = ({
     source: "existing" | "new"
   } | null>(null)
 
-  useEffect(() => {
-    console.log("Current selections:", selections)
-  }, [selections])
+  // useEffect(() => {
+  //   console.log("Current selections:", selections)
+  // }, [selections])
 
   useEffect(() => {
     if (open) {
@@ -1546,10 +1540,9 @@ const AssignDialog = (props: Props) => {
     onSubmit: ({ value: payload, formApi }) =>
       startTransition(async () => {
         try {
-          console.log("🚀 Starting player assignment process...")
-          console.log("📋 Form payload:", payload)
+          // console.log("🚀 Starting player assignment process...")
+          // console.log("📋 Form payload:", payload)
 
-          // Prepare the payload with document selections
           const finalPayload = {
             ...payload,
           }
@@ -1597,7 +1590,7 @@ const AssignDialog = (props: Props) => {
                   })
                 }
               } else {
-                console.log("📭 No documents to process")
+                // console.log("📭 No documents to process")
               }
             } catch (documentError: any) {
               toast.warning(
@@ -1608,7 +1601,7 @@ const AssignDialog = (props: Props) => {
               )
             }
           } else {
-            console.log("📭 No entry data found for document processing")
+            // console.log("No entry data found for document processing")
           }
 
           const response: any = await assignPlayers({
@@ -1660,21 +1653,21 @@ const AssignDialog = (props: Props) => {
 
   const fetchPlayer1Suggestions = async () => {
     if (!entry?.player1Entry) {
-      console.log("No player1Entry found")
+      // console.log("No player1Entry found")
       return
     }
 
     const { firstName, lastName, birthDate } = entry.player1Entry
-    console.log("Player 1 Entry Data:", { firstName, lastName, birthDate })
+    // console.log("Player 1 Entry Data:", { firstName, lastName, birthDate })
 
     if (!firstName || !lastName || !birthDate) {
-      console.log("Missing required fields for Player 1")
+      // console.log("Missing required fields for Player 1")
       return
     }
 
     setIsLoadingSuggestions1(true)
     try {
-      console.log("Fetching suggestions for Player 1...")
+      // console.log("Fetching suggestions for Player 1...")
       const { data, error } = await fetchSuggestions1({
         variables: {
           input: {
@@ -1686,8 +1679,8 @@ const AssignDialog = (props: Props) => {
         },
       })
 
-      console.log("Player 1 Suggestions Response:", { data, error })
-      console.log("Suggestions data:", data?.suggestPlayers)
+      // console.log("Player 1 Suggestions Response:", { data, error })
+      // console.log("Suggestions data:", data?.suggestPlayers)
       setSuggestedPlayers1(data?.suggestPlayers || [])
     } catch (error) {
       console.error("Error fetching suggestions for Player 1:", error)
@@ -1945,11 +1938,11 @@ const AssignDialog = (props: Props) => {
     onSelectPlayer: (playerId: string) => void
     playerType: "player1" | "player2"
   }) => {
-    console.log(`Rendering SuggestedPlayersSection for ${playerType}:`, {
-      isLoading,
-      suggestionsCount: suggestions.length,
-      suggestions,
-    })
+    // console.log(`Rendering SuggestedPlayersSection for ${playerType}:`, {
+    //   isLoading,
+    //   suggestionsCount: suggestions.length,
+    //   suggestions,
+    // })
 
     if (isLoading) {
       return (
@@ -1965,7 +1958,7 @@ const AssignDialog = (props: Props) => {
     }
 
     if (suggestions.length === 0) {
-      console.log(`No suggestions for ${playerType}, returning null`)
+      // console.log(`No suggestions for ${playerType}, returning null`)
       return null
     }
 

@@ -778,7 +778,7 @@ function CategoriesContent() {
     }
 
     const handleMerge = (mergedData: Record<string, any>) => {
-        console.log("✅ Merged Data:", mergedData)
+        // console.log("✅ Merged Data:", mergedData)
         setShowReconciliation(false)
     }
 
@@ -804,7 +804,7 @@ function CategoriesContent() {
                     return updatedEvents;
                 });
 
-                console.log(`Event ${type}: ${event.name} - Dissolved: ${event.isDissolved}`);
+                // console.log(`Event ${type}: ${event.name} - Dissolved: ${event.isDissolved}`);
             }
         }
     })

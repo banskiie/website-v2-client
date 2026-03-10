@@ -223,7 +223,6 @@ const Page = () => {
           case "UPDATE":
             const updatedPayment = payment
             if (search || sort || filter.length > 0) return prev
-            console.log("test")
             toast.success(
               `Payment (${updatedPayment?.payerName}) has been updated.`
             )

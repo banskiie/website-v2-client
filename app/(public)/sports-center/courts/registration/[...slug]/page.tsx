@@ -1014,7 +1014,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                 }
                             });
                         } catch (e) {
-                            console.log("Error setting field meta:", e);
+                            // console.log("Error setting field meta:", e);
                         }
 
                         const currentValue = form.getFieldValue(fieldName);

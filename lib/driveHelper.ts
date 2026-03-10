@@ -65,7 +65,7 @@ export async function checkAndMoveDocuments(existingEntry: any): Promise<MovedDo
             });
         }
 
-        console.log(`Found ${documents.length} documents to check`);
+        // console.log(`Found ${documents.length} documents to check`);
 
         const movedDocuments: MovedDocument[] = [];
 
@@ -73,7 +73,7 @@ export async function checkAndMoveDocuments(existingEntry: any): Promise<MovedDo
             let fileId: string | undefined;
             const url = doc.url;
 
-            console.log(`Processing document URL: ${url}`);
+            // console.log(`Processing document URL: ${url}`);
 
             if (url.includes('drive.google.com')) {
                 if (url.includes('/uc?id=')) {
@@ -97,7 +97,7 @@ export async function checkAndMoveDocuments(existingEntry: any): Promise<MovedDo
                 continue;
             }
 
-            console.log(`Extracted file ID: "${fileId}"`);
+            // console.log(`Extracted file ID: "${fileId}"`);
 
             try {
                 let fileExistsInRequirements = false;
@@ -113,14 +113,14 @@ export async function checkAndMoveDocuments(existingEntry: any): Promise<MovedDo
                     const files = searchResponse.data.files || [];
                     fileExistsInRequirements = files.some((file: any) => file.id === fileId);
 
-                    console.log(`Files in requirements folder: ${files.length}`);
-                    console.log(`File ${fileId} exists in requirements folder: ${fileExistsInRequirements}`);
+                    // console.log(`Files in requirements folder: ${files.length}`);
+                    // console.log(`File ${fileId} exists in requirements folder: ${fileExistsInRequirements}`);
                 } catch (searchError: any) {
                     console.warn(`Error searching in requirements folder: ${searchError.message}`);
                 }
 
                 if (!fileExistsInRequirements) {
-                    console.log(`Attempting to move file ${fileId}...`);
+                    // console.log(`Attempting to move file ${fileId}...`);
 
                     try {
                         const fileMetadata = await drive.files.get({
@@ -132,15 +132,15 @@ export async function checkAndMoveDocuments(existingEntry: any): Promise<MovedDo
                         const fileName = fileMetadata.data.name || '';
                         const currentParents = fileMetadata.data.parents || [];
 
-                        console.log(`File metadata for ${fileId}:`, {
-                            name: fileName,
-                            parents: currentParents
-                        });
+                        // console.log(`File metadata for ${fileId}:`, {
+                        //     name: fileName,
+                        //     parents: currentParents
+                        // });
 
                         const isInEntryRequirements = currentParents.includes(entryRequirementsFolder);
 
                         if (isInEntryRequirements) {
-                            console.log(`File ${fileId} is in entry_requirements folder, moving to requirements folder...`);
+                            // console.log(`File ${fileId} is in entry_requirements folder, moving to requirements folder...`);
 
                             await drive.files.update({
                                 fileId: fileId,
@@ -156,12 +156,12 @@ export async function checkAndMoveDocuments(existingEntry: any): Promise<MovedDo
                                 fileId
                             });
 
-                            console.log(`Successfully moved document for ${doc.player} to requirements folder: ${fileId}`);
+                            // console.log(`Successfully moved document for ${doc.player} to requirements folder: ${fileId}`);
                         } else {
-                            console.log(`File ${fileId} is not in entry_requirements folder. Current parents:`, currentParents);
+                            // console.log(`File ${fileId} is not in entry_requirements folder. Current parents:`, currentParents);
 
                             if (currentParents.length > 0) {
-                                console.log(`Copying file ${fileId} to requirements folder...`);
+                                // console.log(`Copying file ${fileId} to requirements folder...`);
 
                                 const copiedFile = await drive.files.copy({
                                     fileId: fileId,
@@ -173,7 +173,7 @@ export async function checkAndMoveDocuments(existingEntry: any): Promise<MovedDo
                                 });
 
                                 const copiedFileId = copiedFile.data.id;
-                                console.log(`Created copy in requirements folder: ${copiedFileId}`);
+                                // console.log(`Created copy in requirements folder: ${copiedFileId}`);
 
                                 if (copiedFileId) {
                                     movedDocuments.push({
@@ -195,18 +195,18 @@ export async function checkAndMoveDocuments(existingEntry: any): Promise<MovedDo
                         });
 
                         if (moveError.code === 404) {
-                            console.log(`File ${fileId} not found or no access permission`);
+                            console.error(`File ${fileId} not found or no access permission`);
                         }
                     }
                 } else {
-                    console.log(`Document ${fileId} already exists in requirements folder, skipping.`);
+                    console.error(`Document ${fileId} already exists in requirements folder, skipping.`);
                 }
             } catch (error: any) {
                 console.error(`Unexpected error with file ${fileId}:`, error.message);
             }
         }
 
-        console.log(`Total moved/copied documents: ${movedDocuments.length}`);
+        // console.log(`Total moved/copied documents: ${movedDocuments.length}`);
         return movedDocuments;
 
     } catch (error: any) {

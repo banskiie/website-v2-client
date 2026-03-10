@@ -17,10 +17,10 @@ async function main() {
   rl.question("Enter the authorization code: ", async (code) => {
     try {
       const { tokens } = await oauth2Client.getToken(code)
-      console.log(
-        "✅ Refresh token (save this in your .env):\n",
-        tokens.refresh_token
-      )
+      // console.log(
+      //   "✅ Refresh token (save this in your .env):\n",
+      //   tokens.refresh_token
+      // )
     } catch (err) {
       console.error(
         "❌ Error exchanging code:",

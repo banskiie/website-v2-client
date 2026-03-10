@@ -34,8 +34,8 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       signIn: async ({ username, password, rememberMe }) => {
- 
-        console.log("logging in")
+
+        // console.log("logging in")
         const response: any = await fetch("/api/auth", {
           method: "POST",
           credentials: "include", // 🔑 sends cookies automatically
@@ -82,7 +82,7 @@ export const useAuthStore = create<AuthState>()(
           credentials: "include",
         })
         set({ accessToken: null, user: null, isAuthenticated: false })
-        console.log("Auth cleared, redirecting to login...")
+        // console.log("Auth cleared, redirecting to login...")
         window.location.href = "/"
       },
       refreshToken: async () => {
