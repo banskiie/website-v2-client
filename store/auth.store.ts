@@ -34,7 +34,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       signIn: async ({ username, password, rememberMe }) => {
-
+ 
         console.log("logging in")
         const response: any = await fetch("/api/auth", {
           method: "POST",
