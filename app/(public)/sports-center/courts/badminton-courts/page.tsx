@@ -34,7 +34,7 @@ const locations = [
     {
         name: "Kauswagan Court",
         img: `${CLOUD}/v1764120981/kauswagan_quoxl9.jpg`,
-        hours: "6:00 AM - 12:00 AM",
+        hours: "10:00 AM - 12:00 AM",
         fields: 11,
         phone: "0917-123-4567",
         map: "C-ONE Trading Corporation, Zone 1, Rodolfo N. Pelaez St,. Kauswagan"
@@ -42,7 +42,7 @@ const locations = [
     {
         name: "SM Uptown Court",
         img: `${CLOUD}/v1764120984/uptown_a1vgyb.png`,
-        hours: "6:00 AM - 12:00 AM",
+        hours: "10:00 AM - 12:00 AM",
         fields: 2,
         phone: "0917-134-4695",
         map: "SM Uptown CDO (2nd Level, Main Maill Beside Cinema 3)"
