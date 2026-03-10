@@ -6,7 +6,7 @@ export async function GET(req: Request) {
 
   if (!code) {
     return NextResponse.json({ error: "No code provided" }, { status: 400 })
-  }
+  } 
 
   const tokenUrl = "https://oauth2.googleapis.com/token"
 
