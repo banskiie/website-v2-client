@@ -40,19 +40,13 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import TicketTable from "@/components/table/ticket-table"
-import {
-  format,
-  formatDistanceToNowStrict,
-  isSameDay,
-  isSameYear,
-} from "date-fns"
+import { format, isSameDay, isSameYear } from "date-fns"
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
 
 const TICKETS = gql`
   query Tickets(
@@ -103,7 +97,7 @@ const TICKET_UPDATED = gql`
         lastSentAt
         hasNewMessages
         lastMessageSent
-        lastMessageSentIsAttachment
+        lastMessageSentIsAttachment   # wala diay ni gi add
         assignedAgent
       }
     }
@@ -166,7 +160,7 @@ const Page = () => {
               }
             }
           }
-        }
+        },
       ) => {
         if (!subscriptionData.data) return prev
         const { type, ticket } = subscriptionData.data.ticketUpdated
@@ -176,7 +170,7 @@ const Page = () => {
             // Add the new ticket to the top of the list
             const newTicket = ticket
             const newTicketExists = prev.tickets.edges.find(
-              (edge: any) => edge.node._id === newTicket?._id
+              (edge: any) => edge.node._id === newTicket?._id,
             )
             if (newTicketExists || search || sort || filter.length > 0)
               return prev // Skip updating during search/sort/filter
@@ -196,14 +190,14 @@ const Page = () => {
             const updatedTicket = ticket
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.success(
-              `New message from ${updatedTicket?.name || updatedTicket?.email}.`
+              `New message from ${updatedTicket?.name || updatedTicket?.email}.`,
             )
             // Move the updated ticket to the top of the list
             const updatedEdges = prev?.tickets.edges
               .map((edge: any) =>
                 edge.node._id === updatedTicket._id
                   ? { ...edge, node: updatedTicket }
-                  : edge
+                  : edge,
               )
               .filter((edge: any) => edge.node._id !== updatedTicket._id)
             return Object.assign({}, prev, {
@@ -221,7 +215,7 @@ const Page = () => {
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.success(
               `${assignedTicket?.name || ""} has been assigned to ${(assignedTicket as any)?.assignedAgent || "an agent"
-              }.`
+              }.`,
             )
             return Object.assign({}, prev, {
               tickets: {
@@ -229,7 +223,7 @@ const Page = () => {
                 edges: prev.tickets.edges.map((edge: any) =>
                   edge.node._id === assignedTicket._id
                     ? { ...edge, node: assignedTicket }
-                    : edge
+                    : edge,
                 ),
               },
             })
@@ -357,7 +351,7 @@ const Page = () => {
                 <span
                   className={cn(
                     "text-clip overflow-hidden block w-32",
-                    ticket.hasNewMessages && "font-medium"
+                    ticket.hasNewMessages && "font-medium",
                   )}
                 >
                   {ticket.name}
@@ -375,7 +369,7 @@ const Page = () => {
                         (ticket as any).assignedAgent == "Caryl Lyn" &&
                         "bg-pink-400",
                         (ticket as any).assignedAgent == "Prince Nagac" &&
-                        "bg-success"
+                        "bg-success",
                       )}
                     >
                       {(ticket as any).assignedAgent}
@@ -388,7 +382,7 @@ const Page = () => {
                   <span
                     className={cn(
                       "block text-sm text-muted-foreground truncate w-72 md:w-96",
-                      ticket.hasNewMessages && "font-medium"
+                      ticket.hasNewMessages && "font-medium",
                     )}
                   >
                     {(ticket as any).lastMessageSentIsAttachment
@@ -402,12 +396,12 @@ const Page = () => {
                   <span
                     className={cn(
                       "block",
-                      ticket.hasNewMessages ? "font-medium" : ""
+                      ticket.hasNewMessages ? "font-medium" : "",
                     )}
                   >
                     {format(
                       lastSentAt,
-                      sameDay ? "p" : sameYear ? "MMM dd" : "MMM dd, yyyy"
+                      sameDay ? "p" : sameYear ? "MMM dd" : "MMM dd, yyyy",
                     )}
                   </span>
                 </HoverCardTrigger>
@@ -419,7 +413,7 @@ const Page = () => {
                   <span className="block text-xs">
                     {format(
                       new Date(row.original.lastSentAt as Date),
-                      "MMM dd, yyyy, hh:mm a"
+                      "MMM dd, yyyy, hh:mm a",
                     )}
                   </span>
                 </HoverCardContent>
@@ -429,7 +423,7 @@ const Page = () => {
         },
       },
     ],
-    [sort, onSort, filter, onFilter, selectedIds, data?.tickets]
+    [sort, onSort, filter, onFilter, selectedIds, data?.tickets],
   )
 
   // Next Page

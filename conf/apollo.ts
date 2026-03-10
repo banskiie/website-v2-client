@@ -70,20 +70,20 @@ const errorLink = new ErrorLink(({ error, operation, forward }: any) => {
             })
         })
       case "INVALID_ACCESS_TOKEN":
-        useAuthStore.getState().clearAuth()
         console.warn("Invalid access token, logging out...")
+        useAuthStore.getState().clearAuth()
         break
       case "INVALID_REFRESH_TOKEN":
-        useAuthStore.getState().clearAuth()
         console.warn("Invalid refresh token, logging out...")
+        useAuthStore.getState().clearAuth()
         break
       case "REFRESH_TOKEN_EXPIRED":
-        useAuthStore.getState().clearAuth()
         console.warn("Invalid refresh token, logging out...")
+        useAuthStore.getState().clearAuth()
         break
       case "DEVICE_NOT_RECOGNIZED":
-        useAuthStore.getState().clearAuth()
         console.warn("Device not recognized, logging out...")
+        useAuthStore.getState().clearAuth()
         break
     }
   }

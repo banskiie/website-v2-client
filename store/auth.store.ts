@@ -34,31 +34,16 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       signIn: async ({ username, password, rememberMe }) => {
-        // const response: any = await client.mutate({
-        //   mutation: SIGN_IN,
-        //   variables: { username, password, rememberMe },
-        // })
 
+        console.log("logging in")
         const response: any = await fetch("/api/auth", {
           method: "POST",
           credentials: "include", // 🔑 sends cookies automatically
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password, rememberMe }),
         }).then((res) => {
-          console.log(res)
           return res.json()
         })
-
-        // if (response.data?.signIn.ok && response.data.signIn.data) {
-        //   set({
-        //     accessToken: response.data.signIn.data.accessToken,
-        //     user: response.data.signIn.data.user,
-        //     isAuthenticated: true,
-        //   })
-
-        //   // Redirect to dashboard after successful sign in
-        //   window.location.href = "/dashboard"
-        // }
 
         if (response.user && response.accessToken) {
           set({
@@ -74,10 +59,11 @@ export const useAuthStore = create<AuthState>()(
       signOut: async () => {
         const response: any = await client.mutate({
           mutation: SIGN_OUT,
+          variables: {
+            token: get().accessToken,
+          },
         })
-        if (response.data?.signOut.ok) {
-          get().clearAuth()
-        }
+        if (response.data?.signOut.ok) get().clearAuth()
       },
       refreshAuthUser: async () => {
         try {
@@ -91,9 +77,13 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       clearAuth: async () => {
+        await fetch("/api/logout", {
+          method: "POST",
+          credentials: "include",
+        })
         set({ accessToken: null, user: null, isAuthenticated: false })
         console.log("Auth cleared, redirecting to login...")
-        window.location.href = "/dashboard"
+        window.location.href = "/"
       },
       refreshToken: async () => {
         const response: any = await client.mutate({

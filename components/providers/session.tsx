@@ -11,7 +11,9 @@ const SessionLayout = ({
   const refreshAuthUser = useAuthStore((state) => state.refreshAuthUser)
 
   useEffect(() => {
-    if (isAuthenticated) refreshAuthUser()
+    if (isAuthenticated) {
+      refreshAuthUser()
+    }
   }, [isAuthenticated, refreshAuthUser])
 
   return <div>{children}</div>
