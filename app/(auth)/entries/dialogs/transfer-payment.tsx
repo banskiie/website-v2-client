@@ -39,6 +39,13 @@ const GET_PAYMENTS_FOR_ENTRY = gql`
       amount
       method
       paymentDate
+      entryList {
+        entry {
+          _id
+          entryNumber
+          entryKey
+        }
+      }
     }
   }
 `
@@ -72,6 +79,13 @@ interface Payment {
     amount: number
     method: string
     paymentDate: string
+    entryList?: Array<{
+        entry: {
+            _id: string
+            entryNumber: string
+            entryKey: string
+        }
+    }>
 }
 
 interface GetPaymentsForEntryResponse {
@@ -311,57 +325,74 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                             <div className="text-sm text-muted-foreground">No payments found for this entry</div>
                         ) : (
                             <div className="space-y-2">
-                                {payments.map((payment) => (
-                                    <Card
-                                        key={payment._id}
-                                        className={`cursor-pointer transition-all hover:bg-gray-50 ${selectedPaymentId === payment._id ? 'ring-2 ring-primary' : ''}`}
-                                        onClick={() => setSelectedPaymentId(payment._id)}
-                                    >
-                                        <CardContent className="p-3">
-                                            <div className="flex items-start justify-between">
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`p-1 rounded ${selectedPaymentId === payment._id ? 'bg-primary/10' : 'bg-gray-100'}`}>
-                                                            <CreditCard className="h-3 w-3" />
+                                {payments.map((payment) => {
+                                    // Get the entry info from the first entry in entryList (assuming payment is for this entry)
+                                    const entryInfo = payment.entryList?.[0]?.entry
+
+                                    return (
+                                        <Card
+                                            key={payment._id}
+                                            className={`cursor-pointer transition-all hover:bg-gray-50 ${selectedPaymentId === payment._id ? 'ring-2 ring-primary' : ''
+                                                }`}
+                                            onClick={() => setSelectedPaymentId(payment._id)}
+                                        >
+                                            <CardContent className="p-3">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="space-y-1 w-full">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`p-1 rounded ${selectedPaymentId === payment._id ? 'bg-primary/10' : 'bg-gray-100'}`}>
+                                                                <CreditCard className="h-3 w-3" />
+                                                            </div>
+                                                            <span className="font-medium text-sm">{payment.payerName}</span>
                                                         </div>
-                                                        <span className="font-medium text-sm">{payment.payerName}</span>
+
+                                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 pl-6">
+                                                            <div className="flex items-center gap-1">
+                                                                <Hash className="h-3 w-3 text-muted-foreground" />
+                                                                <span className="text-xs text-muted-foreground">Ref:</span>
+                                                                <span className="text-xs font-medium">{payment.referenceNumber || "N/A"}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <CreditCard className="h-3 w-3 text-muted-foreground" />
+                                                                <span className="text-xs text-muted-foreground">Method:</span>
+                                                                <span className="text-xs font-medium">{payment.method}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <User className="h-3 w-3 text-muted-foreground" />
+                                                                <span className="text-xs text-muted-foreground">Amount:</span>
+                                                                <span className="text-xs font-medium text-green-600">₱{payment.amount?.toLocaleString()}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                                                                <span className="text-xs text-muted-foreground">Date:</span>
+                                                                <span className="text-xs font-medium">{formatDate(payment.paymentDate)}</span>
+                                                            </div>
+
+                                                            {entryInfo && (
+                                                                <div className="flex items-center gap-1 col-span-2 mt-1 pt-1 border-t border-gray-100">
+                                                                    <Hash className="h-3 w-3 text-muted-foreground" />
+                                                                    <span className="text-xs text-muted-foreground">Entry:</span>
+                                                                    <span className="text-xs font-medium">
+                                                                        {entryInfo.entryNumber}
+                                                                        {entryInfo.entryKey && `_${entryInfo.entryKey}`}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 pl-6">
-                                                        <div className="flex items-center gap-1">
-                                                            <Hash className="h-3 w-3 text-muted-foreground" />
-                                                            <span className="text-xs text-muted-foreground">Ref:</span>
-                                                            <span className="text-xs font-medium">{payment.referenceNumber || "N/A"}</span>
+                                                    {selectedPaymentId === payment._id && (
+                                                        <div className="flex-shrink-0 ml-2">
+                                                            <div className="rounded-full bg-primary p-1">
+                                                                <Check className="h-3 w-3 text-primary-foreground" />
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <CreditCard className="h-3 w-3 text-muted-foreground" />
-                                                            <span className="text-xs text-muted-foreground">Method:</span>
-                                                            <span className="text-xs font-medium">{payment.method}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <User className="h-3 w-3 text-muted-foreground" />
-                                                            <span className="text-xs text-muted-foreground">Amount:</span>
-                                                            <span className="text-xs font-medium text-green-600">₱{payment.amount?.toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                                                            <span className="text-xs text-muted-foreground">Date:</span>
-                                                            <span className="text-xs font-medium">{formatDate(payment.paymentDate)}</span>
-                                                        </div>
-                                                    </div>
+                                                    )}
                                                 </div>
-
-                                                {/* {selectedPaymentId === payment._id && (
-                                                    <div className="flex-shrink-0">
-                                                        <div className="rounded-full bg-primary p-1">
-                                                            <Check className="h-3 w-3 text-primary-foreground" />
-                                                        </div>
-                                                    </div>
-                                                )} */}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                            </CardContent>
+                                        </Card>
+                                    )
+                                })}
                             </div>
                         )}
                     </div>
@@ -401,7 +432,7 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="p-0" align="start" style={{ width: '100%' }}>
+                                        <PopoverContent className="p-0" align="start" onWheel={(e) => e.stopPropagation()} style={{ width: '100%' }}>
                                             <div className="p-2 border-b">
                                                 <Input
                                                     type="text"
@@ -540,7 +571,7 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                     )}
                                 </div>
 
-                                <div className="flex items-center space-x-2 pt-2">
+                                {/* <div className="flex items-center space-x-2 pt-2">
                                     <input
                                         type="checkbox"
                                         id="isFullyPaid"
@@ -551,7 +582,7 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                     <Label htmlFor="isFullyPaid" className="text-sm">
                                         Mark entries as fully paid
                                     </Label>
-                                </div>
+                                </div> */}
                             </div>
 
                             <Separator />
@@ -574,7 +605,6 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                         <SelectValue placeholder="Select status (optional)" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="NONE">None (default: PAYMENT_PENDING)</SelectItem>
                                         <SelectItem value={TransferEntryStatus.PAYMENT_PENDING}>
                                             Payment Pending
                                         </SelectItem>

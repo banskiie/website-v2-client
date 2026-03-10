@@ -652,7 +652,7 @@ function PpglProducts() {
                     <div className="flex items-center justify-between mb-3 mt-5">
                         <div className="flex items-center gap-2">
                             <Grid3X3 className="w-4 h-4 text-green-600" />
-                            <h3 className="text-lg font-semibold text-gray-800">Product Categories <span className="text-muted-foreground font-normal text-xs">(Select One to See Products)</span><span className="text-red-600">*</span></h3>
+                            <h3 className="text-lg font-semibold text-gray-800">Product Categories <span className="text-muted-foreground font-normal text-xs">(Select One to See Products)</span><span className="text-red-600 ml-0.5">*</span></h3>
                         </div>
                     </div>
 

@@ -108,3 +108,18 @@ export const ENTRY_EVENT_AMOUNT_DETAILS = gql`
     }
   }
 `
+
+export const EVENT_CHANGED_SUBSCRIPTION = gql`
+  subscription EventChanged {
+    eventChanged {
+      type
+      event {
+        _id
+        name
+        gender
+        type
+        isDissolved
+      }
+    }
+  }
+`

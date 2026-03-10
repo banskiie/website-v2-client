@@ -492,7 +492,7 @@ function GuidelinesContent() {
                                     <img
                                         src={prize.src}
                                         alt={prize.alt}
-                                        className="w-full h-64 object-cover"
+                                        className="w-full h-full object-cover"
                                         loading="lazy"
                                     />
                                 </div>
@@ -503,7 +503,7 @@ function GuidelinesContent() {
                                     <img
                                         src={prize.src}
                                         alt={prize.alt}
-                                        className="w-full h-64 object-cover"
+                                        className="w-full h-full object-cover"
                                         loading="lazy"
                                     />
                                 </div>

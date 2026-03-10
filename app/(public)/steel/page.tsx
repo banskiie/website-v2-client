@@ -40,12 +40,12 @@ const faqs = [
   {
     title: "What type of Properties of Materials are being Used?",
     content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "The material possesses high corrosion resistance due to its zinc–aluminum coating, excellent weatherability with minimal fading over time, good formability that allows bending and shaping without cracking, high dimensional stability to maintain its shape under temperature changes, and long-term durability, ensuring structural integrity and protection for 15 to 25 years, consistent with standard PPGL performance.",
   },
   {
     title: "How long it takes to fade or deteriorate, or its service life?",
     content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "The expected service life of the material, including resistance to fading and deterioration, is 15 to 25 years, consistent with standard PPGL (Pre-painted Galvalume) performance. This range reflects typical exterior applications and may vary depending on environmental conditions, with harsher conditions such as coastal or industrial areas tending toward the lower end of the range, while milder climates can achieve the upper end of the service life.",
   },
   {
     title: "What is PPGL",
@@ -689,7 +689,7 @@ export default function Page() {
                     />
                   </div>
                   <span className="text-white text-sm lg:text-xl font-bold">500+</span>
-                  <span className="text-white/40 text-xs lg:text-sm">Steel Produced</span>
+                  <span className="text-white/90 text-xs lg:text-sm">Steel Produced</span>
                 </motion.div>
 
                 <motion.div
@@ -713,7 +713,7 @@ export default function Page() {
                     />
                   </div>
                   <span className="text-white text-sm lg:text-xl font-bold">1000+</span>
-                  <span className="text-white/40 text-xs lg:text-sm">Roof Produced</span>
+                  <span className="text-white/90 text-xs lg:text-sm">Roof Produced</span>
                 </motion.div>
               </div>
             </motion.div>

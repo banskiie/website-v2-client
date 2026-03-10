@@ -26,7 +26,7 @@ export default function ShuttleBrewExperience() {
     >([])
 
     useEffect(() => {
-        const generated = Array.from({ length: 30 }, () => {
+        const generated = Array.from({ length: 20 }, () => {
             const rand = Math.random()
             const type: ElementType = rand < 0.3 ? "cup" : "light"
             return {

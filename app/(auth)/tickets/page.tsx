@@ -214,8 +214,7 @@ const Page = () => {
             const assignedTicket = ticket
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.success(
-              `${assignedTicket?.name || ""} has been assigned to ${
-                (assignedTicket as any)?.assignedAgent || "an agent"
+              `${assignedTicket?.name || ""} has been assigned to ${(assignedTicket as any)?.assignedAgent || "an agent"
               }.`,
             )
             return Object.assign({}, prev, {
@@ -366,11 +365,11 @@ const Page = () => {
                       className={cn(
                         "text-[0.65rem] text-white px-2 py-0.5 rounded-full mr-1 bg-primary",
                         (ticket as any).assignedAgent == "Ivan Sinohon" &&
-                          "bg-info",
+                        "bg-info",
                         (ticket as any).assignedAgent == "Caryl Lyn" &&
-                          "bg-pink-400",
+                        "bg-pink-400",
                         (ticket as any).assignedAgent == "Prince Nagac" &&
-                          "bg-success",
+                        "bg-success",
                       )}
                     >
                       {(ticket as any).assignedAgent}

@@ -478,7 +478,7 @@ export default function StoryCarousel() {
             </div>
 
             {/* Background Text */}
-            <motion.h1
+            {/* <motion.h1
                 className="absolute top-40 sm:top-45 md:top-50 lg:top-55 xl:top-60 left-1/2 -translate-x-1/2 text-[3rem] sm:text-[4rem] md:text-[5rem] lg:text-[6rem] xl:text-[7rem] 2xl:text-[9rem] font-extrabold text-[#e7d7bc] select-none pointer-events-none whitespace-nowrap z-0"
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 0.4, y: 0 }}
@@ -486,11 +486,9 @@ export default function StoryCarousel() {
                 transition={{ duration: 1 }}
             >
                 Our Story
-            </motion.h1>
+            </motion.h1> */}
 
-            {/* Main Content - Stacked layout for mobile AND tablet (768px), side-by-side only for lg+ */}
             <div className="relative max-w-7xl mx-auto flex flex-col lg:grid lg:grid-cols-2 gap-12 md:gap-14 lg:gap-16 xl:gap-16 items-center z-10 mt-4 md:mt-6">
-                {/* Image Carousel Section - Always on top for mobile and tablet */}
                 <motion.div
                     initial={{ opacity: 0, y: -60 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -498,7 +496,7 @@ export default function StoryCarousel() {
                     transition={{ duration: 1 }}
                     className="relative w-full max-w-2xl mx-auto lg:mx-0"
                 >
-                    <div className="absolute -inset-2 sm:-inset-3 md:-inset-2 -top-4 sm:-top-5 md:-top-5 mb-8 sm:mb-9 md:mb-10 left-8 sm:left-9 md:left-10 -right-4 sm:-right-5 md:-right-5 rounded-2xl sm:rounded-3xl md:rounded-3xl border-[#5c3d1e] border-2 pointer-events-none -z-10"></div>
+                    <div className="absolute -inset-2 sm:-inset-3 md:-inset-2 -top-4 sm:-top-5 md:-top-5 mb-8 sm:mb-9 md:mb-10 left-8 sm:left-9 md:left-10 -right-4 sm:-right-5 md:-right-5 rounded-2xl sm:rounded-3xl md:rounded-3xl border-[#5c3d1e] border-2 pointer-events-none -z-10" />
 
                     <Carousel
                         plugins={[autoplay.current]}
@@ -512,6 +510,7 @@ export default function StoryCarousel() {
                                         alt={`Story image ${idx + 1}`}
                                         width={650}
                                         height={650}
+                                        loading="lazy"
                                         className="object-cover rounded-2xl sm:rounded-3xl md:rounded-3xl h-[350px] sm:h-[380px] md:h-[420px] lg:h-[460px] xl:h-[500px]"
                                         onClick={() => setZoomedImage(src)}
                                         blurDataURL={src}
@@ -521,10 +520,9 @@ export default function StoryCarousel() {
                         </CarouselContent>
                     </Carousel>
 
-                    <div className="absolute -inset-3 sm:-inset-4 md:-inset-4 bg-gradient-to-tr from-[#fda12f]/25 via-transparent to-[#f38a12]/10 rounded-2xl sm:rounded-3xl md:rounded-3xl blur-xl sm:blur-2xl md:blur-2xl -z-10"></div>
+                    <div className="absolute -inset-3 sm:-inset-4 md:-inset-4 bg-gradient-to-tr from-[#fda12f]/25 via-transparent to-[#f38a12]/10 rounded-2xl sm:rounded-3xl md:rounded-3xl blur-xl sm:blur-2xl md:blur-2xl -z-10" />
                 </motion.div>
 
-                {/* Text Content Section - Always below image for mobile and tablet */}
                 <motion.div
                     initial={{ opacity: 0, y: 60 }}
                     whileInView={{ opacity: 1, y: 0 }}

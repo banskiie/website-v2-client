@@ -32,6 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import PlayerViewDialog from "@/app/(auth)/players/dialogs/view"
 import PaymentViewDialog from "@/app/(auth)/payments/dialogs/view"
+import RefundViewDialog from "@/app/(auth)/refunds/dialogs/view"
 
 const ENTRY = gql`
   query Entry($_id: ID!) {
@@ -481,7 +482,7 @@ const ViewDialog = (props: Props) => {
                       ) : (
                         <span className="block text-sm">
                           {entry?.player1Entry.phoneNumber
-                            ? `+63 ${entry.player1Entry.phoneNumber}`
+                            ? `${entry.player1Entry.phoneNumber}`
                             : "N/A"}
                         </span>
                       )}
@@ -712,130 +713,230 @@ const ViewDialog = (props: Props) => {
               </div>
             </TabsContent>
             <TabsContent value="transactions">
-              <div className="flex flex-col gap-2 h-[50vh] overflow-y-auto place-content-start">
-                {entryLoading ? (
-                  <Skeleton className="w-full my-1 h-3" />
-                ) : entry?.transactions && entry?.transactions.length ? (
-                  <div className="h-full">
-                    {entry.transactions
-                      .slice()
-                      .reverse()
-                      .map((transaction, index) => (
-                        <div key={index} className="flex gap-2">
-                          <div className="flex flex-col justify-start items-center">
-                            {(() => {
-                              switch (transaction.transactionType) {
-                                case "INITIAL_FEE":
-                                  return (
-                                    <CircleQuestionMark className="size-4 my-2 text-info" />
-                                  )
-                                case "BALANCE_PAYMENT":
-                                  return (
-                                    <CheckCircle2 className="size-4 my-2 text-success" />
-                                  )
-                                case "REVERT_TRANSACTION":
-                                case "REFUND_PAYMENT":
-                                  return (
-                                    <CircleAlert className="size-4 my-2 text-destructive" />
-                                  )
-                                default:
-                                  return (
-                                    <CircleQuestionMark className="size-4 my-2 text-muted-foreground" />
-                                  )
-                              }
-                            })()}
+              <div className="flex flex-col h-[50vh]">
+                <div className="sticky top-0 z-10 bg-blue-50 border border-blue-200 rounded-md p-3 mb-3 shadow-sm">
+                  <div className="flex items-start gap-2">
+                    <CircleAlert className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                    <div className="flex flex-row gap-1">
+                      <p className="text-sm font-medium text-blue-800">Total Entry Fee Required:</p>
+                      <p className="text-sm text-blue-800">
+                        <span className="font-medium">
+                          {(
+                            ((entry?.isEarlyBird
+                              ? entry?.event?.earlyBirdPricePerPlayer
+                              : entry?.event?.pricePerPlayer) || 0) *
+                            (entry?.event?.type === "DOUBLES" ? 2 : 1)
+                          )?.toLocaleString("en-PH", {
+                            style: "currency",
+                            currency: entry?.event?.currency || "PHP",
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
+                        {entry?.event?.type === "DOUBLES" && (
+                          <span className="text-blue-500 text-xs underline underline-offset-2">
+                            {' '}(
+                            {(entry?.isEarlyBird
+                              ? entry?.event?.earlyBirdPricePerPlayer
+                              : entry?.event?.pricePerPlayer
+                            )?.toLocaleString("en-PH", {
+                              style: "currency",
+                              currency: entry?.event?.currency || "PHP",
+                              minimumFractionDigits: 2,
+                            })} per player)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                            {index < entry.transactions.length - 1 && (
-                              <div className="min-h-11 w-px bg-gray-200"></div>
-                            )}
-                          </div>
-                          <div className="mt-1">
-                            <span
-                              className={cn(
-                                "capitalize block -mb-0.5",
-                                index === 0
-                                  ? "font-mono"
-                                  : "text-muted-foreground"
-                              )}
-                            >
-                              {transaction.transactionType
-                                .replaceAll("_", " ")
-                                .toLocaleLowerCase()}
-                            </span>
+                <div className="flex-1 overflow-y-auto pr-1 space-y-2">
+                  {entryLoading ? (
+                    <Skeleton className="w-full my-1 h-3" />
+                  ) : entry?.transactions && entry?.transactions.length ? (
+                    <div className="h-full">
+                      {entry.transactions
+                        .slice()
+                        .reverse()
+                        .map((transaction, index) => (
+                          <div key={index} className="flex gap-2">
+                            <div className="flex flex-col justify-start items-center">
+                              {(() => {
+                                switch (transaction.transactionType) {
+                                  case "INITIAL_FEE":
+                                    return (
+                                      <CircleQuestionMark className="size-4 my-2 text-success" />
+                                    )
+                                  case "BALANCE_PAYMENT":
+                                    return (
+                                      <CheckCircle2 className="size-4 my-2 text-destructive" />
+                                    )
+                                  case "REVERT_TRANSACTION":
+                                    return (
+                                      <CircleAlert className="size-4 my-2 text-muted-foreground" />
+                                    )
+                                  case "REFUND_PAYMENT":
+                                    return (
+                                      <CircleAlert className="size-4 my-2 text-muted-foreground" />
+                                    )
+                                  default:
+                                    return (
+                                      <CircleQuestionMark className="size-4 my-2 text-muted-foreground" />
+                                    )
+                                }
+                              })()}
 
-                            <span
-                              className={cn(
-                                "capitalize block text-xs",
-                                index === 0
-                                  ? "font-mono"
-                                  : "text-muted-foreground",
-                                transaction.pendingAmount == 0
-                                  ? "text-success"
-                                  : transaction.pendingAmount > 0
-                                    ? "text-info"
-                                    : "text-destructive"
+                              {index < entry.transactions.length - 1 && (
+                                <div className="min-h-11 w-px bg-gray-200"></div>
                               )}
-                            >
-                              {transaction.pendingAmount >= 0
-                                ? "Pending"
-                                : "Excess"}{" "}
-                              Amount:{" "}
-                              {Math.abs(
-                                transaction.pendingAmount
-                              ).toLocaleString("en-PH", {
-                                style: "currency",
-                                currency: "PHP",
-                                minimumFractionDigits: 2,
-                              })}
-                            </span>
-                            {transaction.amountChanged !== 0 ? (
+                            </div>
+                            <div className="mt-1">
                               <span
                                 className={cn(
-                                  "capitalize block text-xs",
+                                  "capitalize block -mb-0.5",
                                   index === 0
                                     ? "font-mono"
                                     : "text-muted-foreground"
                                 )}
                               >
-                                Amount{" "}
-                                {transaction.transactionType ==
-                                  "BALANCE_PAYMENT"
-                                  ? "Paid"
-                                  : "Reverted"}
-                                :{" "}
-                                {`${transaction.amountChanged > 0 ? "+" : "-"
-                                  }${Math.abs(
-                                    transaction.amountChanged
-                                  ).toLocaleString("en-PH", {
-                                    style: "currency",
-                                    currency: "PHP",
-                                    minimumFractionDigits: 2,
-                                  })}`}
+                                {transaction.transactionType
+                                  .replaceAll("_", " ")
+                                  .toLocaleLowerCase()}
                               </span>
-                            ) : null}
-                            {transaction.transactionId &&
-                              transaction.transactionType ===
-                              "BALANCE_PAYMENT" && (
-                                <PaymentViewDialog
-                                  externalUse
-                                  _id={transaction.transactionId}
-                                  title={`Click here for more details 🔍`}
-                                  titleClassName="block text-xs text-muted-foreground hover:text-foreground"
-                                />
+
+                              <span
+                                className={cn(
+                                  "capitalize block text-xs underline underline-offset-2 mb-0.5",
+                                  index === 0
+                                    ? "font-mono"
+                                    : "text-muted-foreground",
+                                  transaction.pendingAmount == 0
+                                    ? "text-destructive"
+                                    : transaction.pendingAmount > 0
+                                      ? "text-success"
+                                      : "text-info"
+                                )}
+                              >
+                                {(() => {
+                                  const isCancelled = entry?.statuses?.some(s => s.status === "CANCELLED");
+                                  const isRefundPayment = transaction.transactionType === "REFUND_PAYMENT";
+
+                                  // mao ning naas view kay -635 ang gakakita
+                                  // if (isCancelled && isRefundPayment) {
+                                  //   const balancePayment = entry?.transactions?.find(
+                                  //     t => t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0
+                                  //   );
+                                  //   const totalPaid = balancePayment?.amountChanged || 0;
+
+                                  //   const totalRefunded = entry?.transactions
+                                  //     ?.filter(t => t.transactionType === "REFUND_PAYMENT")
+                                  //     .reduce((sum, t) => sum + Math.abs(t.amountChanged), 0) || 0;
+
+                                  //   const remainingPrincipal = totalPaid - totalRefunded;
+
+                                  //   if (transaction.amountChanged < 0) {
+                                  //     return `Remaining Balance: ₱${remainingPrincipal.toLocaleString()}`;
+                                  //   }
+                                  // }
+
+                                  if (isCancelled && isRefundPayment) {
+                                    const totalPaid = entry?.transactions
+                                      ?.filter(t => t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0)
+                                      .reduce((sum, t) => sum + (t.amountChanged || 0), 0) || 0;
+
+                                    const totalRefunded = entry?.transactions
+                                      ?.filter(t => t.transactionType === "REFUND_PAYMENT")
+                                      .reduce((sum, t) => sum + Math.abs(t.amountChanged), 0) || 0;
+
+                                    const remainingPrincipal = totalPaid - totalRefunded;
+
+                                    if (transaction.amountChanged < 0) {
+                                      return `Remaining Balance: ₱${remainingPrincipal.toLocaleString()}`;
+                                    }
+                                  }
+
+                                  if (isCancelled && transaction.transactionType === "BALANCE_PAYMENT") {
+                                    return "Exceeded Paid";
+                                  }
+
+                                  return transaction.pendingAmount >= 0
+                                    ? "Pending Amount"
+                                    : "Excess Amount";
+                                })()}
+
+                                {!(
+                                  entry?.statuses?.some(s => s.status === "CANCELLED") &&
+                                  transaction.transactionType === "REFUND_PAYMENT"
+                                ) && (
+                                    <>:{" "}
+                                      {Math.abs(transaction.pendingAmount).toLocaleString("en-PH", {
+                                        style: "currency",
+                                        currency: "PHP",
+                                        minimumFractionDigits: 2,
+                                      })}
+                                    </>
+                                  )}
+                              </span>
+                              {transaction.amountChanged !== null ? (
+                                <span
+                                  className={cn(
+                                    "capitalize block text-xs",
+                                    index === 0
+                                      ? "font-muted-foreground"
+                                      : "text-muted-foreground"
+                                  )}
+                                >
+                                  Amount{" "}
+                                  {transaction.transactionType ==
+                                    "BALANCE_PAYMENT"
+                                    ? "Paid"
+                                    : "Refunded"}
+                                  :{" "}
+                                  {`${transaction.amountChanged > 0 ? "+" : "-"
+                                    }${Math.abs(
+                                      transaction.amountChanged
+                                    ).toLocaleString("en-PH", {
+                                      style: "currency",
+                                      currency: "PHP",
+                                      minimumFractionDigits: 2,
+                                    })}`}
+                                </span>
+                              ) : null}
+                              {transaction.transactionId && (
+                                <>
+                                  {transaction.transactionType === "BALANCE_PAYMENT" && (
+                                    <PaymentViewDialog
+                                      externalUse
+                                      _id={transaction.transactionId}
+                                      title="Click here for more details 🔍"
+                                      titleClassName="block text-xs text-muted-foreground hover:text-foreground"
+                                    />
+                                  )}
+
+                                  {transaction.transactionType === "REFUND_PAYMENT" && (
+                                    <RefundViewDialog
+                                      externalUse
+                                      _id={transaction.transactionId}
+                                      title="Click here to see Refund Details 🔍"
+                                      titleClassName="block text-xs text-muted-foreground hover:text-foreground"
+                                    />
+                                  )}
+                                </>
                               )}
 
-                            <span className="text-xs text-muted-foreground block">
-                              {format(transaction.transactionDate, "PPpp")}
-                            </span>
+                              <span className="text-xs text-muted-foreground block">
+                                {format(transaction.transactionDate, "PPpp")}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground">
-                    No transaction history available.
-                  </span>
-                )}
+                        ))}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      No transaction history available.
+                    </span>
+                  )}
+                </div>
               </div>
             </TabsContent>
           </Tabs>

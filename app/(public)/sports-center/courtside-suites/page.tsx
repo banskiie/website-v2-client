@@ -921,9 +921,9 @@ export default function Page() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.5 }}
                 transition={{ duration: 0.6, delay: i * 0.2 }}
-                className="text-[#4CAF50]/90"
+                className="text-[#a98864]"
               >
-                <h3 className="text-4xl sm:text-5xl md:text-5xl lg:text-5xl font-bold text-[#4CAF50]/90">
+                <h3 className="text-4xl sm:text-5xl md:text-5xl lg:text-5xl font-bold text-[#ddb58b]">
                   <Counter target={stat.value} images={accommodationImages} />+
                 </h3>
                 <p className="text-gray-300 mt-2 text-sm sm:text-base md:text-lg">{stat.label}</p>
@@ -1098,7 +1098,7 @@ export default function Page() {
             }
           }}
           className="absolute -left-3 top-1/2 -translate-y-1/2 z-30 
-             bg-[#2FB44D]/90 text-white px-6! py-9! shadow-lg hover:bg-[#2FB44D]/80 transition
+             bg-[#a98864] text-white px-6! py-9! shadow-lg hover:bg-[#83674a] transition
              rounded-r-full cursor-pointer"
         >
           &lt;
@@ -1116,7 +1116,7 @@ export default function Page() {
             }
           }}
           className="absolute -right-3 top-1/2 -translate-y-1/2 z-30 
-             bg-[#2FB44D]/90 text-white px-6! py-9! shadow-lg hover:bg-[#2FB44D]/80 transition
+             bg-[#a98864] text-white px-6! py-9! shadow-lg hover:bg-[#83674a] transition
              rounded-l-full cursor-pointer"
         >
           &gt;

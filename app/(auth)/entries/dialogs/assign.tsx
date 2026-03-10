@@ -323,7 +323,7 @@ const replaceDocumentsInDrive = async (
             const oldFileId = extractFileIdFromUrl(existingDocs[0].documentURL)
 
             if (oldFileId) {
-            
+
 
               try {
                 const replaceResponse = await fetch("/api/transfer/replace", {
@@ -348,7 +348,7 @@ const replaceDocumentsInDrive = async (
                     action: replaceResult.action,
                     message: replaceResult.message,
                   })
-                 
+
                 } else {
                   console.error(
                     `❌ Failed to replace ${documentType}:`,
@@ -381,7 +381,7 @@ const replaceDocumentsInDrive = async (
                         message:
                           "Replacement failed, moved new document instead",
                       })
-                    
+
                     }
                   } catch (moveError) {
                     console.error(`❌ Failed to move new document:`, moveError)
@@ -398,7 +398,7 @@ const replaceDocumentsInDrive = async (
                 })
               }
             } else {
-             
+
 
               try {
                 const moveResponse = await fetch(
@@ -1622,7 +1622,7 @@ const AssignDialog = (props: Props) => {
 
             toast.success(
               response.data.assignPlayers.message ||
-                "Players assigned successfully",
+              "Players assigned successfully",
               {
                 duration: 3000,
               },
@@ -1630,7 +1630,7 @@ const AssignDialog = (props: Props) => {
           } else {
             toast.error(
               response?.data?.assignPlayers?.message ||
-                "Failed to assign players",
+              "Failed to assign players",
               {
                 duration: 3000,
               },
@@ -2236,354 +2236,371 @@ const AssignDialog = (props: Props) => {
               {!form.getFieldValue(
                 `is${tab === "player1" ? "Player1" : "Player2"}New`,
               ) && (
-                <>
-                  <form.Field
-                    name={`connected${tab === "player1" ? "Player1" : "Player2"}`}
-                    children={(field) => {
-                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid
-                      const hasError =
-                        validationErrors[
+                  <>
+                    <form.Field
+                      name={`connected${tab === "player1" ? "Player1" : "Player2"}`}
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched && !field.state.meta.isValid
+                        const hasError =
+                          validationErrors[
                           tab === "player1" ? "player1" : "player2"
-                        ]
+                          ]
 
-                      return (
-                        <Field data-invalid={isInvalid || hasError}>
-                          <div className="flex items-center justify-between">
-                            <FieldLabel
-                              htmlFor={field.name}
-                              className={hasError ? "text-destructive" : ""}
-                            >
-                              Connected{" "}
-                              {tab === "player1" ? "Player 1" : "Player 2"}
-                              {hasError && (
-                                <span className="text-destructive ml-1">*</span>
-                              )}
-                            </FieldLabel>
-                            {hasError && (
-                              <span className="text-xs text-destructive">
-                                {hasError}
-                              </span>
-                            )}
-                          </div>
-                          <Popover
-                            open={
-                              tab === "player1" ? openPlayers1 : openPlayers2
-                            }
-                            onOpenChange={
-                              tab === "player1"
-                                ? setOpenPlayers1
-                                : setOpenPlayers2
-                            }
-                          >
-                            <PopoverTrigger asChild>
-                              <Button
-                                id={field.name}
-                                name={field.name}
-                                disabled={optionsLoading}
-                                aria-expanded={
-                                  tab === "player1"
-                                    ? openPlayers1
-                                    : openPlayers2
-                                }
-                                onBlur={field.handleBlur}
-                                variant="outline"
-                                role="combobox"
-                                aria-invalid={
-                                  Boolean(isInvalid || hasError)
-                                    ? "true"
-                                    : "false"
-                                }
-                                className={cn(
-                                  "w-full justify-between font-normal capitalize -mt-2",
-                                  !field.state.value && "text-muted-foreground",
-                                  hasError &&
-                                    "border-destructive focus-visible:ring-destructive",
-                                )}
-                                type="button"
+                        return (
+                          <Field data-invalid={isInvalid || hasError}>
+                            <div className="flex items-center justify-between">
+                              <FieldLabel
+                                htmlFor={field.name}
+                                className={hasError ? "text-destructive" : ""}
                               >
-                                {field.state.value
-                                  ? players.find(
+                                Connected{" "}
+                                {tab === "player1" ? "Player 1" : "Player 2"}
+                                {hasError && (
+                                  <span className="text-destructive ml-1">*</span>
+                                )}
+                              </FieldLabel>
+                              {hasError && (
+                                <span className="text-xs text-destructive">
+                                  {hasError}
+                                </span>
+                              )}
+                            </div>
+                            <Popover
+                              open={
+                                tab === "player1" ? openPlayers1 : openPlayers2
+                              }
+                              onOpenChange={
+                                tab === "player1"
+                                  ? setOpenPlayers1
+                                  : setOpenPlayers2
+                              }
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  id={field.name}
+                                  name={field.name}
+                                  disabled={optionsLoading}
+                                  aria-expanded={
+                                    tab === "player1"
+                                      ? openPlayers1
+                                      : openPlayers2
+                                  }
+                                  onBlur={field.handleBlur}
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-invalid={
+                                    Boolean(isInvalid || hasError)
+                                      ? "true"
+                                      : "false"
+                                  }
+                                  className={cn(
+                                    "w-full justify-between font-normal capitalize -mt-2",
+                                    !field.state.value && "text-muted-foreground",
+                                    hasError &&
+                                    "border-destructive focus-visible:ring-destructive",
+                                  )}
+                                  type="button"
+                                >
+                                  {field.state.value
+                                    ? players.find(
                                       (o: { value: string; label: string }) =>
                                         o.value === field.state.value,
                                     )?.label
-                                  : `Select ${tab === "player1" ? "Player 1" : "Player 2"}`}
-                                <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-full p-0">
-                              <Command
-                                filter={(value, search) =>
-                                  players
-                                    .find(
-                                      (t: { value: string; label: string }) =>
-                                        t.value === value,
-                                    )
-                                    ?.label.toLowerCase()
-                                    .includes(search.toLowerCase())
-                                    ? 1
-                                    : 0
+                                    : `Select ${tab === "player1" ? "Player 1" : "Player 2"}`}
+                                  <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0 max-h-80" onWheel={(e) => e.stopPropagation()}>
+                                <Command
+                                  filter={(value, search) =>
+                                    players
+                                      .find(
+                                        (t: { value: string; label: string }) =>
+                                          t.value === value,
+                                      )
+                                      ?.label.toLowerCase()
+                                      .includes(search.toLowerCase())
+                                      ? 1
+                                      : 0
+                                  }
+                                >
+                                  <CommandInput
+                                    placeholder={`Select ${tab === "player1" ? "Player 1" : "Player 2"}`}
+                                  />
+                                  <CommandList className="max-h-72 overflow-y-auto">
+                                    <CommandGroup>
+                                      <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
+                                        Players
+                                      </Label>
+                                      {players?.map(
+                                        (o: {
+                                          value: string
+                                          label: string
+                                          hasEarlyBird: boolean
+                                        }) => (
+                                          <CommandItem
+                                            key={o.value}
+                                            value={o.value}
+                                            onSelect={(v) => {
+                                              field.handleChange(v.toString())
+                                              tab === "player1"
+                                                ? setOpenPlayers1(false)
+                                                : setOpenPlayers2(false)
+                                            }}
+                                            className="capitalize"
+                                          >
+                                            <CheckIcon
+                                              className={cn(
+                                                "h-4 w-4",
+                                                field.state.value === o.value
+                                                  ? "opacity-100"
+                                                  : "opacity-0",
+                                              )}
+                                            />
+                                            {o.label}
+                                          </CommandItem>
+                                        ),
+                                      )}
+                                    </CommandGroup>
+                                    <CommandEmpty>No players found.</CommandEmpty>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            {(isInvalid || hasError) && (
+                              <FieldError
+                                errors={
+                                  hasError
+                                    ? [{ message: hasError }]
+                                    : field.state.meta.errors
                                 }
-                              >
-                                <CommandInput
-                                  placeholder={`Select ${tab === "player1" ? "Player 1" : "Player 2"}`}
-                                />
-                                <CommandList className="max-h-72 overflow-y-auto">
-                                  <CommandGroup>
-                                    <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
-                                      Players
-                                    </Label>
-                                    {players?.map(
-                                      (o: {
-                                        value: string
-                                        label: string
-                                        hasEarlyBird: boolean
-                                      }) => (
-                                        <CommandItem
-                                          key={o.value}
-                                          value={o.value}
-                                          onSelect={(v) => {
-                                            field.handleChange(v.toString())
-                                            tab === "player1"
-                                              ? setOpenPlayers1(false)
-                                              : setOpenPlayers2(false)
-                                          }}
-                                          className="capitalize"
-                                        >
-                                          <CheckIcon
-                                            className={cn(
-                                              "h-4 w-4",
-                                              field.state.value === o.value
-                                                ? "opacity-100"
-                                                : "opacity-0",
-                                            )}
-                                          />
-                                          {o.label}
-                                        </CommandItem>
-                                      ),
-                                    )}
-                                  </CommandGroup>
-                                  <CommandEmpty>No players found.</CommandEmpty>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                          {(isInvalid || hasError) && (
-                            <FieldError
-                              errors={
-                                hasError
-                                  ? [{ message: hasError }]
-                                  : field.state.meta.errors
-                              }
-                            />
-                          )}
-                        </Field>
-                      )
-                    }}
-                  />
-                  <Separator />
-                  <div className="flex flex-col">
-                    <div className="col-span-2">
-                      <Label>Migrate Data</Label>
-                      <span className="text-xs text-muted-foreground">
-                        Checked fields will update the player database with
-                        entry data.
-                      </span>
-                    </div>
-                    <div className="flex items-center w-full gap-2">
-                      <div className="h-full flex items-center justify-center">
-                        <Checkbox
-                          disabled={
-                            isLoading ||
-                            !form.getFieldValue(
-                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                            )
-                          }
-                          onCheckedChange={(checked) => {
-                            form.setFieldValue(
-                              `migrate${tab === "player1" ? "Player1" : "Player2"}Data`,
-                              {
-                                firstName: checked === true,
-                                middleName: checked === true,
-                                lastName: checked === true,
-                                suffix: checked === true,
-                                birthDate: checked === true,
-                                phoneNumber: checked === true,
-                                email: checked === true,
-                                validDocuments: checked === true,
-                              },
-                            )
-                            if (checked) {
-                              setTimeout(() => {
-                                tab === "player1"
-                                  ? handleDocumentSelection1()
-                                  : handleDocumentSelection2()
-                              }, 100)
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="text-xs grid grid-cols-5 col-span-2 h-full w-full">
-                        <div className="px-2 h-full border w-full flex items-center justify-center min-h-8"></div>
-                        <span
-                          className={cn(
-                            "px-2 h-full border w-full flex items-center justify-center",
-                            form.getFieldValue(
-                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                            )
-                              ? "col-span-2"
-                              : "hidden",
-                          )}
-                        >
-                          From Database (Current)
-                        </span>{" "}
-                        <span
-                          className={cn(
-                            "px-2 h-full border w-full flex items-center justify-center",
-                            form.getFieldValue(
-                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                            )
-                              ? "col-span-2"
-                              : "col-span-4",
-                          )}
-                        >
-                          From Entry (New)
+                              />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+                    <Separator />
+                    <div className="flex flex-col">
+                      <div className="col-span-2">
+                        <Label>Migrate Data</Label>
+                        <span className="text-xs text-muted-foreground">
+                          Checked fields will update the player database with
+                          entry data.
                         </span>
                       </div>
-                    </div>
-                    <div>
-                      <form.Field
-                        name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.firstName`}
-                        children={(field) => {
-                          const isInvalid =
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          return (
-                            <Field>
-                              <div className="flex items-center w-full gap-2">
-                                <div className="h-full flex items-center justify-center">
-                                  <Checkbox
-                                    id={field.name}
-                                    name={field.name}
-                                    checked={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onCheckedChange={(checked) =>
-                                      field.handleChange(checked === true)
-                                    }
-                                    aria-invalid={isInvalid}
-                                    disabled={
-                                      isLoading ||
-                                      !form.getFieldValue(
-                                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div className="text-xs grid grid-cols-5 col-span-2 min-h-8 w-full">
-                                  <span className="px-2 h-full border w-full flex items-center justify-center py-1 text-center">
-                                    First Name
-                                  </span>
-                                  {form.getFieldValue(
-                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                  ) ? (
-                                    <>
-                                      <span
-                                        className={cn(
-                                          !field.state.value &&
+                      <div className="flex items-center w-full gap-2">
+                        <div className="h-full flex items-center justify-center">
+                          <Checkbox
+                            disabled={
+                              isLoading ||
+                              !form.getFieldValue(
+                                `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                              )
+                            }
+                            onCheckedChange={(checked) => {
+                              form.setFieldValue(
+                                `migrate${tab === "player1" ? "Player1" : "Player2"}Data`,
+                                {
+                                  firstName: checked === true,
+                                  middleName: checked === true,
+                                  lastName: checked === true,
+                                  suffix: checked === true,
+                                  birthDate: checked === true,
+                                  phoneNumber: checked === true,
+                                  email: checked === true,
+                                  validDocuments: checked === true,
+                                },
+                              )
+                              if (checked) {
+                                setTimeout(() => {
+                                  tab === "player1"
+                                    ? handleDocumentSelection1()
+                                    : handleDocumentSelection2()
+                                }, 100)
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="text-xs grid grid-cols-5 col-span-2 h-full w-full">
+                          <div className="px-2 h-full border w-full flex items-center justify-center min-h-8"></div>
+                          <span
+                            className={cn(
+                              "px-2 h-full border w-full flex items-center justify-center",
+                              form.getFieldValue(
+                                `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                              )
+                                ? "col-span-2"
+                                : "hidden",
+                            )}
+                          >
+                            From Database (Current)
+                          </span>{" "}
+                          <span
+                            className={cn(
+                              "px-2 h-full border w-full flex items-center justify-center",
+                              form.getFieldValue(
+                                `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                              )
+                                ? "col-span-2"
+                                : "col-span-4",
+                            )}
+                          >
+                            From Entry (New)
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <form.Field
+                          name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.firstName`}
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field>
+                                <div className="flex items-center w-full gap-2">
+                                  <div className="h-full flex items-center justify-center">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(checked) =>
+                                        field.handleChange(checked === true)
+                                      }
+                                      aria-invalid={isInvalid}
+                                      disabled={
+                                        isLoading ||
+                                        !form.getFieldValue(
+                                          `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div className="text-xs grid grid-cols-5 col-span-2 min-h-8 w-full">
+                                    <span className="px-2 h-full border w-full flex items-center justify-center py-1 text-center">
+                                      First Name
+                                    </span>
+                                    {form.getFieldValue(
+                                      `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                    ) ? (
+                                      <>
+                                        <span
+                                          className={cn(
+                                            !field.state.value &&
                                             "text-success bg-success/5",
-                                          "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1",
-                                        )}
-                                      >
-                                        {tab === "player1"
-                                          ? player1?.firstName
-                                          : player2?.firstName}
-                                      </span>{" "}
+                                            "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? player1?.firstName
+                                            : player2?.firstName}
+                                        </span>{" "}
+                                        <span
+                                          className={cn(
+                                            field.state.value &&
+                                            "text-warning bg-warning/5",
+                                            "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? entry?.player1Entry.firstName
+                                            : entry?.player2Entry?.firstName}
+                                        </span>
+                                      </>
+                                    ) : (
                                       <span
                                         className={cn(
-                                          field.state.value &&
-                                            "text-warning bg-warning/5",
-                                          "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1",
+                                          field.state.value && "text-warning",
+                                          "col-span-4 px-2 h-full border w-full flex items-center justify-start",
                                         )}
                                       >
                                         {tab === "player1"
                                           ? entry?.player1Entry.firstName
                                           : entry?.player2Entry?.firstName}
                                       </span>
-                                    </>
-                                  ) : (
-                                    <span
-                                      className={cn(
-                                        field.state.value && "text-warning",
-                                        "col-span-4 px-2 h-full border w-full flex items-center justify-start",
-                                      )}
-                                    >
-                                      {tab === "player1"
-                                        ? entry?.player1Entry.firstName
-                                        : entry?.player2Entry?.firstName}
+                                    )}
+                                  </div>
+                                </div>
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <form.Field
+                          name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.middleName`}
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field>
+                                <div className="flex items-center w-full gap-2">
+                                  <div className="h-full flex items-center justify-center text-center">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(checked) =>
+                                        field.handleChange(checked === true)
+                                      }
+                                      aria-invalid={isInvalid}
+                                      disabled={
+                                        isLoading ||
+                                        !form.getFieldValue(
+                                          `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                    <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                      Middle Name
                                     </span>
-                                  )}
-                                </div>
-                              </div>
-                            </Field>
-                          )
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <form.Field
-                        name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.middleName`}
-                        children={(field) => {
-                          const isInvalid =
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          return (
-                            <Field>
-                              <div className="flex items-center w-full gap-2">
-                                <div className="h-full flex items-center justify-center text-center">
-                                  <Checkbox
-                                    id={field.name}
-                                    name={field.name}
-                                    checked={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onCheckedChange={(checked) =>
-                                      field.handleChange(checked === true)
-                                    }
-                                    aria-invalid={isInvalid}
-                                    disabled={
-                                      isLoading ||
-                                      !form.getFieldValue(
-                                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                                  <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
-                                    Middle Name
-                                  </span>
-                                  {form.getFieldValue(
-                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                  ) ? (
-                                    <>
-                                      <span
-                                        className={cn(
-                                          !field.state.value &&
+                                    {form.getFieldValue(
+                                      `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                    ) ? (
+                                      <>
+                                        <span
+                                          className={cn(
+                                            !field.state.value &&
                                             "text-success bg-success/5",
-                                          "col-span-2 px-2 border w-full flex items-center justify-start py-1",
-                                          !(tab === "player1"
-                                            ? player1?.middleName
-                                            : player2?.middleName) && "italic",
-                                        )}
-                                      >
-                                        {tab === "player1"
-                                          ? player1?.middleName || "N/A"
-                                          : player2?.middleName || "N/A"}
-                                      </span>{" "}
+                                            "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                            !(tab === "player1"
+                                              ? player1?.middleName
+                                              : player2?.middleName) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? player1?.middleName || "N/A"
+                                            : player2?.middleName || "N/A"}
+                                        </span>{" "}
+                                        <span
+                                          className={cn(
+                                            field.state.value &&
+                                            "text-warning bg-warning/5",
+                                            "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                            !(tab === "player1"
+                                              ? player1?.middleName
+                                              : player2?.middleName) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? entry?.player1Entry.middleName ||
+                                            "N/A"
+                                            : entry?.player2Entry?.middleName ||
+                                            "N/A"}
+                                        </span>
+                                      </>
+                                    ) : (
                                       <span
                                         className={cn(
-                                          field.state.value &&
-                                            "text-warning bg-warning/5",
-                                          "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                          field.state.value && "text-warning",
+                                          "col-span-4 px-2 border w-full flex items-center justify-start py-1",
                                           !(tab === "player1"
                                             ? player1?.middleName
                                             : player2?.middleName) && "italic",
@@ -2591,180 +2608,179 @@ const AssignDialog = (props: Props) => {
                                       >
                                         {tab === "player1"
                                           ? entry?.player1Entry.middleName ||
-                                            "N/A"
-                                          : entry?.player2Entry?.middleName ||
-                                            "N/A"}
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <span
-                                      className={cn(
-                                        field.state.value && "text-warning",
-                                        "col-span-4 px-2 border w-full flex items-center justify-start py-1",
-                                        !(tab === "player1"
-                                          ? player1?.middleName
-                                          : player2?.middleName) && "italic",
-                                      )}
-                                    >
-                                      {tab === "player1"
-                                        ? entry?.player1Entry.middleName ||
                                           "N/A"
-                                        : entry?.player2Entry?.middleName ||
+                                          : entry?.player2Entry?.middleName ||
                                           "N/A"}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </Field>
-                          )
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <form.Field
-                        name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.lastName`}
-                        children={(field) => {
-                          const isInvalid =
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          return (
-                            <Field>
-                              <div className="flex items-center w-full gap-2">
-                                <div className="flex items-center justify-center">
-                                  <Checkbox
-                                    id={field.name}
-                                    name={field.name}
-                                    checked={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onCheckedChange={(checked) =>
-                                      field.handleChange(checked === true)
-                                    }
-                                    aria-invalid={isInvalid}
-                                    disabled={
-                                      isLoading ||
-                                      !form.getFieldValue(
-                                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                                  <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
-                                    Last Name
-                                  </span>
-                                  {form.getFieldValue(
-                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                  ) ? (
-                                    <>
-                                      <span
-                                        className={cn(
-                                          !field.state.value &&
-                                            "text-success bg-success/5",
-                                          "col-span-2 px-2 border w-full flex items-center justify-start py-1",
-                                          !(tab === "player1"
-                                            ? player1?.lastName
-                                            : player2?.lastName) && "italic",
-                                        )}
-                                      >
-                                        {tab === "player1"
-                                          ? player1?.lastName || "N/A"
-                                          : player2?.lastName || "N/A"}
-                                      </span>{" "}
-                                      <span
-                                        className={cn(
-                                          field.state.value &&
-                                            "text-warning bg-warning/5",
-                                          "col-span-2 px-2 border w-full flex items-center justify-start py-1",
-                                          !(tab === "player1"
-                                            ? player1?.lastName
-                                            : player2?.lastName) && "italic",
-                                        )}
-                                      >
-                                        {tab === "player1"
-                                          ? entry?.player1Entry.lastName ||
-                                            "N/A"
-                                          : entry?.player2Entry?.lastName ||
-                                            "N/A"}
                                       </span>
-                                    </>
-                                  ) : (
-                                    <span
-                                      className={cn(
-                                        field.state.value && "text-warning",
-                                        "col-span-4 px-2 border w-full flex items-center justify-start py-1",
-                                        !(tab === "player1"
-                                          ? player1?.lastName
-                                          : player2?.lastName) && "italic",
-                                      )}
-                                    >
-                                      {tab === "player1"
-                                        ? entry?.player1Entry.lastName || "N/A"
-                                        : entry?.player2Entry?.lastName ||
-                                          "N/A"}
+                                    )}
+                                  </div>
+                                </div>
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <form.Field
+                          name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.lastName`}
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field>
+                                <div className="flex items-center w-full gap-2">
+                                  <div className="flex items-center justify-center">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(checked) =>
+                                        field.handleChange(checked === true)
+                                      }
+                                      aria-invalid={isInvalid}
+                                      disabled={
+                                        isLoading ||
+                                        !form.getFieldValue(
+                                          `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                    <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                      Last Name
                                     </span>
-                                  )}
-                                </div>
-                              </div>
-                            </Field>
-                          )
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <form.Field
-                        name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.suffix`}
-                        children={(field) => {
-                          const isInvalid =
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          return (
-                            <Field>
-                              <div className="flex items-center w-full gap-2">
-                                <div className="flex items-center justify-center">
-                                  <Checkbox
-                                    id={field.name}
-                                    name={field.name}
-                                    checked={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onCheckedChange={(checked) =>
-                                      field.handleChange(checked === true)
-                                    }
-                                    aria-invalid={isInvalid}
-                                    disabled={
-                                      isLoading ||
-                                      !form.getFieldValue(
-                                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                                  <span className="px-2 border w-full flex items-center py-1 justify-center text-center">
-                                    Ext.
-                                  </span>
-                                  {form.getFieldValue(
-                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                  ) ? (
-                                    <>
+                                    {form.getFieldValue(
+                                      `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                    ) ? (
+                                      <>
+                                        <span
+                                          className={cn(
+                                            !field.state.value &&
+                                            "text-success bg-success/5",
+                                            "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                            !(tab === "player1"
+                                              ? player1?.lastName
+                                              : player2?.lastName) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? player1?.lastName || "N/A"
+                                            : player2?.lastName || "N/A"}
+                                        </span>{" "}
+                                        <span
+                                          className={cn(
+                                            field.state.value &&
+                                            "text-warning bg-warning/5",
+                                            "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                            !(tab === "player1"
+                                              ? player1?.lastName
+                                              : player2?.lastName) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? entry?.player1Entry.lastName ||
+                                            "N/A"
+                                            : entry?.player2Entry?.lastName ||
+                                            "N/A"}
+                                        </span>
+                                      </>
+                                    ) : (
                                       <span
                                         className={cn(
-                                          !field.state.value &&
-                                            "text-success bg-success/5",
-                                          "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                          field.state.value && "text-warning",
+                                          "col-span-4 px-2 border w-full flex items-center justify-start py-1",
                                           !(tab === "player1"
-                                            ? player1?.suffix
-                                            : player2?.suffix) && "italic",
+                                            ? player1?.lastName
+                                            : player2?.lastName) && "italic",
                                         )}
                                       >
                                         {tab === "player1"
-                                          ? player1?.suffix || "N/A"
-                                          : player2?.suffix || "N/A"}
-                                      </span>{" "}
+                                          ? entry?.player1Entry.lastName || "N/A"
+                                          : entry?.player2Entry?.lastName ||
+                                          "N/A"}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <form.Field
+                          name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.suffix`}
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field>
+                                <div className="flex items-center w-full gap-2">
+                                  <div className="flex items-center justify-center">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(checked) =>
+                                        field.handleChange(checked === true)
+                                      }
+                                      aria-invalid={isInvalid}
+                                      disabled={
+                                        isLoading ||
+                                        !form.getFieldValue(
+                                          `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                    <span className="px-2 border w-full flex items-center py-1 justify-center text-center">
+                                      Ext.
+                                    </span>
+                                    {form.getFieldValue(
+                                      `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                    ) ? (
+                                      <>
+                                        <span
+                                          className={cn(
+                                            !field.state.value &&
+                                            "text-success bg-success/5",
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            !(tab === "player1"
+                                              ? player1?.suffix
+                                              : player2?.suffix) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? player1?.suffix || "N/A"
+                                            : player2?.suffix || "N/A"}
+                                        </span>{" "}
+                                        <span
+                                          className={cn(
+                                            field.state.value &&
+                                            "text-warning bg-warning/5",
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            !(tab === "player1"
+                                              ? player1?.suffix
+                                              : player2?.suffix) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? entry?.player1Entry.suffix || "N/A"
+                                            : entry?.player2Entry?.suffix ||
+                                            "N/A"}
+                                        </span>
+                                      </>
+                                    ) : (
                                       <span
                                         className={cn(
-                                          field.state.value &&
-                                            "text-warning bg-warning/5",
-                                          "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                          field.state.value && "text-warning",
+                                          "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                           !(tab === "player1"
                                             ? player1?.suffix
                                             : player2?.suffix) && "italic",
@@ -2772,87 +2788,86 @@ const AssignDialog = (props: Props) => {
                                       >
                                         {tab === "player1"
                                           ? entry?.player1Entry.suffix || "N/A"
-                                          : entry?.player2Entry?.suffix ||
-                                            "N/A"}
+                                          : entry?.player2Entry?.suffix || "N/A"}
                                       </span>
-                                    </>
-                                  ) : (
-                                    <span
-                                      className={cn(
-                                        field.state.value && "text-warning",
-                                        "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
-                                        !(tab === "player1"
-                                          ? player1?.suffix
-                                          : player2?.suffix) && "italic",
-                                      )}
-                                    >
-                                      {tab === "player1"
-                                        ? entry?.player1Entry.suffix || "N/A"
-                                        : entry?.player2Entry?.suffix || "N/A"}
+                                    )}
+                                  </div>
+                                </div>
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <form.Field
+                          name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.email`}
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field>
+                                <div className="flex items-center w-full gap-2">
+                                  <div className="flex items-center justify-center">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(checked) =>
+                                        field.handleChange(checked === true)
+                                      }
+                                      aria-invalid={isInvalid}
+                                      disabled={
+                                        isLoading ||
+                                        !form.getFieldValue(
+                                          `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                    <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                      Email
                                     </span>
-                                  )}
-                                </div>
-                              </div>
-                            </Field>
-                          )
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <form.Field
-                        name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.email`}
-                        children={(field) => {
-                          const isInvalid =
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          return (
-                            <Field>
-                              <div className="flex items-center w-full gap-2">
-                                <div className="flex items-center justify-center">
-                                  <Checkbox
-                                    id={field.name}
-                                    name={field.name}
-                                    checked={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onCheckedChange={(checked) =>
-                                      field.handleChange(checked === true)
-                                    }
-                                    aria-invalid={isInvalid}
-                                    disabled={
-                                      isLoading ||
-                                      !form.getFieldValue(
-                                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                                  <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
-                                    Email
-                                  </span>
-                                  {form.getFieldValue(
-                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                  ) ? (
-                                    <>
-                                      <span
-                                        className={cn(
-                                          !field.state.value &&
+                                    {form.getFieldValue(
+                                      `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                    ) ? (
+                                      <>
+                                        <span
+                                          className={cn(
+                                            !field.state.value &&
                                             "text-success bg-success/5",
-                                          "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
-                                          !(tab === "player1"
-                                            ? player1?.email
-                                            : player2?.email) && "italic",
-                                        )}
-                                      >
-                                        {tab === "player1"
-                                          ? player1?.email || "N/A"
-                                          : player2?.email || "N/A"}
-                                      </span>{" "}
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            !(tab === "player1"
+                                              ? player1?.email
+                                              : player2?.email) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? player1?.email || "N/A"
+                                            : player2?.email || "N/A"}
+                                        </span>{" "}
+                                        <span
+                                          className={cn(
+                                            field.state.value &&
+                                            "text-warning bg-warning/5",
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start break-all whitespace-normal",
+                                            !(tab === "player1"
+                                              ? player1?.email
+                                              : player2?.email) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? entry?.player1Entry.email || "N/A"
+                                            : entry?.player2Entry?.email || "N/A"}
+                                        </span>
+                                      </>
+                                    ) : (
                                       <span
                                         className={cn(
-                                          field.state.value &&
-                                            "text-warning bg-warning/5",
-                                          "col-span-2 px-2 border w-full flex items-center py-1 justify-start break-all whitespace-normal",
+                                          field.state.value && "text-warning",
+                                          "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                           !(tab === "player1"
                                             ? player1?.email
                                             : player2?.email) && "italic",
@@ -2862,84 +2877,86 @@ const AssignDialog = (props: Props) => {
                                           ? entry?.player1Entry.email || "N/A"
                                           : entry?.player2Entry?.email || "N/A"}
                                       </span>
-                                    </>
-                                  ) : (
-                                    <span
-                                      className={cn(
-                                        field.state.value && "text-warning",
-                                        "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
-                                        !(tab === "player1"
-                                          ? player1?.email
-                                          : player2?.email) && "italic",
-                                      )}
-                                    >
-                                      {tab === "player1"
-                                        ? entry?.player1Entry.email || "N/A"
-                                        : entry?.player2Entry?.email || "N/A"}
+                                    )}
+                                  </div>
+                                </div>
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <form.Field
+                          name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.phoneNumber`}
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field>
+                                <div className="flex items-center w-full gap-2">
+                                  <div className="flex items-center justify-center">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(checked) =>
+                                        field.handleChange(checked === true)
+                                      }
+                                      aria-invalid={isInvalid}
+                                      disabled={
+                                        isLoading ||
+                                        !form.getFieldValue(
+                                          `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                    <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                      Phone No.
                                     </span>
-                                  )}
-                                </div>
-                              </div>
-                            </Field>
-                          )
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <form.Field
-                        name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.phoneNumber`}
-                        children={(field) => {
-                          const isInvalid =
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          return (
-                            <Field>
-                              <div className="flex items-center w-full gap-2">
-                                <div className="flex items-center justify-center">
-                                  <Checkbox
-                                    id={field.name}
-                                    name={field.name}
-                                    checked={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onCheckedChange={(checked) =>
-                                      field.handleChange(checked === true)
-                                    }
-                                    aria-invalid={isInvalid}
-                                    disabled={
-                                      isLoading ||
-                                      !form.getFieldValue(
-                                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                                  <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
-                                    Phone No.
-                                  </span>
-                                  {form.getFieldValue(
-                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                  ) ? (
-                                    <>
-                                      <span
-                                        className={cn(
-                                          !field.state.value &&
+                                    {form.getFieldValue(
+                                      `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                    ) ? (
+                                      <>
+                                        <span
+                                          className={cn(
+                                            !field.state.value &&
                                             "text-success bg-success/5",
-                                          "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
-                                          !(tab === "player1"
-                                            ? player1?.phoneNumber
-                                            : player2?.phoneNumber) && "italic",
-                                        )}
-                                      >
-                                        {tab === "player1"
-                                          ? player1?.phoneNumber || "N/A"
-                                          : player2?.phoneNumber || "N/A"}
-                                      </span>{" "}
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            !(tab === "player1"
+                                              ? player1?.phoneNumber
+                                              : player2?.phoneNumber) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? player1?.phoneNumber || "N/A"
+                                            : player2?.phoneNumber || "N/A"}
+                                        </span>{" "}
+                                        <span
+                                          className={cn(
+                                            field.state.value &&
+                                            "text-warning bg-warning/5",
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            !(tab === "player1"
+                                              ? player1?.phoneNumber
+                                              : player2?.phoneNumber) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? entry?.player1Entry.phoneNumber ||
+                                            "N/A"
+                                            : entry?.player2Entry?.phoneNumber ||
+                                            "N/A"}
+                                        </span>
+                                      </>
+                                    ) : (
                                       <span
                                         className={cn(
-                                          field.state.value &&
-                                            "text-warning bg-warning/5",
-                                          "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                          field.state.value && "text-warning",
+                                          "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                           !(tab === "player1"
                                             ? player1?.phoneNumber
                                             : player2?.phoneNumber) && "italic",
@@ -2947,100 +2964,112 @@ const AssignDialog = (props: Props) => {
                                       >
                                         {tab === "player1"
                                           ? entry?.player1Entry.phoneNumber ||
-                                            "N/A"
-                                          : entry?.player2Entry?.phoneNumber ||
-                                            "N/A"}
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <span
-                                      className={cn(
-                                        field.state.value && "text-warning",
-                                        "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
-                                        !(tab === "player1"
-                                          ? player1?.phoneNumber
-                                          : player2?.phoneNumber) && "italic",
-                                      )}
-                                    >
-                                      {tab === "player1"
-                                        ? entry?.player1Entry.phoneNumber ||
                                           "N/A"
-                                        : entry?.player2Entry?.phoneNumber ||
+                                          : entry?.player2Entry?.phoneNumber ||
                                           "N/A"}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <form.Field
+                          name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.birthDate`}
+                          children={(field) => {
+                            const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid
+                            return (
+                              <Field>
+                                <div className="flex items-center w-full gap-2">
+                                  <div className="flex items-center justify-center">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(checked) =>
+                                        field.handleChange(checked === true)
+                                      }
+                                      aria-invalid={isInvalid}
+                                      disabled={
+                                        isLoading ||
+                                        !form.getFieldValue(
+                                          `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                    <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                      Birthday
                                     </span>
-                                  )}
-                                </div>
-                              </div>
-                            </Field>
-                          )
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <form.Field
-                        name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.birthDate`}
-                        children={(field) => {
-                          const isInvalid =
-                            field.state.meta.isTouched &&
-                            !field.state.meta.isValid
-                          return (
-                            <Field>
-                              <div className="flex items-center w-full gap-2">
-                                <div className="flex items-center justify-center">
-                                  <Checkbox
-                                    id={field.name}
-                                    name={field.name}
-                                    checked={field.state.value}
-                                    onBlur={field.handleBlur}
-                                    onCheckedChange={(checked) =>
-                                      field.handleChange(checked === true)
-                                    }
-                                    aria-invalid={isInvalid}
-                                    disabled={
-                                      isLoading ||
-                                      !form.getFieldValue(
-                                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                                  <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
-                                    Birthday
-                                  </span>
-                                  {form.getFieldValue(
-                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                  ) ? (
-                                    <>
-                                      <span
-                                        className={cn(
-                                          !field.state.value &&
+                                    {form.getFieldValue(
+                                      `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                    ) ? (
+                                      <>
+                                        <span
+                                          className={cn(
+                                            !field.state.value &&
                                             "text-success bg-success/5",
-                                          "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
-                                          !(tab === "player1"
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            !(tab === "player1"
+                                              ? player1?.birthDate
+                                              : player2?.birthDate) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
                                             ? player1?.birthDate
-                                            : player2?.birthDate) && "italic",
-                                        )}
-                                      >
-                                        {tab === "player1"
-                                          ? player1?.birthDate
-                                            ? format(
+                                              ? format(
                                                 new Date(player1.birthDate),
                                                 "PP",
                                               )
-                                            : "N/A"
-                                          : player2?.birthDate
-                                            ? format(
+                                              : "N/A"
+                                            : player2?.birthDate
+                                              ? format(
                                                 new Date(player2.birthDate),
                                                 "PP",
                                               )
-                                            : "N/A"}
-                                      </span>{" "}
+                                              : "N/A"}
+                                        </span>{" "}
+                                        <span
+                                          className={cn(
+                                            field.state.value &&
+                                            "text-warning bg-warning/5",
+                                            "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                            !(tab === "player1"
+                                              ? player1?.birthDate
+                                              : player2?.birthDate) && "italic",
+                                          )}
+                                        >
+                                          {tab === "player1"
+                                            ? entry?.player1Entry.birthDate
+                                              ? format(
+                                                new Date(
+                                                  entry.player1Entry.birthDate,
+                                                ),
+                                                "PP",
+                                              )
+                                              : "N/A"
+                                            : entry?.player2Entry?.birthDate
+                                              ? format(
+                                                new Date(
+                                                  entry.player2Entry.birthDate,
+                                                ),
+                                                "PP",
+                                              )
+                                              : "N/A"}
+                                        </span>
+                                      </>
+                                    ) : (
                                       <span
                                         className={cn(
-                                          field.state.value &&
-                                            "text-warning bg-warning/5",
-                                          "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                          field.state.value && "text-warning",
+                                          "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                           !(tab === "player1"
                                             ? player1?.birthDate
                                             : player2?.birthDate) && "italic",
@@ -3049,61 +3078,32 @@ const AssignDialog = (props: Props) => {
                                         {tab === "player1"
                                           ? entry?.player1Entry.birthDate
                                             ? format(
-                                                new Date(
-                                                  entry.player1Entry.birthDate,
-                                                ),
-                                                "PP",
-                                              )
-                                            : "N/A"
-                                          : entry?.player2Entry?.birthDate
-                                            ? format(
-                                                new Date(
-                                                  entry.player2Entry.birthDate,
-                                                ),
-                                                "PP",
-                                              )
-                                            : "N/A"}
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <span
-                                      className={cn(
-                                        field.state.value && "text-warning",
-                                        "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
-                                        !(tab === "player1"
-                                          ? player1?.birthDate
-                                          : player2?.birthDate) && "italic",
-                                      )}
-                                    >
-                                      {tab === "player1"
-                                        ? entry?.player1Entry.birthDate
-                                          ? format(
                                               new Date(
                                                 entry.player1Entry.birthDate,
                                               ),
                                               "PP",
                                             )
-                                          : "N/A"
-                                        : entry?.player2Entry?.birthDate
-                                          ? format(
+                                            : "N/A"
+                                          : entry?.player2Entry?.birthDate
+                                            ? format(
                                               new Date(
                                                 entry.player2Entry.birthDate,
                                               ),
                                               "PP",
                                             )
-                                          : "N/A"}
-                                    </span>
-                                  )}
+                                            : "N/A"}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            </Field>
-                          )
-                        }}
-                      />
+                              </Field>
+                            )
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
             </FieldSet>
           </div>
 
@@ -3292,9 +3292,7 @@ const AssignDialog = (props: Props) => {
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
-                    tab === "player1"
-                      ? handleDocumentSelection1
-                      : handleDocumentSelection2
+                    tab === 'player1' ? handleDocumentSelection1() : handleDocumentSelection2()
                   }}
                   disabled={isLoading}
                   type="button"
@@ -3485,344 +3483,359 @@ const AssignDialog = (props: Props) => {
         {!form.getFieldValue(
           `is${tab === "player1" ? "Player1" : "Player2"}New`,
         ) && (
-          <>
-            <form.Field
-              name={`connected${tab === "player1" ? "Player1" : "Player2"}`}
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                const hasError =
-                  validationErrors[tab === "player1" ? "player1" : "player2"]
+            <>
+              <form.Field
+                name={`connected${tab === "player1" ? "Player1" : "Player2"}`}
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  const hasError =
+                    validationErrors[tab === "player1" ? "player1" : "player2"]
 
-                return (
-                  <Field data-invalid={isInvalid || hasError}>
-                    <div className="flex items-center justify-between">
-                      <FieldLabel
-                        htmlFor={field.name}
-                        className={hasError ? "text-destructive" : ""}
-                      >
-                        Connected {tab === "player1" ? "Player 1" : "Player 2"}
-                        {hasError && (
-                          <span className="text-destructive ml-1">*</span>
-                        )}
-                      </FieldLabel>
-                      {hasError && (
-                        <span className="text-xs text-destructive">
-                          {hasError}
-                        </span>
-                      )}
-                    </div>
-                    <Popover
-                      open={tab === "player1" ? openPlayers1 : openPlayers2}
-                      onOpenChange={
-                        tab === "player1" ? setOpenPlayers1 : setOpenPlayers2
-                      }
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          id={field.name}
-                          name={field.name}
-                          disabled={optionsLoading}
-                          aria-expanded={
-                            tab === "player1" ? openPlayers1 : openPlayers2
-                          }
-                          onBlur={field.handleBlur}
-                          variant="outline"
-                          role="combobox"
-                          aria-invalid={
-                            Boolean(isInvalid || hasError) ? "true" : "false"
-                          }
-                          className={cn(
-                            "w-full justify-between font-normal capitalize -mt-2",
-                            !field.state.value && "text-muted-foreground",
-                            hasError &&
-                              "border-destructive focus-visible:ring-destructive",
-                          )}
-                          type="button"
+                  return (
+                    <Field data-invalid={isInvalid || hasError}>
+                      <div className="flex items-center justify-between">
+                        <FieldLabel
+                          htmlFor={field.name}
+                          className={hasError ? "text-destructive" : ""}
                         >
-                          {field.state.value
-                            ? players.find(
+                          Connected {tab === "player1" ? "Player 1" : "Player 2"}
+                          {hasError && (
+                            <span className="text-destructive ml-1">*</span>
+                          )}
+                        </FieldLabel>
+                        {hasError && (
+                          <span className="text-xs text-destructive">
+                            {hasError}
+                          </span>
+                        )}
+                      </div>
+                      <Popover
+                        open={tab === "player1" ? openPlayers1 : openPlayers2}
+                        onOpenChange={
+                          tab === "player1" ? setOpenPlayers1 : setOpenPlayers2
+                        }
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            id={field.name}
+                            name={field.name}
+                            disabled={optionsLoading}
+                            aria-expanded={
+                              tab === "player1" ? openPlayers1 : openPlayers2
+                            }
+                            onBlur={field.handleBlur}
+                            variant="outline"
+                            role="combobox"
+                            aria-invalid={
+                              Boolean(isInvalid || hasError) ? "true" : "false"
+                            }
+                            className={cn(
+                              "w-full justify-between font-normal capitalize -mt-2",
+                              !field.state.value && "text-muted-foreground",
+                              hasError &&
+                              "border-destructive focus-visible:ring-destructive",
+                            )}
+                            type="button"
+                          >
+                            {field.state.value
+                              ? players.find(
                                 (o: { value: string; label: string }) =>
                                   o.value === field.state.value,
                               )?.label
-                            : `Select ${tab === "player1" ? "Player 1" : "Player 2"}`}
-                          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command
-                          filter={(value, search) =>
-                            players
-                              .find(
-                                (t: { value: string; label: string }) =>
-                                  t.value === value,
-                              )
-                              ?.label.toLowerCase()
-                              .includes(search.toLowerCase())
-                              ? 1
-                              : 0
+                              : `Select ${tab === "player1" ? "Player 1" : "Player 2"}`}
+                            <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command
+                            filter={(value, search) =>
+                              players
+                                .find(
+                                  (t: { value: string; label: string }) =>
+                                    t.value === value,
+                                )
+                                ?.label.toLowerCase()
+                                .includes(search.toLowerCase())
+                                ? 1
+                                : 0
+                            }
+                          >
+                            <CommandInput
+                              placeholder={`Select ${tab === "player1" ? "Player 1" : "Player 2"}`}
+                            />
+                            <CommandList className="max-h-72 overflow-y-auto">
+                              <CommandGroup>
+                                <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
+                                  Players
+                                </Label>
+                                {players?.map(
+                                  (o: {
+                                    value: string
+                                    label: string
+                                    hasEarlyBird: boolean
+                                  }) => (
+                                    <CommandItem
+                                      key={o.value}
+                                      value={o.value}
+                                      onSelect={(v) => {
+                                        field.handleChange(v.toString())
+                                        tab === "player1"
+                                          ? setOpenPlayers1(false)
+                                          : setOpenPlayers2(false)
+                                      }}
+                                      className="capitalize"
+                                    >
+                                      <CheckIcon
+                                        className={cn(
+                                          "h-4 w-4",
+                                          field.state.value === o.value
+                                            ? "opacity-100"
+                                            : "opacity-0",
+                                        )}
+                                      />
+                                      {o.label}
+                                    </CommandItem>
+                                  ),
+                                )}
+                              </CommandGroup>
+                              <CommandEmpty>No players found.</CommandEmpty>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      {(isInvalid || hasError) && (
+                        <FieldError
+                          errors={
+                            hasError
+                              ? [{ message: hasError }]
+                              : field.state.meta.errors
                           }
-                        >
-                          <CommandInput
-                            placeholder={`Select ${tab === "player1" ? "Player 1" : "Player 2"}`}
-                          />
-                          <CommandList className="max-h-72 overflow-y-auto">
-                            <CommandGroup>
-                              <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
-                                Players
-                              </Label>
-                              {players?.map(
-                                (o: {
-                                  value: string
-                                  label: string
-                                  hasEarlyBird: boolean
-                                }) => (
-                                  <CommandItem
-                                    key={o.value}
-                                    value={o.value}
-                                    onSelect={(v) => {
-                                      field.handleChange(v.toString())
-                                      tab === "player1"
-                                        ? setOpenPlayers1(false)
-                                        : setOpenPlayers2(false)
-                                    }}
-                                    className="capitalize"
-                                  >
-                                    <CheckIcon
-                                      className={cn(
-                                        "h-4 w-4",
-                                        field.state.value === o.value
-                                          ? "opacity-100"
-                                          : "opacity-0",
-                                      )}
-                                    />
-                                    {o.label}
-                                  </CommandItem>
-                                ),
-                              )}
-                            </CommandGroup>
-                            <CommandEmpty>No players found.</CommandEmpty>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    {(isInvalid || hasError) && (
-                      <FieldError
-                        errors={
-                          hasError
-                            ? [{ message: hasError }]
-                            : field.state.meta.errors
-                        }
-                      />
-                    )}
-                  </Field>
-                )
-              }}
-            />
-            <Separator />
-            <div className="flex flex-col">
-              <div className="col-span-2">
-                <Label>Migrate Data</Label>
-                <span className="text-xs text-muted-foreground">
-                  Checked fields will update the player database with entry
-                  data.
-                </span>
-              </div>
-              <div className="flex items-center w-full gap-2">
-                <div className="h-full flex items-center justify-center">
-                  <Checkbox
-                    disabled={
-                      isLoading ||
-                      !form.getFieldValue(
-                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                      )
-                    }
-                    onCheckedChange={(checked) => {
-                      form.setFieldValue(
-                        `migrate${tab === "player1" ? "Player1" : "Player2"}Data`,
-                        {
-                          firstName: checked === true,
-                          middleName: checked === true,
-                          lastName: checked === true,
-                          suffix: checked === true,
-                          birthDate: checked === true,
-                          phoneNumber: checked === true,
-                          email: checked === true,
-                          validDocuments: checked === true,
-                        },
-                      )
-                      if (checked) {
-                        // If checking all, show document selection dialog
-                        setTimeout(() => {
-                          tab === "player1"
-                            ? handleDocumentSelection1()
-                            : handleDocumentSelection2()
-                        }, 100)
-                      }
-                    }}
-                  />
-                </div>
-                <div className="text-xs grid grid-cols-5 col-span-2 h-full w-full">
-                  <div className="px-2 h-full border w-full flex items-center justify-center min-h-8"></div>
-                  <span
-                    className={cn(
-                      "px-2 h-full border w-full flex items-center justify-center",
-                      form.getFieldValue(
-                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                      )
-                        ? "col-span-2"
-                        : "hidden",
-                    )}
-                  >
-                    From Database (Current)
-                  </span>{" "}
-                  <span
-                    className={cn(
-                      "px-2 h-full border w-full flex items-center justify-center",
-                      form.getFieldValue(
-                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                      )
-                        ? "col-span-2"
-                        : "col-span-4",
-                    )}
-                  >
-                    From Entry (New)
+                        />
+                      )}
+                    </Field>
+                  )
+                }}
+              />
+              <Separator />
+              <div className="flex flex-col">
+                <div className="col-span-2">
+                  <Label>Migrate Data</Label>
+                  <span className="text-xs text-muted-foreground">
+                    Checked fields will update the player database with entry
+                    data.
                   </span>
                 </div>
-              </div>
+                <div className="flex items-center w-full gap-2">
+                  <div className="h-full flex items-center justify-center">
+                    <Checkbox
+                      disabled={
+                        isLoading ||
+                        !form.getFieldValue(
+                          `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                        )
+                      }
+                      onCheckedChange={(checked) => {
+                        form.setFieldValue(
+                          `migrate${tab === "player1" ? "Player1" : "Player2"}Data`,
+                          {
+                            firstName: checked === true,
+                            middleName: checked === true,
+                            lastName: checked === true,
+                            suffix: checked === true,
+                            birthDate: checked === true,
+                            phoneNumber: checked === true,
+                            email: checked === true,
+                            validDocuments: checked === true,
+                          },
+                        )
+                        if (checked) {
+                          // If checking all, show document selection dialog
+                          setTimeout(() => {
+                            tab === "player1"
+                              ? handleDocumentSelection1()
+                              : handleDocumentSelection2()
+                          }, 100)
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="text-xs grid grid-cols-5 col-span-2 h-full w-full">
+                    <div className="px-2 h-full border w-full flex items-center justify-center min-h-8"></div>
+                    <span
+                      className={cn(
+                        "px-2 h-full border w-full flex items-center justify-center",
+                        form.getFieldValue(
+                          `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                        )
+                          ? "col-span-2"
+                          : "hidden",
+                      )}
+                    >
+                      From Database (Current)
+                    </span>{" "}
+                    <span
+                      className={cn(
+                        "px-2 h-full border w-full flex items-center justify-center",
+                        form.getFieldValue(
+                          `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                        )
+                          ? "col-span-2"
+                          : "col-span-4",
+                      )}
+                    >
+                      From Entry (New)
+                    </span>
+                  </div>
+                </div>
 
-              {/* Migration Fields */}
-              <div>
-                <form.Field
-                  name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.firstName`}
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field>
-                        <div className="flex items-center w-full gap-2">
-                          <div className="h-full flex items-center justify-center">
-                            <Checkbox
-                              id={field.name}
-                              name={field.name}
-                              checked={field.state.value}
-                              onBlur={field.handleBlur}
-                              onCheckedChange={(checked) =>
-                                field.handleChange(checked === true)
-                              }
-                              aria-invalid={isInvalid}
-                              disabled={
-                                isLoading ||
-                                !form.getFieldValue(
-                                  `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="text-xs grid grid-cols-5 col-span-2 min-h-8 w-full">
-                            <span className="px-2 h-full border w-full flex items-center justify-center py-1 text-center">
-                              First Name
-                            </span>
-                            {form.getFieldValue(
-                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                            ) ? (
-                              <>
-                                <span
-                                  className={cn(
-                                    !field.state.value &&
+                {/* Migration Fields */}
+                <div>
+                  <form.Field
+                    name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.firstName`}
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field>
+                          <div className="flex items-center w-full gap-2">
+                            <div className="h-full flex items-center justify-center">
+                              <Checkbox
+                                id={field.name}
+                                name={field.name}
+                                checked={field.state.value}
+                                onBlur={field.handleBlur}
+                                onCheckedChange={(checked) =>
+                                  field.handleChange(checked === true)
+                                }
+                                aria-invalid={isInvalid}
+                                disabled={
+                                  isLoading ||
+                                  !form.getFieldValue(
+                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="text-xs grid grid-cols-5 col-span-2 min-h-8 w-full">
+                              <span className="px-2 h-full border w-full flex items-center justify-center py-1 text-center">
+                                First Name
+                              </span>
+                              {form.getFieldValue(
+                                `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                              ) ? (
+                                <>
+                                  <span
+                                    className={cn(
+                                      !field.state.value &&
                                       "text-success bg-success/5",
-                                    "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1",
-                                  )}
-                                >
-                                  {tab === "player1"
-                                    ? player1?.firstName
-                                    : player2?.firstName}
-                                </span>{" "}
+                                      "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? player1?.firstName
+                                      : player2?.firstName}
+                                  </span>{" "}
+                                  <span
+                                    className={cn(
+                                      field.state.value &&
+                                      "text-warning bg-warning/5",
+                                      "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? entry?.player1Entry.firstName
+                                      : entry?.player2Entry?.firstName}
+                                  </span>
+                                </>
+                              ) : (
                                 <span
                                   className={cn(
-                                    field.state.value &&
-                                      "text-warning bg-warning/5",
-                                    "col-span-2 px-2 h-full border w-full flex items-center justify-start py-1",
+                                    field.state.value && "text-warning",
+                                    "col-span-4 px-2 h-full border w-full flex items-center justify-start",
                                   )}
                                 >
                                   {tab === "player1"
                                     ? entry?.player1Entry.firstName
                                     : entry?.player2Entry?.firstName}
                                 </span>
-                              </>
-                            ) : (
-                              <span
-                                className={cn(
-                                  field.state.value && "text-warning",
-                                  "col-span-4 px-2 h-full border w-full flex items-center justify-start",
-                                )}
-                              >
-                                {tab === "player1"
-                                  ? entry?.player1Entry.firstName
-                                  : entry?.player2Entry?.firstName}
+                              )}
+                            </div>
+                          </div>
+                        </Field>
+                      )
+                    }}
+                  />
+                </div>
+                <div>
+                  <form.Field
+                    name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.middleName`}
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field>
+                          <div className="flex items-center w-full gap-2">
+                            <div className="h-full flex items-center justify-center text-center">
+                              <Checkbox
+                                id={field.name}
+                                name={field.name}
+                                checked={field.state.value}
+                                onBlur={field.handleBlur}
+                                onCheckedChange={(checked) =>
+                                  field.handleChange(checked === true)
+                                }
+                                aria-invalid={isInvalid}
+                                disabled={
+                                  isLoading ||
+                                  !form.getFieldValue(
+                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                              <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                Middle Name
                               </span>
-                            )}
-                          </div>
-                        </div>
-                      </Field>
-                    )
-                  }}
-                />
-              </div>
-              <div>
-                <form.Field
-                  name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.middleName`}
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field>
-                        <div className="flex items-center w-full gap-2">
-                          <div className="h-full flex items-center justify-center text-center">
-                            <Checkbox
-                              id={field.name}
-                              name={field.name}
-                              checked={field.state.value}
-                              onBlur={field.handleBlur}
-                              onCheckedChange={(checked) =>
-                                field.handleChange(checked === true)
-                              }
-                              aria-invalid={isInvalid}
-                              disabled={
-                                isLoading ||
-                                !form.getFieldValue(
-                                  `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                            <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
-                              Middle Name
-                            </span>
-                            {form.getFieldValue(
-                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                            ) ? (
-                              <>
-                                <span
-                                  className={cn(
-                                    !field.state.value &&
+                              {form.getFieldValue(
+                                `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                              ) ? (
+                                <>
+                                  <span
+                                    className={cn(
+                                      !field.state.value &&
                                       "text-success bg-success/5",
-                                    "col-span-2 px-2 border w-full flex items-center justify-start py-1",
-                                    !(tab === "player1"
-                                      ? player1?.middleName
-                                      : player2?.middleName) && "italic",
-                                  )}
-                                >
-                                  {tab === "player1"
-                                    ? player1?.middleName || "N/A"
-                                    : player2?.middleName || "N/A"}
-                                </span>{" "}
+                                      "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                      !(tab === "player1"
+                                        ? player1?.middleName
+                                        : player2?.middleName) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? player1?.middleName || "N/A"
+                                      : player2?.middleName || "N/A"}
+                                  </span>{" "}
+                                  <span
+                                    className={cn(
+                                      field.state.value &&
+                                      "text-warning bg-warning/5",
+                                      "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                      !(tab === "player1"
+                                        ? player1?.middleName
+                                        : player2?.middleName) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? entry?.player1Entry.middleName || "N/A"
+                                      : entry?.player2Entry?.middleName || "N/A"}
+                                  </span>
+                                </>
+                              ) : (
                                 <span
                                   className={cn(
-                                    field.state.value &&
-                                      "text-warning bg-warning/5",
-                                    "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                    field.state.value && "text-warning",
+                                    "col-span-4 px-2 border w-full flex items-center justify-start py-1",
                                     !(tab === "player1"
                                       ? player1?.middleName
                                       : player2?.middleName) && "italic",
@@ -3832,83 +3845,83 @@ const AssignDialog = (props: Props) => {
                                     ? entry?.player1Entry.middleName || "N/A"
                                     : entry?.player2Entry?.middleName || "N/A"}
                                 </span>
-                              </>
-                            ) : (
-                              <span
-                                className={cn(
-                                  field.state.value && "text-warning",
-                                  "col-span-4 px-2 border w-full flex items-center justify-start py-1",
-                                  !(tab === "player1"
-                                    ? player1?.middleName
-                                    : player2?.middleName) && "italic",
-                                )}
-                              >
-                                {tab === "player1"
-                                  ? entry?.player1Entry.middleName || "N/A"
-                                  : entry?.player2Entry?.middleName || "N/A"}
+                              )}
+                            </div>
+                          </div>
+                        </Field>
+                      )
+                    }}
+                  />
+                </div>
+                <div>
+                  <form.Field
+                    name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.lastName`}
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field>
+                          <div className="flex items-center w-full gap-2">
+                            <div className="flex items-center justify-center">
+                              <Checkbox
+                                id={field.name}
+                                name={field.name}
+                                checked={field.state.value}
+                                onBlur={field.handleBlur}
+                                onCheckedChange={(checked) =>
+                                  field.handleChange(checked === true)
+                                }
+                                aria-invalid={isInvalid}
+                                disabled={
+                                  isLoading ||
+                                  !form.getFieldValue(
+                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                              <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                Last Name
                               </span>
-                            )}
-                          </div>
-                        </div>
-                      </Field>
-                    )
-                  }}
-                />
-              </div>
-              <div>
-                <form.Field
-                  name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.lastName`}
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field>
-                        <div className="flex items-center w-full gap-2">
-                          <div className="flex items-center justify-center">
-                            <Checkbox
-                              id={field.name}
-                              name={field.name}
-                              checked={field.state.value}
-                              onBlur={field.handleBlur}
-                              onCheckedChange={(checked) =>
-                                field.handleChange(checked === true)
-                              }
-                              aria-invalid={isInvalid}
-                              disabled={
-                                isLoading ||
-                                !form.getFieldValue(
-                                  `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                            <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
-                              Last Name
-                            </span>
-                            {form.getFieldValue(
-                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                            ) ? (
-                              <>
-                                <span
-                                  className={cn(
-                                    !field.state.value &&
+                              {form.getFieldValue(
+                                `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                              ) ? (
+                                <>
+                                  <span
+                                    className={cn(
+                                      !field.state.value &&
                                       "text-success bg-success/5",
-                                    "col-span-2 px-2 border w-full flex items-center justify-start py-1",
-                                    !(tab === "player1"
-                                      ? player1?.lastName
-                                      : player2?.lastName) && "italic",
-                                  )}
-                                >
-                                  {tab === "player1"
-                                    ? player1?.lastName || "N/A"
-                                    : player2?.lastName || "N/A"}
-                                </span>{" "}
+                                      "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                      !(tab === "player1"
+                                        ? player1?.lastName
+                                        : player2?.lastName) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? player1?.lastName || "N/A"
+                                      : player2?.lastName || "N/A"}
+                                  </span>{" "}
+                                  <span
+                                    className={cn(
+                                      field.state.value &&
+                                      "text-warning bg-warning/5",
+                                      "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                      !(tab === "player1"
+                                        ? player1?.lastName
+                                        : player2?.lastName) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? entry?.player1Entry.lastName || "N/A"
+                                      : entry?.player2Entry?.lastName || "N/A"}
+                                  </span>
+                                </>
+                              ) : (
                                 <span
                                   className={cn(
-                                    field.state.value &&
-                                      "text-warning bg-warning/5",
-                                    "col-span-2 px-2 border w-full flex items-center justify-start py-1",
+                                    field.state.value && "text-warning",
+                                    "col-span-4 px-2 border w-full flex items-center justify-start py-1",
                                     !(tab === "player1"
                                       ? player1?.lastName
                                       : player2?.lastName) && "italic",
@@ -3918,83 +3931,83 @@ const AssignDialog = (props: Props) => {
                                     ? entry?.player1Entry.lastName || "N/A"
                                     : entry?.player2Entry?.lastName || "N/A"}
                                 </span>
-                              </>
-                            ) : (
-                              <span
-                                className={cn(
-                                  field.state.value && "text-warning",
-                                  "col-span-4 px-2 border w-full flex items-center justify-start py-1",
-                                  !(tab === "player1"
-                                    ? player1?.lastName
-                                    : player2?.lastName) && "italic",
-                                )}
-                              >
-                                {tab === "player1"
-                                  ? entry?.player1Entry.lastName || "N/A"
-                                  : entry?.player2Entry?.lastName || "N/A"}
+                              )}
+                            </div>
+                          </div>
+                        </Field>
+                      )
+                    }}
+                  />
+                </div>
+                <div>
+                  <form.Field
+                    name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.suffix`}
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field>
+                          <div className="flex items-center w-full gap-2">
+                            <div className="flex items-center justify-center">
+                              <Checkbox
+                                id={field.name}
+                                name={field.name}
+                                checked={field.state.value}
+                                onBlur={field.handleBlur}
+                                onCheckedChange={(checked) =>
+                                  field.handleChange(checked === true)
+                                }
+                                aria-invalid={isInvalid}
+                                disabled={
+                                  isLoading ||
+                                  !form.getFieldValue(
+                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                              <span className="px-2 border w-full flex items-center py-1 justify-center text-center">
+                                Ext.
                               </span>
-                            )}
-                          </div>
-                        </div>
-                      </Field>
-                    )
-                  }}
-                />
-              </div>
-              <div>
-                <form.Field
-                  name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.suffix`}
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field>
-                        <div className="flex items-center w-full gap-2">
-                          <div className="flex items-center justify-center">
-                            <Checkbox
-                              id={field.name}
-                              name={field.name}
-                              checked={field.state.value}
-                              onBlur={field.handleBlur}
-                              onCheckedChange={(checked) =>
-                                field.handleChange(checked === true)
-                              }
-                              aria-invalid={isInvalid}
-                              disabled={
-                                isLoading ||
-                                !form.getFieldValue(
-                                  `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                            <span className="px-2 border w-full flex items-center py-1 justify-center text-center">
-                              Ext.
-                            </span>
-                            {form.getFieldValue(
-                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                            ) ? (
-                              <>
-                                <span
-                                  className={cn(
-                                    !field.state.value &&
+                              {form.getFieldValue(
+                                `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                              ) ? (
+                                <>
+                                  <span
+                                    className={cn(
+                                      !field.state.value &&
                                       "text-success bg-success/5",
-                                    "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
-                                    !(tab === "player1"
-                                      ? player1?.suffix
-                                      : player2?.suffix) && "italic",
-                                  )}
-                                >
-                                  {tab === "player1"
-                                    ? player1?.suffix || "N/A"
-                                    : player2?.suffix || "N/A"}
-                                </span>{" "}
+                                      "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                      !(tab === "player1"
+                                        ? player1?.suffix
+                                        : player2?.suffix) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? player1?.suffix || "N/A"
+                                      : player2?.suffix || "N/A"}
+                                  </span>{" "}
+                                  <span
+                                    className={cn(
+                                      field.state.value &&
+                                      "text-warning bg-warning/5",
+                                      "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                      !(tab === "player1"
+                                        ? player1?.suffix
+                                        : player2?.suffix) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? entry?.player1Entry.suffix || "N/A"
+                                      : entry?.player2Entry?.suffix || "N/A"}
+                                  </span>
+                                </>
+                              ) : (
                                 <span
                                   className={cn(
-                                    field.state.value &&
-                                      "text-warning bg-warning/5",
-                                    "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                    field.state.value && "text-warning",
+                                    "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                     !(tab === "player1"
                                       ? player1?.suffix
                                       : player2?.suffix) && "italic",
@@ -4004,83 +4017,83 @@ const AssignDialog = (props: Props) => {
                                     ? entry?.player1Entry.suffix || "N/A"
                                     : entry?.player2Entry?.suffix || "N/A"}
                                 </span>
-                              </>
-                            ) : (
-                              <span
-                                className={cn(
-                                  field.state.value && "text-warning",
-                                  "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
-                                  !(tab === "player1"
-                                    ? player1?.suffix
-                                    : player2?.suffix) && "italic",
-                                )}
-                              >
-                                {tab === "player1"
-                                  ? entry?.player1Entry.suffix || "N/A"
-                                  : entry?.player2Entry?.suffix || "N/A"}
+                              )}
+                            </div>
+                          </div>
+                        </Field>
+                      )
+                    }}
+                  />
+                </div>
+                <div>
+                  <form.Field
+                    name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.email`}
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field>
+                          <div className="flex items-center w-full gap-2">
+                            <div className="flex items-center justify-center">
+                              <Checkbox
+                                id={field.name}
+                                name={field.name}
+                                checked={field.state.value}
+                                onBlur={field.handleBlur}
+                                onCheckedChange={(checked) =>
+                                  field.handleChange(checked === true)
+                                }
+                                aria-invalid={isInvalid}
+                                disabled={
+                                  isLoading ||
+                                  !form.getFieldValue(
+                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                              <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                Email
                               </span>
-                            )}
-                          </div>
-                        </div>
-                      </Field>
-                    )
-                  }}
-                />
-              </div>
-              <div>
-                <form.Field
-                  name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.email`}
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field>
-                        <div className="flex items-center w-full gap-2">
-                          <div className="flex items-center justify-center">
-                            <Checkbox
-                              id={field.name}
-                              name={field.name}
-                              checked={field.state.value}
-                              onBlur={field.handleBlur}
-                              onCheckedChange={(checked) =>
-                                field.handleChange(checked === true)
-                              }
-                              aria-invalid={isInvalid}
-                              disabled={
-                                isLoading ||
-                                !form.getFieldValue(
-                                  `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                            <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
-                              Email
-                            </span>
-                            {form.getFieldValue(
-                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                            ) ? (
-                              <>
-                                <span
-                                  className={cn(
-                                    !field.state.value &&
+                              {form.getFieldValue(
+                                `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                              ) ? (
+                                <>
+                                  <span
+                                    className={cn(
+                                      !field.state.value &&
                                       "text-success bg-success/5",
-                                    "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
-                                    !(tab === "player1"
-                                      ? player1?.email
-                                      : player2?.email) && "italic",
-                                  )}
-                                >
-                                  {tab === "player1"
-                                    ? player1?.email || "N/A"
-                                    : player2?.email || "N/A"}
-                                </span>{" "}
+                                      "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                      !(tab === "player1"
+                                        ? player1?.email
+                                        : player2?.email) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? player1?.email || "N/A"
+                                      : player2?.email || "N/A"}
+                                  </span>{" "}
+                                  <span
+                                    className={cn(
+                                      field.state.value &&
+                                      "text-warning bg-warning/5",
+                                      "col-span-2 px-2 border w-full flex items-center py-1 justify-start break-all whitespace-normal",
+                                      !(tab === "player1"
+                                        ? player1?.email
+                                        : player2?.email) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? entry?.player1Entry.email || "N/A"
+                                      : entry?.player2Entry?.email || "N/A"}
+                                  </span>
+                                </>
+                              ) : (
                                 <span
                                   className={cn(
-                                    field.state.value &&
-                                      "text-warning bg-warning/5",
-                                    "col-span-2 px-2 border w-full flex items-center py-1 justify-start break-all whitespace-normal",
+                                    field.state.value && "text-warning",
+                                    "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                     !(tab === "player1"
                                       ? player1?.email
                                       : player2?.email) && "italic",
@@ -4090,83 +4103,83 @@ const AssignDialog = (props: Props) => {
                                     ? entry?.player1Entry.email || "N/A"
                                     : entry?.player2Entry?.email || "N/A"}
                                 </span>
-                              </>
-                            ) : (
-                              <span
-                                className={cn(
-                                  field.state.value && "text-warning",
-                                  "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
-                                  !(tab === "player1"
-                                    ? player1?.email
-                                    : player2?.email) && "italic",
-                                )}
-                              >
-                                {tab === "player1"
-                                  ? entry?.player1Entry.email || "N/A"
-                                  : entry?.player2Entry?.email || "N/A"}
+                              )}
+                            </div>
+                          </div>
+                        </Field>
+                      )
+                    }}
+                  />
+                </div>
+                <div>
+                  <form.Field
+                    name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.phoneNumber`}
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field>
+                          <div className="flex items-center w-full gap-2">
+                            <div className="flex items-center justify-center">
+                              <Checkbox
+                                id={field.name}
+                                name={field.name}
+                                checked={field.state.value}
+                                onBlur={field.handleBlur}
+                                onCheckedChange={(checked) =>
+                                  field.handleChange(checked === true)
+                                }
+                                aria-invalid={isInvalid}
+                                disabled={
+                                  isLoading ||
+                                  !form.getFieldValue(
+                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                              <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                Phone No.
                               </span>
-                            )}
-                          </div>
-                        </div>
-                      </Field>
-                    )
-                  }}
-                />
-              </div>
-              <div>
-                <form.Field
-                  name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.phoneNumber`}
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field>
-                        <div className="flex items-center w-full gap-2">
-                          <div className="flex items-center justify-center">
-                            <Checkbox
-                              id={field.name}
-                              name={field.name}
-                              checked={field.state.value}
-                              onBlur={field.handleBlur}
-                              onCheckedChange={(checked) =>
-                                field.handleChange(checked === true)
-                              }
-                              aria-invalid={isInvalid}
-                              disabled={
-                                isLoading ||
-                                !form.getFieldValue(
-                                  `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                            <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
-                              Phone No.
-                            </span>
-                            {form.getFieldValue(
-                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                            ) ? (
-                              <>
-                                <span
-                                  className={cn(
-                                    !field.state.value &&
+                              {form.getFieldValue(
+                                `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                              ) ? (
+                                <>
+                                  <span
+                                    className={cn(
+                                      !field.state.value &&
                                       "text-success bg-success/5",
-                                    "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
-                                    !(tab === "player1"
-                                      ? player1?.phoneNumber
-                                      : player2?.phoneNumber) && "italic",
-                                  )}
-                                >
-                                  {tab === "player1"
-                                    ? player1?.phoneNumber || "N/A"
-                                    : player2?.phoneNumber || "N/A"}
-                                </span>{" "}
+                                      "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                      !(tab === "player1"
+                                        ? player1?.phoneNumber
+                                        : player2?.phoneNumber) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? player1?.phoneNumber || "N/A"
+                                      : player2?.phoneNumber || "N/A"}
+                                  </span>{" "}
+                                  <span
+                                    className={cn(
+                                      field.state.value &&
+                                      "text-warning bg-warning/5",
+                                      "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                      !(tab === "player1"
+                                        ? player1?.phoneNumber
+                                        : player2?.phoneNumber) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? entry?.player1Entry.phoneNumber || "N/A"
+                                      : entry?.player2Entry?.phoneNumber || "N/A"}
+                                  </span>
+                                </>
+                              ) : (
                                 <span
                                   className={cn(
-                                    field.state.value &&
-                                      "text-warning bg-warning/5",
-                                    "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                    field.state.value && "text-warning",
+                                    "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                     !(tab === "player1"
                                       ? player1?.phoneNumber
                                       : player2?.phoneNumber) && "italic",
@@ -4176,93 +4189,107 @@ const AssignDialog = (props: Props) => {
                                     ? entry?.player1Entry.phoneNumber || "N/A"
                                     : entry?.player2Entry?.phoneNumber || "N/A"}
                                 </span>
-                              </>
-                            ) : (
-                              <span
-                                className={cn(
-                                  field.state.value && "text-warning",
-                                  "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
-                                  !(tab === "player1"
-                                    ? player1?.phoneNumber
-                                    : player2?.phoneNumber) && "italic",
-                                )}
-                              >
-                                {tab === "player1"
-                                  ? entry?.player1Entry.phoneNumber || "N/A"
-                                  : entry?.player2Entry?.phoneNumber || "N/A"}
+                              )}
+                            </div>
+                          </div>
+                        </Field>
+                      )
+                    }}
+                  />
+                </div>
+                <div>
+                  <form.Field
+                    name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.birthDate`}
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field>
+                          <div className="flex items-center w-full gap-2">
+                            <div className="flex items-center justify-center">
+                              <Checkbox
+                                id={field.name}
+                                name={field.name}
+                                checked={field.state.value}
+                                onBlur={field.handleBlur}
+                                onCheckedChange={(checked) =>
+                                  field.handleChange(checked === true)
+                                }
+                                aria-invalid={isInvalid}
+                                disabled={
+                                  isLoading ||
+                                  !form.getFieldValue(
+                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                              <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
+                                Birthday
                               </span>
-                            )}
-                          </div>
-                        </div>
-                      </Field>
-                    )
-                  }}
-                />
-              </div>
-              <div>
-                <form.Field
-                  name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.birthDate`}
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field>
-                        <div className="flex items-center w-full gap-2">
-                          <div className="flex items-center justify-center">
-                            <Checkbox
-                              id={field.name}
-                              name={field.name}
-                              checked={field.state.value}
-                              onBlur={field.handleBlur}
-                              onCheckedChange={(checked) =>
-                                field.handleChange(checked === true)
-                              }
-                              aria-invalid={isInvalid}
-                              disabled={
-                                isLoading ||
-                                !form.getFieldValue(
-                                  `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
-                            <span className="px-2 border w-full flex items-center justify-center py-1 text-center">
-                              Birthday
-                            </span>
-                            {form.getFieldValue(
-                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
-                            ) ? (
-                              <>
-                                <span
-                                  className={cn(
-                                    !field.state.value &&
+                              {form.getFieldValue(
+                                `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                              ) ? (
+                                <>
+                                  <span
+                                    className={cn(
+                                      !field.state.value &&
                                       "text-success bg-success/5",
-                                    "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
-                                    !(tab === "player1"
+                                      "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                      !(tab === "player1"
+                                        ? player1?.birthDate
+                                        : player2?.birthDate) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
                                       ? player1?.birthDate
-                                      : player2?.birthDate) && "italic",
-                                  )}
-                                >
-                                  {tab === "player1"
-                                    ? player1?.birthDate
-                                      ? format(
+                                        ? format(
                                           new Date(player1.birthDate),
                                           "PP",
                                         )
-                                      : "N/A"
-                                    : player2?.birthDate
-                                      ? format(
+                                        : "N/A"
+                                      : player2?.birthDate
+                                        ? format(
                                           new Date(player2.birthDate),
                                           "PP",
                                         )
-                                      : "N/A"}
-                                </span>{" "}
+                                        : "N/A"}
+                                  </span>{" "}
+                                  <span
+                                    className={cn(
+                                      field.state.value &&
+                                      "text-warning bg-warning/5",
+                                      "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                      !(tab === "player1"
+                                        ? player1?.birthDate
+                                        : player2?.birthDate) && "italic",
+                                    )}
+                                  >
+                                    {tab === "player1"
+                                      ? entry?.player1Entry.birthDate
+                                        ? format(
+                                          new Date(
+                                            entry.player1Entry.birthDate,
+                                          ),
+                                          "PP",
+                                        )
+                                        : "N/A"
+                                      : entry?.player2Entry?.birthDate
+                                        ? format(
+                                          new Date(
+                                            entry.player2Entry.birthDate,
+                                          ),
+                                          "PP",
+                                        )
+                                        : "N/A"}
+                                  </span>
+                                </>
+                              ) : (
                                 <span
                                   className={cn(
-                                    field.state.value &&
-                                      "text-warning bg-warning/5",
-                                    "col-span-2 px-2 border w-full flex items-center py-1 justify-start",
+                                    field.state.value && "text-warning",
+                                    "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
                                     !(tab === "player1"
                                       ? player1?.birthDate
                                       : player2?.birthDate) && "italic",
@@ -4271,57 +4298,28 @@ const AssignDialog = (props: Props) => {
                                   {tab === "player1"
                                     ? entry?.player1Entry.birthDate
                                       ? format(
-                                          new Date(
-                                            entry.player1Entry.birthDate,
-                                          ),
-                                          "PP",
-                                        )
-                                      : "N/A"
-                                    : entry?.player2Entry?.birthDate
-                                      ? format(
-                                          new Date(
-                                            entry.player2Entry.birthDate,
-                                          ),
-                                          "PP",
-                                        )
-                                      : "N/A"}
-                                </span>
-                              </>
-                            ) : (
-                              <span
-                                className={cn(
-                                  field.state.value && "text-warning",
-                                  "col-span-4 px-2 border w-full flex items-center py-1 justify-start",
-                                  !(tab === "player1"
-                                    ? player1?.birthDate
-                                    : player2?.birthDate) && "italic",
-                                )}
-                              >
-                                {tab === "player1"
-                                  ? entry?.player1Entry.birthDate
-                                    ? format(
                                         new Date(entry.player1Entry.birthDate),
                                         "PP",
                                       )
-                                    : "N/A"
-                                  : entry?.player2Entry?.birthDate
-                                    ? format(
+                                      : "N/A"
+                                    : entry?.player2Entry?.birthDate
+                                      ? format(
                                         new Date(entry.player2Entry.birthDate),
                                         "PP",
                                       )
-                                    : "N/A"}
-                              </span>
-                            )}
+                                      : "N/A"}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </Field>
-                    )
-                  }}
-                />
+                        </Field>
+                      )
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
       </FieldSet>
     )
   }
