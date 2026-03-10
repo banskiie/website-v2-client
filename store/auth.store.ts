@@ -23,7 +23,7 @@ interface AuthState {
   }) => Promise<void>
   signOut: () => Promise<void>
   clearAuth: () => void
-  refreshAuthUser: () => Promise<void>
+   refreshAuthUser: () => Promise<void>
   refreshToken: () => Promise<void>
 }
 
