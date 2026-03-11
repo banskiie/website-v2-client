@@ -292,7 +292,7 @@ const ViewDialog = (props: Props) => {
                 <div className="flex items-center gap-1.5 mb-2">
                   <span className="h-4 w-1 bg-blue-600" />
                   <Label className="text-xs text-muted-foreground">
-                    Account Status
+                    Account User
                   </Label>
                 </div>
 
@@ -303,16 +303,16 @@ const ViewDialog = (props: Props) => {
                     <div className="flex items-center gap-2">
                       {player?.isActive ? (
                         <>
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                          <span className="text-sm font-medium text-green-600">
-                            Active Account
+                          <CheckCircle className="h-3 w-3 text-green-600" />
+                          <span className="text-xs font-medium text-green-600">
+                            Active User
                           </span>
                         </>
                       ) : (
                         <>
                           <AlertCircle className="h-4 w-4 text-destructive" />
-                          <span className="text-sm font-medium text-destructive">
-                            Inactive Account
+                          <span className="text-xs font-medium text-destructive">
+                            Inactive User
                           </span>
                         </>
                       )}
