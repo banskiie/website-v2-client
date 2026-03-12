@@ -3,6 +3,8 @@
 import React, { useState } from "react"
 import { motion } from "framer-motion"
 import { Facebook, Instagram } from "lucide-react"
+import Image from "next/image"
+import { CLOUD } from "./main-faq"
 
 export default function LocationSection() {
     const [loading, setLoading] = useState(false)
@@ -40,25 +42,36 @@ export default function LocationSection() {
     }
 
     return (
-        <section className="w-full relative py-20 px-4 md:px-16 bg-white">
+        <section className="w-full relative py-20 px-4 md:px-16">
+            {/* Background Image with Overlay - Same as EventsSection */}
+            <div className="absolute inset-0">
+                <Image
+                    src={`${CLOUD}/v1764047597/rentals-bg_cblsrb.png`}
+                    alt="Location Background"
+                    fill
+                    className="object-cover"
+                />
+                <div className="absolute inset-0 bg-black/60"></div>
+            </div>
+
             <motion.div
-                className="max-w-6xl mx-auto text-center mb-12"
+                className="relative max-w-6xl mx-auto text-center mb-12"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
             >
-                <h2 className="text-4xl md:text-5xl font-extrabold mb-4">
+                <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4">
                     Visit C-ONE Sports Center
                 </h2>
-                <p className="text-lg md:text-xl text-gray-700">
+                <p className="text-lg md:text-xl text-gray-200">
                     Come and enjoy our premium Badminton and Table Tennis facilities. Heres where you can find us:
                 </p>
             </motion.div>
 
-            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <div className="relative max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
-                <div className="w-full flex flex-row md:flex-col rounded-xl overflow-hidden shadow-lg">
+                <div className="w-full flex flex-row md:flex-col rounded-xl overflow-hidden shadow-lg bg-white/90 backdrop-blur-md">
                     <div className="w-full h-80 md:h-96 overflow-hidden flex flex-col">
                         <iframe
                             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3879.292081809595!2d124.6394518!3d8.5001149!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32fff30019327e95%3A0xf0787044cac856fe!2sC-ONE%20Sports%20Center!5e0!3m2!1sen!2sph!4v1694420000000!5m2!1sen!2sph"
@@ -69,7 +82,6 @@ export default function LocationSection() {
                             referrerPolicy="no-referrer-when-downgrade"
                             className="w-full h-full rounded-xl"
                         ></iframe>
-
                     </div>
 
                     <motion.div
@@ -84,7 +96,7 @@ export default function LocationSection() {
                         }}
                     >
                         <motion.p
-                            className="text-gray-400 font-medium 
+                            className="text-gray-700 font-medium 
                text-center sm:text-center md:text-left 
                text-sm sm:text-base md:text-lg lg:text-center"
                             variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
@@ -139,11 +151,11 @@ export default function LocationSection() {
                                 ))}
                             </div>
                         </div>
-
                     </motion.div>
                 </div>
+
                 <motion.div
-                    className="bg-white p-8 rounded-xl shadow-lg flex flex-col justify-center space-y-6"
+                    className="bg-white/90 backdrop-blur-md p-8 rounded-xl shadow-lg flex flex-col justify-center space-y-6"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -163,14 +175,14 @@ export default function LocationSection() {
                             placeholder="Your email address"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-white/80"
                         />
                         <textarea
                             required
                             placeholder="Your message"
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 h-32 resize-none"
+                            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 h-32 resize-none bg-white/80"
                         />
                         <button
                             type="submit"
