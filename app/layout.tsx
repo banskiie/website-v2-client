@@ -11,10 +11,10 @@ const Rubik = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "C-ONE Website",
-    template: "C-ONE Website | %s",
+    default: "C-ONE",
+    template: "C-ONE | %s",
   },
-  description: "C-ONE Website",
+  description: "C-ONE",
   icons: {
     icon: "/c-one-logo.svg",
     shortcut: "/c-one-logo.svg",
