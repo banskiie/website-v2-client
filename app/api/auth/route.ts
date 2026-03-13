@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     cookieStore.set("accessToken", response.data.signIn.data.accessToken, {
       httpOnly: true,
       secure: true,
-      sameSite: "none",
+      sameSite: "lax",
       domain: ".c-one.ph",
       path: "/",
       maxAge: 15 * 60,
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     cookieStore.set("refreshToken", response.data.signIn.data.refreshToken, {
       httpOnly: true,
       secure: true,
-      sameSite: "none",
+      sameSite: "lax",
       domain: ".c-one.ph",
       path: "/",
       maxAge: 24 * 60 * 60,
