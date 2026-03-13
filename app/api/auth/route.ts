@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      domain: ".c-one.ph",
+      // domain: ".c-one.ph",
       path: "/",
       maxAge: 15 * 60,
     })
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      domain: ".c-one.ph",
+      // domain: ".c-one.ph",
       path: "/",
       maxAge: 24 * 60 * 60,
     })
