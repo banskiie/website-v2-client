@@ -14,7 +14,7 @@ import { OperationTypeNode } from "graphql"
 
 
 const httpLink = new HttpLink({
-  uri: "https://api.c-one.ph",
+  uri: process.env.NEXT_PUBLIC_GRAPHQL_URI!,
   credentials: "include",
 })
 
