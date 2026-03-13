@@ -8,7 +8,7 @@ export async function POST() {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
-    domain: ".c-one.ph",
+    domain: "c-one.ph",
     path: "/",
     expires: new Date(0), // expire immediately
   })
@@ -17,7 +17,7 @@ export async function POST() {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
-    domain: ".c-one.ph",
+    domain: "c-one.ph",
     path: "/",
     expires: new Date(0),
   })
