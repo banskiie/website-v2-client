@@ -23,7 +23,7 @@ interface AuthState {
   }) => Promise<void>
   signOut: () => Promise<void>
   clearAuth: () => void
-   refreshAuthUser: () => Promise<void>
+  refreshAuthUser: () => Promise<void>
   refreshToken: () => Promise<void>
 }
 
@@ -34,7 +34,6 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       signIn: async ({ username, password, rememberMe }) => {
-
         // console.log("logging in")
         const response: any = await fetch("/api/auth", {
           method: "POST",
@@ -57,13 +56,13 @@ export const useAuthStore = create<AuthState>()(
         return response
       },
       signOut: async () => {
+        get().clearAuth()
         const response: any = await client.mutate({
           mutation: SIGN_OUT,
           variables: {
             token: get().accessToken,
           },
         })
-        if (response.data?.signOut.ok) get().clearAuth()
       },
       refreshAuthUser: async () => {
         try {

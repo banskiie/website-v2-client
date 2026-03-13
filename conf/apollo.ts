@@ -12,6 +12,7 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions"
 import { createClient } from "graphql-ws"
 import { OperationTypeNode } from "graphql"
 
+
 const httpLink = new HttpLink({
   uri: process.env.NEXT_PUBLIC_GRAPHQL_URI!,
   credentials: "include",
