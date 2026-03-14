@@ -7,7 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CalendarDays, Trophy, Users, TrendingUp, Activity, Bell, Settings, ChevronRight, Clock, DollarSign, Medal, Target, Zap, History, PiIcon, User, BarChart3, TrendingDown, TrendingUp as TrendUp, FileText, CheckCircle, XCircle, AlertCircle, Crown, Award, Star, LayoutGrid } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { CalendarDays, Trophy, Users, TrendingUp, Activity, Bell, Settings, ChevronRight, Clock, DollarSign, Medal, Target, Zap, History, PiIcon, User, BarChart3, TrendingDown, TrendingUp as TrendUp, FileText, CheckCircle, XCircle, AlertCircle, Crown, Award, Star, LayoutGrid, RefreshCw } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { gql } from "@apollo/client"
 import { formatDistanceToNow, format, startOfMonth, endOfMonth, subMonths, eachMonthOfInterval, startOfYear, endOfYear } from "date-fns"
@@ -15,7 +22,8 @@ import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { useQuery } from "@apollo/client/react"
-import { JSX, useMemo, useState } from "react"
+import { JSX, useMemo, useState, useEffect, useRef } from "react"
+import { toast } from "sonner"
 
 // GraphQL query for recent logs
 const RECENT_LOGS = gql`
@@ -73,7 +81,6 @@ const PAYMENT_OVERVIEW = gql`
   }
 `
 
-// Entries Overview Query - Get all entries with more details
 const ENTRIES_OVERVIEW = gql`
   query EntriesOverview($first: Int!) {
     entries(first: $first, sort: { key: "createdAt", order: DESC }) {
@@ -96,6 +103,147 @@ const ENTRIES_OVERVIEW = gql`
             player1Name
             player2Name
           }
+          transactions {
+            transactionId
+            transactionType
+            amountChanged
+            pendingAmount
+            transactionDate
+          }
+        }
+      }
+    }
+  }
+`
+
+const ENTRY_CHANGED = gql`
+  subscription EntryChanged {
+    entryChanged {
+      type
+      entry {
+        _id
+        dateUpdated
+        entryNumber
+        entryKey
+        eventName
+        tournamentName
+        club
+        isInSoftware
+        isEarlyBird
+        currentStatus
+        hasOverpayment
+        totalExcess
+        pendingAmount
+        latestPaymentAmount
+        totalRefundAmount
+        hasRefunds
+        totalPaid
+        playerList {
+          player1Name
+          player2Name
+        }
+        transactions {
+          transactionId
+          transactionType
+          amountChanged
+          pendingAmount
+          transactionDate
+        }
+      }
+      entries {
+        _id
+        dateUpdated
+        entryNumber
+        entryKey
+        eventName
+        tournamentName
+        club
+        isInSoftware
+        isEarlyBird
+        currentStatus
+        hasOverpayment
+        totalExcess
+        pendingAmount
+        latestPaymentAmount
+        totalRefundAmount
+        hasRefunds
+        totalPaid
+        playerList {
+          player1Name
+          player2Name
+        }
+        transactions {
+          transactionId
+          transactionType
+          amountChanged
+          pendingAmount
+          transactionDate
+        }
+      }
+    }
+  }
+`
+
+const REFUND_CHANGED = gql`
+  subscription RefundChanged {
+    refundChanged {
+      type
+      refund {
+        _id
+        payerName
+        referenceNumber
+        amount
+        method
+        refundDate
+        entries
+      }
+    }
+  }
+`
+
+const PAYMENT_CHANGED = gql`
+  subscription PaymentChanged {
+    paymentChanged {
+      type
+      payment {
+        _id
+        payerName
+        referenceNumber
+        amount
+        method
+        paymentDate
+        currentStatus
+        entries
+      }
+      payments {
+        _id
+        payerName
+        referenceNumber
+        amount
+        method
+        paymentDate
+        currentStatus
+        entries
+      }
+    }
+  }
+`
+
+const PAYMENT_OVERVIEW_FROM_ENTRIES = gql`
+  query PaymentOverviewFromEntries($first: Int!) {
+    entries(first: $first, sort: { key: "createdAt", order: DESC }) {
+      edges {
+        node {
+          _id
+          transactions {
+            transactionId
+            transactionType
+            amountChanged
+            pendingAmount
+            transactionDate
+          }
+          totalPaid
+          totalRefundAmount
         }
       }
     }
@@ -146,6 +294,9 @@ interface IPaymentNode {
   paymentDate: string
   currentStatus: string
   method: string
+  payerName?: string
+  referenceNumber?: string
+  entries?: string
 }
 
 interface IPaymentsResponse {
@@ -154,6 +305,14 @@ interface IPaymentsResponse {
       node: IPaymentNode
     }>
   }
+}
+
+interface ITransaction {
+  transactionId: string
+  transactionType: string
+  amountChanged: number
+  pendingAmount: number
+  transactionDate: string
 }
 
 interface IEntryNode {
@@ -174,6 +333,7 @@ interface IEntryNode {
     player1Name: string
     player2Name: string | null
   }
+  transactions?: ITransaction[]
 }
 
 interface IEntriesResponse {
@@ -205,6 +365,7 @@ interface EntryStatusSummary {
 }
 
 interface TopEntry {
+  _id: string
   entryNumber: string
   eventName: string
   tournamentName: string
@@ -213,6 +374,11 @@ interface TopEntry {
   amount: number
   isEarlyBird: boolean
   date: string
+  hasOverpayment?: boolean
+  totalExcess?: number
+  hasRefunds?: boolean
+  totalRefundAmount?: number
+  totalPaid?: number
 }
 
 interface EventEntryCount {
@@ -229,9 +395,20 @@ interface EventEntryCount {
 const Page = () => {
   const user = useAuthStore((state) => state.user)
   const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"))
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
+  // Real-time states
+  const [newEntriesCount, setNewEntriesCount] = useState(0)
+  const [newRefundsCount, setNewRefundsCount] = useState(0)
+  const [newPaymentsCount, setNewPaymentsCount] = useState(0)
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+  const [showRefreshIndicator, setShowRefreshIndicator] = useState(false)
+  const prevEntriesCount = useRef(0)
+  const prevPaymentsCount = useRef(0)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
   // Fetch recent logs
-  const { data: logsData, loading: logsLoading } = useQuery<ILogsResponse>(RECENT_LOGS, {
+  const { data: logsData, loading: logsLoading, refetch: refetchLogs } = useQuery<ILogsResponse>(RECENT_LOGS, {
     variables: { first: 10 },
     fetchPolicy: "network-only",
   })
@@ -242,17 +419,488 @@ const Page = () => {
     fetchPolicy: "network-only",
   })
 
-  // Fetch payment overview
-  const { data: paymentsData, loading: paymentsLoading } = useQuery<IPaymentsResponse>(PAYMENT_OVERVIEW, {
+  const { data: entriesPaymentData, loading: entriesPaymentLoading } = useQuery(PAYMENT_OVERVIEW_FROM_ENTRIES, {
     variables: { first: 1000 },
     fetchPolicy: "network-only",
   })
 
-  // Fetch entries overview
-  const { data: entriesData, loading: entriesLoading } = useQuery<IEntriesResponse>(ENTRIES_OVERVIEW, {
+  const { data: paymentsData, loading: paymentsLoading, subscribeToMore: subscribeToMorePayments, refetch: refetchPayments } = useQuery<IPaymentsResponse>(PAYMENT_OVERVIEW, {
     variables: { first: 1000 },
     fetchPolicy: "network-only",
   })
+
+  const { data: entriesData, loading: entriesLoading, subscribeToMore: subscribeToMoreEntries, refetch: refetchEntries } = useQuery<IEntriesResponse>(ENTRIES_OVERVIEW, {
+    variables: { first: 1000 },
+    fetchPolicy: "network-only",
+  })
+
+  // Set up entry subscriptions
+  useEffect(() => {
+    if (!subscribeToMoreEntries) return
+
+    // Subscribe to entry changes
+    const unsubscribeEntry = subscribeToMoreEntries({
+      document: ENTRY_CHANGED,
+      updateQuery: (prev: any, { subscriptionData }: any) => {
+        if (!subscriptionData.data) return prev
+        const { type, entry, entries } = subscriptionData.data.entryChanged
+
+        switch (type) {
+          case "CREATE":
+            const newEntry = entry
+            const newEntryExists = prev.entries.edges.find(
+              (edge: any) => edge.node._id === newEntry?._id,
+            )
+            if (newEntryExists) return prev
+
+            // Show toast notification
+            toast.success(`✨ New Entry Created: ${newEntry?.entryNumber}`, {
+              description: `${newEntry?.eventName} - ${newEntry?.playerList?.player1Name}`,
+              duration: 5000,
+            })
+
+            // Increment new entries counter
+            setNewEntriesCount(prev => prev + 1)
+            setShowRefreshIndicator(true)
+            setTimeout(() => setShowRefreshIndicator(false), 5000)
+            setLastUpdated(new Date())
+
+            return {
+              entries: {
+                ...prev.entries,
+                total: prev.entries.total + 1,
+                edges: [
+                  { cursor: newEntry?._id, node: newEntry },
+                  ...prev.entries.edges,
+                ],
+              },
+            }
+
+          case "VERIFIED":
+            const verifiedEntry = entry
+            toast.success(`💰 Entry Verified: ${verifiedEntry?.entryNumber}`, {
+              description: `Payment of ₱${verifiedEntry?.totalPaid?.toLocaleString()} has been verified! 🎉`,
+              duration: 5000,
+            })
+
+            const verifiedEdges = prev.entries.edges.map((edge: any) => {
+              if (edge.node._id === verifiedEntry._id) {
+                // Get existing transactions from the current cache
+                const existingTransactions = edge.node.transactions || []
+
+                // Get new transactions from the subscription data
+                const newTransactions = verifiedEntry.transactions || []
+
+                // Merge transactions (you might want to combine them or replace them)
+                // Usually you want to replace them with the latest from the server
+                const mergedTransactions = newTransactions.length > 0 ? newTransactions : existingTransactions
+
+                return {
+                  ...edge,
+                  node: {
+                    ...edge.node,
+                    ...verifiedEntry,
+                    transactions: mergedTransactions
+                  }
+                }
+              }
+              return edge
+            })
+
+            setLastUpdated(new Date())
+
+            return {
+              entries: {
+                ...prev.entries,
+                edges: verifiedEdges,
+              },
+            }
+
+          case "CANCEL":
+            const cancelledEntry = entry
+            if (cancelledEntry?.hasOverpayment && cancelledEntry?.totalExcess > 0) {
+              toast.warning(
+                `❌ Entry Cancelled: ${cancelledEntry?.entryNumber}`,
+                {
+                  description: `Excess amount: ₱${cancelledEntry?.totalExcess?.toLocaleString()}. A refund may be required.`,
+                  duration: 5000,
+                }
+              )
+            } else {
+              toast.warning(`❌ Entry Cancelled: ${cancelledEntry?.entryNumber}`, {
+                duration: 5000,
+              })
+            }
+
+            const cancelledEdges = prev.entries.edges.map((edge: any) =>
+              edge.node._id === cancelledEntry._id
+                ? {
+                  ...edge,
+                  node: {
+                    ...edge.node,
+                    ...cancelledEntry,
+                    currentStatus: "CANCELLED",
+                    transactions: cancelledEntry.transactions || edge.node.transactions
+                  }
+                }
+                : edge
+            )
+
+            setLastUpdated(new Date())
+
+            return {
+              entries: {
+                ...prev.entries,
+                edges: cancelledEdges,
+              },
+            }
+
+          // In your REFUND subscription case
+          case "REFUND":
+            const refundedEntry = entry
+            console.log('REFUND event received - forcing recalculation', {
+              entryNumber: refundedEntry?.entryNumber,
+              totalRefundAmount: refundedEntry?.totalRefundAmount,
+              currentRefreshTrigger: refreshTrigger
+            })
+            toast.info(`💰 Refund Processed: ${refundedEntry?.entryNumber}`, {
+              description: `Refund amount: ₱${refundedEntry?.totalRefundAmount?.toLocaleString()}`,
+              duration: 5000,
+            })
+            setNewRefundsCount(prev => prev + 1)
+            setLastUpdated(new Date())
+
+            // Force recalculation of monthlyPayments
+            setRefreshTrigger(prev => {
+              const newValue = prev + 1
+              console.log('Setting refreshTrigger to:', newValue)
+              return newValue
+            })
+
+            // IMPORTANT: Force a re-render by creating a new array reference
+            const refundEdges = prev.entries.edges.map((edge: any) =>
+              edge.node._id === refundedEntry._id
+                ? {
+                  ...edge,
+                  node: {
+                    ...edge.node,
+                    ...refundedEntry,
+                    transactions: refundedEntry.transactions || edge.node.transactions
+                  }
+                }
+                : edge
+            )
+
+            return {
+              entries: {
+                ...prev.entries,
+                edges: refundEdges,
+              },
+            }
+
+          // MODIFY THIS EXISTING COMBINED CASE
+          case "UPDATE":
+          case "ASSIGN":
+          case "APPROVE":
+          case "PAID":        // ← This is already here
+          case "PARTIALLY_PAID":  // ← This is already here
+          case "REJECT":
+            const updatedEntry = entry
+
+            // ADD THIS DEBUG LOG
+            console.log('Entry update received:', {
+              type,
+              entryNumber: updatedEntry?.entryNumber,
+              hasTransactions: !!updatedEntry?.transactions,
+              transactionCount: updatedEntry?.transactions?.length,
+              transactions: updatedEntry?.transactions
+            })
+
+            if (type === "APPROVE") {
+              toast.success(`✅ Entry Approved: ${updatedEntry?.entryNumber}`)
+            } else if (type === "PAID") {
+              toast.success(`💰 Payment Received: ${updatedEntry?.entryNumber}`)
+            } else if (type === "REJECT") {
+              toast.warning(`❌ Entry Rejected: ${updatedEntry?.entryNumber}`)
+            }
+
+            const updatedEdges = prev.entries.edges.map((edge: any) =>
+              edge.node._id === updatedEntry._id
+                ? {
+                  ...edge,
+                  node: {
+                    ...edge.node,
+                    ...updatedEntry,
+                    transactions: updatedEntry.transactions || edge.node.transactions
+                  }
+                }
+                : edge
+            )
+
+            setLastUpdated(new Date())
+
+            return {
+              entries: {
+                ...prev.entries,
+                edges: updatedEdges,
+              },
+            }
+
+          case "DELETE":
+            const deletedEntry = entry
+            toast.info(`🗑️ Entry Deleted: ${deletedEntry?.entryNumber}`)
+
+            setLastUpdated(new Date())
+
+            return {
+              entries: {
+                ...prev.entries,
+                total: prev.entries.total - 1,
+                edges: prev.entries.edges.filter(
+                  (edge: any) => edge.node._id !== deletedEntry._id
+                ),
+              },
+            }
+
+          case "BATCH_UPDATE":
+            const updatedEntries = entries
+            toast.success(`📦 Batch Update: ${updatedEntries.length} entries updated`)
+
+            const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
+
+            setLastUpdated(new Date())
+
+            return {
+              entries: {
+                ...prev.entries,
+                edges: prev.entries.edges.map((edge: any) =>
+                  updatedIds.has(edge.node._id)
+                    ? {
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...updatedEntries.find((u: any) => u._id === edge.node._id),
+                      },
+                    }
+                    : edge
+                ),
+              },
+            }
+
+          default:
+            return prev
+        }
+      },
+    })
+
+    return () => {
+      unsubscribeEntry()
+    }
+  }, [subscribeToMoreEntries])
+
+  // Set up refund subscriptions
+  useEffect(() => {
+    if (!subscribeToMoreEntries) return
+
+    // Subscribe to refund changes
+    const unsubscribeRefund = subscribeToMoreEntries({
+      document: REFUND_CHANGED,
+      updateQuery: (prev: any, { subscriptionData }: any) => {
+        if (!subscriptionData.data) return prev
+        const { type, refund } = subscriptionData.data.refundChanged
+
+        if (type === "CREATE") {
+          toast.success(
+            `💰 Refund Processed: ₱${refund.amount.toLocaleString()} for entries: ${refund.entries}`
+          )
+          setNewRefundsCount(prev => prev + 1)
+          setLastUpdated(new Date())
+        }
+
+        return prev
+      },
+    })
+
+    return () => {
+      unsubscribeRefund()
+    }
+  }, [subscribeToMoreEntries])
+
+  useEffect(() => {
+    if (!subscribeToMorePayments) return
+
+    const unsubscribePayment = subscribeToMorePayments({
+      document: PAYMENT_CHANGED,
+      updateQuery: (prev: any, { subscriptionData }: any) => {
+        if (!subscriptionData.data) return prev
+        const { type, payment, payments } = subscriptionData.data.paymentChanged
+
+        switch (type) {
+          case "CREATE":
+            const newPayment = payment
+            const newPaymentExists = prev.payments.edges.find(
+              (edge: any) => edge.node._id === newPayment?._id
+            )
+            if (newPaymentExists) return prev
+
+            toast.success(`💰 New Payment Created: ₱${newPayment?.amount?.toLocaleString()}`, {
+              description: `From: ${newPayment?.payerName}`,
+              duration: 5000,
+            })
+
+            setNewPaymentsCount(prev => prev + 1)
+            setShowRefreshIndicator(true)
+            setTimeout(() => setShowRefreshIndicator(false), 5000)
+            setLastUpdated(new Date())
+
+            return {
+              payments: {
+                ...prev.payments,
+                total: prev.payments.total + 1,
+                edges: [
+                  { cursor: newPayment?._id, node: newPayment },
+                  ...prev.payments.edges,
+                ],
+              },
+            }
+
+          case "UPDATE":
+            const updatedPayment = payment
+
+            const oldPayment = prev.payments.edges.find(
+              (edge: any) => edge.node._id === updatedPayment._id
+            )?.node
+
+            const isRefundStatus = updatedPayment.currentStatus === "REJECTED" ||
+              updatedPayment.currentStatus === "DUPLICATE" ||
+              updatedPayment.currentStatus === "CANCELLED" ||
+              updatedPayment.currentStatus === "REFUNDED"
+
+            if (oldPayment && oldPayment.currentStatus !== updatedPayment.currentStatus && isRefundStatus) {
+              toast.info(`💰 Payment Refunded: ₱${updatedPayment?.amount?.toLocaleString()}`, {
+                description: `Status changed from ${oldPayment?.currentStatus} to ${updatedPayment?.currentStatus}`,
+                duration: 5000,
+              })
+              setNewRefundsCount(prev => prev + 1)
+            }
+            else if (oldPayment && oldPayment.currentStatus === "VERIFIED" && isRefundStatus) {
+              toast.info(`💰 Payment Fully Refunded: ₱${updatedPayment?.amount?.toLocaleString()}`, {
+                description: `Previously verified payment has been refunded`,
+                duration: 5000,
+              })
+              setNewRefundsCount(prev => prev + 1)
+            }
+            else {
+              toast.success(`💰 Payment Updated: ₱${updatedPayment?.amount?.toLocaleString()}`, {
+                description: `Status: ${updatedPayment?.currentStatus}`,
+                duration: 5000,
+              })
+            }
+
+            const updatedPaymentEdges = prev.payments.edges.map((edge: any) =>
+              edge.node._id === updatedPayment._id
+                ? { ...edge, node: updatedPayment }
+                : edge
+            )
+
+            setLastUpdated(new Date())
+            setShowRefreshIndicator(true)
+            setTimeout(() => setShowRefreshIndicator(false), 5000)
+
+            return {
+              payments: {
+                ...prev.payments,
+                edges: updatedPaymentEdges,
+              },
+            }
+
+          case "DELETE":
+            const deletedPayment = payment
+            toast.info(`🗑️ Payment Deleted: ₱${deletedPayment?.amount?.toLocaleString()}`)
+
+            setLastUpdated(new Date())
+
+            return {
+              payments: {
+                ...prev.payments,
+                total: prev.payments.total - 1,
+                edges: prev.payments.edges.filter(
+                  (edge: any) => edge.node._id !== deletedPayment._id
+                ),
+              },
+            }
+
+          case "BATCH_UPDATE":
+            const updatedPayments = payments
+            toast.success(`📦 Batch Update: ${updatedPayments.length} payments updated`)
+
+            const updatedIds = new Set(updatedPayments.map((u: any) => u._id))
+
+            setLastUpdated(new Date())
+
+            return {
+              payments: {
+                ...prev.payments,
+                edges: prev.payments.edges.map((edge: any) =>
+                  updatedIds.has(edge.node._id)
+                    ? {
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...updatedPayments.find((u: any) => u._id === edge.node._id),
+                      },
+                    }
+                    : edge
+                ),
+              },
+            }
+
+          default:
+            return prev
+        }
+      },
+    })
+
+    return () => {
+      unsubscribePayment()
+    }
+  }, [subscribeToMorePayments])
+  // Effect to track new entries count
+  useEffect(() => {
+    const currentCount = entriesData?.entries?.edges?.length || 0
+    if (prevEntriesCount.current > 0 && currentCount > prevEntriesCount.current) {
+      const newCount = currentCount - prevEntriesCount.current
+      setNewEntriesCount(prev => prev + newCount)
+    }
+    prevEntriesCount.current = currentCount
+    setLastUpdated(new Date())
+  }, [entriesData])
+
+  // Effect to track new payments count
+  useEffect(() => {
+    const currentCount = paymentsData?.payments?.edges?.length || 0
+    if (prevPaymentsCount.current > 0 && currentCount > prevPaymentsCount.current) {
+      const newCount = currentCount - prevPaymentsCount.current
+      setNewPaymentsCount(prev => prev + newCount)
+    }
+    prevPaymentsCount.current = currentCount
+    setLastUpdated(new Date())
+  }, [paymentsData])
+
+  // Manual refresh handler
+  const handleManualRefresh = async () => {
+    setShowRefreshIndicator(true)
+    await Promise.all([
+      refetchEntries(),
+      refetchLogs(),
+      refetchPayments()
+    ])
+    setNewEntriesCount(0)
+    setNewRefundsCount(0)
+    setNewPaymentsCount(0)
+    setTimeout(() => setShowRefreshIndicator(false), 2000)
+    toast.success("Dashboard refreshed")
+  }
 
   // Get initials for avatar fallback
   const getInitials = (name: string) => {
@@ -263,6 +911,73 @@ const Page = () => {
       .toUpperCase()
       .slice(0, 2)
   }
+
+  const monthlyPaymentsFromEntries = useMemo(() => {
+    if (!entriesData?.entries?.edges) return []
+
+    const endDate = new Date()
+    const startDate = subMonths(endDate, 11)
+    startDate.setDate(1)
+
+    const months = eachMonthOfInterval({ start: startDate, end: endDate })
+
+    const monthlyData: MonthlyPayment[] = months.map(monthDate => ({
+      month: format(monthDate, "MMMM yyyy"),
+      monthDate,
+      total: 0,
+      count: 0,
+      average: 0,
+      verifiedCount: 0,
+      verifiedTotal: 0,
+      methods: {}
+    }))
+
+    // Process each entry's transactions
+    entriesData.entries.edges.forEach(({ node }) => {
+      if (!node.transactions) return
+
+      // Group transactions by month
+      node.transactions.forEach(transaction => {
+        const txDate = new Date(transaction.transactionDate)
+        const txMonth = format(txDate, "yyyy-MM")
+        const monthData = monthlyData.find(m => format(m.monthDate, "yyyy-MM") === txMonth)
+
+        if (!monthData) return
+
+        // For BALANCE_PAYMENT (payments received)
+        if (transaction.transactionType === "BALANCE_PAYMENT" && transaction.amountChanged > 0) {
+          monthData.total += transaction.amountChanged
+          monthData.count++
+          monthData.verifiedTotal += transaction.amountChanged
+          monthData.verifiedCount++
+
+          // You can add method tracking if you have that info
+          const method = "UNKNOWN"
+          if (!monthData.methods[method]) {
+            monthData.methods[method] = { count: 0, total: 0 }
+          }
+          monthData.methods[method].count++
+          monthData.methods[method].total += transaction.amountChanged
+        }
+
+        // For REFUND_PAYMENT (refunds given out) - subtract from totals
+        if (transaction.transactionType === "REFUND_PAYMENT" && transaction.amountChanged < 0) {
+          const refundAmount = Math.abs(transaction.amountChanged)
+          monthData.verifiedTotal -= refundAmount
+          monthData.verifiedCount = Math.max(0, monthData.verifiedCount - 1)
+
+          // Also subtract from total
+          monthData.total -= refundAmount
+        }
+      })
+    })
+
+    monthlyData.forEach(month => {
+      month.average = month.verifiedCount > 0 ? Math.round(month.verifiedTotal / month.verifiedCount) : 0
+    })
+
+    return monthlyData.sort((a, b) => a.monthDate.getTime() - b.monthDate.getTime())
+  }, [entriesData])
 
   // Get role badge color
   const getRoleColor = (role: string) => {
@@ -393,11 +1108,91 @@ const Page = () => {
   const activeTournaments = tournamentsData?.tournaments?.edges?.filter(({ node }) => node.isActive) || []
   const inactiveTournaments = tournamentsData?.tournaments?.edges?.filter(({ node }) => !node.isActive) || []
 
-  // Process all payments and group by month
-  const monthlyPayments = useMemo(() => {
-    if (!paymentsData?.payments?.edges) return []
+  // March 14, 2026
+  // const monthlyPayments = useMemo(() => {
+  //   if (!entriesData?.entries?.edges) return []
 
-    const allPayments = paymentsData.payments.edges.map(edge => edge.node)
+  //   const endDate = new Date()
+  //   const startDate = subMonths(endDate, 11)
+  //   startDate.setDate(1)
+
+  //   const months = eachMonthOfInterval({ start: startDate, end: endDate })
+
+  //   const monthlyData: MonthlyPayment[] = months.map(monthDate => ({
+  //     month: format(monthDate, "MMMM yyyy"),
+  //     monthDate,
+  //     total: 0,
+  //     count: 0,
+  //     average: 0,
+  //     verifiedCount: 0,
+  //     verifiedTotal: 0,
+  //     methods: {}
+  //   }))
+
+  //   // Process each entry's transactions
+  //   entriesData.entries.edges.forEach(({ node }) => {
+  //     // Get all BALANCE_PAYMENT transactions (payments received)
+  //     const payments = node.transactions?.filter(t =>
+  //       t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0
+  //     ) || []
+
+  //     // Get all REFUND_PAYMENT transactions (refunds given out)
+  //     const refunds = node.transactions?.filter(t =>
+  //       t.transactionType === "REFUND_PAYMENT" && t.amountChanged < 0
+  //     ) || []
+
+  //     // Process payments
+  //     payments.forEach(payment => {
+  //       const paymentDate = new Date(payment.transactionDate)
+  //       const paymentMonth = format(paymentDate, "yyyy-MM")
+  //       const monthData = monthlyData.find(m => format(m.monthDate, "yyyy-MM") === paymentMonth)
+
+  //       if (monthData) {
+  //         monthData.total += payment.amountChanged
+  //         monthData.count++
+  //         monthData.verifiedTotal += payment.amountChanged
+  //         monthData.verifiedCount++
+
+  //         // Track payment methods if available (you might need to get this from payment records)
+  //         const method = "UNKNOWN"
+  //         if (!monthData.methods[method]) {
+  //           monthData.methods[method] = { count: 0, total: 0 }
+  //         }
+  //         monthData.methods[method].count++
+  //         monthData.methods[method].total += payment.amountChanged
+  //       }
+  //     })
+
+  //     // Process refunds (subtract from totals)
+  //     refunds.forEach(refund => {
+  //       const refundDate = new Date(refund.transactionDate)
+  //       const refundMonth = format(refundDate, "yyyy-MM")
+  //       const monthData = monthlyData.find(m => format(m.monthDate, "yyyy-MM") === refundMonth)
+
+  //       if (monthData) {
+  //         const refundAmount = Math.abs(refund.amountChanged)
+  //         monthData.verifiedTotal -= refundAmount
+  //         monthData.verifiedCount = Math.max(0, monthData.verifiedCount - 1)
+  //         monthData.total -= refundAmount
+
+  //         // Also subtract from methods if you have method info
+  //         // This is tricky because refunds might come from different payment methods
+  //       }
+  //     })
+  //   })
+
+  //   monthlyData.forEach(month => {
+  //     month.average = month.verifiedCount > 0 ? Math.round(month.verifiedTotal / month.verifiedCount) : 0
+  //   })
+
+  //   return monthlyData.sort((a, b) => a.monthDate.getTime() - b.monthDate.getTime())
+  // }, [entriesData])
+
+  // Get selected month data
+
+  const monthlyPayments = useMemo(() => {
+    console.log('Recalculating monthlyPayments with refreshTrigger:', refreshTrigger)
+    if (!entriesData?.entries?.edges) return []
 
     const endDate = new Date()
     const startDate = subMonths(endDate, 11)
@@ -405,41 +1200,45 @@ const Page = () => {
 
     const months = eachMonthOfInterval({ start: startDate, end: endDate })
 
-    const monthlyData: MonthlyPayment[] = months.map(monthDate => {
-      return {
-        month: format(monthDate, "MMMM yyyy"),
-        monthDate,
-        total: 0,
-        count: 0,
-        average: 0,
-        verifiedCount: 0,
-        verifiedTotal: 0,
-        methods: {}
-      }
-    })
+    const monthlyData: MonthlyPayment[] = months.map(monthDate => ({
+      month: format(monthDate, "MMMM yyyy"),
+      monthDate,
+      total: 0,
+      count: 0,
+      average: 0,
+      verifiedCount: 0,
+      verifiedTotal: 0,
+      methods: {}
+    }))
 
-    allPayments.forEach(payment => {
-      const paymentDate = new Date(payment.paymentDate)
-      const paymentMonth = format(paymentDate, "yyyy-MM")
+    // Process each entry's transactions
+    entriesData.entries.edges.forEach(({ node }) => {
+      if (!node.transactions) return
 
-      const monthData = monthlyData.find(m => format(m.monthDate, "yyyy-MM") === paymentMonth)
+      // Group transactions by month
+      node.transactions.forEach(transaction => {
+        const txDate = new Date(transaction.transactionDate)
+        const txMonth = format(txDate, "yyyy-MM")
+        const monthData = monthlyData.find(m => format(m.monthDate, "yyyy-MM") === txMonth)
 
-      if (monthData) {
-        monthData.count++
-        monthData.total += payment.amount
+        if (!monthData) return
 
-        if (payment.currentStatus === "VERIFIED") {
+        // For BALANCE_PAYMENT (payments received) - these are the actual payments
+        if (transaction.transactionType === "BALANCE_PAYMENT" && transaction.amountChanged > 0) {
+          monthData.total += transaction.amountChanged
+          monthData.count++
+          monthData.verifiedTotal += transaction.amountChanged
           monthData.verifiedCount++
-          monthData.verifiedTotal += payment.amount
-
-          const method = payment.method || "OTHER"
-          if (!monthData.methods[method]) {
-            monthData.methods[method] = { count: 0, total: 0 }
-          }
-          monthData.methods[method].count++
-          monthData.methods[method].total += payment.amount
         }
-      }
+
+        // For REFUND_PAYMENT (refunds given out) - subtract from totals
+        if (transaction.transactionType === "REFUND_PAYMENT" && transaction.amountChanged < 0) {
+          const refundAmount = Math.abs(transaction.amountChanged)
+          monthData.verifiedTotal -= refundAmount
+          monthData.verifiedCount = Math.max(0, monthData.verifiedCount - 1)
+          monthData.total -= refundAmount
+        }
+      })
     })
 
     monthlyData.forEach(month => {
@@ -447,14 +1246,13 @@ const Page = () => {
     })
 
     return monthlyData.sort((a, b) => a.monthDate.getTime() - b.monthDate.getTime())
-  }, [paymentsData])
+  }, [entriesData, refreshTrigger]) // Make sure refreshTrigger is in dependencies
 
-  // Get selected month data
   const selectedMonthData = useMemo(() => {
     return monthlyPayments.find(m => format(m.monthDate, "yyyy-MM") === selectedMonth)
   }, [monthlyPayments, selectedMonth])
 
-  // Calculate total for all time
+  // Calculate total for all time - Only includes VERIFIED payments
   const allTimeTotal = useMemo(() => {
     return monthlyPayments.reduce((sum, month) => sum + month.verifiedTotal, 0)
   }, [monthlyPayments])
@@ -564,6 +1362,14 @@ const Page = () => {
     }
   }, [entriesData])
 
+  // Get filtered entries by status
+  const getEntriesByStatus = (status: string) => {
+    if (!entriesData?.entries?.edges) return []
+    return entriesData.entries.edges
+      .map(edge => edge.node)
+      .filter(entry => entry.currentStatus === status)
+  }
+
   // Get top entries by registration (most recent)
   const topEntries = useMemo(() => {
     if (!entriesData?.entries?.edges) return []
@@ -573,6 +1379,7 @@ const Page = () => {
       .sort((a, b) => new Date(b.dateUpdated).getTime() - new Date(a.dateUpdated).getTime())
       .slice(0, 5)
       .map(entry => ({
+        _id: entry._id,
         entryNumber: entry.entryNumber,
         eventName: entry.eventName || "Unknown Event",
         tournamentName: entry.tournamentName || "Unknown Tournament",
@@ -582,7 +1389,12 @@ const Page = () => {
         status: entry.currentStatus,
         amount: entry.pendingAmount,
         isEarlyBird: entry.isEarlyBird,
-        date: entry.dateUpdated
+        date: entry.dateUpdated,
+        hasOverpayment: entry.hasOverpayment,
+        totalExcess: entry.totalExcess,
+        hasRefunds: entry.hasRefunds,
+        totalRefundAmount: entry.totalRefundAmount,
+        totalPaid: entry.totalPaid
       }))
   }, [entriesData])
 
@@ -636,8 +1448,80 @@ const Page = () => {
     return result.sort((a, b) => b.count - a.count)
   }, [entriesData])
 
+  // Handle status click
+  const handleStatusClick = (status: string) => {
+    setSelectedStatus(status)
+    setIsModalOpen(true)
+  }
+
+  // Get status display name
+  const getStatusDisplayName = (status: string) => {
+    return status.replace(/_/g, ' ')
+  }
+
+  // Get status color class
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      VERIFIED: "bg-green-100 text-green-800 border-green-200",
+      PAYMENT_VERIFIED: "bg-teal-100 text-teal-800 border-teal-200",
+      PENDING: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      PAYMENT_PENDING: "bg-orange-100 text-orange-800 border-orange-200",
+      LEVEL_PENDING: "bg-purple-100 text-purple-800 border-purple-200",
+      REJECTED: "bg-red-100 text-red-800 border-red-200",
+      CANCELLED: "bg-gray-100 text-gray-800 border-gray-200",
+      REFUNDED: "bg-purple-100 text-purple-800 border-purple-200",
+    }
+    return colors[status] || "bg-gray-100 text-gray-800 border-gray-200"
+  }
+
   return (
     <div className="space-y-6">
+      {/* Real-time status bar */}
+      <div className="flex items-center justify-between bg-muted/30 rounded-lg px-4 py-2">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-sm text-muted-foreground">Live updates</span>
+          </div>
+          {newEntriesCount > 0 && (
+            <Badge className="bg-green-500 hover:bg-green-600 text-white animate-bounce">
+              +{newEntriesCount} New {newEntriesCount === 1 ? 'Entry' : 'Entries'}
+            </Badge>
+          )}
+          {newPaymentsCount > 0 && (
+            <Badge className="bg-blue-500 hover:bg-blue-600 text-white">
+              +{newPaymentsCount} New {newPaymentsCount === 1 ? 'Payment' : 'Payments'}
+            </Badge>
+          )}
+          {newRefundsCount > 0 && (
+            <Badge className="bg-purple-500 hover:bg-purple-600 text-white">
+              +{newRefundsCount} New {newRefundsCount === 1 ? 'Refund' : 'Refunds'}
+            </Badge>
+          )}
+          {showRefreshIndicator && (
+            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+              <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+              Updating...
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-muted-foreground">
+            Last updated: {formatDistanceToNow(lastUpdated, { addSuffix: true })}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleManualRefresh}
+            disabled={showRefreshIndicator}
+            className="h-7"
+          >
+            <RefreshCw className={`h-3 w-3 mr-1 ${showRefreshIndicator ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Label className="text-3xl mt-2 font-bold tracking-tight">
@@ -686,7 +1570,8 @@ const Page = () => {
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="lg:col-span-4">
+            {/* Recent Activity Card - Left side */}
+            <Card className="lg:col-span-3">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
@@ -758,248 +1643,147 @@ const Page = () => {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-3">
+            <Card className="lg:col-span-4">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Tournament Schedule
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-green-500" />
+                    Payment Overview
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="text-sm border rounded-md px-2 py-1 bg-background"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                    >
+                      {monthlyPayments.map((month) => (
+                        <option key={month.month} value={format(month.monthDate, "yyyy-MM")}>
+                          {month.month}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 <CardDescription>
-                  Active and upcoming tournaments timeline
+                  Verified payments breakdown by month (refunds are automatically deducted)
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {tournamentsLoading ? (
-                    Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                        <Skeleton className="h-2 w-full" />
+                {paymentsLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-40 w-full" />
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Mini Stats Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3">
+                        <p className="text-xs text-muted-foreground">Current Month</p>
+                        <p className="text-lg font-bold text-green-600">
+                          ₱{(monthlyPayments[monthlyPayments.length - 1]?.verifiedTotal || 0).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {monthlyPayments[monthlyPayments.length - 1]?.verifiedCount || 0} verified payments
+                        </p>
                       </div>
-                    ))
-                  ) : tournamentsData?.tournaments?.edges?.length ? (
-                    <>
-                      {activeTournaments.length > 0 && (
-                        <div className="space-y-4">
-                          <h4 className="text-sm font-semibold text-green-600 dark:text-green-400 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            Active Tournaments
-                          </h4>
-                          {activeTournaments.map(({ node }) => {
-                            const startDate = new Date(node.tournamentStart)
-                            const endDate = new Date(node.tournamentEnd)
-                            const now = new Date()
+                      <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-3">
+                        <p className="text-xs text-muted-foreground">Month-over-Month</p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-lg font-bold text-purple-600">
+                            {growthPercentage > 0 ? '+' : ''}{growthPercentage.toFixed(1)}%
+                          </p>
+                          {growthPercentage > 0 ? (
+                            <TrendUp className="h-4 w-4 text-green-500" />
+                          ) : growthPercentage < 0 ? (
+                            <TrendingDown className="h-4 w-4 text-red-500" />
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3">
+                        <p className="text-xs text-muted-foreground">All Time Total</p>
+                        <p className="text-lg font-bold text-amber-600">
+                          ₱{allTimeTotal.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
 
-                            const totalDuration = endDate.getTime() - startDate.getTime()
-                            const elapsed = now.getTime() - startDate.getTime()
-                            const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100))
+                    {/* Standup-style Bar Graph */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium">Monthly Verified Payments (Last 12 Months)</h4>
+                      <div className="h-48 flex items-end gap-1.5">
+                        {monthlyPayments.map((month, index) => {
+                          const maxTotal = Math.max(...monthlyPayments.map(m => m.verifiedTotal), 1)
+                          const height = (month.verifiedTotal / maxTotal) * 100
+                          const isCurrentMonth = index === monthlyPayments.length - 1
 
-                            const startStatus = getDeadlineStatus(node.tournamentStart)
-                            const endStatus = getDeadlineStatus(node.tournamentEnd)
-
-                            return (
-                              <div key={node._id} className="space-y-3 p-4 bg-gradient-to-r from-green-50 to-transparent dark:from-green-950/20 rounded-lg border border-green-100 dark:border-green-900">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Trophy className="h-4 w-4 text-yellow-500" />
-                                    <p className="text-sm font-semibold">{node.name}</p>
-                                  </div>
-                                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-0">
-                                    {node.hasEarlyBird ? "Early Bird Available" : "Regular Rate"}
-                                  </Badge>
-                                </div>
-
-                                <div className="space-y-3">
-                                  <div className="relative flex justify-between text-xs text-muted-foreground px-1">
-                                    <span className="text-green-600 font-medium">{format(startDate, "MMM dd, yyyy")}</span>
-                                    <span className="text-red-600 font-medium">{format(endDate, "MMM dd, yyyy")}</span>
-                                  </div>
-
-                                  <div className="relative py-4">
-                                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700 -translate-y-1/2" />
-
-                                    {now >= startDate && now <= endDate && (
-                                      <div
-                                        className="absolute top-1/2 left-0 h-0.5 bg-green-500 -translate-y-1/2 transition-all duration-500"
-                                        style={{ width: `${progress}%` }}
-                                      />
-                                    )}
-
-                                    <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2">
-                                      <div className="flex flex-col items-center">
-                                        <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 shadow-sm mb-1" />
-                                        <span className="text-[10px] font-medium text-green-600 whitespace-nowrap absolute top-4">
-                                          Starts
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2">
-                                      <div className="flex flex-col items-center">
-                                        <div className="w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-gray-900 shadow-sm mb-1" />
-                                        <span className="text-[10px] font-medium text-red-600 whitespace-nowrap absolute top-4">
-                                          Ends
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    {now >= startDate && now <= endDate && (
-                                      <div
-                                        className="absolute top-1/2 -translate-y-1/2"
-                                        style={{ left: `${progress}%` }}
-                                      >
-                                        <div className="flex flex-col items-center">
-                                          <div className="w-4 h-4 bg-blue-500 rounded-full border-2 border-white dark:border-gray-900 shadow-lg animate-pulse mb-1" />
-                                          <span className="text-[10px] font-bold text-blue-600 whitespace-nowrap absolute top-5 bg-blue-50 dark:bg-blue-950 px-1.5 py-0.5 rounded">
-                                            Now
-                                          </span>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  <div className="flex justify-between text-xs pt-1">
-                                    <div className="flex items-center gap-1">
-                                      <CalendarDays className="h-3 w-3 text-green-600" />
-                                      <span className={startStatus.color}>
-                                        {startStatus.days < 0
-                                          ? `Started ${startStatus.displayDays} days ago`
-                                          : `Starts in ${startStatus.displayDays} days`}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <CalendarDays className="h-3 w-3 text-red-600" />
-                                      <span className={endStatus.color}>
-                                        {endStatus.days < 0
-                                          ? `Ended ${endStatus.displayDays} days ago`
-                                          : `${endStatus.displayDays} days left`}
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {now >= startDate && now <= endDate && (
-                                    <div className="flex justify-end">
-                                      <span className="text-xs font-medium text-green-600 bg-green-50 dark:bg-green-950 px-2 py-0.5 rounded">
-                                        {Math.round(progress)}% Complete
-                                      </span>
-                                    </div>
-                                  )}
+                          return (
+                            <div key={month.month} className="flex-1 flex flex-col items-center gap-1 group">
+                              <div className="relative w-full flex justify-center">
+                                <div
+                                  className={`w-full rounded-t transition-all duration-300 hover:opacity-80 cursor-pointer ${isCurrentMonth ? 'bg-gradient-to-t from-green-500 to-green-400' : 'bg-gradient-to-t from-blue-500 to-blue-400'
+                                    }`}
+                                  style={{ height: `${height}%`, minHeight: month.verifiedTotal > 0 ? '20px' : '4px' }}
+                                />
+                                <div className="absolute bottom-full mb-2 hidden group-hover:block bg-popover text-popover-foreground text-xs rounded py-1 px-2 shadow-lg whitespace-nowrap z-10">
+                                  <p className="font-semibold">{month.month}</p>
+                                  <p>Verified: ₱{month.verifiedTotal.toLocaleString()}</p>
+                                  <p>Payments: {month.verifiedCount}</p>
+                                  <p>Total (all): ₱{month.total.toLocaleString()}</p>
+                                  <p>Avg: ₱{month.average.toLocaleString()}</p>
                                 </div>
                               </div>
-                            )
-                          })}
+                              <span className="text-[10px] text-muted-foreground">
+                                {format(month.monthDate, "MMM")}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Selected Month Details */}
+                    {selectedMonthData && Object.keys(selectedMonthData.methods).length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium">Payment Methods - {selectedMonthData.month}</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(selectedMonthData.methods).map(([method, data]) => (
+                            <Badge key={method} variant="secondary" className="px-3 py-1">
+                              {method.replace(/_/g, ' ')}: ₱{data.total.toLocaleString()}
+                              ({data.count})
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Refund info */}
+                    {paymentsData?.payments?.edges?.some(edge =>
+                      edge.node.currentStatus === "REFUNDED" ||
+                      edge.node.currentStatus === "CANCELLED" ||
+                      edge.node.currentStatus === "VOID"
+                    ) && (
+                        <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full" />
+                            <span className="text-sm text-purple-700 dark:text-purple-300">
+                              Refunded/Cancelled payments are automatically excluded from totals
+                            </span>
+                          </div>
                         </div>
                       )}
 
-                      {inactiveTournaments.length > 0 && (
-                        <div className="space-y-3 mt-6">
-                          <h4 className="text-sm font-semibold text-gray-500 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                            Past Tournaments
-                          </h4>
-                          {inactiveTournaments.slice(0, 2).map(({ node }) => {
-                            const startDate = new Date(node.tournamentStart)
-                            const endDate = new Date(node.tournamentEnd)
-                            return (
-                              <div key={node._id} className="space-y-2 p-3 bg-gray-50/50 dark:bg-gray-800/20 rounded-lg border border-gray-200 dark:border-gray-800">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Trophy className="h-4 w-4 text-gray-400" />
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{node.name}</p>
-                                  </div>
-                                  <Badge variant="outline" className="text-gray-500 border-gray-500">
-                                    Completed
-                                  </Badge>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-xs text-gray-400">
-                                    <span>{format(startDate, "MMM dd, yyyy")}</span>
-                                    <span>{format(endDate, "MMM dd, yyyy")}</span>
-                                  </div>
-
-                                  <div className="relative py-3">
-                                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-300 dark:bg-gray-700 -translate-y-1/2" />
-
-                                    <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2">
-                                      <div className="w-3 h-3 bg-gray-400 rounded-full border-2 border-white dark:border-gray-900" />
-                                    </div>
-
-                                    <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2">
-                                      <div className="w-3 h-3 bg-gray-400 rounded-full border-2 border-white dark:border-gray-900" />
-                                    </div>
-                                  </div>
-
-                                  <div className="flex justify-between text-xs text-gray-500">
-                                    <span>Ended {formatDistanceToNow(endDate, { addSuffix: true })}</span>
-                                    <span>{format(endDate, "MMM dd, yyyy")}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )
-                          })}
-
-                          {inactiveTournaments.length > 2 && (
-                            <Button variant="link" size="sm" className="w-full text-xs">
-                              View {inactiveTournaments.length - 2} more past tournaments
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No tournaments found
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-6 p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
-                  <h4 className="text-xs font-semibold text-primary mb-3">Tournament Summary</h4>
-                  <div className="grid grid-cols-4 gap-2">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">{activeTournaments.length}</div>
-                      <p className="text-[10px] text-muted-foreground">Active</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-yellow-600">
-                        {activeTournaments.filter(({ node }) => node.hasEarlyBird).length}
+                    {/* No payments state */}
+                    {monthlyPayments.every(m => m.verifiedCount === 0) && (
+                      <div className="text-center py-6 text-muted-foreground">
+                        No verified payments found
                       </div>
-                      <p className="text-[10px] text-muted-foreground">Early Bird</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {activeTournaments.filter(({ node }) => {
-                          const start = new Date(node.tournamentStart)
-                          return start > new Date()
-                        }).length}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">Upcoming</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-500">{inactiveTournaments.length}</div>
-                      <p className="text-[10px] text-muted-foreground">Completed</p>
-                    </div>
+                    )}
                   </div>
-
-                  <div className="flex items-center justify-center gap-4 mt-3 text-[10px]">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full" />
-                      <span>Start</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-red-500 rounded-full" />
-                      <span>End</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                      <span>Current</span>
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
+
           </div>
 
           {/* Entry Summary Card */}
@@ -1010,7 +1794,7 @@ const Page = () => {
                 Entry Summary
               </CardTitle>
               <CardDescription>
-                Overview of all entries by status
+                Overview of all entries by status (click on any status to view details)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1043,11 +1827,10 @@ const Page = () => {
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-4">
                       <p className="text-sm text-muted-foreground">Total Refunds</p>
-                      <p className="text-2xl font-bold text-purple-600">₱{entrySummary.totalRefundAmount.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-red-600">₱{entrySummary.totalRefundAmount.toLocaleString()}</p>
                     </div>
                   </div>
 
-                  {/* Financial Summary */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-muted/30 rounded-lg p-4">
                       <p className="text-xs text-muted-foreground">Total Pending Amount</p>
@@ -1057,21 +1840,20 @@ const Page = () => {
                       <p className="text-xs text-muted-foreground">Total Paid Amount</p>
                       <p className="text-xl font-bold text-green-600">₱{entrySummary.totalPaidAmount.toLocaleString()}</p>
                     </div>
-                    <div className="bg-muted/30 rounded-lg p-4">
-                      <p className="text-xs text-muted-foreground">Total Refund Amount</p>
-                      <p className="text-xl font-bold text-red-600">₱{entrySummary.totalRefundAmount.toLocaleString()}</p>
-                    </div>
                   </div>
 
-                  {/* Status Breakdown */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Entries by Status</h4>
+                    <h4 className="text-sm font-medium">Entries by Status (click to view details)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {entrySummary.byStatus.map((status) => {
                         const Icon = status.icon
                         const percentage = (status.count / entrySummary.total) * 100
                         return (
-                          <div key={status.status} className="bg-muted/20 rounded-lg p-3">
+                          <div
+                            key={status.status}
+                            className="bg-muted/20 rounded-lg p-3 cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] border border-transparent hover:border-primary/20"
+                            onClick={() => handleStatusClick(status.status)}
+                          >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 <div className={`p-1 rounded-full ${status.color.split(' ')[0]}`}>
@@ -1079,7 +1861,9 @@ const Page = () => {
                                 </div>
                                 <span className="text-sm font-medium">{status.status.replace(/_/g, ' ')}</span>
                               </div>
-                              <Badge variant="outline">{status.count}</Badge>
+                              <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
+                                {status.count} entries
+                              </Badge>
                             </div>
                             <div className="space-y-1">
                               <div className="flex justify-between text-xs">
@@ -1102,7 +1886,106 @@ const Page = () => {
             </CardContent>
           </Card>
 
-          {/* NEW: Entries by Event Card */}
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  {selectedStatus && (
+                    <>
+                      {(() => {
+                        const statusIcon = entrySummary.byStatus.find(s => s.status === selectedStatus)?.icon
+                        const Icon = statusIcon || Activity
+                        return <Icon className="h-4 w-4" />
+                      })()}
+                      {selectedStatus?.replace(/_/g, ' ')} Entries
+                    </>
+                  )}
+                </DialogTitle>
+                <DialogDescription>
+                  List of all entries with status: {selectedStatus?.replace(/_/g, ' ')}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                {selectedStatus && getEntriesByStatus(selectedStatus).length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No entries found with this status
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedStatus && getEntriesByStatus(selectedStatus).map((entry) => (
+                      <div key={entry._id} className="flex items-start gap-3 p-4 bg-muted/20 rounded-lg border hover:bg-muted/30 transition-colors">
+                        <div className="flex-1 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-semibold">{entry.entryNumber}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {entry.eventName || "Unknown Event"} • {entry.tournamentName || "Unknown Tournament"}
+                              </p>
+                            </div>
+                            <Badge className={cn(getStatusColor(entry.currentStatus), "border")}>
+                              {entry.currentStatus.replace(/_/g, ' ')}
+                            </Badge>
+                          </div>
+
+                          <p className="text-xs text-muted-foreground">
+                            Players: {entry.playerList?.player2Name
+                              ? `${entry.playerList.player1Name} & ${entry.playerList.player2Name}`
+                              : entry.playerList?.player1Name || "Unknown Player"}
+                          </p>
+
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-4">
+                              <span className="flex items-center gap-1">
+                                Pending: ₱{entry.pendingAmount?.toLocaleString() || 0}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                Paid: ₱{entry.totalPaid?.toLocaleString() || 0}
+                              </span>
+
+                            </div>
+                            <span className="text-muted-foreground">
+                              {formatDistanceToNow(new Date(entry.dateUpdated), { addSuffix: true })}
+                            </span>
+                          </div>
+                          <div className="flex flex-row gap-2">
+                            {(entry.hasOverpayment || entry.hasRefunds) && (
+                              <div className="flex items-center gap-2 text-xs">
+                                {entry.hasOverpayment && (
+                                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                                    Overpayment: ₱{entry.totalExcess?.toLocaleString() || 0}
+                                  </Badge>
+                                )}
+                                {entry.hasRefunds && (
+                                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                    Refund: ₱{entry.totalRefundAmount?.toLocaleString() || 0}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                            {entry.isEarlyBird && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                Early Bird
+                              </Badge>
+                            )}
+
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex justify-end">
+                  <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Entries by Event Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1145,10 +2028,8 @@ const Page = () => {
                         </div>
                       </div>
 
-                      {/* Progress bar */}
                       <Progress value={event.percentage} className="h-2" />
 
-                      {/* Stats row */}
                       <div className="flex items-center justify-between text-xs mt-1">
                         <div className="flex items-center gap-3">
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
@@ -1172,15 +2053,66 @@ const Page = () => {
             </CardContent>
           </Card>
 
-          {/* Top Entries Card */}
+          {/* Recent Entries Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Crown className="h-5 w-5 text-yellow-500" />
-                Top Recent Entries
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="h-5 w-5 text-yellow-500" />
+                    Recent Entries
+                  </CardTitle>
+                  {(() => {
+                    const last24HoursCount = entriesData?.entries?.edges?.filter(({ node }) => {
+                      const date = new Date(node.dateUpdated)
+                      const now = new Date()
+                      const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                      return diffHours <= 24
+                    }).length || 0
+
+                    return last24HoursCount > 0 ? (
+                      <Badge className="bg-green-500 hover:bg-green-600 text-white ml-2">
+                        +{last24HoursCount} {last24HoursCount === 1 ? 'Added New Entry' : 'Added New Entries'}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="ml-2">
+                        No new entries
+                      </Badge>
+                    )
+                  })()}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    <Clock className="h-3 w-3 mr-1" />
+                    24h: {entriesData?.entries?.edges?.filter(({ node }) => {
+                      const date = new Date(node.dateUpdated)
+                      const now = new Date()
+                      const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                      return diffHours <= 24
+                    }).length || 0}
+                  </Badge>
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    <Clock className="h-3 w-3 mr-1" />
+                    7d: {entriesData?.entries?.edges?.filter(({ node }) => {
+                      const date = new Date(node.dateUpdated)
+                      const now = new Date()
+                      const diffDays = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+                      return diffDays <= 7
+                    }).length || 0}
+                  </Badge>
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                    <Clock className="h-3 w-3 mr-1" />
+                    30d: {entriesData?.entries?.edges?.filter(({ node }) => {
+                      const date = new Date(node.dateUpdated)
+                      const now = new Date()
+                      const diffDays = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+                      return diffDays <= 30
+                    }).length || 0}
+                  </Badge>
+                </div>
+              </div>
               <CardDescription>
-                Most recently registered entries
+                Most recently registered entries (live updates)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1196,14 +2128,98 @@ const Page = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-2 text-center">
+                      <p className="text-xs text-muted-foreground">Last 24 Hours</p>
+                      <p className="text-lg font-bold text-blue-600">
+                        {entriesData?.entries?.edges?.filter(({ node }) => {
+                          const date = new Date(node.dateUpdated)
+                          const now = new Date()
+                          const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                          return diffHours <= 24
+                        }).length || 0}
+                      </p>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-2 text-center">
+                      <p className="text-xs text-muted-foreground">Last 7 Days</p>
+                      <p className="text-lg font-bold text-green-600">
+                        {entriesData?.entries?.edges?.filter(({ node }) => {
+                          const date = new Date(node.dateUpdated)
+                          const now = new Date()
+                          const diffDays = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+                          return diffDays <= 7
+                        }).length || 0}
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-2 text-center">
+                      <p className="text-xs text-muted-foreground">Last 30 Days</p>
+                      <p className="text-lg font-bold text-purple-600">
+                        {entriesData?.entries?.edges?.filter(({ node }) => {
+                          const date = new Date(node.dateUpdated)
+                          const now = new Date()
+                          const diffDays = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+                          return diffDays <= 30
+                        }).length || 0}
+                      </p>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const todayCount = entriesData?.entries?.edges?.filter(({ node }) => {
+                      const date = new Date(node.dateUpdated)
+                      const today = new Date()
+                      return date.toDateString() === today.toDateString()
+                    }).length || 0
+
+                    return todayCount > 0 ? (
+                      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                            <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                              Today's Registrations
+                            </span>
+                          </div>
+                          <Badge className="bg-green-500 text-white">
+                            +{todayCount} {todayCount === 1 ? 'new' : 'new'} today
+                          </Badge>
+                        </div>
+                      </div>
+                    ) : null
+                  })()}
+
                   {topEntries.map((entry, index) => {
                     const rankIcon = index === 0 ? <Crown className="h-4 w-4 text-yellow-500" /> :
                       index === 1 ? <Award className="h-4 w-4 text-gray-400" /> :
                         index === 2 ? <Star className="h-4 w-4 text-amber-600" /> :
                           <span className="text-xs font-medium text-muted-foreground w-4 text-center">#{index + 1}</span>
 
+                    const isVeryRecent = (() => {
+                      const date = new Date(entry.date)
+                      const now = new Date()
+                      const diffMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
+                      return diffMinutes < 60
+                    })()
+
+                    const isToday = (() => {
+                      const date = new Date(entry.date)
+                      const today = new Date()
+                      return date.toDateString() === today.toDateString()
+                    })()
+
+                    // Safe amount formatting with null check
+                    const formattedAmount = entry.amount ? `₱${entry.amount.toLocaleString()}` : '₱0'
+
                     return (
-                      <div key={entry.entryNumber} className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors">
+                      <div key={entry._id} className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors relative">
+                        {isVeryRecent && (
+                          <div className="absolute -top-1 -right-1">
+                            <span className="relative flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                            </span>
+                          </div>
+                        )}
                         <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
                           {rankIcon}
                         </div>
@@ -1213,9 +2229,16 @@ const Page = () => {
                               <p className="text-sm font-semibold">{entry.entryNumber}</p>
                               <p className="text-xs text-muted-foreground">{entry.eventName} • {entry.tournamentName}</p>
                             </div>
-                            <Badge variant={entry.isEarlyBird ? "default" : "secondary"} className={entry.isEarlyBird ? "bg-green-100 text-green-800" : ""}>
-                              {entry.isEarlyBird ? "Early Bird" : "Regular"}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              {isToday && (
+                                <Badge variant="secondary" className="bg-green-100 text-green-800 text-[10px]">
+                                  New Today
+                                </Badge>
+                              )}
+                              <Badge variant={entry.isEarlyBird ? "default" : "secondary"} className={entry.isEarlyBird ? "bg-green-100 text-green-800" : ""}>
+                                {entry.isEarlyBird ? "Early Bird" : "Regular"}
+                              </Badge>
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground line-clamp-1">{entry.players}</p>
                           <div className="flex items-center justify-between text-xs">
@@ -1227,12 +2250,23 @@ const Page = () => {
                               )}>
                                 {entry.status.replace(/_/g, ' ')}
                               </Badge>
-                              <span className="text-muted-foreground">
+                              <span className="text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
                                 {formatDistanceToNow(new Date(entry.date), { addSuffix: true })}
                               </span>
                             </div>
-                            <span className="font-medium">₱{entry.amount.toLocaleString()}</span>
+                            <span className="font-medium">{formattedAmount}</span>
                           </div>
+                          {(entry.hasRefunds || entry.hasOverpayment) && (
+                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                              {entry.hasRefunds && entry.totalRefundAmount ? (
+                                <span>Refunded: ₱{entry.totalRefundAmount.toLocaleString()}</span>
+                              ) : null}
+                              {entry.hasOverpayment && entry.totalExcess ? (
+                                <span>Excess: ₱{entry.totalExcess.toLocaleString()}</span>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
@@ -1240,7 +2274,7 @@ const Page = () => {
 
                   <Button variant="link" className="w-full mt-2" size="sm" asChild>
                     <Link href="/entries">
-                      View all entries
+                      View all entries ({entriesData?.entries?.edges?.length || 0} total)
                       <ChevronRight className="ml-1 h-4 w-4" />
                     </Link>
                   </Button>
@@ -1248,240 +2282,6 @@ const Page = () => {
               )}
             </CardContent>
           </Card>
-
-          {/* Monthly Payment Overview Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-green-500" />
-                  Monthly Payment Overview
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <select
-                    className="text-sm border rounded-md px-2 py-1 bg-background"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                  >
-                    {monthlyPayments.map((month) => (
-                      <option key={month.month} value={format(month.monthDate, "yyyy-MM")}>
-                        {month.month}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <CardDescription>
-                Verified payments breakdown by month
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {paymentsLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-20 w-full" />
-                  <Skeleton className="h-40 w-full" />
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Monthly Stats Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground">Current Month</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        ₱{(monthlyPayments[monthlyPayments.length - 1]?.verifiedTotal || 0).toLocaleString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {monthlyPayments[monthlyPayments.length - 1]?.verifiedCount || 0} payments
-                      </p>
-                    </div>
-                    <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground">Previous Month</p>
-                      <p className="text-2xl font-bold text-blue-600">
-                        ₱{(monthlyPayments[monthlyPayments.length - 2]?.verifiedTotal || 0).toLocaleString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {monthlyPayments[monthlyPayments.length - 2]?.verifiedCount || 0} payments
-                      </p>
-                    </div>
-                    <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground">Month-over-Month</p>
-                      <div className="flex items-center gap-1">
-                        <p className="text-2xl font-bold text-purple-600">
-                          {growthPercentage > 0 ? '+' : ''}{growthPercentage.toFixed(1)}%
-                        </p>
-                        {growthPercentage > 0 ? (
-                          <TrendUp className="h-5 w-5 text-green-500" />
-                        ) : growthPercentage < 0 ? (
-                          <TrendingDown className="h-5 w-5 text-red-500" />
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground">All Time Total</p>
-                      <p className="text-2xl font-bold text-amber-600">
-                        ₱{allTimeTotal.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Monthly Bar Chart */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Monthly Verified Payments (Last 12 Months)</h4>
-                    <div className="h-64 flex items-end gap-2">
-                      {monthlyPayments.map((month, index) => {
-                        const maxTotal = Math.max(...monthlyPayments.map(m => m.verifiedTotal), 1)
-                        const height = (month.verifiedTotal / maxTotal) * 100
-                        const isCurrentMonth = index === monthlyPayments.length - 1
-
-                        return (
-                          <div key={month.month} className="flex-1 flex flex-col items-center gap-1 group">
-                            <div className="relative w-full flex justify-center">
-                              <div
-                                className={`w-full max-w-[30px] rounded-t transition-all duration-300 hover:opacity-80 ${isCurrentMonth ? 'bg-green-500' : 'bg-blue-500'
-                                  }`}
-                                style={{ height: `${height}%`, minHeight: month.verifiedTotal > 0 ? '20px' : '4px' }}
-                              />
-                              <div className="absolute bottom-full mb-2 hidden group-hover:block bg-popover text-popover-foreground text-xs rounded py-1 px-2 shadow-lg">
-                                <p className="font-semibold">{month.month}</p>
-                                <p>Total: ₱{month.verifiedTotal.toLocaleString()}</p>
-                                <p>Payments: {month.verifiedCount}</p>
-                                <p>Avg: ₱{month.average.toLocaleString()}</p>
-                              </div>
-                            </div>
-                            <span className="text-[10px] text-muted-foreground rotate-45 origin-left whitespace-nowrap">
-                              {format(month.monthDate, "MMM")}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Selected Month Details */}
-                  {selectedMonthData && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <h4 className="text-sm font-medium">{selectedMonthData.month} Details</h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-muted/30 rounded-lg p-3">
-                            <p className="text-xs text-muted-foreground">Total Verified</p>
-                            <p className="text-lg font-bold">₱{selectedMonthData.verifiedTotal.toLocaleString()}</p>
-                          </div>
-                          <div className="bg-muted/30 rounded-lg p-3">
-                            <p className="text-xs text-muted-foreground">Number of Payments</p>
-                            <p className="text-lg font-bold">{selectedMonthData.verifiedCount}</p>
-                          </div>
-                          <div className="bg-muted/30 rounded-lg p-3">
-                            <p className="text-xs text-muted-foreground">Average Payment</p>
-                            <p className="text-lg font-bold">₱{selectedMonthData.average.toLocaleString()}</p>
-                          </div>
-                          <div className="bg-muted/30 rounded-lg p-3">
-                            <p className="text-xs text-muted-foreground">Total Payments (All)</p>
-                            <p className="text-lg font-bold">{selectedMonthData.count}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {Object.keys(selectedMonthData.methods).length > 0 && (
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-medium">Payment Methods - {selectedMonthData.month}</h4>
-                          <div className="space-y-2">
-                            {Object.entries(selectedMonthData.methods).map(([method, data]) => (
-                              <div key={method} className="flex items-center justify-between p-2 bg-muted/20 rounded-lg">
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-sm font-medium">{method.replace(/_/g, ' ')}</span>
-                                    <span className="text-xs text-muted-foreground">{data.count} payments</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Progress
-                                      value={(data.total / selectedMonthData.verifiedTotal) * 100}
-                                      className="h-2 flex-1"
-                                    />
-                                    <span className="text-xs font-medium w-16">
-                                      ₱{data.total.toLocaleString()}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Best Month Highlight */}
-                  {bestMonth && (
-                    <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Trophy className="h-4 w-4 text-yellow-500" />
-                        <h4 className="text-sm font-semibold">Best Performing Month</h4>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Month</p>
-                          <p className="text-sm font-bold">{bestMonth.month}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Total</p>
-                          <p className="text-sm font-bold text-green-600">₱{bestMonth.verifiedTotal.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Payments</p>
-                          <p className="text-sm font-bold">{bestMonth.verifiedCount}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* No payments state */}
-                  {monthlyPayments.every(m => m.verifiedCount === 0) && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No verified payments found
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Leaderboard & Stats */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-yellow-500" />
-                  Top Performers
-                </CardTitle>
-                <CardDescription>
-                  Players with highest win rates
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {topPerformers.map((performer, index) => (
-                    <div key={performer.rank} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                          index === 1 ? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' :
-                            index === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' :
-                              'bg-muted text-muted-foreground'
-                          }`}>
-                          {performer.rank}
-                        </div>
-                        <span className="text-sm font-medium">{performer.name}</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground">{performer.entries} entries</span>
-                        <Badge variant="secondary">{performer.wins} wins</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
