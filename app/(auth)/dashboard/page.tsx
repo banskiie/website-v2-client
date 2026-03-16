@@ -1828,7 +1828,6 @@ const Page = () => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Entry Stats Cards */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
                       <p className="text-sm text-muted-foreground">Total Entries</p>
@@ -1891,7 +1890,7 @@ const Page = () => {
                             <div className="space-y-1">
                               <div className="flex justify-between text-xs">
                                 <span className="text-muted-foreground">Percentage</span>
-                                <span className="font-medium">{percentage.toFixed(1)}%</span>
+                                {/* <span className="font-medium">{percentage.toFixed(1)}%</span> */}
                               </div>
                               <Progress value={percentage} className="h-1.5" />
                               <div className="flex justify-between text-xs mt-2">
@@ -2008,7 +2007,6 @@ const Page = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Entries by Event Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -2076,7 +2074,6 @@ const Page = () => {
             </CardContent>
           </Card>
 
-          {/* Recent Entries Card */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
