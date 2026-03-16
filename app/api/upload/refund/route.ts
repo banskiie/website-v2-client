@@ -1,67 +1,73 @@
 import { NextResponse } from "next/server"
-import { Readable } from "stream"
-import { google } from "googleapis"
 import sharp from "sharp"
+import { v2 as cloudinary } from "cloudinary"
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+})
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File
 
-    if (!file)
+    if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
+    }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    // If image, compress it before uploading
-    const stream = Readable.from(
-      file?.type.startsWith("image/") //
-        ? await sharp(buffer) // Compress images
-            .resize({ width: 1080 })
-            .jpeg({ quality: 70 })
-            .toBuffer()
-        : buffer
-    )
 
-    // Google Drive auth
-    const auth = new google.auth.JWT({
-      email: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_EMAIL,
-      key: process.env.NEXT_PUBLIC_GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-      scopes: ["https://www.googleapis.com/auth/drive"],
+    const processedBuffer = file.type.startsWith("image/")
+      ? await sharp(buffer)
+          .resize({ width: 1080 })
+          .jpeg({ quality: 70 })
+          .toBuffer()
+      : buffer
+
+    const result: any = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "refunds",
+          resource_type: "auto",
+          format: (() => {
+            switch (file.type) {
+              case "application/pdf":
+                return "pdf"
+              case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+              case "application/msword":
+                return "docx"
+              case "image/png":
+                return "png"
+              case "image/jpg":
+                return "jpg"
+              case "video/mp4":
+                return "mp4"
+              case "video/quicktime":
+                return "mov"
+            }
+          })(),
+        },
+        (error, result) => {
+          if (error) reject(error)
+          else resolve(result)
+        },
+      )
+
+      stream.end(processedBuffer)
     })
 
-    const drive = google.drive({ version: "v3", auth })
-
-    const response = await drive.files.create({
-      requestBody: {
-        name: file.name,
-        parents: [process.env.NEXT_PUBLIC_GOOGLE_DRIVE_REFUND_FOLDER!],
-      },
-      media: {
-        mimeType: file?.type,
-        body: stream,
-      },
-      fields: "id",
-      supportsAllDrives: true,
+    return NextResponse.json({
+      name: file.name,
+      type: file.type, // MIME type
+      size: file.size, // original file size
+      resourceType: result.resource_type, // cloudinary type
+      url: result.secure_url,
+      publicId: result.public_id,
     })
-
-    // Generate Google Drive view link for images/documents, and preview link for videos
-    const fileId = response.data.id
-    return NextResponse.json(
-      {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        url: file?.type.startsWith("video/")
-          ? `https://drive.google.com/file/d/${fileId}/preview`
-          : `https://drive.google.com/uc?id=${fileId}`,
-      },
-      { status: 200 }
-    )
   } catch (error: any) {
-    console.error("❌ Error uploading file:", error)
-    return NextResponse.json(
-      { message: "Error uploading file", error: error.message },
-      { status: 500 }
-    )
+    console.error(JSON.stringify(error))
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
