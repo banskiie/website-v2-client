@@ -2,6 +2,13 @@ import { NextResponse } from "next/server"
 import { Readable } from "stream"
 import { google } from "googleapis"
 import sharp from "sharp"
+import https from "https"
+
+const agent = new https.Agent({ family: 4 })
+
+google.options({
+  agent,
+})
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +26,7 @@ export async function POST(request: Request) {
             .resize({ width: 1080 })
             .jpeg({ quality: 70 })
             .toBuffer()
-        : buffer
+        : buffer,
     )
 
     // Google Drive auth
@@ -55,13 +62,13 @@ export async function POST(request: Request) {
           ? `https://drive.google.com/file/d/${fileId}/preview`
           : `https://drive.google.com/uc?id=${fileId}`,
       },
-      { status: 200 }
+      { status: 200 },
     )
   } catch (error: any) {
     console.error("❌ Error uploading file:", error)
     return NextResponse.json(
       { message: "Error uploading file", error: error.message },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
