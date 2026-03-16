@@ -145,9 +145,9 @@ export const uploadProofOfPaymentSchema = z.object({
 export type UploadProofFormData = z.infer<typeof uploadProofOfPaymentSchema>
 
 export const emailValidator = z
-  .string()
-  .trim()
-  .min(1, "Email address is required.")
-  .email("Please enter a valid email address.")
+    .string()
+    .trim()
+    .min(1, "Email address is required.")
+    .email("Please enter a valid email address.")
 
 export type EmailValidatorType = z.infer<typeof emailValidator>

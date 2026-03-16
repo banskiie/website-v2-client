@@ -102,14 +102,12 @@ const createBaseSchema = (hasFreeJersey: boolean, eventData?: any) => {
     const baseFields = getBaseFields(hasFreeJersey);
     const schema = z.object(baseFields);
 
-    // Add age validation using superRefine
     return schema.superRefine((data, ctx) => {
         if (eventData?.tournamentStart && data.player1Birthday) {
             const birthDate = new Date(data.player1Birthday);
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            // Only validate minAge if it's not null/undefined
             if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -117,7 +115,6 @@ const createBaseSchema = (hasFreeJersey: boolean, eventData?: any) => {
                     path: ["player1Birthday"],
                 });
             }
-            // Only validate maxAge if it's not 0/undefined
             if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -133,7 +130,6 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
     const baseFields = getBaseFields(hasFreeJersey);
     const doublesFields = getDoublesFields(hasFreeJersey);
 
-    // Combine all fields
     const allFields = {
         ...baseFields,
         ...doublesFields,
@@ -141,15 +137,12 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
 
     const schema = z.object(allFields);
 
-    // Add age validation for both players using superRefine
     return schema.superRefine((data, ctx) => {
-        // Player 1 age validation
         if (eventData?.tournamentStart && data.player1Birthday) {
             const birthDate = new Date(data.player1Birthday);
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            // Only validate if minAge is explicitly set (not 0/undefined)
             if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -157,7 +150,6 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
                     path: ["player1Birthday"],
                 });
             }
-            // Only validate if maxAge is explicitly set (not 0/undefined)
             if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -167,13 +159,11 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
             }
         }
 
-        // Player 2 age validation
         if (eventData?.tournamentStart && data.player2Birthday) {
             const birthDate = new Date(data.player2Birthday);
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            // Only validate if minAge is explicitly set (not 0/undefined)
             if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -181,7 +171,6 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
                     path: ["player2Birthday"],
                 });
             }
-            // Only validate if maxAge is explicitly set (not 0/undefined)
             if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -191,7 +180,6 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
             }
         }
 
-        // Add mixed gender validation for MIXED events
         if (eventData?.gender === "MIXED") {
             if (data.player1Gender && data.player2Gender && data.player1Gender === data.player2Gender) {
                 ctx.addIssue({
@@ -208,7 +196,6 @@ const createSinglesSchema = (hasFreeJersey: boolean, eventData?: any) => {
     const baseFields = getBaseFields(hasFreeJersey);
     const singlesFields = getSinglesFields(hasFreeJersey);
 
-    // Combine all fields
     const allFields = {
         ...baseFields,
         ...singlesFields,

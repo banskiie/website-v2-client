@@ -206,7 +206,8 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
             status === "PAYMENT_PAID" ||
             status === "PAYMENT_VERIFIED" ||
             status === "PAYMENT_PARTIALLY_PAID" ||
-            status === "CANCELLED") && (
+            status === "CANCELLED" ||
+            status === "REJECTED") && (
               <TransferDialog
                 entryId={entry?._id}
                 onClose={() => setMenuOpen(false)}

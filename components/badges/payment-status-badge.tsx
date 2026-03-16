@@ -25,6 +25,12 @@ const PaymentStatusBadge = (props: Props) => {
           {props.status.toLocaleLowerCase().replace("_", " ")}
         </Badge>
       )
+    case PaymentStatus.REFUNDED:
+      return (
+        <Badge className="pointer-events-none bg-destructive capitalize">
+          {props.status.toLocaleLowerCase().replace("_", " ")}
+        </Badge>
+      )
     case PaymentStatus.DUPLICATE:
       return (
         <Badge className="pointer-events-none bg-purple-600 capitalize">

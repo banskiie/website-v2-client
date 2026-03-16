@@ -82,7 +82,6 @@ const RegistrationFeeModal = ({
 }) => {
     if (!isOpen || !event || !tournament) return null
 
-    // Calculate if early bird is active based on date
     const hasEarlyBirdSetting = tournament.settings?.hasEarlyBird;
     const earlyBirdEndDate = tournament.dates?.earlyBirdPaymentEnd;
     const now = new Date();
@@ -91,10 +90,9 @@ const RegistrationFeeModal = ({
 
     if (hasEarlyBirdSetting && earlyBirdEndDate) {
         const endDate = new Date(earlyBirdEndDate);
-        isEarlyBirdActive = now <= endDate; // Early bird is active if current date is before/equal to end date
+        isEarlyBirdActive = now <= endDate
     }
 
-    // Use early bird price only if early bird is active
     const pricePerPlayer = isEarlyBirdActive && event.earlyBirdPricePerPlayer ?
         event.earlyBirdPricePerPlayer :
         event.pricePerPlayer
@@ -104,7 +102,7 @@ const RegistrationFeeModal = ({
         : pricePerPlayer
 
     const isDoubles = event.type === "DOUBLES"
-    const isEarlyBird = isEarlyBirdActive; // Use the calculated value
+    const isEarlyBird = isEarlyBirdActive
 
     const [dontShowChecked, setDontShowChecked] = useState(false)
 
@@ -112,7 +110,6 @@ const RegistrationFeeModal = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="animate-in fade-in-90 zoom-in-90 duration-300 w-full max-w-md">
                 <div className="bg-white rounded-2xl shadow-2xl p-6 text-center transform transition-all duration-300 scale-100 border border-green-200">
-                    {/* Header */}
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-2 text-green-800">
                             <div className="p-2 bg-linear-to-r bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-600 rounded-lg">
@@ -131,7 +128,6 @@ const RegistrationFeeModal = ({
                         </button>
                     </div>
 
-                    {/* Event Info */}
                     <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-green-50 rounded-xl border border-teal-200">
                         <div className="text-sm text-green-700 mb-1">Event Category</div>
                         <div className="font-bold text-green-800 text-lg">
@@ -267,7 +263,6 @@ const SuccessModal = ({ isOpen, onClose, message }: {
 }
 
 const showValidationToast = (errors: string[], title?: string) => {
-    // console.log("Showing Validation toast:", title, errors);
 
     if (!errors || errors.length === 0) return;
 
@@ -318,7 +313,6 @@ const showValidationToast = (errors: string[], title?: string) => {
     );
 };
 
-// New function to show field-specific toast
 const showFieldErrorToast = (fieldName: string, errors: any[]) => {
     if (!errors || errors.length === 0) return;
 
@@ -326,7 +320,6 @@ const showFieldErrorToast = (fieldName: string, errors: any[]) => {
         typeof err === 'object' && err.message ? err.message : String(err)
     );
 
-    // Format field name for display
     const displayFieldName = fieldName
         .replace(/([A-Z])/g, ' $1')
         .replace(/^./, str => str.toUpperCase())

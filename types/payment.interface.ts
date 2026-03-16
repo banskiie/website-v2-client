@@ -13,6 +13,7 @@ export enum PaymentStatus {
   VERIFIED = "VERIFIED",
   DUPLICATE = "DUPLICATE",
   REJECTED = "REJECTED",
+  REFUNDED = "REFUNDED"
 }
 
 export interface IPaymentStatusLog {

@@ -226,7 +226,6 @@ type SuggestPlayersResponse = {
   suggestPlayers: SuggestPlayer[];
 }
 
-// UPDATED: Extended event option type to include price information
 type ExtendedEventOption = {
   label: string;
   value: string;
@@ -241,7 +240,6 @@ type Props = {
   onClose?: () => void
 }
 
-// Helper function to truncate file names
 const truncateFileNameWithEllipsis = (fileName: string, prefixLength: number = 15): string => {
   if (fileName.length <= prefixLength + 10) return fileName;
 
@@ -254,7 +252,6 @@ const truncateFileNameWithEllipsis = (fileName: string, prefixLength: number = 1
   return `${prefix} ... .${extension}`;
 };
 
-// Reusable DocumentUploadTab component
 const DocumentUploadTab = ({
   playerNumber,
   selectedDocumentType,
@@ -2612,12 +2609,12 @@ const FormDialog = (props: Props) => {
                                             disabled={isLoading}
                                             id={field.name}
                                             name={field.name}
-                                            value={field.state.value}
+                                            value={field.state.value?.replace(/^0/, "")}
                                             onBlur={field.handleBlur}
                                             onChange={(e) => {
                                               let value = e.target.value;
                                               value = value.replace(/\D/g, '');
-                                              value = value.replace(/^(\+?63)?/, '');
+                                              value = value.replace(/^(\+?0)?/, '');
                                               value = value.slice(0, 10);
                                               field.handleChange(value);
                                             }}
@@ -3354,12 +3351,12 @@ const FormDialog = (props: Props) => {
                                             disabled={isLoading}
                                             id={field.name}
                                             name={field.name}
-                                            value={field.state.value}
+                                            value={field.state.value?.replace(/^0/, "")}
                                             onBlur={field.handleBlur}
                                             onChange={(e) => {
                                               let value = e.target.value;
                                               value = value.replace(/\D/g, '');
-                                              value = value.replace(/^(\+?63)?/, '');
+                                              value = value.replace(/^(\+?0)?/, '');
                                               value = value.slice(0, 10);
                                               field.handleChange(value);
                                             }}

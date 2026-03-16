@@ -12,14 +12,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Plus, Minus, AlertCircle, X, Check, ChevronDown, CreditCard, Calendar, Hash, User } from "lucide-react"
+import { AlertCircle, X, Check, ChevronDown, CreditCard, Calendar, Hash, User, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { TransferEntryStatus } from "@/types/payment.interface"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-
+import { cn } from "@/lib/utils"
 
 const TRANSFER_PAYMENT = gql`
   mutation TransferPaymentToOtherEntry($input: TransferPaymentInput!) {
@@ -39,12 +38,18 @@ const GET_PAYMENTS_FOR_ENTRY = gql`
       amount
       method
       paymentDate
+      statuses {
+        status
+        date
+        reason
+      }
       entryList {
         entry {
           _id
           entryNumber
           entryKey
         }
+        isFullyPaid
       }
     }
   }
@@ -65,11 +70,35 @@ const ACTIVE_PAYMENT_ENTRY_OPTIONS = gql`
   }
 `
 
+const PAYMENT_CHANGED = gql`
+  subscription PaymentChanged {
+    paymentChanged {
+      type
+      payment {
+        _id
+        payerName
+        referenceNumber
+        amount
+        method
+        paymentDate
+        currentStatus
+        entries
+      }
+    }
+  }
+`
+
 interface TransferPaymentResponse {
     transferPaymentToOtherEntry: {
         ok: boolean
         message: string
     }
+}
+
+interface PaymentStatus {
+    status: string
+    date: string
+    reason?: string
 }
 
 interface Payment {
@@ -79,12 +108,14 @@ interface Payment {
     amount: number
     method: string
     paymentDate: string
+    statuses?: PaymentStatus[]
     entryList?: Array<{
         entry: {
             _id: string
             entryNumber: string
             entryKey: string
         }
+        isFullyPaid: boolean
     }>
 }
 
@@ -137,9 +168,10 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
     const [oldEntriesStatus, setOldEntriesStatus] = useState<TransferEntryStatus | undefined>(undefined)
     const [remarks, setRemarks] = useState<string>("")
     const [isFullyPaid, setIsFullyPaid] = useState<boolean>(false)
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
     // Fetch payments for this entry
-    const { data: paymentsData, loading: paymentsLoading, error: paymentsError } = useQuery<GetPaymentsForEntryResponse>(
+    const { data: paymentsData, loading: paymentsLoading, error: paymentsError, subscribeToMore, refetch } = useQuery<GetPaymentsForEntryResponse>(
         GET_PAYMENTS_FOR_ENTRY,
         {
             variables: { entryId },
@@ -174,17 +206,86 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
         }
     )
 
-    const payments = paymentsData?.paymentsByEntryId || []
-    const selectedPayment = payments.find(p => p._id === selectedPaymentId)
-
-    // Auto-select the first payment if there's only one
     useEffect(() => {
-        if (payments.length === 1 && !selectedPaymentId && !paymentsLoading) {
-            setSelectedPaymentId(payments[0]._id)
-        }
-    }, [payments, selectedPaymentId, paymentsLoading])
+        if (!subscribeToMore || !open) return;
 
-    // Reset form when dialog closes
+        const unsubscribe = subscribeToMore({
+            document: PAYMENT_CHANGED,
+            updateQuery: (prev, { subscriptionData }) => {
+                if (!subscriptionData.data) return prev as any;
+
+                const { type, payment } = (subscriptionData.data as any).paymentChanged;
+
+                // Add null check for payment
+                if (!payment || !payment._id) return prev as any;
+
+                if (!(prev as any).paymentsByEntryId) return prev as any;
+
+                const prevCopy = { ...(prev as any) };
+
+                const updatedPayment = payment;
+                const currentPaymentIds = prevCopy.paymentsByEntryId.map((p: any) => p?._id).filter(Boolean);
+
+                if (!currentPaymentIds.includes(updatedPayment._id)) {
+                    return prev as any;
+                }
+
+                setLastUpdated(new Date());
+
+                switch (type) {
+                    case "UPDATE":
+                        prevCopy.paymentsByEntryId = prevCopy.paymentsByEntryId.map((p: any) =>
+                            p?._id === updatedPayment._id
+                                ? {
+                                    ...p,
+                                    ...updatedPayment,
+                                    // Preserve existing statuses array since subscription doesn't have it
+                                    statuses: p?.statuses || []
+                                }
+                                : p
+                        );
+
+                        // Use currentStatus from the subscription
+                        if (updatedPayment.currentStatus === 'REJECTED' || updatedPayment.currentStatus === 'REFUNDED') {
+                            toast.info(`Payment ${updatedPayment.referenceNumber || 'Unknown'} was ${updatedPayment.currentStatus.toLowerCase()}`, {
+                                duration: 5000,
+                            });
+
+                            if (selectedPaymentId === updatedPayment._id) {
+                                setSelectedPaymentId("");
+                            }
+                        }
+
+                        return prevCopy;
+
+                    default:
+                        return prev as any;
+                }
+            }
+        });
+
+        return () => unsubscribe();
+    }, [subscribeToMore, open, selectedPaymentId]);
+
+    const payments = paymentsData?.paymentsByEntryId || []
+
+    const isValidPayment = (payment: Payment): boolean => {
+        if (!payment.statuses || payment.statuses.length === 0) return true;
+
+        const latestStatus = payment.statuses[payment.statuses.length - 1];
+
+        return latestStatus.status !== 'REJECTED' && latestStatus.status !== 'REFUNDED';
+    }
+
+    const validPayments = payments.filter(isValidPayment);
+    const selectedPayment = validPayments.find(p => p._id === selectedPaymentId)
+
+    useEffect(() => {
+        if (validPayments.length === 1 && !selectedPaymentId && !paymentsLoading) {
+            setSelectedPaymentId(validPayments[0]._id)
+        }
+    }, [validPayments, selectedPaymentId, paymentsLoading])
+
     useEffect(() => {
         if (!open) {
             resetForm()
@@ -239,7 +340,28 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
         }
     }
 
+    const getPaymentStatusColor = (status: string) => {
+        switch (status) {
+            case "VERIFIED":
+                return "bg-green-50 text-green-700 border-green-200"
+            case "SENT":
+                return "bg-blue-50 text-blue-700 border-blue-200"
+            case "REJECTED":
+                return "bg-red-50 text-red-700 border-red-200"
+            case "REFUNDED":
+                return "bg-purple-50 text-purple-700 border-purple-200"
+            default:
+                return "bg-gray-50 text-gray-700 border-gray-200"
+        }
+    }
+
+    // Filter entries by status (exclude rejected/cancelled/refunded)
     const filteredEntries = entriesData?.activePaymentEntryOptions?.filter(entry => {
+        const excludedStatuses = ["REJECTED", "CANCELLED", "REFUNDED"];
+        return !excludedStatuses.includes(entry.currentStatus);
+    }) || []
+
+    const searchedEntries = filteredEntries.filter(entry => {
         if (!entrySearch) return true;
 
         const searchLower = entrySearch.toLowerCase();
@@ -252,11 +374,18 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                 `${player.firstName} ${player.lastName}`.toLowerCase().includes(searchLower)
             )
         );
-    }) || [];
+    }) || []
 
     const handleSubmit = async () => {
         if (!selectedPaymentId) {
             toast.error("Please select a payment")
+            return
+        }
+
+        // Double-check that the selected payment is still valid
+        const selectedPayment = validPayments.find(p => p._id === selectedPaymentId);
+        if (!selectedPayment) {
+            toast.error("Selected payment is no longer valid (rejected or refunded)")
             return
         }
 
@@ -296,6 +425,11 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
         return new Date(dateString).toLocaleDateString()
     }
 
+    const handleManualRefresh = () => {
+        refetch();
+        toast.success("Payments refreshed");
+    }
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -313,7 +447,19 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
 
                 <div className="space-y-6">
                     <div className="space-y-3">
-                        <Label className="text-sm font-medium">Payment Details</Label>
+                        <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">Payment Details</Label>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleManualRefresh}
+                                disabled={paymentsLoading}
+                                className="h-8 px-2"
+                            >
+                                <RefreshCw className={`h-3 w-3 mr-1 ${paymentsLoading ? 'animate-spin' : ''}`} />
+                                Refresh
+                            </Button>
+                        </div>
                         {paymentsLoading ? (
                             <div className="text-sm text-muted-foreground">Loading payments...</div>
                         ) : paymentsError ? (
@@ -321,12 +467,12 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertDescription>Error loading payments</AlertDescription>
                             </Alert>
-                        ) : payments.length === 0 ? (
-                            <div className="text-sm text-muted-foreground">No payments found for this entry</div>
+                        ) : validPayments.length === 0 ? (
+                            <div className="text-sm text-muted-foreground">No valid payments found for this entry</div>
                         ) : (
                             <div className="space-y-2">
-                                {payments.map((payment) => {
-                                    // Get the entry info from the first entry in entryList (assuming payment is for this entry)
+                                {validPayments.map((payment) => {
+                                    const latestStatus = payment.statuses?.[payment.statuses.length - 1]?.status;
                                     const entryInfo = payment.entryList?.[0]?.entry
 
                                     return (
@@ -344,6 +490,17 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                                                 <CreditCard className="h-3 w-3" />
                                                             </div>
                                                             <span className="font-medium text-sm">{payment.payerName}</span>
+                                                            {latestStatus && (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className={cn(
+                                                                        "text-xs",
+                                                                        getPaymentStatusColor(latestStatus)
+                                                                    )}
+                                                                >
+                                                                    {latestStatus}
+                                                                </Badge>
+                                                            )}
                                                         </div>
 
                                                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 pl-6">
@@ -397,7 +554,7 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                         )}
                     </div>
 
-                    {selectedPaymentId && (
+                    {selectedPaymentId && selectedPayment && (
                         <>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
@@ -449,13 +606,13 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                                         <div className="py-8 text-center text-sm text-muted-foreground">
                                                             Loading entries...
                                                         </div>
-                                                    ) : filteredEntries.length === 0 ? (
+                                                    ) : searchedEntries.length === 0 ? (
                                                         <div className="py-8 text-center text-sm text-muted-foreground">
-                                                            {entrySearch ? "No entries found" : "No entries available"}
+                                                            {entrySearch ? "No entries found" : "No eligible entries available"}
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-1">
-                                                            {filteredEntries.map((entry) => {
+                                                            {searchedEntries.map((entry) => {
                                                                 const isSelected = selectedEntries.some(e => e.entryNumber === entry.entryNumber)
                                                                 return (
                                                                     <button
@@ -511,9 +668,9 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                                     )}
                                                 </div>
                                             </ScrollArea>
-                                            {filteredEntries.length > 0 && entriesData?.activePaymentEntryOptions && (
+                                            {searchedEntries.length > 0 && filteredEntries.length > 0 && (
                                                 <div className="p-2 border-t text-xs text-muted-foreground">
-                                                    Showing {filteredEntries.length} of {entriesData.activePaymentEntryOptions.length} entries
+                                                    Showing {searchedEntries.length} of {filteredEntries.length} eligible entries
                                                 </div>
                                             )}
                                         </PopoverContent>
@@ -570,19 +727,6 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
                                         </div>
                                     )}
                                 </div>
-
-                                {/* <div className="flex items-center space-x-2 pt-2">
-                                    <input
-                                        type="checkbox"
-                                        id="isFullyPaid"
-                                        checked={isFullyPaid}
-                                        onChange={(e) => setIsFullyPaid(e.target.checked)}
-                                        className="rounded border-gray-300"
-                                    />
-                                    <Label htmlFor="isFullyPaid" className="text-sm">
-                                        Mark entries as fully paid
-                                    </Label>
-                                </div> */}
                             </div>
 
                             <Separator />
