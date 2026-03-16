@@ -139,11 +139,8 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
     accept: {
       "image/png": [],
       "image/jpg": [],
-      "image/jpeg": [],
       "application/pdf": [],
       "application/msword": [],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [],
       "video/mp4": [],
       "video/quicktime": [],
     },
@@ -158,8 +155,8 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
         acceptedFiles.map((file: any) =>
           Object.assign(file, {
             preview: URL.createObjectURL(file),
-          })
-        )
+          }),
+        ),
       )
     },
   })
@@ -187,7 +184,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
       setConversation((prev) => {
         const existing = new Set(prev.map((msg: any) => msg.timestamp))
         const newMessages = ticketData.ticket.conversation.filter(
-          (msg: any) => !existing.has(msg.timestamp)
+          (msg: any) => !existing.has(msg.timestamp),
         )
         return [...prev, ...newMessages]
       })
@@ -220,7 +217,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
           formData.append(
             "file",
             file,
-            `${ticketData?.ticket?._id}-${Date.now()}`
+            `${ticketData?.ticket?._id}-${Date.now()}`,
           )
 
           await fetch("/api/upload/attachment", {
@@ -258,6 +255,10 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
   return (
     <div className="flex flex-col gap-2 h-full">
       <div className="bg-white rounded-md py-1.5 flex gap-1.5 items-center px-1 border h-24">
+        {/* <img
+          src="https://res.cloudinary.com/dqjcswchm/image/upload/v1773640683/attachments/xofrvdtgychtzroyhkhf.jpg"
+          alt="uploaded"
+        /> */}
         <Button
           size="icon-sm"
           variant="ghost"
@@ -290,7 +291,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
       <div
         className={cn(
           files.length > 0 ? "h-[calc(100vh-21rem)]" : "h-[calc(100vh-14rem)]",
-          "flex flex-col-reverse overflow-y-auto p-2 rounded-md bg-slate-50 border relative"
+          "flex flex-col-reverse overflow-y-auto p-2 rounded-md bg-slate-50 border relative",
         )}
         ref={convoRef}
       >
@@ -310,7 +311,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
           const showTimestamp =
             !pastTimestamp ||
             Math.abs(Number(latestTimestamp) - Number(pastTimestamp)) >=
-            5 * 60 * 1000
+              5 * 60 * 1000
 
           const addSpace =
             currentSenderType !== pastSenderType ||
@@ -331,20 +332,20 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                 className={cn(
                   "flex flex-col",
                   msg.sender === "USER" ? "items-start" : "items-end",
-                  addSpace ? "mt-3" : undefined
+                  addSpace ? "mt-3" : undefined,
                 )}
               >
                 <div
                   className={cn(
                     "flex flex-col my-0.75 gap-1 max-w-full",
-                    isUser ? "items-start" : "items-end"
+                    isUser ? "items-start" : "items-end",
                   )}
                 >
                   {!!(addSpace || showTimestamp) && (
                     <span
                       className={cn(
                         "text-xs text-[0.7rem]",
-                        isUser ? "text-left" : "text-right"
+                        isUser ? "text-left" : "text-right",
                       )}
                     >
                       {isUser ? ticketData?.ticket?.name : msg?.agent?.name}
@@ -360,20 +361,23 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                             <Sheet>
                               <SheetTrigger className="cursor-pointer">
                                 {msg?.attachment?.url ? (
-                                  <Image
-                                    src={msg?.attachment?.url}
-                                    alt="Uploaded Image"
-                                    width={500}
-                                    height={500}
-                                    className="rounded-md h-fit w-96"
-                                    title={`Sent by ${isUser
-                                        ? ticketData?.ticket?.name
-                                        : msg?.agent?.name
+                                  <div>
+                                    <Image
+                                      src={msg?.attachment?.url}
+                                      alt="Uploaded Image"
+                                      width={500}
+                                      height={500}
+                                      className="rounded-md h-fit w-96"
+                                      title={`Sent by ${
+                                        isUser
+                                          ? ticketData?.ticket?.name
+                                          : msg?.agent?.name
                                       } on ${format(
                                         new Date(Number(msg?.timestamp)),
-                                        "PPp"
+                                        "PPp",
                                       )}`}
-                                  />
+                                    />
+                                  </div>
                                 ) : (
                                   <div className="flex items-center justify-center">
                                     <Paperclip className="w-6 h-6 text-muted-foreground absolute z-10" />
@@ -401,6 +405,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               </SheetContent>
                             </Sheet>
                           )
+
                         case "application/pdf":
                           return (
                             <Link
@@ -409,13 +414,14 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               rel="noopener noreferrer"
                               className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center"
                               title={`
-                              Sent by ${isUser
+                              Sent by ${
+                                isUser
                                   ? ticketData?.ticket?.name
                                   : msg?.agent?.name
-                                } on ${format(
-                                  new Date(Number(msg?.timestamp)),
-                                  "PPp"
-                                )}`}
+                              } on ${format(
+                                new Date(Number(msg?.timestamp)),
+                                "PPp",
+                              )}`}
                             >
                               <FileText className="size-12 text-muted-foreground" />
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
@@ -424,12 +430,12 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
                                 {msg?.attachment?.size >= 1024 * 1024
                                   ? `${(
-                                    msg?.attachment?.size /
-                                    (1024 * 1024)
-                                  ).toFixed(2)} MB`
+                                      msg?.attachment?.size /
+                                      (1024 * 1024)
+                                    ).toFixed(2)} MB`
                                   : `${(msg?.attachment?.size / 1024).toFixed(
-                                    2
-                                  )} KB`}
+                                      2,
+                                    )} KB`}
                               </span>
                             </Link>
                           )
@@ -438,17 +444,19 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                           return (
                             <Link
                               href={msg?.attachment?.url}
-                              target="_blank"
+                              // target="_blank"
                               rel="noopener noreferrer"
                               className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center"
                               title={`
-                              Sent by ${isUser
+                              Sent by ${
+                                isUser
                                   ? ticketData?.ticket?.name
                                   : msg?.agent?.name
-                                } on ${format(
-                                  new Date(Number(msg?.timestamp)),
-                                  "PPp"
-                                )}`}
+                              } on ${format(
+                                new Date(Number(msg?.timestamp)),
+                                "PPp",
+                              )}`}
+                              download
                             >
                               <FileText className="size-12 text-muted-foreground" />
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
@@ -457,12 +465,12 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
                                 {msg?.attachment?.size >= 1024 * 1024
                                   ? `${(
-                                    msg?.attachment?.size /
-                                    (1024 * 1024)
-                                  ).toFixed(2)} MB`
+                                      msg?.attachment?.size /
+                                      (1024 * 1024)
+                                    ).toFixed(2)} MB`
                                   : `${(msg?.attachment?.size / 1024).toFixed(
-                                    2
-                                  )} KB`}
+                                      2,
+                                    )} KB`}
                               </span>
                             </Link>
                           )
@@ -472,19 +480,20 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                             <Link
                               href={msg?.attachment?.url.replace(
                                 "/preview",
-                                "/view"
+                                "/view",
                               )}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="bg-slate-200 rounded-md p-2 h-32 w-32 flex flex-col items-center justify-center hover:bg-slate-300"
                               title={`
-                              Sent by ${isUser
+                              Sent by ${
+                                isUser
                                   ? ticketData?.ticket?.name
                                   : msg?.agent?.name
-                                } on ${format(
-                                  new Date(Number(msg?.timestamp)),
-                                  "PPp"
-                                )}`}
+                              } on ${format(
+                                new Date(Number(msg?.timestamp)),
+                                "PPp",
+                              )}`}
                             >
                               <Video className="size-12 text-muted-foreground" />
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
@@ -493,12 +502,12 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                               <span className="text-xs text-center text-muted-foreground w-20 truncate block">
                                 {msg?.attachment?.size >= 1024 * 1024
                                   ? `${(
-                                    msg?.attachment?.size /
-                                    (1024 * 1024)
-                                  ).toFixed(2)} MB`
+                                      msg?.attachment?.size /
+                                      (1024 * 1024)
+                                    ).toFixed(2)} MB`
                                   : `${(msg?.attachment?.size / 1024).toFixed(
-                                    2
-                                  )} KB`}
+                                      2,
+                                    )} KB`}
                               </span>
                             </Link>
                           )
@@ -508,16 +517,17 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                     <div
                       className={cn(
                         "rounded-md p-1 px-2 my-px wrap-break-word whitespace-pre-line max-w-96",
-                        isUser ? "bg-green-200" : "bg-slate-200"
+                        isUser ? "bg-green-200" : "bg-slate-200",
                       )}
                       title={`
-                            Sent by ${isUser
-                          ? ticketData?.ticket?.name
-                          : msg?.agent?.name
-                        } on ${format(
-                          new Date(Number(msg?.timestamp)),
-                          "PPp"
-                        )}`}
+                            Sent by ${
+                              isUser
+                                ? ticketData?.ticket?.name
+                                : msg?.agent?.name
+                            } on ${format(
+                              new Date(Number(msg?.timestamp)),
+                              "PPp",
+                            )}`}
                     >
                       {msg?.message}
                     </div>
@@ -548,7 +558,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
       <div
         className={cn(
           "flex gap-2 items-end justify-center",
-          files.length > 0 ? "h-40" : "h-12"
+          files.length > 0 ? "h-40" : "h-12",
         )}
       >
         <div {...getRootProps({ className: "dropzone" })}>
@@ -623,7 +633,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                         className="object-contain h-full"
                         src={file.preview}
                         title={`${file.name}: ${(file.size / 1024).toFixed(
-                          2
+                          2,
                         )} KB`}
                       />
                     </SheetContent>
@@ -646,7 +656,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
           ) : null}
           <Textarea
             className={cn(
-              "flex-1 ring-0 rounded-md bg-white min-h-9 max-h-9 overflow-y-hidden resize-none border-none focus-visible:border-none focus-visible:ring-0 "
+              "flex-1 ring-0 rounded-md bg-white min-h-9 max-h-9 overflow-y-hidden resize-none border-none focus-visible:border-none focus-visible:ring-0 ",
             )}
             rows={3}
             placeholder="Type your message..."
