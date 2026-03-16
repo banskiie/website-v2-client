@@ -25,7 +25,6 @@ import { useQuery } from "@apollo/client/react"
 import { JSX, useMemo, useState, useEffect, useRef } from "react"
 import { toast } from "sonner"
 
-// GraphQL query for recent logs
 const RECENT_LOGS = gql`
   query RecentLogs($first: Int!) {
     logs(first: $first, sort: { key: "createdAt", order: DESC }) {
@@ -46,7 +45,6 @@ const RECENT_LOGS = gql`
   }
 `
 
-// Updated GraphQL query for tournaments that matches your actual data structure
 const UPCOMING_DEADLINES = gql`
   query UpcomingDeadlines($first: Int!) {
     tournaments(first: $first, sort: { key: "tournamentStart", order: ASC }) {
@@ -64,7 +62,6 @@ const UPCOMING_DEADLINES = gql`
   }
 `
 
-// Payment Overview Query - Get all payments
 const PAYMENT_OVERVIEW = gql`
   query PaymentOverview($first: Int!) {
     payments(first: $first, sort: { key: "paymentDate", order: DESC }) {
@@ -270,7 +267,6 @@ interface ILogsResponse {
   }
 }
 
-// Updated interface to match your actual tournament data
 interface ITournamentDeadline {
   _id: string
   name: string
@@ -398,7 +394,6 @@ const Page = () => {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Real-time states
   const [newEntriesCount, setNewEntriesCount] = useState(0)
   const [newRefundsCount, setNewRefundsCount] = useState(0)
   const [newPaymentsCount, setNewPaymentsCount] = useState(0)
@@ -407,13 +402,11 @@ const Page = () => {
   const prevEntriesCount = useRef(0)
   const prevPaymentsCount = useRef(0)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
-  // Fetch recent logs
   const { data: logsData, loading: logsLoading, refetch: refetchLogs } = useQuery<ILogsResponse>(RECENT_LOGS, {
     variables: { first: 10 },
     fetchPolicy: "network-only",
   })
 
-  // Fetch upcoming deadlines
   const { data: tournamentsData, loading: tournamentsLoading } = useQuery<ITournamentsResponse>(UPCOMING_DEADLINES, {
     variables: { first: 10 },
     fetchPolicy: "network-only",
@@ -434,11 +427,9 @@ const Page = () => {
     fetchPolicy: "network-only",
   })
 
-  // Set up entry subscriptions
   useEffect(() => {
     if (!subscribeToMoreEntries) return
 
-    // Subscribe to entry changes
     const unsubscribeEntry = subscribeToMoreEntries({
       document: ENTRY_CHANGED,
       updateQuery: (prev: any, { subscriptionData }: any) => {
@@ -453,13 +444,11 @@ const Page = () => {
             )
             if (newEntryExists) return prev
 
-            // Show toast notification
-            toast.success(`✨ New Entry Created: ${newEntry?.entryNumber}`, {
+            toast.success(`New Entry Created: ${newEntry?.entryNumber}`, {
               description: `${newEntry?.eventName} - ${newEntry?.playerList?.player1Name}`,
               duration: 5000,
             })
 
-            // Increment new entries counter
             setNewEntriesCount(prev => prev + 1)
             setShowRefreshIndicator(true)
             setTimeout(() => setShowRefreshIndicator(false), 5000)
@@ -485,14 +474,10 @@ const Page = () => {
 
             const verifiedEdges = prev.entries.edges.map((edge: any) => {
               if (edge.node._id === verifiedEntry._id) {
-                // Get existing transactions from the current cache
                 const existingTransactions = edge.node.transactions || []
 
-                // Get new transactions from the subscription data
                 const newTransactions = verifiedEntry.transactions || []
 
-                // Merge transactions (you might want to combine them or replace them)
-                // Usually you want to replace them with the latest from the server
                 const mergedTransactions = newTransactions.length > 0 ? newTransactions : existingTransactions
 
                 return {
@@ -520,14 +505,14 @@ const Page = () => {
             const cancelledEntry = entry
             if (cancelledEntry?.hasOverpayment && cancelledEntry?.totalExcess > 0) {
               toast.warning(
-                `❌ Entry Cancelled: ${cancelledEntry?.entryNumber}`,
+                `Entry Cancelled: ${cancelledEntry?.entryNumber}`,
                 {
                   description: `Excess amount: ₱${cancelledEntry?.totalExcess?.toLocaleString()}. A refund may be required.`,
                   duration: 5000,
                 }
               )
             } else {
-              toast.warning(`❌ Entry Cancelled: ${cancelledEntry?.entryNumber}`, {
+              toast.warning(`Entry Cancelled: ${cancelledEntry?.entryNumber}`, {
                 duration: 5000,
               })
             }
@@ -569,8 +554,6 @@ const Page = () => {
             setNewRefundsCount(prev => prev + 1)
             setLastUpdated(new Date())
 
-            // Instead of just incrementing refreshTrigger, let's also refetch the entries
-            // to ensure we have the latest data from the server
             setTimeout(() => {
               refetchEntries().then(() => {
                 setRefreshTrigger(prev => {
@@ -581,7 +564,6 @@ const Page = () => {
               })
             }, 100)
 
-            // Update the cache with the received data
             const refundEdges = prev.entries.edges.map((edge: any) => {
               if (edge.node._id === refundedEntry._id) {
                 return {
@@ -615,21 +597,12 @@ const Page = () => {
           case "REJECT":
             const updatedEntry = entry
 
-            // ADD THIS DEBUG LOG
-            console.log('Entry update received:', {
-              type,
-              entryNumber: updatedEntry?.entryNumber,
-              hasTransactions: !!updatedEntry?.transactions,
-              transactionCount: updatedEntry?.transactions?.length,
-              transactions: updatedEntry?.transactions
-            })
-
             if (type === "APPROVE") {
-              toast.success(`✅ Entry Approved: ${updatedEntry?.entryNumber}`)
+              toast.success(`Entry Approved: ${updatedEntry?.entryNumber}`)
             } else if (type === "PAID") {
-              toast.success(`💰 Payment Received: ${updatedEntry?.entryNumber}`)
+              toast.success(`Payment Received: ${updatedEntry?.entryNumber}`)
             } else if (type === "REJECT") {
-              toast.warning(`❌ Entry Rejected: ${updatedEntry?.entryNumber}`)
+              toast.warning(`Entry Rejected: ${updatedEntry?.entryNumber}`)
             }
 
             const updatedEdges = prev.entries.edges.map((edge: any) =>
@@ -656,7 +629,7 @@ const Page = () => {
 
           case "DELETE":
             const deletedEntry = entry
-            toast.info(`🗑️ Entry Deleted: ${deletedEntry?.entryNumber}`)
+            toast.info(`Entry Deleted: ${deletedEntry?.entryNumber}`)
 
             setLastUpdated(new Date())
 
@@ -672,7 +645,7 @@ const Page = () => {
 
           case "BATCH_UPDATE":
             const updatedEntries = entries
-            toast.success(`📦 Batch Update: ${updatedEntries.length} entries updated`)
+            toast.success(`Batch Update: ${updatedEntries.length} entries updated`)
 
             const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
 
@@ -725,7 +698,6 @@ const Page = () => {
   useEffect(() => {
     if (!subscribeToMoreEntries) return
 
-    // Subscribe to refund changes
     const unsubscribeRefund = subscribeToMoreEntries({
       document: REFUND_CHANGED,
       updateQuery: (prev: any, { subscriptionData }: any) => {
@@ -800,21 +772,21 @@ const Page = () => {
               updatedPayment.currentStatus === "REFUNDED"
 
             if (oldPayment && oldPayment.currentStatus !== updatedPayment.currentStatus && isRefundStatus) {
-              toast.info(`💰 Payment Refunded: ₱${updatedPayment?.amount?.toLocaleString()}`, {
+              toast.info(`Payment Refunded: ₱${updatedPayment?.amount?.toLocaleString()}`, {
                 description: `Status changed from ${oldPayment?.currentStatus} to ${updatedPayment?.currentStatus}`,
                 duration: 5000,
               })
               setNewRefundsCount(prev => prev + 1)
             }
             else if (oldPayment && oldPayment.currentStatus === "VERIFIED" && isRefundStatus) {
-              toast.info(`💰 Payment Fully Refunded: ₱${updatedPayment?.amount?.toLocaleString()}`, {
+              toast.info(`Payment Fully Refunded: ₱${updatedPayment?.amount?.toLocaleString()}`, {
                 description: `Previously verified payment has been refunded`,
                 duration: 5000,
               })
               setNewRefundsCount(prev => prev + 1)
             }
             else {
-              toast.success(`💰 Payment Updated: ₱${updatedPayment?.amount?.toLocaleString()}`, {
+              toast.success(`Payment Updated: ₱${updatedPayment?.amount?.toLocaleString()}`, {
                 description: `Status: ${updatedPayment?.currentStatus}`,
                 duration: 5000,
               })
@@ -839,7 +811,7 @@ const Page = () => {
 
           case "DELETE":
             const deletedPayment = payment
-            toast.info(`🗑️ Payment Deleted: ₱${deletedPayment?.amount?.toLocaleString()}`)
+            toast.info(`Payment Deleted: ₱${deletedPayment?.amount?.toLocaleString()}`)
 
             setLastUpdated(new Date())
 
@@ -855,7 +827,7 @@ const Page = () => {
 
           case "BATCH_UPDATE":
             const updatedPayments = payments
-            toast.success(`📦 Batch Update: ${updatedPayments.length} payments updated`)
+            toast.success(`Batch Update: ${updatedPayments.length} payments updated`)
 
             const updatedIds = new Set(updatedPayments.map((u: any) => u._id))
 
@@ -888,7 +860,6 @@ const Page = () => {
       unsubscribePayment()
     }
   }, [subscribeToMorePayments])
-  // Effect to track new entries count
   useEffect(() => {
     const currentCount = entriesData?.entries?.edges?.length || 0
     if (prevEntriesCount.current > 0 && currentCount > prevEntriesCount.current) {
@@ -899,7 +870,6 @@ const Page = () => {
     setLastUpdated(new Date())
   }, [entriesData])
 
-  // Effect to track new payments count
   useEffect(() => {
     const currentCount = paymentsData?.payments?.edges?.length || 0
     if (prevPaymentsCount.current > 0 && currentCount > prevPaymentsCount.current) {
@@ -910,7 +880,6 @@ const Page = () => {
     setLastUpdated(new Date())
   }, [paymentsData])
 
-  // Manual refresh handler
   const handleManualRefresh = async () => {
     setShowRefreshIndicator(true)
     await Promise.all([
@@ -925,7 +894,6 @@ const Page = () => {
     toast.success("Dashboard refreshed")
   }
 
-  // Get initials for avatar fallback
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -955,11 +923,9 @@ const Page = () => {
       methods: {}
     }))
 
-    // Process each entry's transactions
     entriesData.entries.edges.forEach(({ node }) => {
       if (!node.transactions) return
 
-      // Group transactions by month
       node.transactions.forEach(transaction => {
         const txDate = new Date(transaction.transactionDate)
         const txMonth = format(txDate, "yyyy-MM")
@@ -967,14 +933,12 @@ const Page = () => {
 
         if (!monthData) return
 
-        // For BALANCE_PAYMENT (payments received)
         if (transaction.transactionType === "BALANCE_PAYMENT" && transaction.amountChanged > 0) {
           monthData.total += transaction.amountChanged
           monthData.count++
           monthData.verifiedTotal += transaction.amountChanged
           monthData.verifiedCount++
 
-          // You can add method tracking if you have that info
           const method = "UNKNOWN"
           if (!monthData.methods[method]) {
             monthData.methods[method] = { count: 0, total: 0 }
@@ -983,13 +947,11 @@ const Page = () => {
           monthData.methods[method].total += transaction.amountChanged
         }
 
-        // For REFUND_PAYMENT (refunds given out) - subtract from totals
         if (transaction.transactionType === "REFUND_PAYMENT" && transaction.amountChanged < 0) {
           const refundAmount = Math.abs(transaction.amountChanged)
           monthData.verifiedTotal -= refundAmount
           monthData.verifiedCount = Math.max(0, monthData.verifiedCount - 1)
 
-          // Also subtract from total
           monthData.total -= refundAmount
         }
       })
@@ -1002,7 +964,6 @@ const Page = () => {
     return monthlyData.sort((a, b) => a.monthDate.getTime() - b.monthDate.getTime())
   }, [entriesData])
 
-  // Get role badge color
   const getRoleColor = (role: string) => {
     const colors: Record<string, string> = {
       ADMIN: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -1014,7 +975,6 @@ const Page = () => {
     return colors[role] || colors.USER
   }
 
-  // Get activity icon based on action text
   const getActivityIcon = (action: string) => {
     if (action.toLowerCase().includes("entry")) return <Users className="h-4 w-4" />
     if (action.toLowerCase().includes("payment")) return <DollarSign className="h-4 w-4" />
@@ -1025,14 +985,12 @@ const Page = () => {
     return <Activity className="h-4 w-4" />
   }
 
-  // Get priority based on days left
   const getPriority = (days: number) => {
     if (days <= 3) return { label: "high", color: "text-red-600 dark:text-red-400" }
     if (days <= 7) return { label: "medium", color: "text-yellow-600 dark:text-yellow-400" }
     return { label: "low", color: "text-green-600 dark:text-green-400" }
   }
 
-  // Calculate days until a date
   const getDaysUntil = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
@@ -1040,7 +998,6 @@ const Page = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   }
 
-  // Mock data for stats (you can replace these with real data)
   const stats = [
     {
       title: "Active Tournaments",
@@ -1083,7 +1040,6 @@ const Page = () => {
     },
   ]
 
-  // Mock data for top performers
   const topPerformers = [
     { name: "John Smith", entries: 12, wins: 8, rank: 1 },
     { name: "Sarah Johnson", entries: 10, wins: 7, rank: 2 },
@@ -1127,7 +1083,6 @@ const Page = () => {
 
   const recentLogs = logsData?.logs?.edges?.map((edge) => edge.node) || []
 
-  // Filter active tournaments
   const activeTournaments = tournamentsData?.tournaments?.edges?.filter(({ node }) => node.isActive) || []
   const inactiveTournaments = tournamentsData?.tournaments?.edges?.filter(({ node }) => !node.isActive) || []
 
@@ -1234,11 +1189,9 @@ const Page = () => {
       methods: {}
     }))
 
-    // Process each entry's transactions
     entriesData.entries.edges.forEach(({ node }) => {
       if (!node.transactions) return
 
-      // Group transactions by month
       node.transactions.forEach(transaction => {
         const txDate = new Date(transaction.transactionDate)
         const txMonth = format(txDate, "yyyy-MM")
@@ -1246,7 +1199,6 @@ const Page = () => {
 
         if (!monthData) return
 
-        // For BALANCE_PAYMENT (payments received) - these are the actual payments
         if (transaction.transactionType === "BALANCE_PAYMENT" && transaction.amountChanged > 0) {
           monthData.total += transaction.amountChanged
           monthData.count++
@@ -1254,7 +1206,6 @@ const Page = () => {
           monthData.verifiedCount++
         }
 
-        // For REFUND_PAYMENT (refunds given out) - subtract from totals
         if (transaction.transactionType === "REFUND_PAYMENT" && transaction.amountChanged < 0) {
           const refundAmount = Math.abs(transaction.amountChanged)
           monthData.verifiedTotal -= refundAmount
@@ -1269,18 +1220,16 @@ const Page = () => {
     })
 
     return monthlyData.sort((a, b) => a.monthDate.getTime() - b.monthDate.getTime())
-  }, [entriesData, refreshTrigger]) // Make sure refreshTrigger is in dependencies
+  }, [entriesData, refreshTrigger])
 
   const selectedMonthData = useMemo(() => {
     return monthlyPayments.find(m => format(m.monthDate, "yyyy-MM") === selectedMonth)
   }, [monthlyPayments, selectedMonth])
 
-  // Calculate total for all time - Only includes VERIFIED payments
   const allTimeTotal = useMemo(() => {
     return monthlyPayments.reduce((sum, month) => sum + month.verifiedTotal, 0)
   }, [monthlyPayments])
 
-  // Calculate growth compared to previous month
   const growthPercentage = useMemo(() => {
     if (monthlyPayments.length < 2) return 0
 
@@ -1291,7 +1240,6 @@ const Page = () => {
     return ((currentMonth - previousMonth) / previousMonth) * 100
   }, [monthlyPayments])
 
-  // Find best month
   const bestMonth = useMemo(() => {
     if (monthlyPayments.length === 0) return null
     return monthlyPayments.reduce((best, current) =>
@@ -1299,7 +1247,6 @@ const Page = () => {
     )
   }, [monthlyPayments])
 
-  // Process entries for summary
   const entrySummary = useMemo(() => {
     if (!entriesData?.entries?.edges) return {
       total: 0,
@@ -1314,7 +1261,6 @@ const Page = () => {
 
     const entries = entriesData.entries.edges.map(edge => edge.node)
 
-    // Status colors and icons
     const statusConfig: Record<string, { color: string; icon: any }> = {
       PENDING: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300", icon: AlertCircle },
       ASSIGNED: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300", icon: Users },
@@ -1329,7 +1275,6 @@ const Page = () => {
       CANCELLED: { color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300", icon: XCircle },
     }
 
-    // Group by status
     const statusMap = new Map<string, { count: number; totalPendingAmount: number; totalPaidAmount: number }>()
 
     let totalPendingAmount = 0
@@ -1385,7 +1330,6 @@ const Page = () => {
     }
   }, [entriesData])
 
-  // Get filtered entries by status
   const getEntriesByStatus = (status: string) => {
     if (!entriesData?.entries?.edges) return []
     return entriesData.entries.edges
@@ -1393,7 +1337,6 @@ const Page = () => {
       .filter(entry => entry.currentStatus === status)
   }
 
-  // Get top entries by registration (most recent)
   const topEntries = useMemo(() => {
     if (!entriesData?.entries?.edges) return []
 
@@ -1421,7 +1364,6 @@ const Page = () => {
       }))
   }, [entriesData])
 
-  // NEW: Group entries by event
   const entriesByEvent = useMemo(() => {
     if (!entriesData?.entries?.edges) return []
 
@@ -1461,28 +1403,23 @@ const Page = () => {
       }
     })
 
-    // Calculate percentages
     const result = Array.from(eventMap.values())
     result.forEach(event => {
       event.percentage = (event.count / totalEntries) * 100
     })
 
-    // Sort by count (highest first)
     return result.sort((a, b) => b.count - a.count)
   }, [entriesData])
 
-  // Handle status click
   const handleStatusClick = (status: string) => {
     setSelectedStatus(status)
     setIsModalOpen(true)
   }
 
-  // Get status display name
   const getStatusDisplayName = (status: string) => {
     return status.replace(/_/g, ' ')
   }
 
-  // Get status color class
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       VERIFIED: "bg-green-100 text-green-800 border-green-200",
@@ -1593,7 +1530,6 @@ const Page = () => {
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            {/* Recent Activity Card - Left side */}
             <Card className="lg:col-span-3">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -1780,7 +1716,6 @@ const Page = () => {
                       </div>
                     )}
 
-                    {/* Refund info */}
                     {paymentsData?.payments?.edges?.some(edge =>
                       edge.node.currentStatus === "REFUNDED" ||
                       edge.node.currentStatus === "CANCELLED" ||
@@ -1809,7 +1744,6 @@ const Page = () => {
 
           </div>
 
-          {/* Entry Summary Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -2030,45 +1964,73 @@ const Page = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {entriesByEvent.map((event, index) => (
-                    <div key={`${event.tournamentName}-${event.eventName}`} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">
-                            {event.eventName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {event.tournamentName}
-                          </p>
+                  {entriesByEvent.map((event, index) => {
+                    const earlyBirdPercentage = (event.earlyBirdCount / event.count) * 100
+                    const verifiedPercentage = (event.verifiedCount / event.count) * 100
+                    const pendingPercentage = (event.pendingCount / event.count) * 100
+
+                    return (
+                      <div key={`${event.tournamentName}-${event.eventName}`} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">
+                              {event.eventName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {event.tournamentName}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold">{event.count}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {event.percentage.toFixed(1)}% of total
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold">{event.count}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {event.percentage.toFixed(1)}% of total
-                          </p>
+
+                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden flex">
+                          {event.earlyBirdCount > 0 && (
+                            <div
+                              className="h-full bg-green-500 transition-all duration-500 ease-in-out"
+                              style={{ width: `${earlyBirdPercentage}%` }}
+                              title={`Early Bird: ${event.earlyBirdCount} entries`}
+                            />
+                          )}
+                          {event.verifiedCount > 0 && (
+                            <div
+                              className="h-full bg-blue-500 transition-all duration-500 ease-in-out"
+                              style={{ width: `${verifiedPercentage}%` }}
+                              title={`Verified: ${event.verifiedCount} entries`}
+                            />
+                          )}
+                          {event.pendingCount > 0 && (
+                            <div
+                              className="h-full bg-yellow-500 transition-all duration-500 ease-in-out"
+                              style={{ width: `${pendingPercentage}%` }}
+                              title={`Pending: ${event.pendingCount} entries`}
+                            />
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs mt-1">
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              Early Bird: {event.earlyBirdCount}
+                            </Badge>
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              Verified: {event.verifiedCount}
+                            </Badge>
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                              Pending: {event.pendingCount}
+                            </Badge>
+                          </div>
+                          <span className="font-medium text-muted-foreground">
+                            ₱{event.totalAmount.toLocaleString()}
+                          </span>
                         </div>
                       </div>
-
-                      <Progress value={event.percentage} className="h-2" />
-
-                      <div className="flex items-center justify-between text-xs mt-1">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            Early Bird: {event.earlyBirdCount}
-                          </Badge>
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                            Verified: {event.verifiedCount}
-                          </Badge>
-                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                            Pending: {event.pendingCount}
-                          </Badge>
-                        </div>
-                        <span className="font-medium text-muted-foreground">
-                          ₱{event.totalAmount.toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </CardContent>
