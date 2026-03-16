@@ -537,7 +537,7 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
             </div>
           )
         })}
-        {ticketData?.ticket?.total <= conversation.length ? (
+        {conversation.length >= 1 ? (
           <div className=" flex flex-col items-center justify-center w-full">
             <div className="flex w-full items-center justify-center">
               <Separator className="absolute" />
@@ -545,9 +545,6 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                 Start of Conversation ☕
               </span>
             </div>
-            <span className="text-center text-xs text-muted-foreground">
-              {format(+conversation[conversation.length - 1]?.timestamp, "PPp")}
-            </span>
           </div>
         ) : (
           <Button loading={loading} variant="link" onClick={loadMore}>
