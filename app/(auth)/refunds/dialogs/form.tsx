@@ -1282,12 +1282,12 @@ const FormDialog = (props: Props) => {
                 Selected Entries:
               </span>
               <div className="space-y-2 max-h-32 overflow-y-auto">
-                {entryList.map((entryNumber: string, index: number) => {
+                {entryList.map((entryNumber: string) => {
                   const entry = entryOptions.find((e: any) => e.entryNumber === entryNumber)
                   return (
-                    <div key={index} className="flex justify-between items-center text-xs p-2 bg-white rounded border">
+                    <div key={entryNumber} className="flex justify-between items-center text-xs p-2 bg-white rounded border">
                       <div>
-                        <span className="font-medium">Entry {index + 1}:</span>
+                        <span className="font-medium">Entry:</span>
                         <span className="text-gray-600 ml-2">
                           {entryNumber}
                         </span>

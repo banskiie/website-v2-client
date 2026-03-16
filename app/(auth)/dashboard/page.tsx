@@ -555,7 +555,6 @@ const Page = () => {
               },
             }
 
-          // In your REFUND subscription case
           case "REFUND":
             const refundedEntry = entry
             console.log('REFUND event received - forcing recalculation', {
@@ -570,26 +569,36 @@ const Page = () => {
             setNewRefundsCount(prev => prev + 1)
             setLastUpdated(new Date())
 
-            // Force recalculation of monthlyPayments
-            setRefreshTrigger(prev => {
-              const newValue = prev + 1
-              console.log('Setting refreshTrigger to:', newValue)
-              return newValue
-            })
+            // Instead of just incrementing refreshTrigger, let's also refetch the entries
+            // to ensure we have the latest data from the server
+            setTimeout(() => {
+              refetchEntries().then(() => {
+                setRefreshTrigger(prev => {
+                  const newValue = prev + 1
+                  console.log('Setting refreshTrigger to:', newValue)
+                  return newValue
+                })
+              })
+            }, 100)
 
-            // IMPORTANT: Force a re-render by creating a new array reference
-            const refundEdges = prev.entries.edges.map((edge: any) =>
-              edge.node._id === refundedEntry._id
-                ? {
+            // Update the cache with the received data
+            const refundEdges = prev.entries.edges.map((edge: any) => {
+              if (edge.node._id === refundedEntry._id) {
+                return {
                   ...edge,
                   node: {
                     ...edge.node,
                     ...refundedEntry,
+                    totalRefundAmount: refundedEntry.totalRefundAmount ?? edge.node.totalRefundAmount,
+                    totalPaid: refundedEntry.totalPaid ?? edge.node.totalPaid,
+                    hasRefunds: refundedEntry.hasRefunds ?? (refundedEntry.totalRefundAmount > 0),
+                    pendingAmount: refundedEntry.pendingAmount ?? edge.node.pendingAmount,
                     transactions: refundedEntry.transactions || edge.node.transactions
                   }
                 }
-                : edge
-            )
+              }
+              return edge
+            })
 
             return {
               entries: {
@@ -598,12 +607,11 @@ const Page = () => {
               },
             }
 
-          // MODIFY THIS EXISTING COMBINED CASE
           case "UPDATE":
           case "ASSIGN":
           case "APPROVE":
-          case "PAID":        // ← This is already here
-          case "PARTIALLY_PAID":  // ← This is already here
+          case "PAID":
+          case "PARTIALLY_PAID":
           case "REJECT":
             const updatedEntry = entry
 
@@ -698,7 +706,22 @@ const Page = () => {
     }
   }, [subscribeToMoreEntries])
 
-  // Set up refund subscriptions
+  useEffect(() => {
+    if (entriesData?.entries?.edges) {
+      const entriesWithRefunds = entriesData.entries.edges.filter(
+        edge => edge.node.hasRefunds || edge.node.totalRefundAmount > 0
+      );
+
+      if (entriesWithRefunds.length > 0) {
+        console.log('Entries with refunds detected:', entriesWithRefunds.map(e => ({
+          entryNumber: e.node.entryNumber,
+          totalRefundAmount: e.node.totalRefundAmount,
+          hasRefunds: e.node.hasRefunds
+        })));
+      }
+    }
+  }, [entriesData]);
+
   useEffect(() => {
     if (!subscribeToMoreEntries) return
 
