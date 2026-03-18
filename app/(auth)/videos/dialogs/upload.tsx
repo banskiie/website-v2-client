@@ -117,7 +117,7 @@ const UploadDialog = () => {
                 path as keyof typeof formApi.fieldInfo
               ].instance?.setErrorMap({
                 onSubmit: { message },
-              })
+              }),
           )
         }
       },
@@ -157,7 +157,7 @@ const UploadDialog = () => {
             onClose()
           }
         } catch (error: any) {
-          console.error(error.errors)
+          console.error(error)
           if (error.name == "CombinedGraphQLErrors") {
             const fieldErrors = error.errors[0].extensions.fields
             if (fieldErrors)
@@ -167,7 +167,7 @@ const UploadDialog = () => {
                     path as keyof typeof formApi.fieldInfo
                   ].instance?.setErrorMap({
                     onSubmit: { message },
-                  })
+                  }),
               )
           }
         }
@@ -245,7 +245,7 @@ const UploadDialog = () => {
                                 className={cn(
                                   isInvalid
                                     ? "placeholder:text-destructive border-destructive focus:border-destructive focus:ring-destructive"
-                                    : ""
+                                    : "",
                                 )}
                               />
                             </InputGroup>
@@ -289,14 +289,14 @@ const UploadDialog = () => {
                                     "w-full justify-between font-normal",
                                     field.state.value.length > 0
                                       ? ""
-                                      : "text-muted-foreground"
+                                      : "text-muted-foreground",
                                   )}
                                   type="button"
                                 >
                                   {field.state.value.length > 0
                                     ? players
                                         .filter((p: any) =>
-                                          field.state.value.includes(p.value)
+                                          field.state.value.includes(p.value),
                                         )
                                         .map((p: any) => p.label)
                                         .join(", ")
@@ -310,7 +310,7 @@ const UploadDialog = () => {
                                     players
                                       .find(
                                         (t: { value: string; label: string }) =>
-                                          t.value === value
+                                          t.value === value,
                                       )
                                       ?.label.toLowerCase()
                                       .includes(search.toLowerCase())
@@ -341,12 +341,12 @@ const UploadDialog = () => {
                                                 (prev: string[]) => {
                                                   if (prev.includes(v)) {
                                                     return prev.filter(
-                                                      (val) => val !== v
+                                                      (val) => val !== v,
                                                     )
                                                   } else {
                                                     return [...prev, v]
                                                   }
-                                                }
+                                                },
                                               )
                                               setOpenPlayers(false)
                                             }}
@@ -356,15 +356,15 @@ const UploadDialog = () => {
                                               className={cn(
                                                 "h-4 w-4",
                                                 field.state.value.includes(
-                                                  o.value
+                                                  o.value,
                                                 )
                                                   ? "opacity-100"
-                                                  : "opacity-0"
+                                                  : "opacity-0",
                                               )}
                                             />
                                             {o.label}
                                           </CommandItem>
-                                        )
+                                        ),
                                       )}
                                     </CommandGroup>
                                   </CommandList>
@@ -390,14 +390,14 @@ const UploadDialog = () => {
                     "dropzone",
                     isPending
                       ? "opacity-50 cursor-wait pointer-events-none"
-                      : ""
+                      : "",
                   ),
                 })}
                 className={cn(
                   "flex flex-col  items-center justify-center rounded-md border-2 h-48 border-dashed border-gray-300 p-6 cursor-pointer hover:border-gray-500",
                   fileError
                     ? "border-destructive/30 hover:border-destructive/60 bg-destructive/10"
-                    : ""
+                    : "",
                 )}
               >
                 <Input {...getInputProps()} />
