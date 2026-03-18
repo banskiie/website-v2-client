@@ -157,7 +157,7 @@ const UploadDialog = () => {
             onClose()
           }
         } catch (error: any) {
-          console.error(error)
+          console.error(JSON.stringify(error))
           if (error.name == "CombinedGraphQLErrors") {
             const fieldErrors = error.errors[0].extensions.fields
             if (fieldErrors)
