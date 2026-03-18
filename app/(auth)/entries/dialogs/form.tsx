@@ -620,13 +620,27 @@ const FormDialog = (props: Props) => {
           form.setFieldValue("player2Entry.gender", Gender.MALE);
           toast.info("Gender auto-set to Male for both players (Men's Doubles)");
           break;
-
         case EventGender.FEMALE:
           form.setFieldValue("player1Entry.gender", Gender.FEMALE);
           form.setFieldValue("player2Entry.gender", Gender.FEMALE);
           toast.info("Gender auto-set to Female for both players (Women's Doubles)");
           break;
-
+        case EventGender.MIXED:
+          form.setFieldValue("player1Entry.gender", Gender.MALE);
+          form.setFieldValue("player2Entry.gender", Gender.FEMALE);
+          toast.info("Gender auto-set to Mixed (Male & Female)");
+          break;
+      }
+    } else {
+      switch (event.gender) {
+        case EventGender.MALE:
+          form.setFieldValue("player1Entry.gender", Gender.MALE);
+          toast.info("Gender auto-set to Male (Men's Singles)");
+          break;
+        case EventGender.FEMALE:
+          form.setFieldValue("player1Entry.gender", Gender.FEMALE);
+          toast.info("Gender auto-set to Female (Women's Singles)");
+          break;
         case EventGender.MIXED:
           form.setFieldValue("player1Entry.gender", Gender.MALE);
           form.setFieldValue("player2Entry.gender", Gender.FEMALE);
@@ -635,8 +649,6 @@ const FormDialog = (props: Props) => {
       }
     }
   }, [events]);
-
-
 
   const [openGenders, setOpenGenders] = useState(false)
   const genders = Object.values(Gender).map((gender) => ({
@@ -668,18 +680,14 @@ const FormDialog = (props: Props) => {
   const [isLoadingSuggestions1, setIsLoadingSuggestions1] = useState(false)
   const [isLoadingSuggestions2, setIsLoadingSuggestions2] = useState(false)
 
-  // Track selected suggestions
   const [selectedSuggestionId1, setSelectedSuggestionId1] = useState<string | null>(null)
   const [selectedSuggestionId2, setSelectedSuggestionId2] = useState<string | null>(null)
 
-  // Debounce timers
   const debounceTimer1 = useRef<NodeJS.Timeout | null>(null)
   const debounceTimer2 = useRef<NodeJS.Timeout | null>(null)
 
-  // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
 
-  // Add a ref to track if submission is in progress
   const isSubmittingRef = useRef(false)
 
 
@@ -1266,6 +1274,13 @@ const FormDialog = (props: Props) => {
 
     const isDoubles = event.type === EventType.DOUBLES;
 
+    // Check if there are any field errors
+    const hasFieldErrors = Object.values(form.state.fieldMeta).some(
+      (meta: any) => meta.errors && meta.errors.length > 0
+    );
+
+    if (hasFieldErrors) return false;
+
     if (!values.tournament) return false;
     if (!values.club) return false;
 
@@ -1290,28 +1305,24 @@ const FormDialog = (props: Props) => {
       const hasPlayer2Doc = filePlayer2 || initialDocumentUrlPlayer2;
       if (!hasPlayer2Doc) return false;
 
+      // Additional gender validation for doubles
+      if (event.gender === EventGender.MALE) {
+        if (values.player1Entry.gender !== Gender.MALE ||
+          values.player2Entry?.gender !== Gender.MALE) {
+          return false;
+        }
+      }
+      if (event.gender === EventGender.FEMALE) {
+        if (values.player1Entry.gender !== Gender.FEMALE ||
+          values.player2Entry?.gender !== Gender.FEMALE) {
+          return false;
+        }
+      }
       if (event.gender === EventGender.MIXED) {
-        const player1Gender = values.player1Entry.gender;
-        const player2Gender = values.player2Entry.gender;
-
         const isValid =
-          (player1Gender === Gender.MALE && player2Gender === Gender.FEMALE) ||
-          (player1Gender === Gender.FEMALE && player2Gender === Gender.MALE);
-
+          (values.player1Entry.gender === Gender.MALE && values.player2Entry?.gender === Gender.FEMALE) ||
+          (values.player1Entry.gender === Gender.FEMALE && values.player2Entry?.gender === Gender.MALE);
         if (!isValid) return false;
-      } else {
-        if (event.gender === EventGender.MALE) {
-          if (
-            values.player1Entry.gender !== Gender.MALE ||
-            values.player2Entry?.gender !== Gender.MALE
-          ) return false;
-        }
-        if (event.gender === EventGender.FEMALE) {
-          if (
-            values.player1Entry.gender !== Gender.FEMALE ||
-            values.player2Entry?.gender !== Gender.FEMALE
-          ) return false;
-        }
       }
     }
 
@@ -1341,40 +1352,49 @@ const FormDialog = (props: Props) => {
         const player1Gender = form.getFieldValue("player1Entry.gender");
         const player2Gender = form.getFieldValue("player2Entry.gender");
 
-        if (player1Gender) {
-          const validation = validateEntryGenders(
-            eventGender,
-            isDoubles,
-            player1Gender,
-            player2Gender
-          );
+        const validation = validateEntryGenders(
+          eventGender,
+          isDoubles,
+          player1Gender,
+          player2Gender
+        );
 
-          if (validation.errors.player1) {
-            form.setFieldMeta("player1Entry.gender", (prev: any) => ({
-              ...prev,
-              errors: [validation.errors.player1],
-              isTouched: true,
-            }));
-          } else {
-            form.setFieldMeta("player1Entry.gender", (prev: any) => ({
-              ...prev,
-              errors: [],
-            }));
-          }
-
-          if (validation.errors.player2) {
-            form.setFieldMeta("player2Entry.gender", (prev: any) => ({
-              ...prev,
-              errors: [validation.errors.player2],
-              isTouched: true,
-            }));
-          } else {
-            form.setFieldMeta("player2Entry.gender", (prev: any) => ({
-              ...prev,
-              errors: [],
-            }));
-          }
+        // Set errors on the form fields
+        if (validation.errors.player1) {
+          form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+            ...prev,
+            errors: [validation.errors.player1],
+            isTouched: true,
+          }));
+        } else {
+          form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+            ...prev,
+            errors: [],
+          }));
         }
+
+        if (validation.errors.player2) {
+          form.setFieldMeta("player2Entry.gender", (prev: any) => ({
+            ...prev,
+            errors: [validation.errors.player2],
+            isTouched: true,
+          }));
+        } else {
+          form.setFieldMeta("player2Entry.gender", (prev: any) => ({
+            ...prev,
+            errors: [],
+          }));
+        }
+      } else {
+        // Clear gender errors for non-doubles events
+        form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+          ...prev,
+          errors: [],
+        }));
+        form.setFieldMeta("player2Entry.gender", (prev: any) => ({
+          ...prev,
+          errors: [],
+        }));
       }
     }
   }, [
@@ -1867,18 +1887,75 @@ const FormDialog = (props: Props) => {
     }
   }
 
-  // Handle form submission
   const handleSubmit = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
-    // console.log('Submit button clicked at:', new Date().toISOString())
-
-    // Check if already submitting
     if (isSubmittingRef.current) {
-      // console.log('Already submitting, ignoring click')
       toast.warning('Submission already in progress. Please wait.')
       return
+    }
+
+    const eventId = form.getFieldValue("event");
+    if (eventId) {
+      const event = events.find(e => e.value === eventId);
+      if (event) {
+        const isDoubles = event.type === EventType.DOUBLES;
+        const player1Gender = form.getFieldValue("player1Entry.gender");
+        const player2Gender = isDoubles ? form.getFieldValue("player2Entry.gender") : null;
+
+        if (isDoubles) {
+          const validation = validateEntryGenders(
+            event.gender,
+            true,
+            player1Gender,
+            player2Gender
+          );
+
+          if (!validation.valid) {
+            if (validation.errors.player1) {
+              form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+                ...prev,
+                errors: [validation.errors.player1],
+                isTouched: true,
+              }));
+            }
+            if (validation.errors.player2) {
+              form.setFieldMeta("player2Entry.gender", (prev: any) => ({
+                ...prev,
+                errors: [validation.errors.player2],
+                isTouched: true,
+              }));
+            }
+            toast.error("Please fix gender validation errors");
+            return;
+          }
+        } else {
+          if (event.gender === EventGender.MALE && player1Gender !== Gender.MALE) {
+            form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+              ...prev,
+              errors: ["Player must be Male for Men's Singles"],
+              isTouched: true,
+            }));
+            toast.error("Player must be Male for Men's Singles");
+            return;
+          }
+          if (event.gender === EventGender.FEMALE && player1Gender !== Gender.FEMALE) {
+            form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+              ...prev,
+              errors: ["Player must be Female for Women's Singles"],
+              isTouched: true,
+            }));
+            toast.error("Player must be Female for Women's Singles");
+            return;
+          }
+        }
+      }
+    }
+
+    if (!isFormValid()) {
+      toast.error("Please fill in all required fields correctly");
+      return;
     }
 
     try {
@@ -2721,31 +2798,45 @@ const FormDialog = (props: Props) => {
                                     )
                                   }}
                                 />
+
                                 <form.Field
                                   name="player1Entry.gender"
                                   validators={{
-                                    onChange: ({ value }) => {
-                                      try {
-                                        fieldValidators.gender.parse(value)
-                                        return undefined
-                                      } catch (error: any) {
-                                        if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                    onChange: ({ value, fieldApi }) => {
+                                      if (!value) return "Gender is required";
+
+                                      const eventId = fieldApi.form.getFieldValue("event");
+                                      if (eventId) {
+                                        const event = events.find(e => e.value === eventId);
+                                        if (event) {
+                                          if (event.type === EventType.DOUBLES) {
+                                            if (event.gender === EventGender.MALE && value !== Gender.MALE) {
+                                              return "Player 1 must be Male for Men's Doubles";
+                                            }
+                                            if (event.gender === EventGender.FEMALE && value !== Gender.FEMALE) {
+                                              return "Player 1 must be Female for Women's Doubles";
+                                            }
+                                          } else {
+                                            if (event.gender === EventGender.MALE && value !== Gender.MALE) {
+                                              return "Player must be Male for Men's Singles";
+                                            }
+                                            if (event.gender === EventGender.FEMALE && value !== Gender.FEMALE) {
+                                              return "Player must be Female for Women's Singles";
+                                            }
+                                          }
                                         }
-                                        return "Gender is required"
                                       }
+                                      return undefined;
                                     },
                                   }}
                                   children={(field) => {
                                     const isInvalid = field.state.meta.errors.length > 0
                                     return (
                                       <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>Gender</FieldLabel>
-                                        <Popover
-                                          open={openGenders}
-                                          onOpenChange={setOpenGenders}
-                                          modal
-                                        >
+                                        <FieldLabel htmlFor={field.name}>
+                                          Gender <span className="text-red-500">*</span>
+                                        </FieldLabel>
+                                        <Popover open={openGenders} onOpenChange={setOpenGenders} modal>
                                           <PopoverTrigger asChild>
                                             <Button
                                               id={field.name}
@@ -2763,52 +2854,31 @@ const FormDialog = (props: Props) => {
                                               type="button"
                                             >
                                               {field.state.value
-                                                ? genders.find(
-                                                  (o) => o.value === field.state.value
-                                                )?.label
+                                                ? genders.find((o) => o.value === field.state.value)?.label
                                                 : "Select Gender"}
                                               <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                           </PopoverTrigger>
                                           <PopoverContent className="w-full p-0">
-                                            <Command
-                                              filter={(value, search) =>
-                                                genders
-                                                  .find(
-                                                    (t: { value: string; label: string }) =>
-                                                      t.value === value
-                                                  )
-                                                  ?.label.toLowerCase()
-                                                  .includes(search.toLowerCase())
-                                                  ? 1
-                                                  : 0
-                                              }
-                                            >
-                                              <CommandInput placeholder="Select Role" />
+                                            <Command>
+                                              <CommandInput placeholder="Select Gender" />
                                               <CommandList className="max-h-72 overflow-y-auto">
-                                                <CommandEmpty>
-                                                  No gender found.
-                                                </CommandEmpty>
+                                                <CommandEmpty>No gender found.</CommandEmpty>
                                                 <CommandGroup>
-                                                  <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
-                                                    Gender
-                                                  </Label>
                                                   {genders?.map((o) => (
                                                     <CommandItem
                                                       key={o.value}
                                                       value={o.value}
                                                       onSelect={(v) => {
-                                                        field.handleChange(v as Gender)
-                                                        setOpenGenders(false)
+                                                        field.handleChange(v as Gender);
+                                                        setOpenGenders(false);
                                                       }}
                                                       className="capitalize"
                                                     >
                                                       <CheckIcon
                                                         className={cn(
                                                           "h-4 w-4",
-                                                          field.state.value === o.value
-                                                            ? "opacity-100"
-                                                            : "opacity-0"
+                                                          field.state.value === o.value ? "opacity-100" : "opacity-0"
                                                         )}
                                                       />
                                                       {o.label}
@@ -2820,10 +2890,11 @@ const FormDialog = (props: Props) => {
                                           </PopoverContent>
                                         </Popover>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors.map((err) =>
-                                            typeof err === "string" ? { message: err } : err
-
-                                          )} />
+                                          <FieldError
+                                            errors={field.state.meta.errors.map((err) =>
+                                              typeof err === "string" ? { message: err } : err
+                                            )}
+                                          />
                                         )}
                                       </Field>
                                     )
@@ -3464,31 +3535,42 @@ const FormDialog = (props: Props) => {
                                     )
                                   }}
                                 />
+
                                 <form.Field
                                   name="player2Entry.gender"
                                   validators={{
-                                    onChange: ({ value }) => {
-                                      try {
-                                        fieldValidators.gender.parse(value)
-                                        return undefined
-                                      } catch (error: any) {
-                                        if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                    onChange: ({ value, fieldApi }) => {
+                                      if (!value) return "Gender is required";
+
+                                      const eventId = fieldApi.form.getFieldValue("event");
+                                      if (eventId) {
+                                        const event = events.find(e => e.value === eventId);
+                                        if (event && event.type === EventType.DOUBLES) {
+                                          if (event.gender === EventGender.MALE && value !== Gender.MALE) {
+                                            return "Player 2 must be Male for Men's Doubles";
+                                          }
+                                          if (event.gender === EventGender.FEMALE && value !== Gender.FEMALE) {
+                                            return "Player 2 must be Female for Women's Doubles";
+                                          }
+                                          if (event.gender === EventGender.MIXED) {
+                                            const player1Gender = fieldApi.form.getFieldValue("player1Entry.gender");
+                                            if (player1Gender === value) {
+                                              return "Mixed Doubles requires one Male and one Female player";
+                                            }
+                                          }
                                         }
-                                        return "Gender is required"
                                       }
+                                      return undefined;
                                     },
                                   }}
                                   children={(field) => {
                                     const isInvalid = field.state.meta.errors.length > 0
                                     return (
                                       <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>Gender</FieldLabel>
-                                        <Popover
-                                          open={openGenders}
-                                          onOpenChange={setOpenGenders}
-                                          modal
-                                        >
+                                        <FieldLabel htmlFor={field.name}>
+                                          Gender <span className="text-red-500">*</span>
+                                        </FieldLabel>
+                                        <Popover open={openGenders} onOpenChange={setOpenGenders} modal>
                                           <PopoverTrigger asChild>
                                             <Button
                                               id={field.name}
@@ -3506,52 +3588,31 @@ const FormDialog = (props: Props) => {
                                               type="button"
                                             >
                                               {field.state.value
-                                                ? genders.find(
-                                                  (o) => o.value === field.state.value
-                                                )?.label
+                                                ? genders.find((o) => o.value === field.state.value)?.label
                                                 : "Select Gender"}
                                               <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                           </PopoverTrigger>
                                           <PopoverContent className="w-full p-0">
-                                            <Command
-                                              filter={(value, search) =>
-                                                genders
-                                                  .find(
-                                                    (t: { value: string; label: string }) =>
-                                                      t.value === value
-                                                  )
-                                                  ?.label.toLowerCase()
-                                                  .includes(search.toLowerCase())
-                                                  ? 1
-                                                  : 0
-                                              }
-                                            >
-                                              <CommandInput placeholder="Select Role" />
+                                            <Command>
+                                              <CommandInput placeholder="Select Gender" />
                                               <CommandList className="max-h-72 overflow-y-auto">
-                                                <CommandEmpty>
-                                                  No gender found.
-                                                </CommandEmpty>
+                                                <CommandEmpty>No gender found.</CommandEmpty>
                                                 <CommandGroup>
-                                                  <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
-                                                    Gender
-                                                  </Label>
                                                   {genders?.map((o) => (
                                                     <CommandItem
                                                       key={o.value}
                                                       value={o.value}
                                                       onSelect={(v) => {
-                                                        field.handleChange(v as Gender)
-                                                        setOpenGenders(false)
+                                                        field.handleChange(v as Gender);
+                                                        setOpenGenders(false);
                                                       }}
                                                       className="capitalize"
                                                     >
                                                       <CheckIcon
                                                         className={cn(
                                                           "h-4 w-4",
-                                                          field.state.value === o.value
-                                                            ? "opacity-100"
-                                                            : "opacity-0"
+                                                          field.state.value === o.value ? "opacity-100" : "opacity-0"
                                                         )}
                                                       />
                                                       {o.label}
@@ -3563,10 +3624,11 @@ const FormDialog = (props: Props) => {
                                           </PopoverContent>
                                         </Popover>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors.map((err) =>
-                                            typeof err === "string" ? { message: err } : err
-
-                                          )} />
+                                          <FieldError
+                                            errors={field.state.meta.errors.map((err) =>
+                                              typeof err === "string" ? { message: err } : err
+                                            )}
+                                          />
                                         )}
                                       </Field>
                                     )

@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CheckEntryModal } from "@/components/custom/category-selection";
 
 const TOURNAMENT_OPTIONS = gql`
   query TournamentOptions {
@@ -100,6 +101,7 @@ function Page() {
   const [showPanel, setShowPanel] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showViewEntriesModal, setShowViewEntriesModal] = useState(false);
+  const [showCheckEntryModal, setShowCheckEntryModal] = useState(false)
 
   const { data, loading, error } = useQuery<TournamentOptionsResponse>(
     TOURNAMENT_OPTIONS,
@@ -109,6 +111,34 @@ function Page() {
   );
 
   const tournamentOptions: TournamentOption[] = data?.tournamentOptions || [];
+
+  useEffect(() => {
+    const handleHashScroll = () => {
+      if (window.location.hash) {
+        const id = window.location.hash.replace('#', '');
+        const element = document.getElementById(id);
+
+        if (element) {
+          element.classList.add('scroll-highlight');
+
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+
+          setTimeout(() => {
+            element.classList.remove('scroll-highlight');
+          }, 2000);
+        }
+      }
+    };
+
+    handleHashScroll();
+
+    if (!loading && tournamentOptions.length > 0) {
+      setTimeout(handleHashScroll, 100);
+    }
+  }, [loading, tournamentOptions]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -195,6 +225,7 @@ function Page() {
           </motion.div>
         </div>
 
+
         <motion.div
           className="absolute bottom-8 left-1/2 -translate-x-1/2 cursor-pointer z-10 rounded-full w-12 h-12 flex items-center justify-center"
           initial={{ y: 0, backgroundColor: "#22c55e" }}
@@ -203,9 +234,15 @@ function Page() {
             backgroundColor: ["#22c55e", "#16a34a", "#22c55e"],
           }}
           transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-          onClick={() =>
-            window.scrollTo({ top: window.innerHeight, behavior: "smooth" })
-          }
+          onClick={() => {
+            const tournamentSection = document.getElementById('tournament');
+            if (tournamentSection) {
+              tournamentSection.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+              });
+            }
+          }}
         >
           <motion.span
             className="text-white text-2xl"
@@ -365,11 +402,12 @@ function Page() {
 
       <div
         id="badminton-tournament"
-        className="w-full bg-gradient-to-r from-gray-100 via-white to-gray-100 py-2 relative flex overflow-x-hidden shadow-lg"
+        className="w-full bg-gradient-to-r from-gray-100 via-white to-gray-100 py-2 sm:py-3 md:py-4 relative flex overflow-x-hidden shadow-lg"
       >
-        <div className="absolute right-0 top-0 h-full w-40 bg-gradient-to-l from-[#F4F3EE] via-[#F4F3EE]/80 to-transparent z-10 backdrop-blur-md" />
+        <div className="absolute right-0 top-0 h-full w-20 sm:w-24 md:w-32 lg:w-40 bg-gradient-to-l from-[#F4F3EE] via-[#F4F3EE]/80 to-transparent z-10 backdrop-blur-sm md:backdrop-blur-md" />
+
         <motion.div
-          className="flex items-center gap-16 w-max"
+          className="flex items-center gap-8 sm:gap-12 md:gap-16 w-max"
           animate={{ x: ["0%", "-24%"] }}
           transition={{
             duration: 20,
@@ -380,21 +418,21 @@ function Page() {
           {infiniteImages.map((img, index) => (
             <div
               key={index}
-              className="flex-shrink-0 h-20 w-40 flex items-center justify-center"
+              className="flex-shrink-0 h-16 sm:h-18 md:h-20 w-24 sm:w-32 md:w-40 flex items-center justify-center"
             >
               <Image
                 src={img.src}
                 alt={img.alt}
                 width={80}
                 height={80}
-                className="object-contain"
+                className="object-contain w-12 sm:w-16 md:w-20 h-12 sm:h-16 md:h-20"
               />
             </div>
           ))}
         </motion.div>
       </div>
 
-      <div className="w-full bg-linear-to-b from-green-80 to-gray-250 py-20 relative overflow-hidden">
+      <div id="tournament" className="w-full bg-linear-to-b from-green-80 to-gray-250 py-20 relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-20 bg-center bg-cover bg-no-repeat"
           style={{
@@ -424,7 +462,7 @@ function Page() {
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
             </div>
           ) : tournamentOptions.length > 0 ? (
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden p-12">
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden p-8 md:p-12">
               <div className="text-center mb-10">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
                   <Trophy className="w-10 h-10 text-green-600" />
@@ -433,25 +471,32 @@ function Page() {
                   Ready to Compete?
                 </h3>
                 <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-                  Choose your action below to register for a tournament or view
-                  verified entries from previous competitions.
+                  Choose your action below to register for a tournament, check your entry status, or view verified entries from previous competitions.
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-8 mb-10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
                 <Button
                   size="lg"
                   onClick={() => setShowRegisterModal(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer text-lg w-full"
+                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer text-base md:text-md w-full h-auto min-h-[50px] flex items-center justify-center"
                 >
                   Register Tournament
                 </Button>
 
                 <Button
                   size="lg"
+                  onClick={() => setShowCheckEntryModal(true)}
+                  className="bg-teal-600 hover:bg-teal-700 text-white px-2 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer text-base md:text-md w-full h-auto min-h-[50px] flex items-center justify-center"
+                >
+                  Check Entry
+                </Button>
+
+                <Button
+                  size="lg"
                   onClick={() => setShowViewEntriesModal(true)}
                   variant="outline"
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-6 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer text-lg w-full"
+                  className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-2 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer text-base md:text-md w-full h-auto min-h-[50px] flex items-center justify-center"
                 >
                   View Verified Entries
                 </Button>
@@ -488,12 +533,10 @@ function Page() {
                     No Active Tournaments
                   </h3>
 
-                  {/* Coming Soon Text with Green Highlight */}
                   <div className="relative mb-4 group">
                     <p className="text-3xl font-bold text-green-600 animate-pulse mb-2">
                       Coming Soon
                     </p>
-                    {/* Highlight effect on hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-green-200 to-green-300 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500 rounded-full"></div>
                   </div>
 
@@ -503,13 +546,6 @@ function Page() {
                   <p className="text-gray-600 underline underline-offset-2 font-medium">
                     C-<span className="font-bold text-green-700">ONE</span> Sports Center
                   </p>
-                  {/* <Button
-                    variant="outline"
-                    className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                    onClick={() => setShowViewEntriesModal(true)}
-                  >
-                    View Past Tournaments
-                  </Button> */}
                 </CardContent>
               </Card>
             </div>
@@ -722,13 +758,12 @@ function Page() {
                         >
                           <Button
                             size="sm"
-                            className={`w-full px-4 py-2 h-9 text-sm font-medium cursor-pointer rounded-full shadow-sm ${
-                              now > regEnd
-                                ? "bg-gray-100 text-gray-500 cursor-not-allowed hover:bg-gray-100"
-                                : now < regStart
-                                  ? "bg-green-600 hover:bg-green-700 text-white relative overflow-hidden group"
-                                  : "bg-green-600 hover:bg-green-700 text-white"
-                            }`}
+                            className={`w-full px-4 py-2 h-9 text-sm font-medium cursor-pointer rounded-full shadow-sm ${now > regEnd
+                              ? "bg-gray-100 text-gray-500 cursor-not-allowed hover:bg-gray-100"
+                              : now < regStart
+                                ? "bg-green-600 hover:bg-green-700 text-white relative overflow-hidden group"
+                                : "bg-green-600 hover:bg-green-700 text-white"
+                              }`}
                             disabled={now > regEnd}
                           >
                             {now > regEnd ? (
@@ -967,6 +1002,10 @@ function Page() {
         </DialogContent>
       </Dialog>
 
+      <CheckEntryModal
+        isOpen={showCheckEntryModal}
+        onClose={() => setShowCheckEntryModal(false)}
+      />
       <ScrollIndicator />
       <FloatingChatWidget />
     </div>
