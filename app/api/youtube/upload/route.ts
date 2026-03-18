@@ -1,6 +1,10 @@
 import { google } from "googleapis"
 import { Readable } from "stream"
 import { NextResponse } from "next/server"
+import https from "https"
+
+const agent = new https.Agent({ family: 4 })
+google.options({ agent })
 
 export async function POST(request: Request) {
   try {
