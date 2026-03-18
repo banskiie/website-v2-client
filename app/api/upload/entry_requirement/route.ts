@@ -21,9 +21,9 @@ export async function POST(request: Request) {
 
     const processedBuffer = file.type.startsWith("image/")
       ? await sharp(buffer)
-          .resize({ width: 1080 })
-          .jpeg({ quality: 70 })
-          .toBuffer()
+        .resize({ width: 1080 })
+        .jpeg({ quality: 70 })
+        .toBuffer()
       : buffer
 
     const result: any = await new Promise((resolve, reject) => {

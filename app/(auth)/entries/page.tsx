@@ -188,6 +188,18 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
   const [menuOpen, setMenuOpen] = useState(false)
   const status = useMemo(() => entry?.currentStatus, [entry])
 
+  const canTransfer = useMemo(() => {
+    const transferableStatuses = [
+      "PAYMENT_PENDING",
+      "PAYMENT_PARTIALLY_PAID",
+      "PAYMENT_PAID",
+      "PAYMENT_VERIFIED",
+      "VERIFIED",
+      "CANCELLED"
+    ];
+    return status && transferableStatuses.includes(status);
+  }, [status]);
+
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
@@ -202,17 +214,12 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
           <ViewDialog _id={entry?._id} />
           <FormDialog _id={entry?._id} onClose={() => setMenuOpen(false)} />
 
-          {(status === "PAYMENT_PENDING" ||
-            status === "PAYMENT_PAID" ||
-            status === "PAYMENT_VERIFIED" ||
-            status === "PAYMENT_PARTIALLY_PAID" ||
-            status === "CANCELLED" ||
-            status === "REJECTED") && (
-              <TransferDialog
-                entryId={entry?._id}
-                onClose={() => setMenuOpen(false)}
-              />
-            )}
+          {canTransfer && (
+            <TransferDialog
+              entryId={entry?._id}
+              onClose={() => setMenuOpen(false)}
+            />
+          )}
 
           {status === "LEVEL_PENDING" && (
             <>
@@ -364,6 +371,55 @@ const Page = () => {
                 edges: verifiedEdges,
               },
             }
+
+          case "PAYMENT_TRANSFERRED":
+          case "UPDATE": // Also handle UPDATE since transfers might come as UPDATE type
+            const transferredEntry = entry
+
+            // Check if this is a transfer by looking at the data
+            const isTransfer = transferredEntry?.totalRefundAmount > 0 ||
+              transferredEntry?.pendingAmount !== undefined;
+
+            if (isTransfer) {
+              toast.info(`Payment transferred from entry (${transferredEntry?.entryNumber})`, {
+                description: `New balance: ₱${transferredEntry?.pendingAmount?.toLocaleString()}`,
+                duration: 5000,
+              })
+            }
+
+            const transferredEdges = prev.entries.edges.map((edge: any) => {
+              if (edge.node._id === transferredEntry._id) {
+                // Calculate remaining principal to ensure isFullyRefunded is correct
+                const totalPaid = transferredEntry.totalPaid ?? edge.node.totalPaid ?? 0;
+                const totalRefundAmount = transferredEntry.totalRefundAmount ?? edge.node.totalRefundAmount ?? 0;
+                const remainingPrincipal = totalPaid - totalRefundAmount;
+
+                return {
+                  ...edge,
+                  node: {
+                    ...edge.node,
+                    ...transferredEntry,
+                    // Ensure all financial fields are explicitly set
+                    pendingAmount: transferredEntry.pendingAmount ?? edge.node.pendingAmount,
+                    totalPaid: totalPaid,
+                    totalRefundAmount: totalRefundAmount,
+                    hasRefunds: transferredEntry.hasRefunds ?? (totalRefundAmount > 0),
+                    hasOverpayment: transferredEntry.hasOverpayment ?? (transferredEntry.pendingAmount < 0),
+                    totalExcess: transferredEntry.totalExcess ?? (transferredEntry.pendingAmount < 0 ? Math.abs(transferredEntry.pendingAmount) : 0),
+                    currentStatus: transferredEntry.currentStatus ?? edge.node.currentStatus
+                  }
+                }
+              }
+              return edge
+            })
+
+            return {
+              entries: {
+                ...prev.entries,
+                edges: transferredEdges,
+              },
+            }
+
           case "CANCEL":
             const cancelledEntry = entry
 
@@ -480,7 +536,7 @@ const Page = () => {
 
               if (!search && !sort && filter.length === 0) {
                 toast.info(
-                  `⏰ Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
+                  `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
                   `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`
                 );
               }
@@ -908,7 +964,15 @@ const Page = () => {
                 </div>
               )}
 
-              {currentStatus !== "CANCELLED" && pendingAmount < 0 && (
+              {/* DON'T show any balance information for REJECTED status */}
+              {currentStatus === "REJECTED" && (
+                <div className="flex items-center gap-1 mt-1">
+                  {/* No balance or excess information shown for rejected entries */}
+                </div>
+              )}
+
+              {/* Only show excess and balance for non-cancelled, non-rejected entries */}
+              {currentStatus !== "CANCELLED" && currentStatus !== "REJECTED" && pendingAmount < 0 && (
                 <div className="flex items-center gap-1 mt-1">
                   <span className="text-[11px] font-medium text-blue-600">
                     Excess: ₱{Math.abs(pendingAmount).toLocaleString()}
@@ -926,7 +990,7 @@ const Page = () => {
                 </div>
               )}
 
-              {currentStatus !== "CANCELLED" && pendingAmount > 0 && (
+              {currentStatus !== "CANCELLED" && currentStatus !== "REJECTED" && pendingAmount > 0 && (
                 <div className="flex items-center gap-1 mt-1">
                   <span className="text-[11px] font-medium text-orange-600">
                     Balance Due: ₱{pendingAmount.toLocaleString()}

@@ -195,6 +195,8 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
             onCompleted: (data) => {
                 if (data.transferPaymentToOtherEntry.ok) {
                     toast.success("Payment transferred successfully")
+
+                    refetch()
                     setOpen(false)
                     onClose?.()
                     resetForm()

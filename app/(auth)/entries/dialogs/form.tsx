@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { CreateEntrySchema, fieldValidators } from "@/validators/entry.validator"
+import { CreateEntrySchema, fieldValidators, validateEntryGenders } from "@/validators/entry.validator"
 import { gql } from "@apollo/client"
 import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react"
 import { useForm } from "@tanstack/react-form"
@@ -300,7 +300,7 @@ const DocumentUploadTab = ({
         <div className="w-full">
           <Field>
             <FieldLabel htmlFor={`documentType${playerNumber}`}>
-              Document Type (Player {playerNumber})
+              Document Type (Player {playerNumber})<span className="text-red-500">*</span>
             </FieldLabel>
             <Popover
               open={openDocumentTypes}
@@ -542,16 +542,12 @@ const DocumentUploadTab = ({
 }
 
 const FormDialog = (props: Props) => {
-  // Dialog open state
   const [open, setOpen] = useState(false)
-  // Determine if it's an update or create operation
   const isUpdate = Boolean(props._id)
   const [isPending, startTransition] = useTransition()
 
-  // Track if we're initializing the form with data
   const [isInitializing, setIsInitializing] = useState(false)
 
-  // Fetch existing data if updating
   const { data, loading: fetchLoading, refetch }: any = useQuery(ENTRY, {
     variables: { _id: props._id },
     skip: !open || !isUpdate,
@@ -559,7 +555,6 @@ const FormDialog = (props: Props) => {
   })
   const entry = data?.entry
 
-  // Image upload states for both players
   const [previewPlayer1, setPreviewPlayer1] = useState<string | null>(null)
   const [previewPlayer2, setPreviewPlayer2] = useState<string | null>(null)
   const [filePlayer1, setFilePlayer1] = useState<File | null>(null)
@@ -569,14 +564,12 @@ const FormDialog = (props: Props) => {
   const [selectedDocumentTypePlayer1, setSelectedDocumentTypePlayer1] = useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
   const [selectedDocumentTypePlayer2, setSelectedDocumentTypePlayer2] = useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
 
-  // Document Type Options
   const [openDocumentTypes, setOpenDocumentTypes] = useState(false)
   const documentTypes = Object.values(ValidDocumentType).map((type) => ({
     label: type.toLocaleLowerCase().replaceAll("_", " "),
     value: type,
   }))
 
-  // Tournament Options
   const [openTournaments, setOpenTournaments] = useState(false)
   const { data: optionsData, loading: optionsLoading }: any = useQuery(
     OPTIONS,
@@ -587,11 +580,9 @@ const FormDialog = (props: Props) => {
   )
   const tournaments = optionsData?.tournamentOptions || []
 
-  // Player Options
   const [openPlayers, setOpenPlayers] = useState(false)
   const players = optionsData?.playerOptions || []
 
-  // Event Options by Tournament
   const [tournamentId, setTournamentId] = useState<string | null>(null)
   const [openEvents, setOpenEvents] = useState(false)
   const { data: eventOptionsData, loading: eventOptionsLoading }: any =
@@ -602,28 +593,60 @@ const FormDialog = (props: Props) => {
     })
   const events: ExtendedEventOption[] = eventOptionsData?.eventOptionsByTournament || []
 
-  // NEW: State to track selected event price information
   const [selectedEvent, setSelectedEvent] = useState<ExtendedEventOption | null>(null)
 
-  // Jersey Size Options
   const [openJerseySizes, setOpenJerseySizes] = useState(false)
-  const jerseySizes = Object.values(JerseySize).map((size) => ({
-    label: size,
-    value: size,
-  }))
+  const jerseySizes = [
+    { value: JerseySize.XXS, label: "Double Extra Small" },
+    { value: JerseySize.XS, label: "Extra Small" },
+    { value: JerseySize.S, label: "Small" },
+    { value: JerseySize.M, label: "Medium" },
+    { value: JerseySize.L, label: "Large" },
+    { value: JerseySize.XL, label: "Extra Large" },
+    { value: JerseySize.XXL, label: "Double Extra Large" },
+    { value: JerseySize.XXXL, label: "Triple Extra Large" },
+  ]
 
-  // Gender Options
+  const autoSetGendersBasedOnEvent = useCallback((eventId: string, form: any) => {
+    const event = events.find(e => e.value === eventId);
+    if (!event) return;
+
+    const isDoubles = event.type === EventType.DOUBLES;
+
+    if (isDoubles) {
+      switch (event.gender) {
+        case EventGender.MALE:
+          form.setFieldValue("player1Entry.gender", Gender.MALE);
+          form.setFieldValue("player2Entry.gender", Gender.MALE);
+          toast.info("Gender auto-set to Male for both players (Men's Doubles)");
+          break;
+
+        case EventGender.FEMALE:
+          form.setFieldValue("player1Entry.gender", Gender.FEMALE);
+          form.setFieldValue("player2Entry.gender", Gender.FEMALE);
+          toast.info("Gender auto-set to Female for both players (Women's Doubles)");
+          break;
+
+        case EventGender.MIXED:
+          form.setFieldValue("player1Entry.gender", Gender.MALE);
+          form.setFieldValue("player2Entry.gender", Gender.FEMALE);
+          toast.info("Gender auto-set to Mixed (Male & Female)");
+          break;
+      }
+    }
+  }, [events]);
+
+
+
   const [openGenders, setOpenGenders] = useState(false)
   const genders = Object.values(Gender).map((gender) => ({
     label: gender.toLocaleLowerCase().replaceAll("_", " "),
     value: gender,
   }))
 
-  // Combined loading state
   const isLoading =
     isPending || optionsLoading || eventOptionsLoading || fetchLoading || isInitializing
 
-  // Get initial validDocuments from player data
   const initialValidDocumentsPlayer1 = entry?.player1Entry?.validDocuments?.[0] || null
   const initialDocumentUrlPlayer1 = initialValidDocumentsPlayer1?.documentURL || ""
   const initialDocumentTypePlayer1 = initialValidDocumentsPlayer1?.documentType || ValidDocumentType.BIRTH_CERTIFICATE
@@ -702,24 +725,49 @@ const FormDialog = (props: Props) => {
         try {
           const event = events.find(
             (e: { value: string }) => e.value === payload.event
-          )
-          const isDoubles = event?.type === EventType.DOUBLES
+          );
+          const isDoubles = event?.type === EventType.DOUBLES;
+          const eventGender = event?.gender;
+
           const { tournament, ...modifiedPayload } = {
             ...payload,
             player2Entry: isDoubles ? payload.player2Entry : null,
+          };
+          CreateEntrySchema.parse(modifiedPayload);
+
+          if (isDoubles && eventGender && payload.player2Entry) {
+            const validation = validateEntryGenders(
+              eventGender,
+              isDoubles,
+              payload.player1Entry.gender,
+              payload.player2Entry.gender
+            );
+
+            if (!validation.valid) {
+              if (validation.errors.player1) {
+                formApi.fieldInfo["player1Entry.gender"]?.instance?.setErrorMap({
+                  onSubmit: { message: validation.errors.player1 },
+                });
+              }
+              if (validation.errors.player2) {
+                formApi.fieldInfo["player2Entry.gender"]?.instance?.setErrorMap({
+                  onSubmit: { message: validation.errors.player2 },
+                });
+              }
+
+              throw new Error("Gender validation failed");
+            }
           }
-          CreateEntrySchema.parse(modifiedPayload)
         } catch (error: any) {
-          console.error(error)
-          const formErrors = JSON.parse(error)
-          formErrors.map(
-            ({ path, message }: { path: string; message: string }) =>
-              formApi.fieldInfo[
-                path as keyof typeof formApi.fieldInfo
-              ].instance?.setErrorMap({
-                onSubmit: { message },
-              })
-          )
+          console.error(error);
+          if (error.name === "ZodError") {
+            error.errors.forEach((err: any) => {
+              const path = err.path.join(".");
+              formApi.fieldInfo[path as keyof typeof formApi.fieldInfo]?.instance?.setErrorMap({
+                onSubmit: { message: err.message },
+              });
+            });
+          }
         }
       },
     },
@@ -766,6 +814,8 @@ const FormDialog = (props: Props) => {
             if (fieldValue) {
               const event = events.find(e => e.value === fieldValue);
               setSelectedEvent(event || null);
+
+              autoSetGendersBasedOnEvent(fieldValue as string, formApi);
             } else {
               setSelectedEvent(null);
             }
@@ -816,12 +866,19 @@ const FormDialog = (props: Props) => {
             break
           case "isPlayer1New":
             if (fieldValue) {
-              formApi.setFieldValue("connectedPlayer1", null)
-              setSelectedSuggestionId1(null)
+              const currentGender = formApi.getFieldValue("player1Entry.gender");
+
+              formApi.setFieldValue("connectedPlayer1", null);
+              setSelectedSuggestionId1(null);
+
+              if (currentGender) {
+                formApi.setFieldValue("player1Entry.gender", currentGender);
+              }
             } else {
-              formApi.resetField("connectedPlayer1")
+              formApi.resetField("connectedPlayer1");
             }
-            break
+            break;
+
           case "connectedPlayer2":
             if (fieldValue) {
               try {
@@ -868,12 +925,17 @@ const FormDialog = (props: Props) => {
             break
           case "isPlayer2New":
             if (fieldValue) {
-              formApi.setFieldValue("connectedPlayer2", null)
-              setSelectedSuggestionId2(null)
+              const currentGender = formApi.getFieldValue("player2Entry.gender");
+
+              formApi.setFieldValue("connectedPlayer2", null);
+              setSelectedSuggestionId2(null);
+              if (currentGender) {
+                formApi.setFieldValue("player2Entry.gender", currentGender);
+              }
             } else {
-              formApi.resetField("connectedPlayer2")
+              formApi.resetField("connectedPlayer2");
             }
-            break
+            break;
         }
 
         // Handle player field changes for suggestions
@@ -1008,12 +1070,38 @@ const FormDialog = (props: Props) => {
             )
         }
       } finally {
-        // Reset the submission flag
         isSubmittingRef.current = false
         // console.log('Submission flag reset at:', new Date().toISOString())
       }
     },
   })
+
+  const validateDocuments = useCallback((): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    const eventId = form.getFieldValue("event");
+
+    if (!eventId) return errors;
+
+    const event = events.find(e => e.value === eventId);
+    if (!event) return errors;
+
+    const isDoubles = event.type === EventType.DOUBLES;
+
+    const hasPlayer1Doc = filePlayer1 || initialDocumentUrlPlayer1;
+    if (!hasPlayer1Doc) {
+      errors.filePlayer1 = "Document for Player 1 is required";
+    }
+
+    if (isDoubles) {
+      const hasPlayer2Doc = filePlayer2 || initialDocumentUrlPlayer2;
+      if (!hasPlayer2Doc) {
+        errors.filePlayer2 = "Document for Player 2 is required";
+      }
+    }
+
+    return errors;
+  }, [form, events, filePlayer1, filePlayer2, initialDocumentUrlPlayer1, initialDocumentUrlPlayer2]);
+
   const calculateEntryAmount = useCallback(() => {
     if (!selectedEvent) return null;
 
@@ -1033,26 +1121,21 @@ const FormDialog = (props: Props) => {
       };
     }
   }, [selectedEvent, form]);
+
   useEffect(() => {
     if (entry && isUpdate && form) {
-      // console.log("Updating form with entry data:", entry);
       setIsInitializing(true);
 
-      // First, set the tournamentId immediately
       if (entry?.event?.tournament?._id) {
         setTournamentId(entry.event.tournament._id);
       }
 
-      // Then update the form after a short delay to ensure tournamentId is set
       const initializeForm = async () => {
         try {
-          // Wait for the next tick to ensure state updates
           await new Promise(resolve => setTimeout(resolve, 100));
 
-          // Clear form first
           form.reset();
 
-          // Set form values
           if (entry?.event?.tournament?._id) {
             form.setFieldValue("tournament", entry.event.tournament._id);
           }
@@ -1162,19 +1245,188 @@ const FormDialog = (props: Props) => {
   }, [entry, isUpdate, form, initialDocumentUrlPlayer1, initialDocumentUrlPlayer2, initialDocumentTypePlayer1, initialDocumentTypePlayer2]);
 
   useEffect(() => {
+    const errors = validateDocuments();
+    setFieldErrors(prev => ({ ...prev, ...errors }));
+  }, [filePlayer1, filePlayer2, initialDocumentUrlPlayer1, initialDocumentUrlPlayer2, selectedEvent]);
+
+  useEffect(() => {
     if (data && !tournamentId) {
       setTournamentId(data.entry.event.tournament._id)
     }
   }, [data, tournamentId])
 
-  // NEW: Update selected event when form event changes
+  const isFormValid = useCallback(() => {
+    const values = form.state.values;
+    const eventId = values.event;
+
+    if (!eventId) return false;
+
+    const event = events.find(e => e.value === eventId);
+    if (!event) return false;
+
+    const isDoubles = event.type === EventType.DOUBLES;
+
+    if (!values.tournament) return false;
+    if (!values.club) return false;
+
+    if (!values.player1Entry.firstName) return false;
+    if (!values.player1Entry.lastName) return false;
+    if (!values.player1Entry.birthDate) return false;
+    if (!values.player1Entry.gender) return false;
+    if (!values.player1Entry.phoneNumber) return false;
+    if (!values.player1Entry.email) return false;
+
+    const hasPlayer1Doc = filePlayer1 || initialDocumentUrlPlayer1;
+    if (!hasPlayer1Doc) return false;
+
+    if (isDoubles) {
+      if (!values.player2Entry?.firstName) return false;
+      if (!values.player2Entry?.lastName) return false;
+      if (!values.player2Entry?.birthDate) return false;
+      if (!values.player2Entry?.gender) return false;
+      if (!values.player2Entry?.phoneNumber) return false;
+      if (!values.player2Entry?.email) return false;
+
+      const hasPlayer2Doc = filePlayer2 || initialDocumentUrlPlayer2;
+      if (!hasPlayer2Doc) return false;
+
+      if (event.gender === EventGender.MIXED) {
+        const player1Gender = values.player1Entry.gender;
+        const player2Gender = values.player2Entry.gender;
+
+        const isValid =
+          (player1Gender === Gender.MALE && player2Gender === Gender.FEMALE) ||
+          (player1Gender === Gender.FEMALE && player2Gender === Gender.MALE);
+
+        if (!isValid) return false;
+      } else {
+        if (event.gender === EventGender.MALE) {
+          if (
+            values.player1Entry.gender !== Gender.MALE ||
+            values.player2Entry?.gender !== Gender.MALE
+          ) return false;
+        }
+        if (event.gender === EventGender.FEMALE) {
+          if (
+            values.player1Entry.gender !== Gender.FEMALE ||
+            values.player2Entry?.gender !== Gender.FEMALE
+          ) return false;
+        }
+      }
+    }
+
+    if (!selectedDocumentTypePlayer1) return false;
+    if (isDoubles && !selectedDocumentTypePlayer2) return false;
+
+    return true;
+  }, [
+    form,
+    events,
+    filePlayer1,
+    filePlayer2,
+    initialDocumentUrlPlayer1,
+    initialDocumentUrlPlayer2,
+    selectedDocumentTypePlayer1,
+    selectedDocumentTypePlayer2
+  ]);
+
   useEffect(() => {
     const eventId = form.getFieldValue("event");
     if (eventId) {
       const event = events.find(e => e.value === eventId);
-      setSelectedEvent(event || null);
+      const isDoubles = event?.type === EventType.DOUBLES;
+      const eventGender = event?.gender;
+
+      if (isDoubles && eventGender) {
+        const player1Gender = form.getFieldValue("player1Entry.gender");
+        const player2Gender = form.getFieldValue("player2Entry.gender");
+
+        if (player1Gender) {
+          const validation = validateEntryGenders(
+            eventGender,
+            isDoubles,
+            player1Gender,
+            player2Gender
+          );
+
+          if (validation.errors.player1) {
+            form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+              ...prev,
+              errors: [validation.errors.player1],
+              isTouched: true,
+            }));
+          } else {
+            form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+              ...prev,
+              errors: [],
+            }));
+          }
+
+          if (validation.errors.player2) {
+            form.setFieldMeta("player2Entry.gender", (prev: any) => ({
+              ...prev,
+              errors: [validation.errors.player2],
+              isTouched: true,
+            }));
+          } else {
+            form.setFieldMeta("player2Entry.gender", (prev: any) => ({
+              ...prev,
+              errors: [],
+            }));
+          }
+        }
+      }
     }
-  }, [form.getFieldValue("event"), events]);
+  }, [
+    form.getFieldValue("event"),
+    form.getFieldValue("player1Entry.gender"),
+    form.getFieldValue("player2Entry.gender"),
+    events
+  ]);
+
+  const GenderRequirementBadge = () => {
+    const eventId = form.getFieldValue("event");
+    if (!eventId) return null;
+
+    const event = events.find(e => e.value === eventId);
+    if (!event || event.type !== EventType.DOUBLES) return null;
+
+    let requirementText = "";
+    let bgColor = "";
+    let autoSetText = "";
+
+    switch (event.gender) {
+      case EventGender.MALE:
+        requirementText = "Men's Doubles - Both players must be Male";
+        autoSetText = "✓ Genders will be auto-set to Male";
+        bgColor = "bg-blue-50 text-blue-700 border-blue-200";
+        break;
+      case EventGender.FEMALE:
+        requirementText = "Women's Doubles - Both players must be Female";
+        autoSetText = "✓ Genders will be auto-set to Female";
+        bgColor = "bg-pink-50 text-pink-700 border-pink-200";
+        break;
+      case EventGender.MIXED:
+        requirementText = "Mixed Doubles - One Male and one Female required";
+        autoSetText = "Please select genders manually";
+        bgColor = "bg-green-50 text-green-700 border-green-200";
+        break;
+      default:
+        return null;
+    }
+
+    return (
+      <div className={`p-3 rounded-lg border ${bgColor} mb-3`}>
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-4 w-4" />
+          <div>
+            <span className="text-sm font-medium block">{requirementText}</span>
+            <span className="text-xs opacity-75 block mt-1">{autoSetText}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const onClose = () => {
     setOpen(false)
@@ -1885,7 +2137,7 @@ const FormDialog = (props: Props) => {
                                       <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </PopoverTrigger>
-                                  <PopoverContent className="w-full p-0">
+                                  <PopoverContent className="w-full p-0" onWheel={(e) => e.stopPropagation()}>
                                     <Command
                                       filter={(value, search) =>
                                         events
@@ -2087,6 +2339,7 @@ const FormDialog = (props: Props) => {
                         <div className="flex gap-6">
                           <div className="w-3/4!">
                             <FieldSet className="flex flex-col gap-2.5 h-[60vh] overflow-y-auto pr-2">
+                              <GenderRequirementBadge />
                               {!isUpdate && (
                                 <div className="p-3 flex flex-col gap-2.5 border rounded-md">
                                   <form.Field
@@ -2829,6 +3082,7 @@ const FormDialog = (props: Props) => {
                         <div className="flex gap-6">
                           <div className="w-3/4!">
                             <FieldSet className="flex flex-col gap-2.5 h-[60vh] overflow-y-auto pr-2">
+                              <GenderRequirementBadge />
                               {!isUpdate && (
                                 <div className="p-3 flex flex-col gap-2.5 border rounded-md">
                                   <form.Field
@@ -3634,7 +3888,7 @@ const FormDialog = (props: Props) => {
             loading={isLoading || isUploading || isSubmittingRef.current}
             type="button"
             onClick={handleSubmit}
-            disabled={isSubmittingRef.current}
+            disabled={!isFormValid() || isSubmittingRef.current}
           >
             Submit
           </Button>
