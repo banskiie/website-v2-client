@@ -182,7 +182,6 @@ const REFUND_CHANGED = gql`
   }
 `
 
-
 const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
   const entry = useMemo(() => data, [data])
   const [menuOpen, setMenuOpen] = useState(false)
@@ -195,10 +194,10 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
       "PAYMENT_PAID",
       "PAYMENT_VERIFIED",
       "VERIFIED",
-      "CANCELLED"
-    ];
-    return status && transferableStatuses.includes(status);
-  }, [status]);
+      "CANCELLED",
+    ]
+    return status && transferableStatuses.includes(status)
+  }, [status])
 
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
@@ -291,19 +290,24 @@ const Page = () => {
   // Selected Rows
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   // Table Data Fetching
-  const { data, loading, fetchMore, subscribeToMore }: any = useQuery(ENTRIES, {
-    variables: {
-      first: rows,
-      search,
-      sort: sort || {
-        key: "dateUpdated",
-        order: "DESC",
-      }, // Default sort
-      filter,
+  const { data, loading, fetchMore, subscribeToMore, error }: any = useQuery(
+    ENTRIES,
+    {
+      variables: {
+        first: rows,
+        search,
+        sort: sort || {
+          key: "dateUpdated",
+          order: "DESC",
+        }, // Default sort
+        filter,
+      },
+      fetchPolicy: "network-only",
+      notifyOnNetworkStatusChange: true,
     },
-    fetchPolicy: "network-only",
-    notifyOnNetworkStatusChange: true,
-  })
+  )
+
+  if (error) console.error(error)
 
   useEffect(() => {
     const unsubscribeRefund = subscribeToMore({
@@ -314,7 +318,7 @@ const Page = () => {
 
         if (type === "CREATE") {
           toast.success(
-            `Refund of ₱${refund.amount.toLocaleString()} processed for entries: ${refund.entries}`
+            `Refund of ₱${refund.amount.toLocaleString()} processed for entries: ${refund.entries}`,
           )
         }
 
@@ -341,7 +345,9 @@ const Page = () => {
             if (newEntryExists) return prev
 
             if (!search && !sort && filter.length === 0) {
-              toast.success(`Entry (${newEntry?.entryNumber}) has been created.`)
+              toast.success(
+                `Entry (${newEntry?.entryNumber}) has been created.`,
+              )
             }
 
             return {
@@ -357,12 +363,14 @@ const Page = () => {
           case "VERIFIED":
             const verifiedEntry = entry
 
-            toast.success(`Entry (${verifiedEntry?.entryNumber}) has been fully paid and verified! 🎉`)
+            toast.success(
+              `Entry (${verifiedEntry?.entryNumber}) has been fully paid and verified! 🎉`,
+            )
 
             const verifiedEdges = prev.entries.edges.map((edge: any) =>
               edge.node._id === verifiedEntry._id
                 ? { ...edge, node: { ...verifiedEntry } }
-                : edge
+                : edge,
             )
 
             return {
@@ -377,22 +385,30 @@ const Page = () => {
             const transferredEntry = entry
 
             // Check if this is a transfer by looking at the data
-            const isTransfer = transferredEntry?.totalRefundAmount > 0 ||
-              transferredEntry?.pendingAmount !== undefined;
+            const isTransfer =
+              transferredEntry?.totalRefundAmount > 0 ||
+              transferredEntry?.pendingAmount !== undefined
 
             if (isTransfer) {
-              toast.info(`Payment transferred from entry (${transferredEntry?.entryNumber})`, {
-                description: `New balance: ₱${transferredEntry?.pendingAmount?.toLocaleString()}`,
-                duration: 5000,
-              })
+              toast.info(
+                `Payment transferred from entry (${transferredEntry?.entryNumber})`,
+                {
+                  description: `New balance: ₱${transferredEntry?.pendingAmount?.toLocaleString()}`,
+                  duration: 5000,
+                },
+              )
             }
 
             const transferredEdges = prev.entries.edges.map((edge: any) => {
               if (edge.node._id === transferredEntry._id) {
                 // Calculate remaining principal to ensure isFullyRefunded is correct
-                const totalPaid = transferredEntry.totalPaid ?? edge.node.totalPaid ?? 0;
-                const totalRefundAmount = transferredEntry.totalRefundAmount ?? edge.node.totalRefundAmount ?? 0;
-                const remainingPrincipal = totalPaid - totalRefundAmount;
+                const totalPaid =
+                  transferredEntry.totalPaid ?? edge.node.totalPaid ?? 0
+                const totalRefundAmount =
+                  transferredEntry.totalRefundAmount ??
+                  edge.node.totalRefundAmount ??
+                  0
+                const remainingPrincipal = totalPaid - totalRefundAmount
 
                 return {
                   ...edge,
@@ -400,14 +416,23 @@ const Page = () => {
                     ...edge.node,
                     ...transferredEntry,
                     // Ensure all financial fields are explicitly set
-                    pendingAmount: transferredEntry.pendingAmount ?? edge.node.pendingAmount,
+                    pendingAmount:
+                      transferredEntry.pendingAmount ?? edge.node.pendingAmount,
                     totalPaid: totalPaid,
                     totalRefundAmount: totalRefundAmount,
-                    hasRefunds: transferredEntry.hasRefunds ?? (totalRefundAmount > 0),
-                    hasOverpayment: transferredEntry.hasOverpayment ?? (transferredEntry.pendingAmount < 0),
-                    totalExcess: transferredEntry.totalExcess ?? (transferredEntry.pendingAmount < 0 ? Math.abs(transferredEntry.pendingAmount) : 0),
-                    currentStatus: transferredEntry.currentStatus ?? edge.node.currentStatus
-                  }
+                    hasRefunds:
+                      transferredEntry.hasRefunds ?? totalRefundAmount > 0,
+                    hasOverpayment:
+                      transferredEntry.hasOverpayment ??
+                      transferredEntry.pendingAmount < 0,
+                    totalExcess:
+                      transferredEntry.totalExcess ??
+                      (transferredEntry.pendingAmount < 0
+                        ? Math.abs(transferredEntry.pendingAmount)
+                        : 0),
+                    currentStatus:
+                      transferredEntry.currentStatus ?? edge.node.currentStatus,
+                  },
                 }
               }
               return edge
@@ -423,18 +448,25 @@ const Page = () => {
           case "CANCEL":
             const cancelledEntry = entry
 
-            if (cancelledEntry?.hasOverpayment && cancelledEntry?.totalExcess > 0) {
+            if (
+              cancelledEntry?.hasOverpayment &&
+              cancelledEntry?.totalExcess > 0
+            ) {
               toast.warning(
                 `Entry (${cancelledEntry?.entryNumber}) has been cancelled. Excess amount: ₱${cancelledEntry?.totalExcess?.toLocaleString()}`,
                 {
-                  description: "A refund may be required for the excess payment.",
+                  description:
+                    "A refund may be required for the excess payment.",
                   duration: 5000,
-                }
+                },
               )
             } else {
-              toast.warning(`Entry (${cancelledEntry?.entryNumber}) has been cancelled.`, {
-                duration: 5000,
-              })
+              toast.warning(
+                `Entry (${cancelledEntry?.entryNumber}) has been cancelled.`,
+                {
+                  duration: 5000,
+                },
+              )
             }
 
             // console.log('Entry cancelled:', {
@@ -451,20 +483,24 @@ const Page = () => {
             const cancelledEdges = prev.entries.edges.map((edge: any) =>
               edge.node._id === cancelledEntry._id
                 ? {
-                  ...edge,
-                  node: {
-                    ...edge.node,
-                    ...cancelledEntry,
-                    currentStatus: "CANCELLED",
-                    hasOverpayment: cancelledEntry.hasOverpayment,
-                    totalExcess: cancelledEntry.totalExcess,
-                    pendingAmount: cancelledEntry.pendingAmount,
-                    totalRefundAmount: cancelledEntry.totalRefundAmount || edge.node.totalRefundAmount,
-                    hasRefunds: cancelledEntry.hasRefunds || edge.node.hasRefunds,
-                    totalPaid: cancelledEntry.totalPaid || edge.node.totalPaid
+                    ...edge,
+                    node: {
+                      ...edge.node,
+                      ...cancelledEntry,
+                      currentStatus: "CANCELLED",
+                      hasOverpayment: cancelledEntry.hasOverpayment,
+                      totalExcess: cancelledEntry.totalExcess,
+                      pendingAmount: cancelledEntry.pendingAmount,
+                      totalRefundAmount:
+                        cancelledEntry.totalRefundAmount ||
+                        edge.node.totalRefundAmount,
+                      hasRefunds:
+                        cancelledEntry.hasRefunds || edge.node.hasRefunds,
+                      totalPaid:
+                        cancelledEntry.totalPaid || edge.node.totalPaid,
+                    },
                   }
-                }
-                : edge
+                : edge,
             )
 
             return {
@@ -506,11 +542,11 @@ const Page = () => {
                     hasRefunds: refundedEntry.hasRefunds,
                     totalPaid: refundedEntry.totalPaid,
                     latestPaymentAmount: refundedEntry.latestPaymentAmount,
-                    currentStatus: refundedEntry.currentStatus
-                  }
+                    currentStatus: refundedEntry.currentStatus,
+                  },
                 }
               }
-              return edge;
+              return edge
             })
 
             return {
@@ -528,7 +564,11 @@ const Page = () => {
           case "REJECT":
             const updatedEntry = entry
 
-            if (type === "UPDATE" && updatedEntry?.isEarlyBird === false && updatedEntry?.pendingAmount > 0) {
+            if (
+              type === "UPDATE" &&
+              updatedEntry?.isEarlyBird === false &&
+              updatedEntry?.pendingAmount > 0
+            ) {
               // console.log('🕒 Early bird expired for entry:', {
               //   entryNumber: updatedEntry.entryNumber,
               //   newAmount: updatedEntry.pendingAmount
@@ -537,35 +577,73 @@ const Page = () => {
               if (!search && !sort && filter.length === 0) {
                 toast.info(
                   `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
-                  `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`
-                );
+                    `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
+                )
               }
             }
             // Handle regular approve
-            else if (type === "APPROVE" && !search && !sort && filter.length === 0) {
-              toast.success(`Entry (${updatedEntry?.entryNumber}) has been approved.`)
+            else if (
+              type === "APPROVE" &&
+              !search &&
+              !sort &&
+              filter.length === 0
+            ) {
+              toast.success(
+                `Entry (${updatedEntry?.entryNumber}) has been approved.`,
+              )
             }
             // Handle paid
-            else if (type === "PAID" && !search && !sort && filter.length === 0) {
-              toast.success(`Entry (${updatedEntry?.entryNumber}) has been paid.`)
+            else if (
+              type === "PAID" &&
+              !search &&
+              !sort &&
+              filter.length === 0
+            ) {
+              toast.success(
+                `Entry (${updatedEntry?.entryNumber}) has been paid.`,
+              )
             }
             // Handle reject
-            else if (type === "REJECT" && !search && !sort && filter.length === 0) {
-              toast.warning(`Entry (${updatedEntry?.entryNumber}) has been rejected.`)
+            else if (
+              type === "REJECT" &&
+              !search &&
+              !sort &&
+              filter.length === 0
+            ) {
+              toast.warning(
+                `Entry (${updatedEntry?.entryNumber}) has been rejected.`,
+              )
             }
             // Handle assign
-            else if (type === "ASSIGN" && !search && !sort && filter.length === 0) {
-              toast.info(`Entry (${updatedEntry?.entryNumber}) has been assigned.`)
+            else if (
+              type === "ASSIGN" &&
+              !search &&
+              !sort &&
+              filter.length === 0
+            ) {
+              toast.info(
+                `Entry (${updatedEntry?.entryNumber}) has been assigned.`,
+              )
             }
             // Handle regular updates (including refunds)
-            else if (type === "UPDATE" && !search && !sort && filter.length === 0) {
-              if (updatedEntry?.hasRefunds || updatedEntry?.totalRefundAmount > 0) {
+            else if (
+              type === "UPDATE" &&
+              !search &&
+              !sort &&
+              filter.length === 0
+            ) {
+              if (
+                updatedEntry?.hasRefunds ||
+                updatedEntry?.totalRefundAmount > 0
+              ) {
                 const refundMessage = updatedEntry?.hasOverpayment
                   ? `Entry (${updatedEntry?.entryNumber}) refund processed. Excess amount: ₱${updatedEntry?.totalExcess?.toLocaleString()}`
                   : `Refund processed for entry (${updatedEntry?.entryNumber})`
                 toast.info(refundMessage)
               } else {
-                toast.success(`Entry (${updatedEntry?.entryNumber}) has been updated.`)
+                toast.success(
+                  `Entry (${updatedEntry?.entryNumber}) has been updated.`,
+                )
               }
             }
 
@@ -578,16 +656,25 @@ const Page = () => {
                     ...edge.node,
                     ...updatedEntry,
                     // Ensure these fields are properly updated
-                    hasOverpayment: updatedEntry.hasOverpayment ?? edge.node.hasOverpayment,
-                    totalExcess: updatedEntry.totalExcess ?? edge.node.totalExcess,
-                    pendingAmount: updatedEntry.pendingAmount ?? edge.node.pendingAmount,
-                    totalRefundAmount: updatedEntry.totalRefundAmount ?? edge.node.totalRefundAmount,
+                    hasOverpayment:
+                      updatedEntry.hasOverpayment ?? edge.node.hasOverpayment,
+                    totalExcess:
+                      updatedEntry.totalExcess ?? edge.node.totalExcess,
+                    pendingAmount:
+                      updatedEntry.pendingAmount ?? edge.node.pendingAmount,
+                    totalRefundAmount:
+                      updatedEntry.totalRefundAmount ??
+                      edge.node.totalRefundAmount,
                     hasRefunds: updatedEntry.hasRefunds ?? edge.node.hasRefunds,
                     totalPaid: updatedEntry.totalPaid ?? edge.node.totalPaid,
-                    latestPaymentAmount: updatedEntry.latestPaymentAmount ?? edge.node.latestPaymentAmount,
-                    currentStatus: updatedEntry.currentStatus ?? edge.node.currentStatus,
-                    isEarlyBird: updatedEntry.isEarlyBird ?? edge.node.isEarlyBird
-                  }
+                    latestPaymentAmount:
+                      updatedEntry.latestPaymentAmount ??
+                      edge.node.latestPaymentAmount,
+                    currentStatus:
+                      updatedEntry.currentStatus ?? edge.node.currentStatus,
+                    isEarlyBird:
+                      updatedEntry.isEarlyBird ?? edge.node.isEarlyBird,
+                  },
                 }
               }
               return edge
@@ -604,7 +691,9 @@ const Page = () => {
             const deletedEntry = entry
 
             if (!search && !sort && filter.length === 0) {
-              toast.success(`Entry (${deletedEntry?.entryNumber}) has been deleted.`)
+              toast.success(
+                `Entry (${deletedEntry?.entryNumber}) has been deleted.`,
+              )
             }
 
             return {
@@ -621,7 +710,9 @@ const Page = () => {
             const updatedEntries = entries
 
             if (!search && !sort && filter.length === 0) {
-              toast.success(`Batch update successful for ${updatedEntries.length} entries.`)
+              toast.success(
+                `Batch update successful for ${updatedEntries.length} entries.`,
+              )
             }
 
             const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
@@ -632,14 +723,14 @@ const Page = () => {
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...updatedEntries.find(
-                          (u: any) => u._id === edge.node._id,
-                        ),
-                      },
-                    }
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedEntries.find(
+                            (u: any) => u._id === edge.node._id,
+                          ),
+                        },
+                      }
                     : edge,
                 ),
               },
@@ -807,7 +898,8 @@ const Page = () => {
           />
         ),
         cell: ({ row }) => {
-          const { entryNumber, entryKey, hasOverpayment, totalExcess } = row.original as any
+          const { entryNumber, entryKey, hasOverpayment, totalExcess } =
+            row.original as any
 
           return (
             <div className="h-full flex flex-col justify-center">
@@ -916,8 +1008,10 @@ const Page = () => {
             totalPaid,
           } = row.original as any
 
-          const remainingPrincipal = totalPaid ? totalPaid - (totalRefundAmount || 0) : 0;
-          const isFullyRefunded = remainingPrincipal === 0;
+          const remainingPrincipal = totalPaid
+            ? totalPaid - (totalRefundAmount || 0)
+            : 0
+          const isFullyRefunded = remainingPrincipal === 0
 
           return (
             <div className="flex flex-col justify-center gap-1">
@@ -927,15 +1021,19 @@ const Page = () => {
                 <div className="flex flex-col gap-0.5 mt-1">
                   <div className="flex items-center gap-1 flex-wrap">
                     {/* Show Refunded amount only if NOT fully refunded */}
-                    {hasRefunds && totalRefundAmount > 0 && !isFullyRefunded && (
-                      <span className="text-[11px] font-medium text-green-600">
-                        Refunded: ₱{totalRefundAmount.toLocaleString()}
-                      </span>
-                    )}
+                    {hasRefunds &&
+                      totalRefundAmount > 0 &&
+                      !isFullyRefunded && (
+                        <span className="text-[11px] font-medium text-green-600">
+                          Refunded: ₱{totalRefundAmount.toLocaleString()}
+                        </span>
+                      )}
 
                     {remainingPrincipal > 0 && (
                       <>
-                        {hasRefunds && !isFullyRefunded && <span className="text-[11px] text-gray-400">•</span>}
+                        {hasRefunds && !isFullyRefunded && (
+                          <span className="text-[11px] text-gray-400">•</span>
+                        )}
                         <span className="text-[11px] font-medium text-orange-600">
                           Remaining: ₱{remainingPrincipal.toLocaleString()}
                         </span>
@@ -972,31 +1070,36 @@ const Page = () => {
               )}
 
               {/* Only show excess and balance for non-cancelled, non-rejected entries */}
-              {currentStatus !== "CANCELLED" && currentStatus !== "REJECTED" && pendingAmount < 0 && (
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="text-[11px] font-medium text-blue-600">
-                    Excess: ₱{Math.abs(pendingAmount).toLocaleString()}
-                  </span>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <InfoIcon className="size-3 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">
-                        This entry has an overpayment of ₱{Math.abs(pendingAmount).toLocaleString()}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              )}
+              {currentStatus !== "CANCELLED" &&
+                currentStatus !== "REJECTED" &&
+                pendingAmount < 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-[11px] font-medium text-blue-600">
+                      Excess: ₱{Math.abs(pendingAmount).toLocaleString()}
+                    </span>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <InfoIcon className="size-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">
+                          This entry has an overpayment of ₱
+                          {Math.abs(pendingAmount).toLocaleString()}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                )}
 
-              {currentStatus !== "CANCELLED" && currentStatus !== "REJECTED" && pendingAmount > 0 && (
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="text-[11px] font-medium text-orange-600">
-                    Balance Due: ₱{pendingAmount.toLocaleString()}
-                  </span>
-                </div>
-              )}
+              {currentStatus !== "CANCELLED" &&
+                currentStatus !== "REJECTED" &&
+                pendingAmount > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-[11px] font-medium text-orange-600">
+                      Balance Due: ₱{pendingAmount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
             </div>
           )
         },
