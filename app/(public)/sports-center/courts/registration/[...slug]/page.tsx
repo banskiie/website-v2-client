@@ -897,7 +897,7 @@ export default function Page({ params }: RegistrationPageProps) {
                     });
 
                     const ageErrors = validationResult.error.issues.filter((err: any) =>
-                        err.path.some(path =>
+                        err.path.some((path: any) =>
                             String(path).toLowerCase().includes('birthday') ||
                             String(path).toLowerCase().includes('age') ||
                             String(path).toLowerCase().includes('birth')
@@ -910,7 +910,7 @@ export default function Page({ params }: RegistrationPageProps) {
                     const uniqueAgeMessages = [...new Set(ageErrors.map((err: any) => err.message))];
 
                     const genderErrors = validationResult.error.issues.filter((err: any) =>
-                        err.path.some(path =>
+                        err.path.some((path: any) =>
                             String(path).toLowerCase().includes('gender')
                         ) ||
                         err.message.toLowerCase().includes('gender') ||
@@ -927,7 +927,7 @@ export default function Page({ params }: RegistrationPageProps) {
                     const uniqueRequiredMessages = [...new Set(requiredFieldErrors.map((err: any) => err.message))];
 
                     const documentErrors = validationResult.error.issues.filter((err: any) =>
-                        err.path.some(path =>
+                        err.path.some((path: any) =>
                             String(path).toLowerCase().includes('upload') ||
                             String(path).toLowerCase().includes('document') ||
                             String(path).toLowerCase().includes('file')
@@ -939,7 +939,7 @@ export default function Page({ params }: RegistrationPageProps) {
                     const uniqueDocumentMessages = [...new Set(documentErrors.map((err: any) => err.message))];
 
                     const contactErrors = validationResult.error.issues.filter((err: any) =>
-                        err.path.some(path =>
+                        err.path.some((path: any) =>
                             String(path).toLowerCase().includes('email') ||
                             String(path).toLowerCase().includes('contact') ||
                             String(path).toLowerCase().includes('phone')

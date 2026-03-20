@@ -30,20 +30,13 @@ import {
   CheckIcon,
   ChevronsUpDownIcon,
   FileText,
-  Eye,
   Check,
   X,
-  Maximize,
-  Sparkles,
   AlertCircle,
   Loader2,
   Save,
-  ExternalLink,
   ChevronLeft,
   File,
-  Download,
-  Maximize2,
-  ReceiptEuroIcon,
 } from "lucide-react"
 import {
   Command,
@@ -251,6 +244,22 @@ type DocumentSelection = {
   }
 }
 
+type ProcessedDocument = {
+  documentType: string
+  fileId: string
+  status: string
+  player: string
+  message: string
+  newFileId?: string
+}
+
+type ReplaceResult = {
+  replacedDocuments: any[]
+  failedReplacements: any[]
+  deletedDocuments: any[]
+  success: boolean
+}
+
 const extractFileIdFromUrl = (url: string): string | null => {
   if (!url) return null
 
@@ -264,531 +273,50 @@ const extractFileIdFromUrl = (url: string): string | null => {
   return url
 }
 
-// const replaceDocumentsInDrive = async (
-//   existingDocuments: any[],
-//   newDocuments: any[],
-//   playerType: "player1" | "player2",
-//   documentSelection?: DocumentSelection,
-// ) => {
-//   try {
-//     const replacedDocuments: any[] = []
-//     const failedReplacements: any[] = []
+// Helper function to check file location
+const getFileLocation = async (fileId: string): Promise<'root' | 'entry_requirements' | 'requirements' | 'unknown'> => {
+  try {
+    console.log(`🔍 Checking location for file: ${fileId}`)
 
-//     if (documentSelection) {
-//       // Process based on document selection
-//       for (const [documentType, selection] of Object.entries(
-//         documentSelection,
-//       )) {
-//         const { selectedSource, existingDocs, newDocs } = selection
+    // Check if file is in requirements folder by public_id pattern or API
+    if (fileId.startsWith('requirements/')) {
+      console.log(`📁 File is in requirements folder (by path): ${fileId}`)
+      return 'requirements'
+    }
 
-//         if (selectedSource === "existing" && existingDocs) {
-//           // Keep existing document - no action needed for Google Drive
-//           continue
-//         }
+    if (fileId.startsWith('entry_requirements/')) {
+      console.log(`📁 File is in entry_requirements folder (by path): ${fileId}`)
+      return 'entry_requirements'
+    }
 
-//         if (selectedSource === "new" && newDocs) {
-//           const newFileId = extractFileIdFromUrl(newDocs[0].documentURL)
+    // If not in a known folder pattern, check via API
+    try {
+      const checkResponse = await fetch("/api/transfer/requirement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId }),
+      })
 
-//           if (!newFileId) {
-//             console.warn(
-//               `Could not extract file ID from new document: ${newDocs[0].documentURL}`,
-//             )
-//             failedReplacements.push({
-//               documentType,
-//               error: "Invalid file URL",
-//             })
-//             continue
-//           }
+      const checkResult = await checkResponse.json()
 
-//           if (existingDocs) {
-//             const oldFileId = extractFileIdFromUrl(existingDocs[0].documentURL)
+      if (checkResult.success) {
+        if (checkResult.isRequirement) {
+          console.log(`📁 File is in requirements folder (by API): ${fileId}`)
+          return 'requirements'
+        }
+      }
+    } catch (apiError) {
+      console.warn(`⚠️ API check failed, using path-based detection:`, apiError)
+    }
 
-//             if (oldFileId) {
-
-
-//               try {
-//                 const replaceResponse = await fetch("/api/transfer/replace", {
-//                   method: "POST",
-//                   headers: { "Content-Type": "application/json" },
-//                   body: JSON.stringify({
-//                     oldFileId,
-//                     newFileId,
-//                     documentType,
-//                     playerType,
-//                   }),
-//                 })
-
-//                 const replaceResult = await replaceResponse.json()
-
-//                 if (replaceResponse.ok && replaceResult.success) {
-//                   replacedDocuments.push({
-//                     documentType,
-//                     oldFileId,
-//                     newFileId: replaceResult.newFileId || newFileId,
-//                     status: "replaced",
-//                     action: replaceResult.action,
-//                     message: replaceResult.message,
-//                   })
-
-//                 } else {
-//                   console.error(
-//                     `❌ Failed to replace ${documentType}:`,
-//                     replaceResult.message,
-//                   )
-//                   failedReplacements.push({
-//                     documentType,
-//                     error: replaceResult.message,
-//                     fallback: true,
-//                   })
-
-//                   // Fallback: Try to move new document
-//                   try {
-//                     const moveResponse = await fetch(
-//                       "/api/transfer/entry_requirement",
-//                       {
-//                         method: "POST",
-//                         headers: { "Content-Type": "application/json" },
-//                         body: JSON.stringify({ fileId: newFileId }),
-//                       },
-//                     )
-
-//                     if (moveResponse.ok) {
-//                       replacedDocuments.push({
-//                         documentType,
-//                         oldFileId,
-//                         newFileId,
-//                         status: "moved_new_only",
-//                         action: "moved",
-//                         message:
-//                           "Replacement failed, moved new document instead",
-//                       })
-
-//                     }
-//                   } catch (moveError) {
-//                     console.error(`❌ Failed to move new document:`, moveError)
-//                   }
-//                 }
-//               } catch (replaceError: any) {
-//                 console.error(
-//                   `❌ Error replacing ${documentType}:`,
-//                   replaceError,
-//                 )
-//                 failedReplacements.push({
-//                   documentType,
-//                   error: replaceError?.message || "Unknown error",
-//                 })
-//               }
-//             } else {
-
-
-//               try {
-//                 const moveResponse = await fetch(
-//                   "/api/transfer/entry_requirement",
-//                   {
-//                     method: "POST",
-//                     headers: { "Content-Type": "application/json" },
-//                     body: JSON.stringify({ fileId: newFileId }),
-//                   },
-//                 )
-
-//                 if (moveResponse.ok) {
-//                   replacedDocuments.push({
-//                     documentType,
-//                     newFileId,
-//                     status: "added_new_no_old",
-//                     action: "added",
-//                     message: "No existing file found, added new document",
-//                   })
-//                   // console.log(`✅ Added new document: ${documentType}`)
-//                 }
-//               } catch (moveError) {
-//                 console.error(`❌ Error adding new document:`, moveError)
-//               }
-//             }
-//           } else {
-//             // No existing document, just move the new one
-//             try {
-//               const moveResponse = await fetch(
-//                 "/api/transfer/entry_requirement",
-//                 {
-//                   method: "POST",
-//                   headers: { "Content-Type": "application/json" },
-//                   body: JSON.stringify({ fileId: newFileId }),
-//                 },
-//               )
-
-//               if (moveResponse.ok) {
-//                 replacedDocuments.push({
-//                   documentType,
-//                   newFileId,
-//                   status: "added_new_type",
-//                   action: "added",
-//                   message: "Added new document type",
-//                 })
-//                 // console.log(`✅ Added new document type: ${documentType}`)
-//               }
-//             } catch (moveError) {
-//               console.error(
-//                 `❌ Error moving new document ${documentType}:`,
-//                 moveError,
-//               )
-//             }
-//           }
-//         }
-//       }
-//     } else {
-//       // Fallback: Old behavior - replace all documents
-//       for (const newDoc of newDocuments) {
-//         const newFileId = extractFileIdFromUrl(newDoc.documentURL)
-
-//         if (!newFileId) {
-//           console.warn(
-//             `Could not extract file ID from new document: ${newDoc.documentURL}`,
-//           )
-//           failedReplacements.push({
-//             documentType: newDoc.documentType,
-//             error: "Invalid file URL",
-//           })
-//           continue
-//         }
-
-//         const existingDoc = existingDocuments.find(
-//           (doc) => doc.documentType === newDoc.documentType,
-//         )
-
-//         if (existingDoc) {
-//           const oldFileId = extractFileIdFromUrl(existingDoc.documentURL)
-
-//           if (oldFileId) {
-//             // console.log(
-//             //   `🔄 Replacing ${existingDoc.documentType}: ${oldFileId} -> ${newFileId}`,
-//             // )
-
-//             try {
-//               const replaceResponse = await fetch("/api/transfer/replace", {
-//                 method: "POST",
-//                 headers: { "Content-Type": "application/json" },
-//                 body: JSON.stringify({
-//                   oldFileId,
-//                   newFileId,
-//                   documentType: newDoc.documentType,
-//                   playerType,
-//                 }),
-//               })
-
-//               const replaceResult = await replaceResponse.json()
-
-//               if (replaceResponse.ok && replaceResult.success) {
-//                 replacedDocuments.push({
-//                   documentType: newDoc.documentType,
-//                   oldFileId,
-//                   newFileId: replaceResult.newFileId || newFileId,
-//                   status: "replaced",
-//                   action: replaceResult.action,
-//                   message: replaceResult.message,
-//                 })
-//                 // console.log(
-//                 //   `✅ Successfully replaced in Google Drive: ${newDoc.documentType}`,
-//                 // )
-//               } else {
-//                 console.error(
-//                   `❌ Failed to replace ${newDoc.documentType}:`,
-//                   replaceResult.message,
-//                 )
-//                 failedReplacements.push({
-//                   documentType: newDoc.documentType,
-//                   error: replaceResult.message,
-//                   fallback: true,
-//                 })
-
-//                 try {
-//                   const moveResponse = await fetch(
-//                     "/api/transfer/entry_requirement",
-//                     {
-//                       method: "POST",
-//                       headers: { "Content-Type": "application/json" },
-//                       body: JSON.stringify({ fileId: newFileId }),
-//                     },
-//                   )
-
-//                   if (moveResponse.ok) {
-//                     replacedDocuments.push({
-//                       documentType: newDoc.documentType,
-//                       oldFileId,
-//                       newFileId,
-//                       status: "moved_new_only",
-//                       action: "moved",
-//                       message: "Replacement failed, moved new document instead",
-//                     })
-//                     // console.log(
-//                     //   `✅ Moved new document instead: ${newDoc.documentType}`,
-//                     // )
-//                   }
-//                 } catch (moveError) {
-//                   console.error(`❌ Failed to move new document:`, moveError)
-//                 }
-//               }
-//             } catch (replaceError: any) {
-//               console.error(
-//                 `❌ Error replacing ${newDoc.documentType}:`,
-//                 replaceError,
-//               )
-//               failedReplacements.push({
-//                 documentType: newDoc.documentType,
-//                 error: replaceError?.message || "Unknown error",
-//               })
-//             }
-//           } else {
-//             // console.log(
-//             //   `⚠️ Could not extract old file ID, moving new document...`,
-//             // )
-
-//             try {
-//               const moveResponse = await fetch(
-//                 "/api/transfer/entry_requirement",
-//                 {
-//                   method: "POST",
-//                   headers: { "Content-Type": "application/json" },
-//                   body: JSON.stringify({ fileId: newFileId }),
-//                 },
-//               )
-
-//               if (moveResponse.ok) {
-//                 replacedDocuments.push({
-//                   documentType: newDoc.documentType,
-//                   newFileId,
-//                   status: "added_new_no_old",
-//                   action: "added",
-//                   message: "No existing file found, added new document",
-//                 })
-//                 // console.log(`✅ Added new document: ${newDoc.documentType}`)
-//               }
-//             } catch (moveError) {
-//               console.error(`Error adding new document:`, moveError)
-//             }
-//           }
-//         } else {
-//           // No existing document of this type, just move the new one
-//           try {
-//             const moveResponse = await fetch(
-//               "/api/transfer/entry_requirement",
-//               {
-//                 method: "POST",
-//                 headers: { "Content-Type": "application/json" },
-//                 body: JSON.stringify({ fileId: newFileId }),
-//               },
-//             )
-
-//             if (moveResponse.ok) {
-//               replacedDocuments.push({
-//                 documentType: newDoc.documentType,
-//                 newFileId,
-//                 status: "added_new_type",
-//                 action: "added",
-//                 message: "Added new document type",
-//               })
-//               // console.log(`✅ Added new document type: ${newDoc.documentType}`)
-//             }
-//           } catch (moveError) {
-//             console.error(
-//               `Error moving new document ${newDoc.documentType}:`,
-//               moveError,
-//             )
-//           }
-//         }
-//       }
-//     }
-
-//     // console.log(
-//     //   `✅ Google Drive replacement completed for ${playerType}: ${replacedDocuments.length} documents processed`,
-//     // )
-
-//     return {
-//       replacedDocuments,
-//       failedReplacements,
-//       success: replacedDocuments.length > 0 || failedReplacements.length === 0,
-//     }
-//   } catch (error) {
-//     console.error(
-//       `❌ Error in replaceDocumentsInDrive for ${playerType}:`,
-//       error,
-//     )
-//     return {
-//       replacedDocuments: [],
-//       failedReplacements: [],
-//       success: false,
-//     }
-//   }
-// }
-
-// const checkAndMoveDocuments = async (
-//   entry: IEntry,
-//   connectedPlayer1?: any,
-//   connectedPlayer2?: any,
-//   documentSelections: {
-//     player1?: DocumentSelection
-//     player2?: DocumentSelection
-//   } = {},
-// ) => {
-//   try {
-//     const movedDocuments: any[] = []
-//     const replacedDocuments: any[] = []
-
-//     // Helper function to move documents
-//     const moveDocumentsToRequirements = async (docs: any[], player: string) => {
-//       for (const doc of docs) {
-//         const fileId = extractFileIdFromUrl(doc.documentURL)
-//         if (fileId) {
-//           try {
-//             // console.log(
-//             //   `📦 Moving ${doc.documentType} for ${player} from entry_requirement to requirements...`,
-//             // )
-
-//             const moveResponse = await fetch(
-//               "/api/transfer/entry_requirement",
-//               {
-//                 method: "POST",
-//                 headers: { "Content-Type": "application/json" },
-//                 body: JSON.stringify({ fileId }),
-//               },
-//             )
-
-//             if (moveResponse.ok) {
-//               movedDocuments.push({
-//                 documentType: doc.documentType,
-//                 fileId,
-//                 status: "moved",
-//                 player: player,
-//                 message: "Successfully moved to requirements folder",
-//               })
-//               // console.log(
-//               //   `✅ Successfully moved ${doc.documentType} for ${player}`,
-//               // )
-//             } else {
-//               console.error(
-//                 `Failed to move ${doc.documentType} for ${player}`,
-//               )
-//             }
-//           } catch (error) {
-//             console.error(
-//               `Error moving document ${doc.documentType}:`,
-//               error,
-//             )
-//           }
-//         }
-//       }
-//     }
-
-//     // Process Player 1 documents
-//     if (
-//       entry.player1Entry?.validDocuments &&
-//       entry.player1Entry.validDocuments.length > 0
-//     ) {
-//       const player1Docs = entry.player1Entry.validDocuments
-
-//       // Check if player has existing documents in the database
-//       const hasExistingPlayer1Docs =
-//         connectedPlayer1?.validDocuments?.length > 0
-
-//       if (hasExistingPlayer1Docs) {
-//         // REASSIGN CASE: First move the new documents, then handle replacement if needed
-//         // console.log(
-//         //   `🔄 Player 1 has existing documents - moving new documents first`,
-//         // )
-
-//         // Step 1: Move all new documents from entry_requirement to requirements
-//         await moveDocumentsToRequirements(player1Docs, "player1")
-
-//         // Step 2: If we have document selections, handle replacements
-//         if (documentSelections.player1) {
-//           // console.log(`🔄 Processing document selections for Player 1`)
-//           const player1Result = await replaceDocumentsInDrive(
-//             connectedPlayer1.validDocuments,
-//             player1Docs,
-//             "player1",
-//             documentSelections.player1,
-//           )
-//           replacedDocuments.push(...player1Result.replacedDocuments)
-
-//           if (player1Result.failedReplacements.length > 0) {
-//             console.warn(
-//               `⚠️ Some Player 1 documents failed to replace:`,
-//               player1Result.failedReplacements,
-//             )
-//           }
-//         }
-//       } else {
-//         // console.log(
-//         //   `📦 Player 1 has NO existing documents - moving documents directly`,
-//         // )
-//         await moveDocumentsToRequirements(player1Docs, "player1")
-//       }
-//     }
-
-//     // Process Player 2 documents
-//     if (
-//       entry.player2Entry?.validDocuments &&
-//       entry.player2Entry.validDocuments.length > 0
-//     ) {
-//       const player2Docs = entry.player2Entry.validDocuments
-
-//       // Check if player has existing documents in the database
-//       const hasExistingPlayer2Docs =
-//         connectedPlayer2?.validDocuments?.length > 0
-
-//       if (hasExistingPlayer2Docs) {
-//         // // REASSIGN CASE: First move the new documents, then handle replacement if needed
-//         // console.log(
-//         //   `🔄 Player 2 has existing documents - moving new documents first`,
-//         // )
-
-//         await moveDocumentsToRequirements(player2Docs, "player2")
-
-//         if (documentSelections.player2) {
-//           // console.log(`🔄 Processing document selections for Player 2`)
-//           const player2Result = await replaceDocumentsInDrive(
-//             connectedPlayer2.validDocuments,
-//             player2Docs,
-//             "player2",
-//             documentSelections.player2,
-//           )
-//           replacedDocuments.push(...player2Result.replacedDocuments)
-
-//           if (player2Result.failedReplacements.length > 0) {
-//             console.warn(
-//               `⚠️ Some Player 2 documents failed to replace:`,
-//               player2Result.failedReplacements,
-//             )
-//           }
-//         }
-//       } else {
-//         // console.log(
-//         //   `📦 Player 2 has NO existing documents - moving documents directly`,
-//         // )
-//         await moveDocumentsToRequirements(player2Docs, "player2")
-//       }
-//     }
-//     // console.log(`📊 Document processing completed:`)
-//     // console.log(`   - Moved: ${movedDocuments.length} documents`)
-//     // console.log(`   - Replaced: ${replacedDocuments.length} documents`)
-//     // console.log(
-//     //   `   - Total: ${movedDocuments.length + replacedDocuments.length} documents processed`,
-//     // )
-//     return {
-//       moved: movedDocuments,
-//       replaced: replacedDocuments,
-//       total: movedDocuments.length + replacedDocuments.length,
-//     }
-//   } catch (error) {
-//     console.error("❌ Error in checkAndMoveDocuments:", error)
-//     return {
-//       moved: [],
-//       replaced: [],
-//       total: 0,
-//     }
-//   }
-// }
-
+    // Default to root if no folder pattern matches
+    console.log(`📁 File appears to be in root folder: ${fileId}`)
+    return 'root'
+  } catch (error) {
+    console.error('Error checking file location:', error)
+    return 'unknown'
+  }
+}
 
 const replaceDocumentsInDrive = async (
   existingDocuments: any[],
@@ -796,14 +324,6 @@ const replaceDocumentsInDrive = async (
   playerType: "player1" | "player2",
   documentSelection?: DocumentSelection,
 ) => {
-  type ReplaceResult = {
-    replacedDocuments: any[]
-    failedReplacements: any[]
-    deletedDocuments: any[]
-    success: boolean
-  }
-
-
   try {
     const replacedDocuments: any[] = []
     const failedReplacements: any[] = []
@@ -1220,6 +740,140 @@ const replaceDocumentsInDrive = async (
   }
 }
 
+// Enhanced function to move documents with location detection
+const moveDocumentsToRequirements = async (docs: any[], player: string): Promise<ProcessedDocument[]> => {
+  const movedDocs: ProcessedDocument[] = []
+
+  for (const doc of docs) {
+    const fileId = extractFileIdFromUrl(doc.documentURL)
+    if (fileId) {
+      try {
+        console.log(
+          `📦 Processing ${doc.documentType} for ${player}...`,
+          { fileId }
+        )
+
+        // Step 1: Check where the file is located
+        const location = await getFileLocation(fileId)
+        console.log(`📍 File location for ${doc.documentType}:`, location)
+
+        // Step 2: Handle based on location
+        if (location === 'requirements') {
+          // File is already in requirements folder
+          console.log(`✅ File already in requirements folder: ${fileId}`)
+          movedDocs.push({
+            documentType: doc.documentType,
+            fileId,
+            status: "already_exists",
+            player: player,
+            message: "File already in requirements folder",
+            newFileId: fileId,
+          })
+          continue
+        }
+
+        if (location === 'entry_requirements') {
+          // File is in entry_requirements, move it to requirements
+          console.log(`📦 Moving from entry_requirements to requirements: ${fileId}`)
+
+          const moveResponse = await fetch("/api/transfer/entry_requirement", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileId }),
+          })
+
+          const moveResult = await moveResponse.json()
+
+          if (moveResponse.ok && moveResult.success) {
+            movedDocs.push({
+              documentType: doc.documentType,
+              fileId,
+              status: "moved",
+              player: player,
+              message: "Successfully moved to requirements folder",
+              newFileId: moveResult.newFileId || fileId,
+            })
+            console.log(`✅ Successfully moved ${doc.documentType} for ${player}`)
+          } else {
+            console.error(`Failed to move ${doc.documentType} for ${player}:`, moveResult.error)
+          }
+        } else if (location === 'root') {
+          // File is in root folder, copy it to requirements (and optionally delete original)
+          console.log(`📦 File in root folder, copying to requirements: ${fileId}`)
+
+          const copyResponse = await fetch("/api/transfer/copy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileId }),
+          })
+
+          const copyResult = await copyResponse.json()
+
+          if (copyResponse.ok && copyResult.success) {
+            movedDocs.push({
+              documentType: doc.documentType,
+              fileId,
+              status: "copied",
+              player: player,
+              message: "Copied from root to requirements folder",
+              newFileId: copyResult.copiedFileId,
+            })
+            console.log(`✅ Successfully copied ${doc.documentType} for ${player}`)
+
+            // Optionally delete the original file from root
+            try {
+              const deleteResponse = await fetch("/api/transfer/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  fileId,
+                  documentType: doc.documentType,
+                  playerType: player,
+                  reason: "original_in_root_copied_to_requirements"
+                }),
+              })
+
+              if (deleteResponse.ok) {
+                console.log(`✅ Deleted original file from root: ${fileId}`)
+              }
+            } catch (deleteError) {
+              console.warn(`⚠️ Could not delete original file from root:`, deleteError)
+            }
+          } else {
+            console.error(`Failed to copy ${doc.documentType} for ${player}:`, copyResult.error)
+          }
+        } else {
+          // Unknown location, try to copy as fallback
+          console.log(`⚠️ Unknown location for ${fileId}, attempting copy as fallback`)
+
+          const copyResponse = await fetch("/api/transfer/copy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileId }),
+          })
+
+          const copyResult = await copyResponse.json()
+
+          if (copyResponse.ok && copyResult.success) {
+            movedDocs.push({
+              documentType: doc.documentType,
+              fileId,
+              status: "copied_fallback",
+              player: player,
+              message: "Copied as fallback to requirements folder",
+              newFileId: copyResult.copiedFileId,
+            })
+            console.log(`✅ Successfully copied ${doc.documentType} as fallback`)
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing document ${doc.documentType}:`, error)
+      }
+    }
+  }
+  return movedDocs
+}
+
 const checkAndMoveDocuments = async (
   entry: IEntry,
   connectedPlayer1?: any,
@@ -1230,71 +884,9 @@ const checkAndMoveDocuments = async (
   } = {},
 ) => {
   try {
-    // Define types for the document objects
-    type ProcessedDocument = {
-      documentType: string
-      fileId: string
-      status: string
-      player: string
-      message: string
-      newFileId?: string
-    }
-
     const movedDocuments: ProcessedDocument[] = []
     const replacedDocuments: ProcessedDocument[] = []
     const deletedDocuments: ProcessedDocument[] = []
-
-    // Helper function to move documents with proper typing
-    const moveDocumentsToRequirements = async (docs: any[], player: string): Promise<ProcessedDocument[]> => {
-      const movedDocs: ProcessedDocument[] = []
-
-      for (const doc of docs) {
-        const fileId = extractFileIdFromUrl(doc.documentURL)
-        if (fileId) {
-          try {
-            console.log(
-              `📦 Moving ${doc.documentType} for ${player} to requirements folder...`,
-            )
-
-            const moveResponse = await fetch(
-              "/api/transfer/entry_requirement",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ fileId }),
-              },
-            )
-
-            const moveResult = await moveResponse.json()
-
-            if (moveResponse.ok && moveResult.success) {
-              movedDocs.push({
-                documentType: doc.documentType,
-                fileId,
-                status: "moved",
-                player: player,
-                message: "Successfully moved to requirements folder",
-                newFileId: moveResult.newFileId || fileId,
-              })
-              console.log(
-                `✅ Successfully moved ${doc.documentType} for ${player}`,
-              )
-            } else {
-              console.error(
-                `Failed to move ${doc.documentType} for ${player}:`,
-                moveResult.error
-              )
-            }
-          } catch (error) {
-            console.error(
-              `Error moving document ${doc.documentType}:`,
-              error,
-            )
-          }
-        }
-      }
-      return movedDocs
-    }
 
     // Process Player 1 documents
     if (
@@ -1312,7 +904,7 @@ const checkAndMoveDocuments = async (
           `🔄 Player 1 has existing documents - processing documents...`,
         )
 
-        // Step 1: Move all new documents from entry_requirement to requirements
+        // Step 1: Move all new documents to requirements folder
         const moved = await moveDocumentsToRequirements(player1Docs, "player1")
         movedDocuments.push(...moved)
 
@@ -1326,7 +918,6 @@ const checkAndMoveDocuments = async (
             documentSelections.player1,
           )
 
-          // Type assertion or proper typing for the results
           if (player1Result.replacedDocuments) {
             replacedDocuments.push(...player1Result.replacedDocuments)
           }
@@ -1489,25 +1080,10 @@ const DocumentSelectionDialog = ({
     source: "existing" | "new"
   } | null>(null)
 
-  // useEffect(() => {
-  //   console.log("Current selections:", selections)
-  // }, [selections])
-
   useEffect(() => {
     if (open) {
       const initialSelections: DocumentSelection = {}
 
-      // Combine all documents into one group (no grouping by type)
-      const combinedDocuments = [
-        ...existingDocuments.map((doc) => ({
-          ...doc,
-          source: "existing" as const,
-        })),
-        ...newDocuments.map((doc) => ({ ...doc, source: "new" as const })),
-      ]
-
-      // Create a single group for all documents
-      // You can customize this to create multiple groups if needed
       const groupId = "all-documents"
       initialSelections[groupId] = {
         selectedSource: "",
@@ -1538,44 +1114,32 @@ const DocumentSelectionDialog = ({
   const getFileType = (url: string): string => {
     if (!url) return "unknown"
 
-    const urlObj = new URL(url)
-    const pathname = urlObj.pathname
-    const searchParams = urlObj.searchParams
+    try {
+      const urlObj = new URL(url)
+      const pathname = urlObj.pathname
 
-    if (url.includes("drive.google.com")) {
-      return "googleDrive"
-    }
-
-    const pathParts = pathname.split(".")
-    if (pathParts.length > 1) {
-      const extension = pathParts.pop()?.toLowerCase() || ""
-
-      if (
-        ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(extension)
-      ) {
-        return "image"
-      } else if (["pdf"].includes(extension)) {
-        return "pdf"
-      } else if (["doc", "docx"].includes(extension)) {
-        return "doc"
-      } else if (["txt"].includes(extension)) {
-        return "text"
+      if (url.includes("drive.google.com")) {
+        return "googleDrive"
       }
-    }
 
-    if (searchParams.has("format") || searchParams.has("ext")) {
-      const format = searchParams.get("format") || searchParams.get("ext") || ""
-      const formatLower = format.toLowerCase()
+      const pathParts = pathname.split(".")
+      if (pathParts.length > 1) {
+        const extension = pathParts.pop()?.toLowerCase() || ""
 
-      if (
-        ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(
-          formatLower,
-        )
-      ) {
-        return "image"
-      } else if (formatLower === "pdf") {
-        return "pdf"
+        if (
+          ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(extension)
+        ) {
+          return "image"
+        } else if (["pdf"].includes(extension)) {
+          return "pdf"
+        } else if (["doc", "docx"].includes(extension)) {
+          return "doc"
+        } else if (["txt"].includes(extension)) {
+          return "text"
+        }
       }
+    } catch (e) {
+      console.error("Error parsing URL:", e)
     }
 
     return "image"
@@ -1616,7 +1180,6 @@ const DocumentSelectionDialog = ({
 
     return (
       <div className="relative w-110 h-95 rounded-lg overflow-hidden bg-gray-50 border">
-        {/* Small document type label at the top */}
         <div className="absolute top-2 left-2 right-2 z-10">
           <div className="bg-black/70 text-white text-xs font-medium px-2 py-1 rounded-md text-center backdrop-blur-sm">
             {documentTypeName}
@@ -1671,7 +1234,6 @@ const DocumentSelectionDialog = ({
     )
   }
 
-  // Calculate total documents for labeling
   const totalExisting = existingDocuments.length
   const totalNew = newDocuments.length
   const totalDocuments = totalExisting + totalNew
@@ -1753,7 +1315,6 @@ const DocumentSelectionDialog = ({
 
                   return (
                     <div key={groupId} className="space-y-4">
-                      {/* Radio Group Container - now shows all options together in flex-col */}
                       <div className="flex flex-col space-y-4 bg-gray-50 p-4 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="font-semibold text-base">
@@ -1859,9 +1420,7 @@ const DocumentSelectionDialog = ({
                         </RadioGroup>
                       </div>
 
-                      {/* Document Previews - side by side */}
                       <div className="grid grid-cols-2 gap-6">
-                        {/* Existing Documents Previews */}
                         {hasExisting && (
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
@@ -1886,7 +1445,6 @@ const DocumentSelectionDialog = ({
                           </div>
                         )}
 
-                        {/* New Documents Previews */}
                         {hasNew && (
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
@@ -1912,7 +1470,6 @@ const DocumentSelectionDialog = ({
                         )}
                       </div>
 
-                      {/* Selection Status */}
                       <div className="text-sm text-center pt-4">
                         {selection.selectedSource ? (
                           (() => {
@@ -2115,7 +1672,7 @@ const AssignDialog = (props: Props) => {
         birthDate: false,
         phoneNumber: false,
         email: false,
-        validDocuments: false, // Add this back for server-side handling
+        validDocuments: false,
       },
       migratePlayer2Data: {
         firstName: false,
@@ -2125,12 +1682,11 @@ const AssignDialog = (props: Props) => {
         birthDate: false,
         phoneNumber: false,
         email: false,
-        validDocuments: false, // Add this back for server-side handling
+        validDocuments: false,
       },
     },
     listeners: {
       onChange: ({ formApi, fieldApi }) => {
-        // Clear validation errors when user makes changes
         if (
           fieldApi.name.includes("connectedPlayer") ||
           fieldApi.name.includes("isPlayer")
@@ -2150,7 +1706,6 @@ const AssignDialog = (props: Props) => {
             email: false,
             validDocuments: false,
           })
-          // Clear document selections for player 1
           setDocumentSelections((prev) => ({ ...prev, player1: undefined }))
         }
 
@@ -2170,7 +1725,6 @@ const AssignDialog = (props: Props) => {
             email: false,
             validDocuments: false,
           })
-          // Clear document selections for player 2
           setDocumentSelections((prev) => ({ ...prev, player2: undefined }))
         }
         if (fieldApi.name === "connectedPlayer2" && fieldApi.state.value) {
@@ -2198,9 +1752,6 @@ const AssignDialog = (props: Props) => {
     onSubmit: ({ value: payload, formApi }) =>
       startTransition(async () => {
         try {
-          // console.log("🚀 Starting player assignment process...")
-          // console.log("📋 Form payload:", payload)
-
           const finalPayload = {
             ...payload,
           }
@@ -2247,8 +1798,6 @@ const AssignDialog = (props: Props) => {
                     duration: 5000,
                   })
                 }
-              } else {
-                // console.log("📭 No documents to process")
               }
             } catch (documentError: any) {
               toast.warning(
@@ -2258,8 +1807,6 @@ const AssignDialog = (props: Props) => {
                 },
               )
             }
-          } else {
-            // console.log("No entry data found for document processing")
           }
 
           const response: any = await assignPlayers({
@@ -2311,21 +1858,17 @@ const AssignDialog = (props: Props) => {
 
   const fetchPlayer1Suggestions = async () => {
     if (!entry?.player1Entry) {
-      // console.log("No player1Entry found")
       return
     }
 
     const { firstName, lastName, birthDate } = entry.player1Entry
-    // console.log("Player 1 Entry Data:", { firstName, lastName, birthDate })
 
     if (!firstName || !lastName || !birthDate) {
-      // console.log("Missing required fields for Player 1")
       return
     }
 
     setIsLoadingSuggestions1(true)
     try {
-      // console.log("Fetching suggestions for Player 1...")
       const { data, error } = await fetchSuggestions1({
         variables: {
           input: {
@@ -2337,8 +1880,6 @@ const AssignDialog = (props: Props) => {
         },
       })
 
-      // console.log("Player 1 Suggestions Response:", { data, error })
-      // console.log("Suggestions data:", data?.suggestPlayers)
       setSuggestedPlayers1(data?.suggestPlayers || [])
     } catch (error) {
       console.error("Error fetching suggestions for Player 1:", error)
@@ -2403,7 +1944,6 @@ const AssignDialog = (props: Props) => {
 
   const handleSaveDocumentSelections1 = (selections: DocumentSelection) => {
     setDocumentSelections((prev) => ({ ...prev, player1: selections }))
-    // Update the form value to indicate documents will be migrated
     form.setFieldValue("migratePlayer1Data.validDocuments", true)
     toast.success("Document selections saved for Player 1", {
       duration: 3000,
@@ -2412,7 +1952,6 @@ const AssignDialog = (props: Props) => {
 
   const handleSaveDocumentSelections2 = (selections: DocumentSelection) => {
     setDocumentSelections((prev) => ({ ...prev, player2: selections }))
-    // Update the form value to indicate documents will be migrated
     form.setFieldValue("migratePlayer2Data.validDocuments", true)
     toast.success("Document selections saved for Player 2", {
       duration: 3000,
@@ -2421,7 +1960,7 @@ const AssignDialog = (props: Props) => {
 
   const getPlayer1ExistingDocuments = (): DocumentInfo[] => {
     if (!player1?.validDocuments) return []
-    return player1.validDocuments.map((doc) => ({
+    return player1.validDocuments.map((doc: any) => ({
       documentType: doc.documentType,
       documentURL: doc.documentURL,
       dateUploaded: doc.dateUploaded,
@@ -2443,7 +1982,7 @@ const AssignDialog = (props: Props) => {
 
   const getPlayer2ExistingDocuments = (): DocumentInfo[] => {
     if (!player2?.validDocuments) return []
-    return player2.validDocuments.map((doc) => ({
+    return player2.validDocuments.map((doc: any) => ({
       documentType: doc.documentType,
       documentURL: doc.documentURL,
       dateUploaded: doc.dateUploaded,
@@ -2478,7 +2017,6 @@ const AssignDialog = (props: Props) => {
   }
 
   const handleFormSubmit = async () => {
-    // Clear previous validation errors
     setValidationErrors({})
 
     const needsPlayer1Selection =
@@ -2493,7 +2031,6 @@ const AssignDialog = (props: Props) => {
       hasPlayer2DocumentsToSelect() &&
       !documentSelections.player2
 
-    // If either player needs document selection, show those dialogs
     if (needsPlayer1Selection) {
       setShowDocumentSelection1(true)
       return
@@ -2501,7 +2038,6 @@ const AssignDialog = (props: Props) => {
       setShowDocumentSelection2(true)
       return
     } else {
-      // NEW VALIDATION: Check if both players are properly configured
       const player1Config = {
         isNew: form.getFieldValue("isPlayer1New"),
         connected: form.getFieldValue("connectedPlayer1"),
@@ -2516,7 +2052,6 @@ const AssignDialog = (props: Props) => {
         hasSelections: !!documentSelections.player2,
       }
 
-      // Validate Player 1
       if (!player1Config.isNew && !player1Config.connected) {
         toast.error("Please assign the Player 1 or mark as New Player", {
           duration: 3000,
@@ -2540,7 +2075,6 @@ const AssignDialog = (props: Props) => {
         return
       }
 
-      // Validate Player 2 only if player2Entry exists
       if (entry?.player2Entry) {
         if (!player2Config.isNew && !player2Config.connected) {
           toast.error("Please assign the Player 2 or mark as New Player", {
@@ -2566,153 +2100,8 @@ const AssignDialog = (props: Props) => {
         }
       }
 
-      // All validations passed, proceed with form submission
       form.handleSubmit()
     }
-  }
-
-  const getDocumentSelectionSummary = (selections?: DocumentSelection) => {
-    if (!selections) return null
-
-    const total = Object.keys(selections).length
-    const selectedNew = Object.values(selections).filter(
-      (s) => s.selectedSource === "new",
-    ).length
-    const selectedExisting = Object.values(selections).filter(
-      (s) => s.selectedSource === "existing",
-    ).length
-
-    return `${selectedNew} new, ${selectedExisting} existing`
-  }
-
-  const SuggestedPlayersSection = ({
-    suggestions,
-    isLoading,
-    onSelectPlayer,
-    playerType,
-  }: {
-    suggestions: any[]
-    isLoading: boolean
-    onSelectPlayer: (playerId: string) => void
-    playerType: "player1" | "player2"
-  }) => {
-    // console.log(`Rendering SuggestedPlayersSection for ${playerType}:`, {
-    //   isLoading,
-    //   suggestionsCount: suggestions.length,
-    //   suggestions,
-    // })
-
-    if (isLoading) {
-      return (
-        <div className="mb-4 p-3 border rounded-md bg-gray-50">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm text-gray-600">
-              Finding suggested players...
-            </span>
-          </div>
-        </div>
-      )
-    }
-
-    if (suggestions.length === 0) {
-      // console.log(`No suggestions for ${playerType}, returning null`)
-      return null
-    }
-
-    return (
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-medium">Suggested Players</h4>
-          <span className="text-xs text-gray-500">
-            Based on name and birthday match
-          </span>
-        </div>
-        <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-          {suggestions.map((player) => (
-            <div
-              key={player._id}
-              className="p-3 border rounded-md hover:bg-gray-50 cursor-pointer transition-colors"
-              onClick={() => onSelectPlayer(player._id)}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">
-                      {player.fullName}
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs",
-                        player.similarityScore >= 60
-                          ? "bg-green-50 text-green-700 border-green-200"
-                          : player.similarityScore >= 40
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-blue-50 text-blue-700 border-blue-200",
-                      )}
-                    >
-                      {player.similarityScore}% match
-                    </Badge>
-                  </div>
-                  <div className="mt-1 space-y-1">
-                    <div className="flex flex-wrap gap-1">
-                      {player.matchReasons.map(
-                        (reason: string, index: number) => (
-                          <Badge
-                            key={index}
-                            variant="secondary"
-                            className="text-xs py-0.5"
-                          >
-                            {reason}
-                          </Badge>
-                        ),
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500 space-y-0.5">
-                      <div>
-                        Birthday: {format(new Date(player.birthDate), "PP")}
-                      </div>
-                      {player.email && <div>Email: {player.email}</div>}
-                      {player.phoneNumber && (
-                        <div>Phone: {player.phoneNumber}</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onSelectPlayer(player._id)
-                  }}
-                >
-                  Select
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-2 text-xs text-gray-500 flex items-center gap-1">
-          <AlertCircle className="h-3 w-3" />
-          <span>
-            Click on a suggestion to auto-fill the player selection below
-          </span>
-        </div>
-      </div>
-    )
-  }
-
-  const hasSuggestionsForCurrentTab = (tab: string) => {
-    if (tab === "player1") {
-      const isNewPlayer = form.getFieldValue("isPlayer1New")
-      return !isNewPlayer && suggestedPlayers1.length > 0
-    } else if (tab === "player2") {
-      const isNewPlayer = form.getFieldValue("isPlayer2New")
-      return !isNewPlayer && suggestedPlayers2.length > 0
-    }
-    return false
   }
 
   const renderTabContent = (tab: "player1" | "player2") => {
@@ -2843,11 +2232,6 @@ const AssignDialog = (props: Props) => {
                               <p className="text-sm font-medium text-blue-800">
                                 Document selections saved
                               </p>
-                              {/* <p className="text-xs text-blue-600">
-                                {getDocumentSelectionSummary(
-                                  tab === 'player1' ? documentSelections.player1 : documentSelections.player2
-                                )} documents selected
-                              </p> */}
                             </div>
                           </div>
                           <Button
@@ -3916,7 +3300,6 @@ const AssignDialog = (props: Props) => {
           }}
         />
 
-        {/* Document Selection for normal layout */}
         {!form.getFieldValue(
           `is${tab === "player1" ? "Player1" : "Player2"}New`,
         ) &&
@@ -3970,13 +3353,6 @@ const AssignDialog = (props: Props) => {
                         <p className="text-sm font-medium text-blue-800">
                           Document selections saved
                         </p>
-                        {/* <p className="text-xs text-blue-600">
-                          {getDocumentSelectionSummary(
-                            tab === 'player1'
-                              ? documentSelections.player1
-                              : documentSelections.player2
-                          )} documents selected
-                        </p> */}
                       </div>
                     </div>
 
@@ -4014,7 +3390,6 @@ const AssignDialog = (props: Props) => {
             </div>
           )}
 
-        {/* Loading indicator for suggestions - only show when not a new player */}
         {!form.getFieldValue(
           `is${tab === "player1" ? "Player1" : "Player2"}New`,
         ) &&
@@ -4029,7 +3404,6 @@ const AssignDialog = (props: Props) => {
             </div>
           )}
 
-        {/* Suggestions - only show when not a new player AND we have suggestions */}
         {!form.getFieldValue(
           `is${tab === "player1" ? "Player1" : "Player2"}New`,
         ) &&
@@ -4301,7 +3675,6 @@ const AssignDialog = (props: Props) => {
                           },
                         )
                         if (checked) {
-                          // If checking all, show document selection dialog
                           setTimeout(() => {
                             tab === "player1"
                               ? handleDocumentSelection1()
@@ -4340,7 +3713,6 @@ const AssignDialog = (props: Props) => {
                   </div>
                 </div>
 
-                {/* Migration Fields */}
                 <div>
                   <form.Field
                     name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.firstName`}

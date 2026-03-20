@@ -569,7 +569,7 @@ const Page = () => {
           return (
             <div className="flex items-start gap-7 min-w-[140px]">
               <div className="flex flex-col items-start gap-1">
-                {entryBalances.map((item, idx) => (
+                {entryBalances.map((item: any, idx: any) => (
                   <div key={idx} className="flex items-center gap-2 text-[13px]">
                     <span className="text-gray-600 font-mono">{item.entryNumber}:</span>
                     {item.balance < 0 ? (
