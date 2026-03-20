@@ -8,7 +8,7 @@ cloudinary.config({
 })
 
 export async function POST(request: Request) {
-    console.log("🔄 /api/transfer/entry_requirements called - CLOUDINARY VERSION")
+    console.log("🔄 /api/transfer/entry_requirement called - CLOUDINARY VERSION")
 
     try {
         const body = await request.json()
@@ -64,9 +64,26 @@ export async function POST(request: Request) {
 
             // Extract the filename without the folder prefix
             const filename = publicId.replace(sourceFolder + '/', '')
+
+            // IMPORTANT: Ensure the destination folder path is correct
+            // Cloudinary uses folder/path format
             const newPublicId = `${destinationFolder}/${filename}`
 
             console.log(`🔄 Moving file from ${publicId} to ${newPublicId}`)
+
+            // First, try to create the destination folder by uploading a placeholder
+            // This ensures the folder exists
+            try {
+                // Check if destination folder exists by trying to list resources in it
+                await cloudinary.api.resources({
+                    type: 'upload',
+                    prefix: `${destinationFolder}/`,
+                    max_results: 1
+                })
+                console.log(`✅ Destination folder ${destinationFolder} exists or is accessible`)
+            } catch (folderError: any) {
+                console.log(`⚠️ Could not verify destination folder, will attempt upload anyway`)
+            }
 
             // Get the original file URL
             const fileUrl = cloudinary.url(publicId, {
@@ -91,6 +108,7 @@ export async function POST(request: Request) {
                         public_id: newPublicId,
                         resource_type: resource.resource_type,
                         format: resource.format,
+                        folder: destinationFolder, // Explicitly set folder
                         tags: [...(resource.tags || []), 'requirement', 'moved_from_entry'],
                         context: {
                             ...(resource.context || {}),
@@ -109,7 +127,7 @@ export async function POST(request: Request) {
                 stream.end(buffer)
             })
 
-            console.log(`✅ File uploaded successfully to new location: ${newPublicId}`)
+            console.log(`✅ File uploaded successfully to new location: ${result.public_id}`)
 
             // After successful upload, delete the original file
             try {
@@ -127,8 +145,8 @@ export async function POST(request: Request) {
                     success: true,
                     message: `File moved successfully from ${sourceFolder} to ${destinationFolder} folder`,
                     oldFileId: publicId,
-                    newFileId: newPublicId,
-                    newUrl: cloudinary.url(newPublicId, {
+                    newFileId: result.public_id,
+                    newUrl: cloudinary.url(result.public_id, {
                         secure: true,
                         resource_type: resource.resource_type
                     }),

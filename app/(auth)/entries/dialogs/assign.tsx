@@ -204,6 +204,15 @@ const SUGGEST_PLAYERS = gql`
   }
 `
 
+const UPDATE_DOCUMENT_URLS = gql`
+  mutation UpdateEntryDocumentUrls($input: UpdateDocumentUrlsInput!) {
+    updateEntryDocumentUrls(input: $input) {
+      ok
+      message
+    }
+  }
+`
+
 type SuggestPlayer = {
   _id: string
   fullName: string
@@ -251,8 +260,9 @@ type ProcessedDocument = {
   player: string
   message: string
   newFileId?: string
+  oldUrl?: string
+  newUrl?: string
 }
-
 type ReplaceResult = {
   replacedDocuments: any[]
   failedReplacements: any[]
@@ -759,6 +769,8 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
             player: player,
             message: "File already in requirement folder",
             newFileId: fileId,
+            oldUrl: doc.documentURL,
+            newUrl: doc.documentURL, // URL unchanged
           })
           continue
         }
@@ -775,6 +787,9 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
           const moveResult = await moveResponse.json()
 
           if (moveResponse.ok && moveResult.success) {
+            // Construct URL without cloudinary object
+            const newUrl = moveResult.newUrl || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dqjcswchm'}/image/upload/${moveResult.newFileId}`
+
             movedDocs.push({
               documentType: doc.documentType,
               fileId,
@@ -782,13 +797,16 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
               player: player,
               message: "Successfully moved to requirement folder",
               newFileId: moveResult.newFileId || fileId,
+              oldUrl: doc.documentURL,
+              newUrl: newUrl,
             })
             console.log(`✅ Successfully moved ${doc.documentType} for ${player}`)
+            console.log(`   Old URL: ${doc.documentURL}`)
+            console.log(`   New URL: ${newUrl}`)
           } else {
             console.error(`Failed to move ${doc.documentType} for ${player}:`, moveResult.error)
           }
         } else if (location === 'root') {
-          // File is in root folder, copy it to requirement (and optionally delete original)
           console.log(`📦 File in root folder, copying to requirement: ${fileId}`)
 
           const copyResponse = await fetch("/api/transfer/copy", {
@@ -800,6 +818,8 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
           const copyResult = await copyResponse.json()
 
           if (copyResponse.ok && copyResult.success) {
+            const newUrl = copyResult.newUrl || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dqjcswchm'}/image/upload/${copyResult.copiedFileId}`
+
             movedDocs.push({
               documentType: doc.documentType,
               fileId,
@@ -807,6 +827,8 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
               player: player,
               message: "Copied from root to requirement folder",
               newFileId: copyResult.copiedFileId,
+              oldUrl: doc.documentURL,
+              newUrl: newUrl,
             })
             console.log(`✅ Successfully copied ${doc.documentType} for ${player}`)
 
@@ -833,7 +855,6 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
             console.error(`Failed to copy ${doc.documentType} for ${player}:`, copyResult.error)
           }
         } else {
-          // Unknown location, try to copy as fallback
           console.log(`⚠️ Unknown location for ${fileId}, attempting copy as fallback`)
 
           const copyResponse = await fetch("/api/transfer/copy", {
@@ -845,6 +866,8 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
           const copyResult = await copyResponse.json()
 
           if (copyResponse.ok && copyResult.success) {
+            const newUrl = copyResult.newUrl || `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dqjcswchm'}/image/upload/${copyResult.copiedFileId}`
+
             movedDocs.push({
               documentType: doc.documentType,
               fileId,
@@ -852,6 +875,8 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
               player: player,
               message: "Copied as fallback to requirement folder",
               newFileId: copyResult.copiedFileId,
+              oldUrl: doc.documentURL,
+              newUrl: newUrl,
             })
             console.log(`✅ Successfully copied ${doc.documentType} as fallback`)
           }
@@ -878,6 +903,9 @@ const checkAndMoveDocuments = async (
     const replacedDocuments: ProcessedDocument[] = []
     const deletedDocuments: ProcessedDocument[] = []
 
+    // Track URL changes to update in the database
+    const urlUpdates: { oldUrl: string; newUrl: string; documentType: string; player: string }[] = []
+
     // Process Player 1 documents
     if (
       entry.player1Entry?.validDocuments &&
@@ -894,9 +922,25 @@ const checkAndMoveDocuments = async (
           `🔄 Player 1 has existing documents - processing documents...`,
         )
 
-        // Step 1: Move all new documents to requirements folder
+        // Step 1: Move all new documents to requirement folder
         const moved = await moveDocumentsToRequirements(player1Docs, "player1")
         movedDocuments.push(...moved)
+
+        // Record URL changes from moved documents
+        moved.forEach(doc => {
+          if (doc.newUrl && doc.newUrl !== doc.oldUrl) {
+            urlUpdates.push({
+              oldUrl: doc.oldUrl!,
+              newUrl: doc.newUrl!,
+              documentType: doc.documentType,
+              player: 'player1'
+            })
+            console.log(`📝 URL update needed for ${doc.documentType}:`, {
+              old: doc.oldUrl,
+              new: doc.newUrl
+            })
+          }
+        })
 
         // Step 2: If we have document selections, handle replacements and deletions
         if (documentSelections.player1) {
@@ -910,6 +954,21 @@ const checkAndMoveDocuments = async (
 
           if (player1Result.replacedDocuments) {
             replacedDocuments.push(...player1Result.replacedDocuments)
+            // Record URL changes from replaced documents
+            player1Result.replacedDocuments.forEach((doc: any) => {
+              if (doc.newUrl && doc.oldUrl && doc.newUrl !== doc.oldUrl) {
+                urlUpdates.push({
+                  oldUrl: doc.oldUrl,
+                  newUrl: doc.newUrl,
+                  documentType: doc.documentType,
+                  player: 'player1'
+                })
+                console.log(`📝 Replacement URL update for ${doc.documentType}:`, {
+                  old: doc.oldUrl,
+                  new: doc.newUrl
+                })
+              }
+            })
           }
 
           if (player1Result.deletedDocuments) {
@@ -933,6 +992,21 @@ const checkAndMoveDocuments = async (
 
           if (player1Result.replacedDocuments) {
             replacedDocuments.push(...player1Result.replacedDocuments)
+            // Record URL changes from replaced documents
+            player1Result.replacedDocuments.forEach((doc: any) => {
+              if (doc.newUrl && doc.oldUrl && doc.newUrl !== doc.oldUrl) {
+                urlUpdates.push({
+                  oldUrl: doc.oldUrl,
+                  newUrl: doc.newUrl,
+                  documentType: doc.documentType,
+                  player: 'player1'
+                })
+                console.log(`📝 Replacement URL update for ${doc.documentType}:`, {
+                  old: doc.oldUrl,
+                  new: doc.newUrl
+                })
+              }
+            })
           }
 
           if (player1Result.failedReplacements?.length > 0) {
@@ -948,6 +1022,22 @@ const checkAndMoveDocuments = async (
         )
         const moved = await moveDocumentsToRequirements(player1Docs, "player1")
         movedDocuments.push(...moved)
+
+        // Record URL changes for new player
+        moved.forEach(doc => {
+          if (doc.newUrl && doc.newUrl !== doc.oldUrl) {
+            urlUpdates.push({
+              oldUrl: doc.oldUrl!,
+              newUrl: doc.newUrl!,
+              documentType: doc.documentType,
+              player: 'player1'
+            })
+            console.log(`📝 URL update needed for new player ${doc.documentType}:`, {
+              old: doc.oldUrl,
+              new: doc.newUrl
+            })
+          }
+        })
       }
     }
 
@@ -970,6 +1060,22 @@ const checkAndMoveDocuments = async (
         const moved = await moveDocumentsToRequirements(player2Docs, "player2")
         movedDocuments.push(...moved)
 
+        // Record URL changes from moved documents
+        moved.forEach(doc => {
+          if (doc.newUrl && doc.newUrl !== doc.oldUrl) {
+            urlUpdates.push({
+              oldUrl: doc.oldUrl!,
+              newUrl: doc.newUrl!,
+              documentType: doc.documentType,
+              player: 'player2'
+            })
+            console.log(`📝 URL update needed for ${doc.documentType}:`, {
+              old: doc.oldUrl,
+              new: doc.newUrl
+            })
+          }
+        })
+
         if (documentSelections.player2) {
           console.log(`🔄 Processing document selections for Player 2`)
           const player2Result = await replaceDocumentsInDrive(
@@ -981,6 +1087,21 @@ const checkAndMoveDocuments = async (
 
           if (player2Result.replacedDocuments) {
             replacedDocuments.push(...player2Result.replacedDocuments)
+            // Record URL changes from replaced documents
+            player2Result.replacedDocuments.forEach((doc: any) => {
+              if (doc.newUrl && doc.oldUrl && doc.newUrl !== doc.oldUrl) {
+                urlUpdates.push({
+                  oldUrl: doc.oldUrl,
+                  newUrl: doc.newUrl,
+                  documentType: doc.documentType,
+                  player: 'player2'
+                })
+                console.log(`📝 Replacement URL update for ${doc.documentType}:`, {
+                  old: doc.oldUrl,
+                  new: doc.newUrl
+                })
+              }
+            })
           }
 
           if (player2Result.deletedDocuments) {
@@ -1003,6 +1124,21 @@ const checkAndMoveDocuments = async (
 
           if (player2Result.replacedDocuments) {
             replacedDocuments.push(...player2Result.replacedDocuments)
+            // Record URL changes from replaced documents
+            player2Result.replacedDocuments.forEach((doc: any) => {
+              if (doc.newUrl && doc.oldUrl && doc.newUrl !== doc.oldUrl) {
+                urlUpdates.push({
+                  oldUrl: doc.oldUrl,
+                  newUrl: doc.newUrl,
+                  documentType: doc.documentType,
+                  player: 'player2'
+                })
+                console.log(`📝 Replacement URL update for ${doc.documentType}:`, {
+                  old: doc.oldUrl,
+                  new: doc.newUrl
+                })
+              }
+            })
           }
 
           if (player2Result.failedReplacements?.length > 0) {
@@ -1018,6 +1154,22 @@ const checkAndMoveDocuments = async (
         )
         const moved = await moveDocumentsToRequirements(player2Docs, "player2")
         movedDocuments.push(...moved)
+
+        // Record URL changes for new player
+        moved.forEach(doc => {
+          if (doc.newUrl && doc.newUrl !== doc.oldUrl) {
+            urlUpdates.push({
+              oldUrl: doc.oldUrl!,
+              newUrl: doc.newUrl!,
+              documentType: doc.documentType,
+              player: 'player2'
+            })
+            console.log(`📝 URL update needed for new player ${doc.documentType}:`, {
+              old: doc.oldUrl,
+              new: doc.newUrl
+            })
+          }
+        })
       }
     }
 
@@ -1025,14 +1177,23 @@ const checkAndMoveDocuments = async (
     console.log(`   - Moved: ${movedDocuments.length} documents`)
     console.log(`   - Replaced: ${replacedDocuments.length} documents`)
     console.log(`   - Deleted: ${deletedDocuments.length} documents`)
-    console.log(
-      `   - Total: ${movedDocuments.length + replacedDocuments.length + deletedDocuments.length} documents processed`,
-    )
+    console.log(`   - URL updates needed: ${urlUpdates.length} documents`)
+
+    // Log all URL updates for debugging
+    if (urlUpdates.length > 0) {
+      console.log(`📝 URL updates to apply:`)
+      urlUpdates.forEach(update => {
+        console.log(`   - ${update.player}: ${update.documentType}`)
+        console.log(`     Old: ${update.oldUrl}`)
+        console.log(`     New: ${update.newUrl}`)
+      })
+    }
 
     return {
       moved: movedDocuments,
       replaced: replacedDocuments,
       deleted: deletedDocuments,
+      urlUpdates, // Return URL updates to be applied
       total: movedDocuments.length + replacedDocuments.length + deletedDocuments.length,
     }
   } catch (error) {
@@ -1041,6 +1202,7 @@ const checkAndMoveDocuments = async (
       moved: [],
       replaced: [],
       deleted: [],
+      urlUpdates: [],
       total: 0,
     }
   }
@@ -1609,6 +1771,7 @@ const AssignDialog = (props: Props) => {
 
   const [assignPlayers, { loading: assignLoading }] =
     useMutation(ASSIGN_PLAYERS)
+  const [updateDocumentUrls] = useMutation(UPDATE_DOCUMENT_URLS)
   const { data, loading: entryLoading }: any = useQuery(ENTRY, {
     variables: { _id: props._id },
     skip: !open || !Boolean(props._id),
@@ -1739,12 +1902,121 @@ const AssignDialog = (props: Props) => {
         }
       },
     },
+    // Before sa naay updateEntryDocumentUrls in March 20, 2026
+    // onSubmit: ({ value: payload, formApi }) =>
+    //   startTransition(async () => {
+    //     try {
+    //       const finalPayload = {
+    //         ...payload,
+    //       }
+
+    //       if (entry) {
+    //         try {
+    //           const documentResult = await checkAndMoveDocuments(
+    //             entry,
+    //             player1,
+    //             player2,
+    //             documentSelections,
+    //           )
+
+    //           if (documentResult.total > 0) {
+    //             const messages: string[] = []
+
+    //             if (documentResult.replaced.length > 0) {
+    //               messages.push(
+    //                 `Replaced ${documentResult.replaced.length} document(s)`,
+    //               )
+    //             }
+
+    //             if (documentResult.moved.length > 0) {
+    //               const movedCount = documentResult.moved.filter(
+    //                 (d) => d.status !== "already_exists",
+    //               ).length
+    //               const alreadyExistsCount = documentResult.moved.filter(
+    //                 (d) => d.status === "already_exists",
+    //               ).length
+
+    //               if (movedCount > 0) {
+    //                 messages.push(`Added ${movedCount} new document(s)`)
+    //               }
+
+    //               if (alreadyExistsCount > 0) {
+    //                 messages.push(
+    //                   `${alreadyExistsCount} document(s) already in requirement folder`,
+    //                 )
+    //               }
+    //             }
+
+    //             if (messages.length > 0) {
+    //               toast.success(`Documents processed: ${messages.join(", ")}`, {
+    //                 duration: 5000,
+    //               })
+    //             }
+    //           }
+    //         } catch (documentError: any) {
+    //           toast.warning(
+    //             "Some documents could not be processed, but players will still be assigned",
+    //             {
+    //               duration: 4000,
+    //             },
+    //           )
+    //         }
+    //       }
+
+    //       const response: any = await assignPlayers({
+    //         variables: {
+    //           input: finalPayload,
+    //         },
+    //       })
+
+    //       if (response?.data?.assignPlayers?.ok) {
+    //         onClose()
+
+    //         toast.success(
+    //           response.data.assignPlayers.message ||
+    //           "Players assigned successfully",
+    //           {
+    //             duration: 3000,
+    //           },
+    //         )
+    //       } else {
+    //         toast.error(
+    //           response?.data?.assignPlayers?.message ||
+    //           "Failed to assign players",
+    //           {
+    //             duration: 3000,
+    //           },
+    //         )
+    //       }
+    //     } catch (error: any) {
+    //       toast.error(error.message || "Failed to assign players", {
+    //         duration: 3000,
+    //       })
+
+    //       if (error.name == "CombinedGraphQLErrors") {
+    //         const fieldErrors = error.errors[0]?.extensions?.fields
+    //         if (fieldErrors) {
+    //           fieldErrors.map(
+    //             ({ path, message }: { path: string; message: string }) =>
+    //               formApi.fieldInfo[
+    //                 path as keyof typeof formApi.fieldInfo
+    //               ].instance?.setErrorMap({
+    //                 onSubmit: { message },
+    //               }),
+    //           )
+    //         }
+    //       }
+    //     }
+    //   }),
+
     onSubmit: ({ value: payload, formApi }) =>
       startTransition(async () => {
         try {
           const finalPayload = {
             ...payload,
           }
+
+          let urlUpdates: any[] = []
 
           if (entry) {
             try {
@@ -1754,6 +2026,9 @@ const AssignDialog = (props: Props) => {
                 player2,
                 documentSelections,
               )
+
+              // Store URL updates from the document processing
+              urlUpdates = documentResult.urlUpdates || []
 
               if (documentResult.total > 0) {
                 const messages: string[] = []
@@ -1790,6 +2065,7 @@ const AssignDialog = (props: Props) => {
                 }
               }
             } catch (documentError: any) {
+              console.error("Document processing error:", documentError)
               toast.warning(
                 "Some documents could not be processed, but players will still be assigned",
                 {
@@ -1799,6 +2075,7 @@ const AssignDialog = (props: Props) => {
             }
           }
 
+          // First assign players
           const response: any = await assignPlayers({
             variables: {
               input: finalPayload,
@@ -1806,6 +2083,49 @@ const AssignDialog = (props: Props) => {
           })
 
           if (response?.data?.assignPlayers?.ok) {
+            // After successful assignment, update document URLs if needed
+            if (urlUpdates && urlUpdates.length > 0) {
+              console.log(`📝 Updating ${urlUpdates.length} document URLs in database...`)
+
+              try {
+                // Prepare the updates for the mutation
+                const updatesForMutation = urlUpdates.map((update: any) => ({
+                  documentType: update.documentType,
+                  oldUrl: update.oldUrl,
+                  newUrl: update.newUrl,
+                  playerType: update.player,
+                }))
+
+                const urlUpdateResult = await updateDocumentUrls({
+                  variables: {
+                    input: {
+                      entryId: entry?._id,
+                      player1Id: player1?._id || null,
+                      player2Id: player2?._id || null,
+                      updates: updatesForMutation,
+                    },
+                  },
+                })
+
+                if ((urlUpdateResult.data as any)?.updateEntryDocumentUrls?.ok) {
+                  toast.success(`Updated ${urlUpdates.length} document URL(s)`, {
+                    duration: 3000,
+                  })
+                  console.log(`✅ Successfully updated ${urlUpdates.length} document URLs`)
+                } else {
+                  console.warn("Failed to update document URLs:", urlUpdateResult)
+                  toast.warning("Document URLs could not be updated", {
+                    duration: 4000,
+                  })
+                }
+              } catch (urlError) {
+                console.error("Error updating document URLs:", urlError)
+                toast.warning("Players assigned but document URLs could not be updated", {
+                  duration: 4000,
+                })
+              }
+            }
+
             onClose()
 
             toast.success(
@@ -1825,6 +2145,7 @@ const AssignDialog = (props: Props) => {
             )
           }
         } catch (error: any) {
+          console.error("Assignment error:", error)
           toast.error(error.message || "Failed to assign players", {
             duration: 3000,
           })
