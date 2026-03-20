@@ -2,7 +2,13 @@
 import { Label } from "@/components/ui/label"
 import { useAuthStore } from "@/store/auth.store"
 import Image from "next/image"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -14,10 +20,48 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CalendarDays, Trophy, Users, TrendingUp, Activity, Bell, Settings, ChevronRight, Clock, DollarSign, Medal, Target, Zap, History, PiIcon, User, BarChart3, TrendingDown, TrendingUp as TrendUp, FileText, CheckCircle, XCircle, AlertCircle, Crown, Award, Star, LayoutGrid, RefreshCw } from "lucide-react"
+import {
+  CalendarDays,
+  Trophy,
+  Users,
+  TrendingUp,
+  Activity,
+  Bell,
+  Settings,
+  ChevronRight,
+  Clock,
+  DollarSign,
+  Medal,
+  Target,
+  Zap,
+  History,
+  PiIcon,
+  User,
+  BarChart3,
+  TrendingDown,
+  TrendingUp as TrendUp,
+  FileText,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Crown,
+  Award,
+  Star,
+  LayoutGrid,
+  RefreshCw,
+} from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { gql } from "@apollo/client"
-import { formatDistanceToNow, format, startOfMonth, endOfMonth, subMonths, eachMonthOfInterval, startOfYear, endOfYear } from "date-fns"
+import {
+  formatDistanceToNow,
+  format,
+  startOfMonth,
+  endOfMonth,
+  subMonths,
+  eachMonthOfInterval,
+  startOfYear,
+  endOfYear,
+} from "date-fns"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -202,7 +246,7 @@ const PAYMENT_CHANGED = gql`
   subscription PaymentChanged {
     paymentChanged {
       type
-       payment {
+      payment {
         _id
         payerName
         referenceNumber
@@ -431,7 +475,9 @@ interface EventEntryCount {
 
 const Page = () => {
   const user = useAuthStore((state) => state.user)
-  const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"))
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    format(new Date(), "yyyy-MM"),
+  )
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -443,27 +489,45 @@ const Page = () => {
   const prevEntriesCount = useRef(0)
   const prevPaymentsCount = useRef(0)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
-  const { data: logsData, loading: logsLoading, refetch: refetchLogs } = useQuery<ILogsResponse>(RECENT_LOGS, {
+  const {
+    data: logsData,
+    loading: logsLoading,
+    refetch: refetchLogs,
+  } = useQuery<ILogsResponse>(RECENT_LOGS, {
     variables: { first: 10 },
     fetchPolicy: "network-only",
   })
 
-  const { data: tournamentsData, loading: tournamentsLoading } = useQuery<ITournamentsResponse>(UPCOMING_DEADLINES, {
-    variables: { first: 10 },
-    fetchPolicy: "network-only",
-  })
+  const { data: tournamentsData, loading: tournamentsLoading } =
+    useQuery<ITournamentsResponse>(UPCOMING_DEADLINES, {
+      variables: { first: 10 },
+      fetchPolicy: "network-only",
+    })
 
-  const { data: entriesPaymentData, loading: entriesPaymentLoading } = useQuery(PAYMENT_OVERVIEW_FROM_ENTRIES, {
+  const { data: entriesPaymentData, loading: entriesPaymentLoading } = useQuery(
+    PAYMENT_OVERVIEW_FROM_ENTRIES,
+    {
+      variables: { first: 1000 },
+      fetchPolicy: "network-only",
+    },
+  )
+
+  const {
+    data: paymentsData,
+    loading: paymentsLoading,
+    subscribeToMore: subscribeToMorePayments,
+    refetch: refetchPayments,
+  } = useQuery<IPaymentsResponse>(PAYMENT_OVERVIEW, {
     variables: { first: 1000 },
     fetchPolicy: "network-only",
   })
 
-  const { data: paymentsData, loading: paymentsLoading, subscribeToMore: subscribeToMorePayments, refetch: refetchPayments } = useQuery<IPaymentsResponse>(PAYMENT_OVERVIEW, {
-    variables: { first: 1000 },
-    fetchPolicy: "network-only",
-  })
-
-  const { data: entriesData, loading: entriesLoading, subscribeToMore: subscribeToMoreEntries, refetch: refetchEntries } = useQuery<IEntriesResponse>(ENTRIES_OVERVIEW, {
+  const {
+    data: entriesData,
+    loading: entriesLoading,
+    subscribeToMore: subscribeToMoreEntries,
+    refetch: refetchEntries,
+  } = useQuery<IEntriesResponse>(ENTRIES_OVERVIEW, {
     variables: { first: 1000 },
     fetchPolicy: "network-only",
   })
@@ -490,7 +554,7 @@ const Page = () => {
               duration: 5000,
             })
 
-            setNewEntriesCount(prev => prev + 1)
+            setNewEntriesCount((prev) => prev + 1)
             setShowRefreshIndicator(true)
             setTimeout(() => setShowRefreshIndicator(false), 5000)
             setLastUpdated(new Date())
@@ -519,15 +583,18 @@ const Page = () => {
 
                 const newTransactions = verifiedEntry.transactions || []
 
-                const mergedTransactions = newTransactions.length > 0 ? newTransactions : existingTransactions
+                const mergedTransactions =
+                  newTransactions.length > 0
+                    ? newTransactions
+                    : existingTransactions
 
                 return {
                   ...edge,
                   node: {
                     ...edge.node,
                     ...verifiedEntry,
-                    transactions: mergedTransactions
-                  }
+                    transactions: mergedTransactions,
+                  },
                 }
               }
               return edge
@@ -544,14 +611,14 @@ const Page = () => {
 
           case "CANCEL":
             const cancelledEntry = entry
-            if (cancelledEntry?.hasOverpayment && cancelledEntry?.totalExcess > 0) {
-              toast.warning(
-                `Entry Cancelled: ${cancelledEntry?.entryNumber}`,
-                {
-                  description: `Excess amount: ₱${cancelledEntry?.totalExcess?.toLocaleString()}. A refund may be required.`,
-                  duration: 5000,
-                }
-              )
+            if (
+              cancelledEntry?.hasOverpayment &&
+              cancelledEntry?.totalExcess > 0
+            ) {
+              toast.warning(`Entry Cancelled: ${cancelledEntry?.entryNumber}`, {
+                description: `Excess amount: ₱${cancelledEntry?.totalExcess?.toLocaleString()}. A refund may be required.`,
+                duration: 5000,
+              })
             } else {
               toast.warning(`Entry Cancelled: ${cancelledEntry?.entryNumber}`, {
                 duration: 5000,
@@ -561,15 +628,16 @@ const Page = () => {
             const cancelledEdges = prev.entries.edges.map((edge: any) =>
               edge.node._id === cancelledEntry._id
                 ? {
-                  ...edge,
-                  node: {
-                    ...edge.node,
-                    ...cancelledEntry,
-                    currentStatus: "CANCELLED",
-                    transactions: cancelledEntry.transactions || edge.node.transactions
+                    ...edge,
+                    node: {
+                      ...edge.node,
+                      ...cancelledEntry,
+                      currentStatus: "CANCELLED",
+                      transactions:
+                        cancelledEntry.transactions || edge.node.transactions,
+                    },
                   }
-                }
-                : edge
+                : edge,
             )
 
             setLastUpdated(new Date())
@@ -583,23 +651,23 @@ const Page = () => {
 
           case "REFUND":
             const refundedEntry = entry
-            console.log('REFUND event received - forcing recalculation', {
+            console.log("REFUND event received - forcing recalculation", {
               entryNumber: refundedEntry?.entryNumber,
               totalRefundAmount: refundedEntry?.totalRefundAmount,
-              currentRefreshTrigger: refreshTrigger
+              currentRefreshTrigger: refreshTrigger,
             })
             toast.info(`💰 Refund Processed: ${refundedEntry?.entryNumber}`, {
               description: `Refund amount: ₱${refundedEntry?.totalRefundAmount?.toLocaleString()}`,
               duration: 5000,
             })
-            setNewRefundsCount(prev => prev + 1)
+            setNewRefundsCount((prev) => prev + 1)
             setLastUpdated(new Date())
 
             setTimeout(() => {
               refetchEntries().then(() => {
-                setRefreshTrigger(prev => {
+                setRefreshTrigger((prev) => {
                   const newValue = prev + 1
-                  console.log('Setting refreshTrigger to:', newValue)
+                  console.log("Setting refreshTrigger to:", newValue)
                   return newValue
                 })
               })
@@ -612,12 +680,18 @@ const Page = () => {
                   node: {
                     ...edge.node,
                     ...refundedEntry,
-                    totalRefundAmount: refundedEntry.totalRefundAmount ?? edge.node.totalRefundAmount,
+                    totalRefundAmount:
+                      refundedEntry.totalRefundAmount ??
+                      edge.node.totalRefundAmount,
                     totalPaid: refundedEntry.totalPaid ?? edge.node.totalPaid,
-                    hasRefunds: refundedEntry.hasRefunds ?? (refundedEntry.totalRefundAmount > 0),
-                    pendingAmount: refundedEntry.pendingAmount ?? edge.node.pendingAmount,
-                    transactions: refundedEntry.transactions || edge.node.transactions
-                  }
+                    hasRefunds:
+                      refundedEntry.hasRefunds ??
+                      refundedEntry.totalRefundAmount > 0,
+                    pendingAmount:
+                      refundedEntry.pendingAmount ?? edge.node.pendingAmount,
+                    transactions:
+                      refundedEntry.transactions || edge.node.transactions,
+                  },
                 }
               }
               return edge
@@ -649,14 +723,15 @@ const Page = () => {
             const updatedEdges = prev.entries.edges.map((edge: any) =>
               edge.node._id === updatedEntry._id
                 ? {
-                  ...edge,
-                  node: {
-                    ...edge.node,
-                    ...updatedEntry,
-                    transactions: updatedEntry.transactions || edge.node.transactions
+                    ...edge,
+                    node: {
+                      ...edge.node,
+                      ...updatedEntry,
+                      transactions:
+                        updatedEntry.transactions || edge.node.transactions,
+                    },
                   }
-                }
-                : edge
+                : edge,
             )
 
             setLastUpdated(new Date())
@@ -679,14 +754,16 @@ const Page = () => {
                 ...prev.entries,
                 total: prev.entries.total - 1,
                 edges: prev.entries.edges.filter(
-                  (edge: any) => edge.node._id !== deletedEntry._id
+                  (edge: any) => edge.node._id !== deletedEntry._id,
                 ),
               },
             }
 
           case "BATCH_UPDATE":
             const updatedEntries = entries
-            toast.success(`Batch Update: ${updatedEntries.length} entries updated`)
+            toast.success(
+              `Batch Update: ${updatedEntries.length} entries updated`,
+            )
 
             const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
 
@@ -698,13 +775,15 @@ const Page = () => {
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...updatedEntries.find((u: any) => u._id === edge.node._id),
-                      },
-                    }
-                    : edge
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedEntries.find(
+                            (u: any) => u._id === edge.node._id,
+                          ),
+                        },
+                      }
+                    : edge,
                 ),
               },
             }
@@ -715,26 +794,31 @@ const Page = () => {
       },
     })
 
-    return () => {
+     return () => {
+    if (typeof unsubscribeEntry === "function") {
       unsubscribeEntry()
     }
+  }
   }, [subscribeToMoreEntries])
 
   useEffect(() => {
     if (entriesData?.entries?.edges) {
       const entriesWithRefunds = entriesData.entries.edges.filter(
-        edge => edge.node.hasRefunds || edge.node.totalRefundAmount > 0
-      );
+        (edge) => edge.node.hasRefunds || edge.node.totalRefundAmount > 0,
+      )
 
       if (entriesWithRefunds.length > 0) {
-        console.log('Entries with refunds detected:', entriesWithRefunds.map(e => ({
-          entryNumber: e.node.entryNumber,
-          totalRefundAmount: e.node.totalRefundAmount,
-          hasRefunds: e.node.hasRefunds
-        })));
+        console.log(
+          "Entries with refunds detected:",
+          entriesWithRefunds.map((e) => ({
+            entryNumber: e.node.entryNumber,
+            totalRefundAmount: e.node.totalRefundAmount,
+            hasRefunds: e.node.hasRefunds,
+          })),
+        )
       }
     }
-  }, [entriesData]);
+  }, [entriesData])
 
   useEffect(() => {
     if (!subscribeToMoreEntries) return
@@ -747,9 +831,9 @@ const Page = () => {
 
         if (type === "CREATE") {
           toast.success(
-            `💰 Refund Processed: ₱${refund.amount.toLocaleString()} for entries: ${refund.entries}`
+            `💰 Refund Processed: ₱${refund.amount.toLocaleString()} for entries: ${refund.entries}`,
           )
-          setNewRefundsCount(prev => prev + 1)
+          setNewRefundsCount((prev) => prev + 1)
           setLastUpdated(new Date())
         }
 
@@ -758,8 +842,10 @@ const Page = () => {
     })
 
     return () => {
+    if (typeof unsubscribeRefund === "function") {
       unsubscribeRefund()
     }
+  }
   }, [subscribeToMoreEntries])
 
   useEffect(() => {
@@ -775,16 +861,19 @@ const Page = () => {
           case "CREATE":
             const newPayment = payment
             const newPaymentExists = prev.payments.edges.find(
-              (edge: any) => edge.node._id === newPayment?._id
+              (edge: any) => edge.node._id === newPayment?._id,
             )
             if (newPaymentExists) return prev
 
-            toast.success(`💰 New Payment Created: ₱${newPayment?.amount?.toLocaleString()}`, {
-              description: `From: ${newPayment?.payerName}`,
-              duration: 5000,
-            })
+            toast.success(
+              `💰 New Payment Created: ₱${newPayment?.amount?.toLocaleString()}`,
+              {
+                description: `From: ${newPayment?.payerName}`,
+                duration: 5000,
+              },
+            )
 
-            setNewPaymentsCount(prev => prev + 1)
+            setNewPaymentsCount((prev) => prev + 1)
             setShowRefreshIndicator(true)
             setTimeout(() => setShowRefreshIndicator(false), 5000)
             setLastUpdated(new Date())
@@ -804,39 +893,55 @@ const Page = () => {
             const updatedPayment = payment
 
             const oldPayment = prev.payments.edges.find(
-              (edge: any) => edge.node._id === updatedPayment._id
+              (edge: any) => edge.node._id === updatedPayment._id,
             )?.node
 
-            const isRefundStatus = updatedPayment.currentStatus === "REJECTED" ||
+            const isRefundStatus =
+              updatedPayment.currentStatus === "REJECTED" ||
               updatedPayment.currentStatus === "DUPLICATE" ||
               updatedPayment.currentStatus === "CANCELLED" ||
               updatedPayment.currentStatus === "REFUNDED"
 
-            if (oldPayment && oldPayment.currentStatus !== updatedPayment.currentStatus && isRefundStatus) {
-              toast.info(`Payment Refunded: ₱${updatedPayment?.amount?.toLocaleString()}`, {
-                description: `Status changed from ${oldPayment?.currentStatus} to ${updatedPayment?.currentStatus}`,
-                duration: 5000,
-              })
-              setNewRefundsCount(prev => prev + 1)
-            }
-            else if (oldPayment && oldPayment.currentStatus === "VERIFIED" && isRefundStatus) {
-              toast.info(`Payment Fully Refunded: ₱${updatedPayment?.amount?.toLocaleString()}`, {
-                description: `Previously verified payment has been refunded`,
-                duration: 5000,
-              })
-              setNewRefundsCount(prev => prev + 1)
-            }
-            else {
-              toast.success(`Payment Updated: ₱${updatedPayment?.amount?.toLocaleString()}`, {
-                description: `Status: ${updatedPayment?.currentStatus}`,
-                duration: 5000,
-              })
+            if (
+              oldPayment &&
+              oldPayment.currentStatus !== updatedPayment.currentStatus &&
+              isRefundStatus
+            ) {
+              toast.info(
+                `Payment Refunded: ₱${updatedPayment?.amount?.toLocaleString()}`,
+                {
+                  description: `Status changed from ${oldPayment?.currentStatus} to ${updatedPayment?.currentStatus}`,
+                  duration: 5000,
+                },
+              )
+              setNewRefundsCount((prev) => prev + 1)
+            } else if (
+              oldPayment &&
+              oldPayment.currentStatus === "VERIFIED" &&
+              isRefundStatus
+            ) {
+              toast.info(
+                `Payment Fully Refunded: ₱${updatedPayment?.amount?.toLocaleString()}`,
+                {
+                  description: `Previously verified payment has been refunded`,
+                  duration: 5000,
+                },
+              )
+              setNewRefundsCount((prev) => prev + 1)
+            } else {
+              toast.success(
+                `Payment Updated: ₱${updatedPayment?.amount?.toLocaleString()}`,
+                {
+                  description: `Status: ${updatedPayment?.currentStatus}`,
+                  duration: 5000,
+                },
+              )
             }
 
             const updatedPaymentEdges = prev.payments.edges.map((edge: any) =>
               edge.node._id === updatedPayment._id
                 ? { ...edge, node: updatedPayment }
-                : edge
+                : edge,
             )
 
             setLastUpdated(new Date())
@@ -852,7 +957,9 @@ const Page = () => {
 
           case "DELETE":
             const deletedPayment = payment
-            toast.info(`Payment Deleted: ₱${deletedPayment?.amount?.toLocaleString()}`)
+            toast.info(
+              `Payment Deleted: ₱${deletedPayment?.amount?.toLocaleString()}`,
+            )
 
             setLastUpdated(new Date())
 
@@ -861,14 +968,16 @@ const Page = () => {
                 ...prev.payments,
                 total: prev.payments.total - 1,
                 edges: prev.payments.edges.filter(
-                  (edge: any) => edge.node._id !== deletedPayment._id
+                  (edge: any) => edge.node._id !== deletedPayment._id,
                 ),
               },
             }
 
           case "BATCH_UPDATE":
             const updatedPayments = payments
-            toast.success(`Batch Update: ${updatedPayments.length} payments updated`)
+            toast.success(
+              `Batch Update: ${updatedPayments.length} payments updated`,
+            )
 
             const updatedIds = new Set(updatedPayments.map((u: any) => u._id))
 
@@ -880,13 +989,15 @@ const Page = () => {
                 edges: prev.payments.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...updatedPayments.find((u: any) => u._id === edge.node._id),
-                      },
-                    }
-                    : edge
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedPayments.find(
+                            (u: any) => u._id === edge.node._id,
+                          ),
+                        },
+                      }
+                    : edge,
                 ),
               },
             }
@@ -903,9 +1014,12 @@ const Page = () => {
   }, [subscribeToMorePayments])
   useEffect(() => {
     const currentCount = entriesData?.entries?.edges?.length || 0
-    if (prevEntriesCount.current > 0 && currentCount > prevEntriesCount.current) {
+    if (
+      prevEntriesCount.current > 0 &&
+      currentCount > prevEntriesCount.current
+    ) {
       const newCount = currentCount - prevEntriesCount.current
-      setNewEntriesCount(prev => prev + newCount)
+      setNewEntriesCount((prev) => prev + newCount)
     }
     prevEntriesCount.current = currentCount
     setLastUpdated(new Date())
@@ -913,9 +1027,12 @@ const Page = () => {
 
   useEffect(() => {
     const currentCount = paymentsData?.payments?.edges?.length || 0
-    if (prevPaymentsCount.current > 0 && currentCount > prevPaymentsCount.current) {
+    if (
+      prevPaymentsCount.current > 0 &&
+      currentCount > prevPaymentsCount.current
+    ) {
       const newCount = currentCount - prevPaymentsCount.current
-      setNewPaymentsCount(prev => prev + newCount)
+      setNewPaymentsCount((prev) => prev + newCount)
     }
     prevPaymentsCount.current = currentCount
     setLastUpdated(new Date())
@@ -923,11 +1040,7 @@ const Page = () => {
 
   const handleManualRefresh = async () => {
     setShowRefreshIndicator(true)
-    await Promise.all([
-      refetchEntries(),
-      refetchLogs(),
-      refetchPayments()
-    ])
+    await Promise.all([refetchEntries(), refetchLogs(), refetchPayments()])
     setNewEntriesCount(0)
     setNewRefundsCount(0)
     setNewPaymentsCount(0)
@@ -937,9 +1050,9 @@ const Page = () => {
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2)
   }
@@ -953,7 +1066,7 @@ const Page = () => {
 
     const months = eachMonthOfInterval({ start: startDate, end: endDate })
 
-    const monthlyData: MonthlyPayment[] = months.map(monthDate => ({
+    const monthlyData: MonthlyPayment[] = months.map((monthDate) => ({
       month: format(monthDate, "MMMM yyyy"),
       monthDate,
       total: 0,
@@ -961,20 +1074,25 @@ const Page = () => {
       average: 0,
       verifiedCount: 0,
       verifiedTotal: 0,
-      methods: {}
+      methods: {},
     }))
 
     entriesData.entries.edges.forEach(({ node }) => {
       if (!node.transactions) return
 
-      node.transactions.forEach(transaction => {
+      node.transactions.forEach((transaction) => {
         const txDate = new Date(transaction.transactionDate)
         const txMonth = format(txDate, "yyyy-MM")
-        const monthData = monthlyData.find(m => format(m.monthDate, "yyyy-MM") === txMonth)
+        const monthData = monthlyData.find(
+          (m) => format(m.monthDate, "yyyy-MM") === txMonth,
+        )
 
         if (!monthData) return
 
-        if (transaction.transactionType === "BALANCE_PAYMENT" && transaction.amountChanged > 0) {
+        if (
+          transaction.transactionType === "BALANCE_PAYMENT" &&
+          transaction.amountChanged > 0
+        ) {
           monthData.total += transaction.amountChanged
           monthData.count++
           monthData.verifiedTotal += transaction.amountChanged
@@ -988,7 +1106,10 @@ const Page = () => {
           monthData.methods[method].total += transaction.amountChanged
         }
 
-        if (transaction.transactionType === "REFUND_PAYMENT" && transaction.amountChanged < 0) {
+        if (
+          transaction.transactionType === "REFUND_PAYMENT" &&
+          transaction.amountChanged < 0
+        ) {
           const refundAmount = Math.abs(transaction.amountChanged)
           monthData.verifiedTotal -= refundAmount
           monthData.verifiedCount = Math.max(0, monthData.verifiedCount - 1)
@@ -998,37 +1119,54 @@ const Page = () => {
       })
     })
 
-    monthlyData.forEach(month => {
-      month.average = month.verifiedCount > 0 ? Math.round(month.verifiedTotal / month.verifiedCount) : 0
+    monthlyData.forEach((month) => {
+      month.average =
+        month.verifiedCount > 0
+          ? Math.round(month.verifiedTotal / month.verifiedCount)
+          : 0
     })
 
-    return monthlyData.sort((a, b) => a.monthDate.getTime() - b.monthDate.getTime())
+    return monthlyData.sort(
+      (a, b) => a.monthDate.getTime() - b.monthDate.getTime(),
+    )
   }, [entriesData])
 
   const getRoleColor = (role: string) => {
     const colors: Record<string, string> = {
-      ADMIN: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-      ORGANIZER: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-      SUPPORT: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-      LEVELLER: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+      ADMIN:
+        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+      ORGANIZER:
+        "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+      SUPPORT:
+        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+      LEVELLER:
+        "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
       USER: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
     }
     return colors[role] || colors.USER
   }
 
   const getActivityIcon = (action: string) => {
-    if (action.toLowerCase().includes("entry")) return <Users className="h-4 w-4" />
-    if (action.toLowerCase().includes("payment")) return <DollarSign className="h-4 w-4" />
-    if (action.toLowerCase().includes("tournament")) return <Trophy className="h-4 w-4" />
-    if (action.toLowerCase().includes("event")) return <CalendarDays className="h-4 w-4" />
-    if (action.toLowerCase().includes("approv")) return <Medal className="h-4 w-4" />
-    if (action.toLowerCase().includes("reject")) return <Zap className="h-4 w-4" />
+    if (action.toLowerCase().includes("entry"))
+      return <Users className="h-4 w-4" />
+    if (action.toLowerCase().includes("payment"))
+      return <DollarSign className="h-4 w-4" />
+    if (action.toLowerCase().includes("tournament"))
+      return <Trophy className="h-4 w-4" />
+    if (action.toLowerCase().includes("event"))
+      return <CalendarDays className="h-4 w-4" />
+    if (action.toLowerCase().includes("approv"))
+      return <Medal className="h-4 w-4" />
+    if (action.toLowerCase().includes("reject"))
+      return <Zap className="h-4 w-4" />
     return <Activity className="h-4 w-4" />
   }
 
   const getPriority = (days: number) => {
-    if (days <= 3) return { label: "high", color: "text-red-600 dark:text-red-400" }
-    if (days <= 7) return { label: "medium", color: "text-yellow-600 dark:text-yellow-400" }
+    if (days <= 3)
+      return { label: "high", color: "text-red-600 dark:text-red-400" }
+    if (days <= 7)
+      return { label: "medium", color: "text-yellow-600 dark:text-yellow-400" }
     return { label: "low", color: "text-green-600 dark:text-green-400" }
   }
 
@@ -1042,11 +1180,14 @@ const Page = () => {
   const stats = [
     {
       title: "Active Tournaments",
-      value: tournamentsData?.tournaments?.edges?.filter(({ node }) => node.isActive).length.toString() || "0",
+      value:
+        tournamentsData?.tournaments?.edges
+          ?.filter(({ node }) => node.isActive)
+          .length.toString() || "0",
       change: "+1",
       icon: Trophy,
       color: "text-yellow-500",
-      bgColor: "bg-yellow-50 dark:bg-yellow-950/20"
+      bgColor: "bg-yellow-50 dark:bg-yellow-950/20",
     },
     {
       title: "Total Entries",
@@ -1054,30 +1195,38 @@ const Page = () => {
       change: "+2",
       icon: Users,
       color: "text-blue-500",
-      bgColor: "bg-blue-50 dark:bg-blue-950/20"
+      bgColor: "bg-blue-50 dark:bg-blue-950/20",
     },
     {
       title: "Pending Actions",
-      value: entriesData?.entries?.edges?.filter(({ node }) =>
-        node.currentStatus === "PENDING" ||
-        node.currentStatus === "PAYMENT_PENDING" ||
-        node.currentStatus === "LEVEL_PENDING"
-      ).length.toString() || "0",
+      value:
+        entriesData?.entries?.edges
+          ?.filter(
+            ({ node }) =>
+              node.currentStatus === "PENDING" ||
+              node.currentStatus === "PAYMENT_PENDING" ||
+              node.currentStatus === "LEVEL_PENDING",
+          )
+          .length.toString() || "0",
       change: "-1",
       icon: Activity,
       color: "text-orange-500",
-      bgColor: "bg-orange-50 dark:bg-orange-950/20"
+      bgColor: "bg-orange-50 dark:bg-orange-950/20",
     },
     {
       title: "Completed",
-      value: entriesData?.entries?.edges?.filter(({ node }) =>
-        node.currentStatus === "VERIFIED" ||
-        node.currentStatus === "PAYMENT_VERIFIED"
-      ).length.toString() || "0",
+      value:
+        entriesData?.entries?.edges
+          ?.filter(
+            ({ node }) =>
+              node.currentStatus === "VERIFIED" ||
+              node.currentStatus === "PAYMENT_VERIFIED",
+          )
+          .length.toString() || "0",
       change: "+3",
       icon: Medal,
       color: "text-green-500",
-      bgColor: "bg-green-50 dark:bg-green-950/20"
+      bgColor: "bg-green-50 dark:bg-green-950/20",
     },
   ]
 
@@ -1091,10 +1240,14 @@ const Page = () => {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "high": return "text-red-600 dark:text-red-400"
-      case "medium": return "text-yellow-600 dark:text-yellow-400"
-      case "low": return "text-green-600 dark:text-green-400"
-      default: return ""
+      case "high":
+        return "text-red-600 dark:text-red-400"
+      case "medium":
+        return "text-yellow-600 dark:text-yellow-400"
+      case "low":
+        return "text-green-600 dark:text-green-400"
+      default:
+        return ""
     }
   }
 
@@ -1109,7 +1262,7 @@ const Page = () => {
         days,
         label: "ended",
         color: "text-gray-500 dark:text-gray-400",
-        displayDays: Math.abs(days)
+        displayDays: Math.abs(days),
       }
     }
 
@@ -1118,14 +1271,18 @@ const Page = () => {
       days,
       label: priority.label,
       color: priority.color,
-      displayDays: days
+      displayDays: days,
     }
   }
 
   const recentLogs = logsData?.logs?.edges?.map((edge) => edge.node) || []
 
-  const activeTournaments = tournamentsData?.tournaments?.edges?.filter(({ node }) => node.isActive) || []
-  const inactiveTournaments = tournamentsData?.tournaments?.edges?.filter(({ node }) => !node.isActive) || []
+  const activeTournaments =
+    tournamentsData?.tournaments?.edges?.filter(({ node }) => node.isActive) ||
+    []
+  const inactiveTournaments =
+    tournamentsData?.tournaments?.edges?.filter(({ node }) => !node.isActive) ||
+    []
 
   // March 14, 2026
   // const monthlyPayments = useMemo(() => {
@@ -1210,7 +1367,10 @@ const Page = () => {
   // Get selected month data
 
   const monthlyPayments = useMemo(() => {
-    console.log('Recalculating monthlyPayments with refreshTrigger:', refreshTrigger)
+    console.log(
+      "Recalculating monthlyPayments with refreshTrigger:",
+      refreshTrigger,
+    )
     if (!entriesData?.entries?.edges) return []
 
     const endDate = new Date()
@@ -1219,7 +1379,7 @@ const Page = () => {
 
     const months = eachMonthOfInterval({ start: startDate, end: endDate })
 
-    const monthlyData: MonthlyPayment[] = months.map(monthDate => ({
+    const monthlyData: MonthlyPayment[] = months.map((monthDate) => ({
       month: format(monthDate, "MMMM yyyy"),
       monthDate,
       total: 0,
@@ -1227,27 +1387,35 @@ const Page = () => {
       average: 0,
       verifiedCount: 0,
       verifiedTotal: 0,
-      methods: {}
+      methods: {},
     }))
 
     entriesData.entries.edges.forEach(({ node }) => {
       if (!node.transactions) return
 
-      node.transactions.forEach(transaction => {
+      node.transactions.forEach((transaction) => {
         const txDate = new Date(transaction.transactionDate)
         const txMonth = format(txDate, "yyyy-MM")
-        const monthData = monthlyData.find(m => format(m.monthDate, "yyyy-MM") === txMonth)
+        const monthData = monthlyData.find(
+          (m) => format(m.monthDate, "yyyy-MM") === txMonth,
+        )
 
         if (!monthData) return
 
-        if (transaction.transactionType === "BALANCE_PAYMENT" && transaction.amountChanged > 0) {
+        if (
+          transaction.transactionType === "BALANCE_PAYMENT" &&
+          transaction.amountChanged > 0
+        ) {
           monthData.total += transaction.amountChanged
           monthData.count++
           monthData.verifiedTotal += transaction.amountChanged
           monthData.verifiedCount++
         }
 
-        if (transaction.transactionType === "REFUND_PAYMENT" && transaction.amountChanged < 0) {
+        if (
+          transaction.transactionType === "REFUND_PAYMENT" &&
+          transaction.amountChanged < 0
+        ) {
           const refundAmount = Math.abs(transaction.amountChanged)
           monthData.verifiedTotal -= refundAmount
           monthData.verifiedCount = Math.max(0, monthData.verifiedCount - 1)
@@ -1256,15 +1424,22 @@ const Page = () => {
       })
     })
 
-    monthlyData.forEach(month => {
-      month.average = month.verifiedCount > 0 ? Math.round(month.verifiedTotal / month.verifiedCount) : 0
+    monthlyData.forEach((month) => {
+      month.average =
+        month.verifiedCount > 0
+          ? Math.round(month.verifiedTotal / month.verifiedCount)
+          : 0
     })
 
-    return monthlyData.sort((a, b) => a.monthDate.getTime() - b.monthDate.getTime())
+    return monthlyData.sort(
+      (a, b) => a.monthDate.getTime() - b.monthDate.getTime(),
+    )
   }, [entriesData, refreshTrigger])
 
   const selectedMonthData = useMemo(() => {
-    return monthlyPayments.find(m => format(m.monthDate, "yyyy-MM") === selectedMonth)
+    return monthlyPayments.find(
+      (m) => format(m.monthDate, "yyyy-MM") === selectedMonth,
+    )
   }, [monthlyPayments, selectedMonth])
 
   const allTimeTotal = useMemo(() => {
@@ -1274,8 +1449,10 @@ const Page = () => {
   const growthPercentage = useMemo(() => {
     if (monthlyPayments.length < 2) return 0
 
-    const currentMonth = monthlyPayments[monthlyPayments.length - 1].verifiedTotal
-    const previousMonth = monthlyPayments[monthlyPayments.length - 2].verifiedTotal
+    const currentMonth =
+      monthlyPayments[monthlyPayments.length - 1].verifiedTotal
+    const previousMonth =
+      monthlyPayments[monthlyPayments.length - 2].verifiedTotal
 
     if (previousMonth === 0) return currentMonth > 0 ? 100 : 0
     return ((currentMonth - previousMonth) / previousMonth) * 100
@@ -1284,39 +1461,82 @@ const Page = () => {
   const bestMonth = useMemo(() => {
     if (monthlyPayments.length === 0) return null
     return monthlyPayments.reduce((best, current) =>
-      current.verifiedTotal > best.verifiedTotal ? current : best
+      current.verifiedTotal > best.verifiedTotal ? current : best,
     )
   }, [monthlyPayments])
 
   const entrySummary = useMemo(() => {
-    if (!entriesData?.entries?.edges) return {
-      total: 0,
-      byStatus: [],
-      totalPendingAmount: 0,
-      totalPaidAmount: 0,
-      totalRefundAmount: 0,
-      totalExcess: 0,
-      earlyBirdCount: 0,
-      overpaymentCount: 0
-    }
+    if (!entriesData?.entries?.edges)
+      return {
+        total: 0,
+        byStatus: [],
+        totalPendingAmount: 0,
+        totalPaidAmount: 0,
+        totalRefundAmount: 0,
+        totalExcess: 0,
+        earlyBirdCount: 0,
+        overpaymentCount: 0,
+      }
 
-    const entries = entriesData.entries.edges.map(edge => edge.node)
+    const entries = entriesData.entries.edges.map((edge) => edge.node)
 
     const statusConfig: Record<string, { color: string; icon: any }> = {
-      PENDING: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300", icon: AlertCircle },
-      ASSIGNED: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300", icon: Users },
-      LEVEL_PENDING: { color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300", icon: TrendingUp },
-      LEVEL_APPROVED: { color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300", icon: CheckCircle },
-      PAYMENT_PENDING: { color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300", icon: Clock },
-      PAYMENT_PARTIALLY_PAID: { color: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300", icon: DollarSign },
-      PAYMENT_PAID: { color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300", icon: DollarSign },
-      PAYMENT_VERIFIED: { color: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300", icon: CheckCircle },
-      VERIFIED: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300", icon: CheckCircle },
-      REJECTED: { color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300", icon: XCircle },
-      CANCELLED: { color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300", icon: XCircle },
+      PENDING: {
+        color:
+          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+        icon: AlertCircle,
+      },
+      ASSIGNED: {
+        color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+        icon: Users,
+      },
+      LEVEL_PENDING: {
+        color:
+          "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+        icon: TrendingUp,
+      },
+      LEVEL_APPROVED: {
+        color:
+          "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
+        icon: CheckCircle,
+      },
+      PAYMENT_PENDING: {
+        color:
+          "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+        icon: Clock,
+      },
+      PAYMENT_PARTIALLY_PAID: {
+        color: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
+        icon: DollarSign,
+      },
+      PAYMENT_PAID: {
+        color:
+          "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
+        icon: DollarSign,
+      },
+      PAYMENT_VERIFIED: {
+        color: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
+        icon: CheckCircle,
+      },
+      VERIFIED: {
+        color:
+          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+        icon: CheckCircle,
+      },
+      REJECTED: {
+        color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+        icon: XCircle,
+      },
+      CANCELLED: {
+        color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+        icon: XCircle,
+      },
     }
 
-    const statusMap = new Map<string, { count: number; totalPendingAmount: number; totalPaidAmount: number }>()
+    const statusMap = new Map<
+      string,
+      { count: number; totalPendingAmount: number; totalPaidAmount: number }
+    >()
 
     let totalPendingAmount = 0
     let totalPaidAmount = 0
@@ -1325,7 +1545,7 @@ const Page = () => {
     let earlyBirdCount = 0
     let overpaymentCount = 0
 
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       const status = entry.currentStatus
       const pending = entry.pendingAmount || 0
       const paid = entry.totalPaid || 0
@@ -1333,7 +1553,11 @@ const Page = () => {
       const excess = entry.totalExcess || 0
 
       if (!statusMap.has(status)) {
-        statusMap.set(status, { count: 0, totalPendingAmount: 0, totalPaidAmount: 0 })
+        statusMap.set(status, {
+          count: 0,
+          totalPendingAmount: 0,
+          totalPaidAmount: 0,
+        })
       }
 
       const current = statusMap.get(status)!
@@ -1350,14 +1574,16 @@ const Page = () => {
       if (entry.hasOverpayment) overpaymentCount++
     })
 
-    const byStatus: EntryStatusSummary[] = Array.from(statusMap.entries()).map(([status, data]) => ({
-      status,
-      count: data.count,
-      totalPendingAmount: data.totalPendingAmount,
-      totalPaidAmount: data.totalPaidAmount,
-      color: statusConfig[status]?.color || "bg-gray-100 text-gray-800",
-      icon: statusConfig[status]?.icon || Activity
-    }))
+    const byStatus: EntryStatusSummary[] = Array.from(statusMap.entries()).map(
+      ([status, data]) => ({
+        status,
+        count: data.count,
+        totalPendingAmount: data.totalPendingAmount,
+        totalPaidAmount: data.totalPaidAmount,
+        color: statusConfig[status]?.color || "bg-gray-100 text-gray-800",
+        icon: statusConfig[status]?.icon || Activity,
+      }),
+    )
 
     return {
       total: entries.length,
@@ -1367,25 +1593,28 @@ const Page = () => {
       totalRefundAmount,
       totalExcess,
       earlyBirdCount,
-      overpaymentCount
+      overpaymentCount,
     }
   }, [entriesData])
 
   const getEntriesByStatus = (status: string) => {
     if (!entriesData?.entries?.edges) return []
     return entriesData.entries.edges
-      .map(edge => edge.node)
-      .filter(entry => entry.currentStatus === status)
+      .map((edge) => edge.node)
+      .filter((entry) => entry.currentStatus === status)
   }
 
   const topEntries = useMemo(() => {
     if (!entriesData?.entries?.edges) return []
 
     return entriesData.entries.edges
-      .map(edge => edge.node)
-      .sort((a, b) => new Date(b.dateUpdated).getTime() - new Date(a.dateUpdated).getTime())
+      .map((edge) => edge.node)
+      .sort(
+        (a, b) =>
+          new Date(b.dateUpdated).getTime() - new Date(a.dateUpdated).getTime(),
+      )
       .slice(0, 5)
-      .map(entry => ({
+      .map((entry) => ({
         _id: entry._id,
         entryNumber: entry.entryNumber,
         eventName: entry.eventName || "Unknown Event",
@@ -1401,19 +1630,19 @@ const Page = () => {
         totalExcess: entry.totalExcess,
         hasRefunds: entry.hasRefunds,
         totalRefundAmount: entry.totalRefundAmount,
-        totalPaid: entry.totalPaid
+        totalPaid: entry.totalPaid,
       }))
   }, [entriesData])
 
   const entriesByEvent = useMemo(() => {
     if (!entriesData?.entries?.edges) return []
 
-    const entries = entriesData.entries.edges.map(edge => edge.node)
+    const entries = entriesData.entries.edges.map((edge) => edge.node)
     const eventMap = new Map<string, EventEntryCount>()
 
     let totalEntries = entries.length
 
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       const eventName = entry.eventName || "Unknown Event"
       const tournamentName = entry.tournamentName || "Unknown Tournament"
       const key = `${tournamentName} - ${eventName}`
@@ -1427,7 +1656,7 @@ const Page = () => {
           earlyBirdCount: 0,
           verifiedCount: 0,
           pendingCount: 0,
-          totalAmount: 0
+          totalAmount: 0,
         })
       }
 
@@ -1436,16 +1665,23 @@ const Page = () => {
       eventData.totalAmount += entry.pendingAmount || 0
 
       if (entry.isEarlyBird) eventData.earlyBirdCount++
-      if (entry.currentStatus === "VERIFIED" || entry.currentStatus === "PAYMENT_VERIFIED") {
+      if (
+        entry.currentStatus === "VERIFIED" ||
+        entry.currentStatus === "PAYMENT_VERIFIED"
+      ) {
         eventData.verifiedCount++
       }
-      if (entry.currentStatus === "PENDING" || entry.currentStatus === "PAYMENT_PENDING" || entry.currentStatus === "LEVEL_PENDING") {
+      if (
+        entry.currentStatus === "PENDING" ||
+        entry.currentStatus === "PAYMENT_PENDING" ||
+        entry.currentStatus === "LEVEL_PENDING"
+      ) {
         eventData.pendingCount++
       }
     })
 
     const result = Array.from(eventMap.values())
-    result.forEach(event => {
+    result.forEach((event) => {
       event.percentage = (event.count / totalEntries) * 100
     })
 
@@ -1458,7 +1694,7 @@ const Page = () => {
   }
 
   const getStatusDisplayName = (status: string) => {
-    return status.replace(/_/g, ' ')
+    return status.replace(/_/g, " ")
   }
 
   const getStatusColor = (status: string) => {
@@ -1486,21 +1722,27 @@ const Page = () => {
           </div>
           {newEntriesCount > 0 && (
             <Badge className="bg-green-500 hover:bg-green-600 text-white animate-bounce">
-              +{newEntriesCount} New {newEntriesCount === 1 ? 'Entry' : 'Entries'}
+              +{newEntriesCount} New{" "}
+              {newEntriesCount === 1 ? "Entry" : "Entries"}
             </Badge>
           )}
           {newPaymentsCount > 0 && (
             <Badge className="bg-blue-500 hover:bg-blue-600 text-white">
-              +{newPaymentsCount} New {newPaymentsCount === 1 ? 'Payment' : 'Payments'}
+              +{newPaymentsCount} New{" "}
+              {newPaymentsCount === 1 ? "Payment" : "Payments"}
             </Badge>
           )}
           {newRefundsCount > 0 && (
             <Badge className="bg-purple-500 hover:bg-purple-600 text-white">
-              +{newRefundsCount} New {newRefundsCount === 1 ? 'Refund' : 'Refunds'}
+              +{newRefundsCount} New{" "}
+              {newRefundsCount === 1 ? "Refund" : "Refunds"}
             </Badge>
           )}
           {showRefreshIndicator && (
-            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+            <Badge
+              variant="outline"
+              className="bg-yellow-50 text-yellow-700 border-yellow-200"
+            >
               <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
               Updating...
             </Badge>
@@ -1508,7 +1750,8 @@ const Page = () => {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-xs text-muted-foreground">
-            Last updated: {formatDistanceToNow(lastUpdated, { addSuffix: true })}
+            Last updated:{" "}
+            {formatDistanceToNow(lastUpdated, { addSuffix: true })}
           </span>
           <Button
             variant="outline"
@@ -1517,7 +1760,9 @@ const Page = () => {
             disabled={showRefreshIndicator}
             className="h-7"
           >
-            <RefreshCw className={`h-3 w-3 mr-1 ${showRefreshIndicator ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-3 w-3 mr-1 ${showRefreshIndicator ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
         </div>
@@ -1526,7 +1771,7 @@ const Page = () => {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Label className="text-3xl mt-2 font-bold tracking-tight">
-            Welcome back, {user?.name?.split(' ')[0] || 'User'}! 👋
+            Welcome back, {user?.name?.split(" ")[0] || "User"}! 👋
           </Label>
           <p className="text-muted-foreground">
             Here's what's happening with your tournaments and entries today.
@@ -1538,7 +1783,10 @@ const Page = () => {
         {stats.map((stat, index) => {
           const Icon = stat.icon
           return (
-            <Card key={index} className="border-l-4 border-l-primary hover:shadow-lg transition-shadow">
+            <Card
+              key={index}
+              className="border-l-4 border-l-primary hover:shadow-lg transition-shadow"
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1593,7 +1841,10 @@ const Page = () => {
                 <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                   {logsLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="flex items-start gap-3 border-b pb-3 last:border-0">
+                      <div
+                        key={i}
+                        className="flex items-start gap-3 border-b pb-3 last:border-0"
+                      >
                         <Skeleton className="h-8 w-8 rounded-full" />
                         <div className="flex-1 space-y-2">
                           <Skeleton className="h-4 w-full" />
@@ -1609,8 +1860,13 @@ const Page = () => {
                     recentLogs.map((log: ILog, index: number) => {
                       const Icon = getActivityIcon(log.action)
                       return (
-                        <div key={log._id} className="flex items-start gap-3 border-b pb-3 last:border-0">
-                          <div className={`p-2 rounded-full ${getRoleColor(log.user.role)} bg-opacity-20`}>
+                        <div
+                          key={log._id}
+                          className="flex items-start gap-3 border-b pb-3 last:border-0"
+                        >
+                          <div
+                            className={`p-2 rounded-full ${getRoleColor(log.user.role)} bg-opacity-20`}
+                          >
                             <User className="h-4 w-4" />
                           </div>
                           <div className="flex-1 space-y-1">
@@ -1618,7 +1874,12 @@ const Page = () => {
                               <p className="text-sm font-medium leading-none">
                                 {log.user.name || log.user.email}
                               </p>
-                              <Badge className={cn(getRoleColor(log.user.role), "text-[10px] px-1.5 py-0")}>
+                              <Badge
+                                className={cn(
+                                  getRoleColor(log.user.role),
+                                  "text-[10px] px-1.5 py-0",
+                                )}
+                              >
                                 {log.user.role.toUpperCase()}
                               </Badge>
                             </div>
@@ -1626,7 +1887,9 @@ const Page = () => {
                               {log.action}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                              {formatDistanceToNow(new Date(log.createdAt), {
+                                addSuffix: true,
+                              })}
                             </p>
                           </div>
                         </div>
@@ -1634,7 +1897,12 @@ const Page = () => {
                     })
                   )}
                 </div>
-                <Button variant="link" className="mt-4 w-full" size="sm" asChild>
+                <Button
+                  variant="link"
+                  className="mt-4 w-full"
+                  size="sm"
+                  asChild
+                >
                   <Link href="/logs">
                     View all activity
                     <ChevronRight className="ml-1 h-4 w-4" />
@@ -1657,7 +1925,10 @@ const Page = () => {
                       onChange={(e) => setSelectedMonth(e.target.value)}
                     >
                       {monthlyPayments.map((month) => (
-                        <option key={month.month} value={format(month.monthDate, "yyyy-MM")}>
+                        <option
+                          key={month.month}
+                          value={format(month.monthDate, "yyyy-MM")}
+                        >
                           {month.month}
                         </option>
                       ))}
@@ -1665,7 +1936,8 @@ const Page = () => {
                   </div>
                 </div>
                 <CardDescription>
-                  Verified payments breakdown by month (refunds are automatically deducted)
+                  Verified payments breakdown by month (refunds are
+                  automatically deducted)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1679,19 +1951,30 @@ const Page = () => {
                     {/* Mini Stats Row */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground">Current Month</p>
+                        <p className="text-xs text-muted-foreground">
+                          Current Month
+                        </p>
                         <p className="text-lg font-bold text-green-600">
-                          ₱{(monthlyPayments[monthlyPayments.length - 1]?.verifiedTotal || 0).toLocaleString()}
+                          ₱
+                          {(
+                            monthlyPayments[monthlyPayments.length - 1]
+                              ?.verifiedTotal || 0
+                          ).toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {monthlyPayments[monthlyPayments.length - 1]?.verifiedCount || 0} verified payments
+                          {monthlyPayments[monthlyPayments.length - 1]
+                            ?.verifiedCount || 0}{" "}
+                          verified payments
                         </p>
                       </div>
                       <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground">Month-over-Month</p>
+                        <p className="text-xs text-muted-foreground">
+                          Month-over-Month
+                        </p>
                         <div className="flex items-center gap-1">
                           <p className="text-lg font-bold text-purple-600">
-                            {growthPercentage > 0 ? '+' : ''}{growthPercentage.toFixed(1)}%
+                            {growthPercentage > 0 ? "+" : ""}
+                            {growthPercentage.toFixed(1)}%
                           </p>
                           {growthPercentage > 0 ? (
                             <TrendUp className="h-4 w-4 text-green-500" />
@@ -1701,7 +1984,9 @@ const Page = () => {
                         </div>
                       </div>
                       <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground">All Time Total</p>
+                        <p className="text-xs text-muted-foreground">
+                          All Time Total
+                        </p>
                         <p className="text-lg font-bold text-amber-600">
                           ₱{allTimeTotal.toLocaleString()}
                         </p>
@@ -1710,26 +1995,47 @@ const Page = () => {
 
                     {/* Standup-style Bar Graph */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-medium">Monthly Verified Payments (Last 12 Months)</h4>
+                      <h4 className="text-sm font-medium">
+                        Monthly Verified Payments (Last 12 Months)
+                      </h4>
                       <div className="h-48 flex items-end gap-1.5">
                         {monthlyPayments.map((month, index) => {
-                          const maxTotal = Math.max(...monthlyPayments.map(m => m.verifiedTotal), 1)
+                          const maxTotal = Math.max(
+                            ...monthlyPayments.map((m) => m.verifiedTotal),
+                            1,
+                          )
                           const height = (month.verifiedTotal / maxTotal) * 100
-                          const isCurrentMonth = index === monthlyPayments.length - 1
+                          const isCurrentMonth =
+                            index === monthlyPayments.length - 1
 
                           return (
-                            <div key={month.month} className="flex-1 flex flex-col items-center gap-1 group">
+                            <div
+                              key={month.month}
+                              className="flex-1 flex flex-col items-center gap-1 group"
+                            >
                               <div className="relative w-full flex justify-center">
                                 <div
-                                  className={`w-full rounded-t transition-all duration-300 hover:opacity-80 cursor-pointer ${isCurrentMonth ? 'bg-gradient-to-t from-green-500 to-green-400' : 'bg-gradient-to-t from-blue-500 to-blue-400'
-                                    }`}
-                                  style={{ height: `${height}%`, minHeight: month.verifiedTotal > 0 ? '20px' : '4px' }}
+                                  className={`w-full rounded-t transition-all duration-300 hover:opacity-80 cursor-pointer ${
+                                    isCurrentMonth
+                                      ? "bg-gradient-to-t from-green-500 to-green-400"
+                                      : "bg-gradient-to-t from-blue-500 to-blue-400"
+                                  }`}
+                                  style={{
+                                    height: `${height}%`,
+                                    minHeight:
+                                      month.verifiedTotal > 0 ? "20px" : "4px",
+                                  }}
                                 />
                                 <div className="absolute bottom-full mb-2 hidden group-hover:block bg-popover text-popover-foreground text-xs rounded py-1 px-2 shadow-lg whitespace-nowrap z-10">
                                   <p className="font-semibold">{month.month}</p>
-                                  <p>Verified: ₱{month.verifiedTotal.toLocaleString()}</p>
+                                  <p>
+                                    Verified: ₱
+                                    {month.verifiedTotal.toLocaleString()}
+                                  </p>
                                   <p>Payments: {month.verifiedCount}</p>
-                                  <p>Total (all): ₱{month.total.toLocaleString()}</p>
+                                  <p>
+                                    Total (all): ₱{month.total.toLocaleString()}
+                                  </p>
                                   <p>Avg: ₱{month.average.toLocaleString()}</p>
                                 </div>
                               </div>
@@ -1743,37 +2049,48 @@ const Page = () => {
                     </div>
 
                     {/* Selected Month Details */}
-                    {selectedMonthData && Object.keys(selectedMonthData.methods).length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Payment Methods - {selectedMonthData.month}</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {Object.entries(selectedMonthData.methods).map(([method, data]) => (
-                            <Badge key={method} variant="secondary" className="px-3 py-1">
-                              {method.replace(/_/g, ' ')}: ₱{data.total.toLocaleString()}
-                              ({data.count})
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {paymentsData?.payments?.edges?.some(edge =>
-                      edge.node.currentStatus === "REFUNDED" ||
-                      edge.node.currentStatus === "CANCELLED" ||
-                      edge.node.currentStatus === "VOID"
-                    ) && (
-                        <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full" />
-                            <span className="text-sm text-purple-700 dark:text-purple-300">
-                              Refunded/Cancelled payments are automatically excluded from totals
-                            </span>
+                    {selectedMonthData &&
+                      Object.keys(selectedMonthData.methods).length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">
+                            Payment Methods - {selectedMonthData.month}
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(selectedMonthData.methods).map(
+                              ([method, data]) => (
+                                <Badge
+                                  key={method}
+                                  variant="secondary"
+                                  className="px-3 py-1"
+                                >
+                                  {method.replace(/_/g, " ")}: ₱
+                                  {data.total.toLocaleString()}({data.count})
+                                </Badge>
+                              ),
+                            )}
                           </div>
                         </div>
                       )}
 
+                    {paymentsData?.payments?.edges?.some(
+                      (edge) =>
+                        edge.node.currentStatus === "REFUNDED" ||
+                        edge.node.currentStatus === "CANCELLED" ||
+                        edge.node.currentStatus === "VOID",
+                    ) && (
+                      <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full" />
+                          <span className="text-sm text-purple-700 dark:text-purple-300">
+                            Refunded/Cancelled payments are automatically
+                            excluded from totals
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* No payments state */}
-                    {monthlyPayments.every(m => m.verifiedCount === 0) && (
+                    {monthlyPayments.every((m) => m.verifiedCount === 0) && (
                       <div className="text-center py-6 text-muted-foreground">
                         No verified payments found
                       </div>
@@ -1782,7 +2099,6 @@ const Page = () => {
                 )}
               </CardContent>
             </Card>
-
           </div>
 
           <Card>
@@ -1792,7 +2108,8 @@ const Page = () => {
                 Entry Summary
               </CardTitle>
               <CardDescription>
-                Overview of all entries by status (click on any status to view details)
+                Overview of all entries by status (click on any status to view
+                details)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1805,46 +2122,77 @@ const Page = () => {
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground">Total Entries</p>
-                      <p className="text-2xl font-bold text-blue-600">{entrySummary.total}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Total Entries
+                      </p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {entrySummary.total}
+                      </p>
                     </div>
                     <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground">Early Bird</p>
-                      <p className="text-2xl font-bold text-green-600">{entrySummary.earlyBirdCount}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Early Bird
+                      </p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {entrySummary.earlyBirdCount}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {((entrySummary.earlyBirdCount / entrySummary.total) * 100 || 0).toFixed(1)}% of total
+                        {(
+                          (entrySummary.earlyBirdCount / entrySummary.total) *
+                            100 || 0
+                        ).toFixed(1)}
+                        % of total
                       </p>
                     </div>
                     <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground">Overpayments</p>
-                      <p className="text-2xl font-bold text-amber-600">{entrySummary.overpaymentCount}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Overpayments
+                      </p>
+                      <p className="text-2xl font-bold text-amber-600">
+                        {entrySummary.overpaymentCount}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         ₱{entrySummary.totalExcess.toLocaleString()} excess
                       </p>
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground">Total Refunds</p>
-                      <p className="text-2xl font-bold text-red-600">₱{entrySummary.totalRefundAmount.toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Total Refunds
+                      </p>
+                      <p className="text-2xl font-bold text-red-600">
+                        ₱{entrySummary.totalRefundAmount.toLocaleString()}
+                      </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-muted/30 rounded-lg p-4">
-                      <p className="text-xs text-muted-foreground">Total Pending Amount</p>
-                      <p className="text-xl font-bold text-orange-600">₱{entrySummary.totalPendingAmount.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Total Pending Amount
+                      </p>
+                      <p className="text-xl font-bold text-orange-600">
+                        ₱{entrySummary.totalPendingAmount.toLocaleString()}
+                      </p>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-4">
-                      <p className="text-xs text-muted-foreground">Total Paid Amount</p>
-                      <p className="text-xl font-bold text-green-600">₱{entrySummary.totalPaidAmount.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Total Paid Amount
+                      </p>
+                      <p className="text-xl font-bold text-green-600">
+                        ₱{entrySummary.totalPaidAmount.toLocaleString()}
+                      </p>
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Entries by Status (click to view details)</h4>
+                    <h4 className="text-sm font-medium">
+                      Entries by Status (click to view details)
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {entrySummary.byStatus.map((status) => {
                         const Icon = status.icon
-                        const percentage = (status.count / entrySummary.total) * 100
+                        const percentage =
+                          (status.count / entrySummary.total) * 100
                         return (
                           <div
                             key={status.status}
@@ -1853,24 +2201,39 @@ const Page = () => {
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <div className={`p-1 rounded-full ${status.color.split(' ')[0]}`}>
+                                <div
+                                  className={`p-1 rounded-full ${status.color.split(" ")[0]}`}
+                                >
                                   <Icon className="h-3 w-3" />
                                 </div>
-                                <span className="text-sm font-medium">{status.status.replace(/_/g, ' ')}</span>
+                                <span className="text-sm font-medium">
+                                  {status.status.replace(/_/g, " ")}
+                                </span>
                               </div>
-                              <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
+                              <Badge
+                                variant="outline"
+                                className="cursor-pointer hover:bg-primary/10"
+                              >
                                 {status.count} entries
                               </Badge>
                             </div>
                             <div className="space-y-1">
                               <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Percentage</span>
+                                <span className="text-muted-foreground">
+                                  Percentage
+                                </span>
                                 {/* <span className="font-medium">{percentage.toFixed(1)}%</span> */}
                               </div>
                               <Progress value={percentage} className="h-1.5" />
                               <div className="flex justify-between text-xs mt-2">
-                                <span className="text-muted-foreground">Pending: ₱{status.totalPendingAmount.toLocaleString()}</span>
-                                <span className="text-muted-foreground">Paid: ₱{status.totalPaidAmount.toLocaleString()}</span>
+                                <span className="text-muted-foreground">
+                                  Pending: ₱
+                                  {status.totalPendingAmount.toLocaleString()}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  Paid: ₱
+                                  {status.totalPaidAmount.toLocaleString()}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -1890,91 +2253,127 @@ const Page = () => {
                   {selectedStatus && (
                     <>
                       {(() => {
-                        const statusIcon = entrySummary.byStatus.find(s => s.status === selectedStatus)?.icon
+                        const statusIcon = entrySummary.byStatus.find(
+                          (s) => s.status === selectedStatus,
+                        )?.icon
                         const Icon = statusIcon || Activity
                         return <Icon className="h-4 w-4" />
                       })()}
-                      {selectedStatus?.replace(/_/g, ' ')} Entries
+                      {selectedStatus?.replace(/_/g, " ")} Entries
                     </>
                   )}
                 </DialogTitle>
                 <DialogDescription>
-                  List of all entries with status: {selectedStatus?.replace(/_/g, ' ')}
+                  List of all entries with status:{" "}
+                  {selectedStatus?.replace(/_/g, " ")}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4">
-                {selectedStatus && getEntriesByStatus(selectedStatus).length === 0 ? (
+                {selectedStatus &&
+                getEntriesByStatus(selectedStatus).length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No entries found with this status
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {selectedStatus && getEntriesByStatus(selectedStatus).map((entry) => (
-                      <div key={entry._id} className="flex items-start gap-3 p-4 bg-muted/20 rounded-lg border hover:bg-muted/30 transition-colors">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-semibold">{entry.entryNumber}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {entry.eventName || "Unknown Event"} • {entry.tournamentName || "Unknown Tournament"}
-                              </p>
-                            </div>
-                            <Badge className={cn(getStatusColor(entry.currentStatus), "border")}>
-                              {entry.currentStatus.replace(/_/g, ' ')}
-                            </Badge>
-                          </div>
-
-                          <p className="text-xs text-muted-foreground">
-                            Players: {entry.playerList?.player2Name
-                              ? `${entry.playerList.player1Name} & ${entry.playerList.player2Name}`
-                              : entry.playerList?.player1Name || "Unknown Player"}
-                          </p>
-
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-4">
-                              <span className="flex items-center gap-1">
-                                Pending: ₱{entry.pendingAmount?.toLocaleString() || 0}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                Paid: ₱{entry.totalPaid?.toLocaleString() || 0}
-                              </span>
-
-                            </div>
-                            <span className="text-muted-foreground">
-                              {formatDistanceToNow(new Date(entry.dateUpdated), { addSuffix: true })}
-                            </span>
-                          </div>
-                          <div className="flex flex-row gap-2">
-                            {(entry.hasOverpayment || entry.hasRefunds) && (
-                              <div className="flex items-center gap-2 text-xs">
-                                {entry.hasOverpayment && (
-                                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                                    Overpayment: ₱{entry.totalExcess?.toLocaleString() || 0}
-                                  </Badge>
-                                )}
-                                {entry.hasRefunds && (
-                                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                    Refund: ₱{entry.totalRefundAmount?.toLocaleString() || 0}
-                                  </Badge>
-                                )}
+                    {selectedStatus &&
+                      getEntriesByStatus(selectedStatus).map((entry) => (
+                        <div
+                          key={entry._id}
+                          className="flex items-start gap-3 p-4 bg-muted/20 rounded-lg border hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold">
+                                  {entry.entryNumber}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {entry.eventName || "Unknown Event"} •{" "}
+                                  {entry.tournamentName || "Unknown Tournament"}
+                                </p>
                               </div>
-                            )}
-                            {entry.isEarlyBird && (
-                              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                                Early Bird
+                              <Badge
+                                className={cn(
+                                  getStatusColor(entry.currentStatus),
+                                  "border",
+                                )}
+                              >
+                                {entry.currentStatus.replace(/_/g, " ")}
                               </Badge>
-                            )}
+                            </div>
 
+                            <p className="text-xs text-muted-foreground">
+                              Players:{" "}
+                              {entry.playerList?.player2Name
+                                ? `${entry.playerList.player1Name} & ${entry.playerList.player2Name}`
+                                : entry.playerList?.player1Name ||
+                                  "Unknown Player"}
+                            </p>
+
+                            <div className="flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-4">
+                                <span className="flex items-center gap-1">
+                                  Pending: ₱
+                                  {entry.pendingAmount?.toLocaleString() || 0}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  Paid: ₱
+                                  {entry.totalPaid?.toLocaleString() || 0}
+                                </span>
+                              </div>
+                              <span className="text-muted-foreground">
+                                {formatDistanceToNow(
+                                  new Date(entry.dateUpdated),
+                                  { addSuffix: true },
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex flex-row gap-2">
+                              {(entry.hasOverpayment || entry.hasRefunds) && (
+                                <div className="flex items-center gap-2 text-xs">
+                                  {entry.hasOverpayment && (
+                                    <Badge
+                                      variant="outline"
+                                      className="bg-amber-50 text-amber-700 border-amber-200"
+                                    >
+                                      Overpayment: ₱
+                                      {entry.totalExcess?.toLocaleString() || 0}
+                                    </Badge>
+                                  )}
+                                  {entry.hasRefunds && (
+                                    <Badge
+                                      variant="outline"
+                                      className="bg-red-50 text-red-700 border-red-200"
+                                    >
+                                      Refund: ₱
+                                      {entry.totalRefundAmount?.toLocaleString() ||
+                                        0}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                              {entry.isEarlyBird && (
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-green-100 text-green-800"
+                                >
+                                  Early Bird
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 )}
 
                 <div className="flex justify-end">
-                  <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsModalOpen(false)}
+                  >
                     Close
                   </Button>
                 </div>
@@ -2006,12 +2405,18 @@ const Page = () => {
               ) : (
                 <div className="space-y-4">
                   {entriesByEvent.map((event, index) => {
-                    const earlyBirdPercentage = (event.earlyBirdCount / event.count) * 100
-                    const verifiedPercentage = (event.verifiedCount / event.count) * 100
-                    const pendingPercentage = (event.pendingCount / event.count) * 100
+                    const earlyBirdPercentage =
+                      (event.earlyBirdCount / event.count) * 100
+                    const verifiedPercentage =
+                      (event.verifiedCount / event.count) * 100
+                    const pendingPercentage =
+                      (event.pendingCount / event.count) * 100
 
                     return (
-                      <div key={`${event.tournamentName}-${event.eventName}`} className="space-y-2">
+                      <div
+                        key={`${event.tournamentName}-${event.eventName}`}
+                        className="space-y-2"
+                      >
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-medium">
@@ -2055,13 +2460,22 @@ const Page = () => {
 
                         <div className="flex items-center justify-between text-xs mt-1">
                           <div className="flex items-center gap-3">
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            <Badge
+                              variant="outline"
+                              className="bg-green-50 text-green-700 border-green-200"
+                            >
                               Early Bird: {event.earlyBirdCount}
                             </Badge>
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            <Badge
+                              variant="outline"
+                              className="bg-blue-50 text-blue-700 border-blue-200"
+                            >
                               Verified: {event.verifiedCount}
                             </Badge>
-                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                            <Badge
+                              variant="outline"
+                              className="bg-yellow-50 text-yellow-700 border-yellow-200"
+                            >
                               Pending: {event.pendingCount}
                             </Badge>
                           </div>
@@ -2086,16 +2500,21 @@ const Page = () => {
                     Recent Entries
                   </CardTitle>
                   {(() => {
-                    const last24HoursCount = entriesData?.entries?.edges?.filter(({ node }) => {
-                      const date = new Date(node.dateUpdated)
-                      const now = new Date()
-                      const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-                      return diffHours <= 24
-                    }).length || 0
+                    const last24HoursCount =
+                      entriesData?.entries?.edges?.filter(({ node }) => {
+                        const date = new Date(node.dateUpdated)
+                        const now = new Date()
+                        const diffHours =
+                          (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                        return diffHours <= 24
+                      }).length || 0
 
                     return last24HoursCount > 0 ? (
                       <Badge className="bg-green-500 hover:bg-green-600 text-white ml-2">
-                        +{last24HoursCount} {last24HoursCount === 1 ? 'Added New Entry' : 'Added New Entries'}
+                        +{last24HoursCount}{" "}
+                        {last24HoursCount === 1
+                          ? "Added New Entry"
+                          : "Added New Entries"}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="ml-2">
@@ -2105,30 +2524,45 @@ const Page = () => {
                   })()}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  <Badge
+                    variant="outline"
+                    className="bg-blue-50 text-blue-700 border-blue-200"
+                  >
                     <Clock className="h-3 w-3 mr-1" />
-                    24h: {entriesData?.entries?.edges?.filter(({ node }) => {
+                    24h:{" "}
+                    {entriesData?.entries?.edges?.filter(({ node }) => {
                       const date = new Date(node.dateUpdated)
                       const now = new Date()
-                      const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                      const diffHours =
+                        (now.getTime() - date.getTime()) / (1000 * 60 * 60)
                       return diffHours <= 24
                     }).length || 0}
                   </Badge>
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  <Badge
+                    variant="outline"
+                    className="bg-green-50 text-green-700 border-green-200"
+                  >
                     <Clock className="h-3 w-3 mr-1" />
-                    7d: {entriesData?.entries?.edges?.filter(({ node }) => {
+                    7d:{" "}
+                    {entriesData?.entries?.edges?.filter(({ node }) => {
                       const date = new Date(node.dateUpdated)
                       const now = new Date()
-                      const diffDays = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+                      const diffDays =
+                        (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
                       return diffDays <= 7
                     }).length || 0}
                   </Badge>
-                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                  <Badge
+                    variant="outline"
+                    className="bg-purple-50 text-purple-700 border-purple-200"
+                  >
                     <Clock className="h-3 w-3 mr-1" />
-                    30d: {entriesData?.entries?.edges?.filter(({ node }) => {
+                    30d:{" "}
+                    {entriesData?.entries?.edges?.filter(({ node }) => {
                       const date = new Date(node.dateUpdated)
                       const now = new Date()
-                      const diffDays = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+                      const diffDays =
+                        (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
                       return diffDays <= 30
                     }).length || 0}
                   </Badge>
@@ -2153,34 +2587,45 @@ const Page = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-2 text-center">
-                      <p className="text-xs text-muted-foreground">Last 24 Hours</p>
+                      <p className="text-xs text-muted-foreground">
+                        Last 24 Hours
+                      </p>
                       <p className="text-lg font-bold text-blue-600">
                         {entriesData?.entries?.edges?.filter(({ node }) => {
                           const date = new Date(node.dateUpdated)
                           const now = new Date()
-                          const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                          const diffHours =
+                            (now.getTime() - date.getTime()) / (1000 * 60 * 60)
                           return diffHours <= 24
                         }).length || 0}
                       </p>
                     </div>
                     <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-2 text-center">
-                      <p className="text-xs text-muted-foreground">Last 7 Days</p>
+                      <p className="text-xs text-muted-foreground">
+                        Last 7 Days
+                      </p>
                       <p className="text-lg font-bold text-green-600">
                         {entriesData?.entries?.edges?.filter(({ node }) => {
                           const date = new Date(node.dateUpdated)
                           const now = new Date()
-                          const diffDays = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+                          const diffDays =
+                            (now.getTime() - date.getTime()) /
+                            (1000 * 60 * 60 * 24)
                           return diffDays <= 7
                         }).length || 0}
                       </p>
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-2 text-center">
-                      <p className="text-xs text-muted-foreground">Last 30 Days</p>
+                      <p className="text-xs text-muted-foreground">
+                        Last 30 Days
+                      </p>
                       <p className="text-lg font-bold text-purple-600">
                         {entriesData?.entries?.edges?.filter(({ node }) => {
                           const date = new Date(node.dateUpdated)
                           const now = new Date()
-                          const diffDays = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+                          const diffDays =
+                            (now.getTime() - date.getTime()) /
+                            (1000 * 60 * 60 * 24)
                           return diffDays <= 30
                         }).length || 0}
                       </p>
@@ -2188,11 +2633,12 @@ const Page = () => {
                   </div>
 
                   {(() => {
-                    const todayCount = entriesData?.entries?.edges?.filter(({ node }) => {
-                      const date = new Date(node.dateUpdated)
-                      const today = new Date()
-                      return date.toDateString() === today.toDateString()
-                    }).length || 0
+                    const todayCount =
+                      entriesData?.entries?.edges?.filter(({ node }) => {
+                        const date = new Date(node.dateUpdated)
+                        const today = new Date()
+                        return date.toDateString() === today.toDateString()
+                      }).length || 0
 
                     return todayCount > 0 ? (
                       <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
@@ -2204,7 +2650,8 @@ const Page = () => {
                             </span>
                           </div>
                           <Badge className="bg-green-500 text-white">
-                            +{todayCount} {todayCount === 1 ? 'new' : 'new'} today
+                            +{todayCount} {todayCount === 1 ? "new" : "new"}{" "}
+                            today
                           </Badge>
                         </div>
                       </div>
@@ -2212,15 +2659,24 @@ const Page = () => {
                   })()}
 
                   {topEntries.map((entry, index) => {
-                    const rankIcon = index === 0 ? <Crown className="h-4 w-4 text-yellow-500" /> :
-                      index === 1 ? <Award className="h-4 w-4 text-gray-400" /> :
-                        index === 2 ? <Star className="h-4 w-4 text-amber-600" /> :
-                          <span className="text-xs font-medium text-muted-foreground w-4 text-center">#{index + 1}</span>
+                    const rankIcon =
+                      index === 0 ? (
+                        <Crown className="h-4 w-4 text-yellow-500" />
+                      ) : index === 1 ? (
+                        <Award className="h-4 w-4 text-gray-400" />
+                      ) : index === 2 ? (
+                        <Star className="h-4 w-4 text-amber-600" />
+                      ) : (
+                        <span className="text-xs font-medium text-muted-foreground w-4 text-center">
+                          #{index + 1}
+                        </span>
+                      )
 
                     const isVeryRecent = (() => {
                       const date = new Date(entry.date)
                       const now = new Date()
-                      const diffMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
+                      const diffMinutes =
+                        (now.getTime() - date.getTime()) / (1000 * 60)
                       return diffMinutes < 60
                     })()
 
@@ -2231,10 +2687,15 @@ const Page = () => {
                     })()
 
                     // Safe amount formatting with null check
-                    const formattedAmount = entry.amount ? `₱${entry.amount.toLocaleString()}` : '₱0'
+                    const formattedAmount = entry.amount
+                      ? `₱${entry.amount.toLocaleString()}`
+                      : "₱0"
 
                     return (
-                      <div key={entry._id} className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors relative">
+                      <div
+                        key={entry._id}
+                        className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors relative"
+                      >
                         {isVeryRecent && (
                           <div className="absolute -top-1 -right-1">
                             <span className="relative flex h-3 w-3">
@@ -2249,44 +2710,77 @@ const Page = () => {
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm font-semibold">{entry.entryNumber}</p>
-                              <p className="text-xs text-muted-foreground">{entry.eventName} • {entry.tournamentName}</p>
+                              <p className="text-sm font-semibold">
+                                {entry.entryNumber}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {entry.eventName} • {entry.tournamentName}
+                              </p>
                             </div>
                             <div className="flex items-center gap-2">
                               {isToday && (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800 text-[10px]">
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-green-100 text-green-800 text-[10px]"
+                                >
                                   New Today
                                 </Badge>
                               )}
-                              <Badge variant={entry.isEarlyBird ? "default" : "secondary"} className={entry.isEarlyBird ? "bg-green-100 text-green-800" : ""}>
+                              <Badge
+                                variant={
+                                  entry.isEarlyBird ? "default" : "secondary"
+                                }
+                                className={
+                                  entry.isEarlyBird
+                                    ? "bg-green-100 text-green-800"
+                                    : ""
+                                }
+                              >
                                 {entry.isEarlyBird ? "Early Bird" : "Regular"}
                               </Badge>
                             </div>
                           </div>
-                          <p className="text-xs text-muted-foreground line-clamp-1">{entry.players}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {entry.players}
+                          </p>
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline" className={cn(
-                                entry.status === "VERIFIED" && "bg-green-50 text-green-700 border-green-200",
-                                entry.status === "PAYMENT_PENDING" && "bg-yellow-50 text-yellow-700 border-yellow-200",
-                                entry.status === "REJECTED" && "bg-red-50 text-red-700 border-red-200"
-                              )}>
-                                {entry.status.replace(/_/g, ' ')}
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  entry.status === "VERIFIED" &&
+                                    "bg-green-50 text-green-700 border-green-200",
+                                  entry.status === "PAYMENT_PENDING" &&
+                                    "bg-yellow-50 text-yellow-700 border-yellow-200",
+                                  entry.status === "REJECTED" &&
+                                    "bg-red-50 text-red-700 border-red-200",
+                                )}
+                              >
+                                {entry.status.replace(/_/g, " ")}
                               </Badge>
                               <span className="text-muted-foreground flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
-                                {formatDistanceToNow(new Date(entry.date), { addSuffix: true })}
+                                {formatDistanceToNow(new Date(entry.date), {
+                                  addSuffix: true,
+                                })}
                               </span>
                             </div>
-                            <span className="font-medium">{formattedAmount}</span>
+                            <span className="font-medium">
+                              {formattedAmount}
+                            </span>
                           </div>
                           {(entry.hasRefunds || entry.hasOverpayment) && (
                             <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                               {entry.hasRefunds && entry.totalRefundAmount ? (
-                                <span>Refunded: ₱{entry.totalRefundAmount.toLocaleString()}</span>
+                                <span>
+                                  Refunded: ₱
+                                  {entry.totalRefundAmount.toLocaleString()}
+                                </span>
                               ) : null}
                               {entry.hasOverpayment && entry.totalExcess ? (
-                                <span>Excess: ₱{entry.totalExcess.toLocaleString()}</span>
+                                <span>
+                                  Excess: ₱{entry.totalExcess.toLocaleString()}
+                                </span>
                               ) : null}
                             </div>
                           )}
@@ -2295,9 +2789,15 @@ const Page = () => {
                     )
                   })}
 
-                  <Button variant="link" className="w-full mt-2" size="sm" asChild>
+                  <Button
+                    variant="link"
+                    className="w-full mt-2"
+                    size="sm"
+                    asChild
+                  >
                     <Link href="/entries">
-                      View all entries ({entriesData?.entries?.edges?.length || 0} total)
+                      View all entries (
+                      {entriesData?.entries?.edges?.length || 0} total)
                       <ChevronRight className="ml-1 h-4 w-4" />
                     </Link>
                   </Button>
@@ -2317,7 +2817,9 @@ const Page = () => {
             </CardHeader>
             <CardContent>
               <div className="h-[400px] flex items-center justify-center border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">Analytics charts will appear here</p>
+                <p className="text-muted-foreground">
+                  Analytics charts will appear here
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -2327,13 +2829,13 @@ const Page = () => {
           <Card>
             <CardHeader>
               <CardTitle>Reports</CardTitle>
-              <CardDescription>
-                Generate and download reports
-              </CardDescription>
+              <CardDescription>Generate and download reports</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-[400px] flex items-center justify-center border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">Reports interface will appear here</p>
+                <p className="text-muted-foreground">
+                  Reports interface will appear here
+                </p>
               </div>
             </CardContent>
           </Card>

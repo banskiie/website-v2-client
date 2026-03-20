@@ -1180,7 +1180,11 @@ const FormDialog = (props: Props) => {
       })
     })
 
-    return () => unsubscribe()
+    return () => {
+    if (typeof unsubscribe === "function") {
+      unsubscribe()
+    }
+  }
   }, [form])
 
   const isSubmitDisabled = () => {

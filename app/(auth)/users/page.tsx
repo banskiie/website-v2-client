@@ -184,7 +184,7 @@ const Page = () => {
             // Add the new user to the top of the list
             const newUser = user
             const newUserExists = prev.users.edges.find(
-              (edge: any) => edge.node._id === newUser?._id
+              (edge: any) => edge.node._id === newUser?._id,
             )
             if (newUserExists || search || sort || filter.length > 0)
               return prev // Skip updating during search/sort/filter
@@ -210,7 +210,7 @@ const Page = () => {
                 edges: prev.users.edges.map((edge: any) =>
                   edge.node._id === updatedUser._id
                     ? { ...edge, node: updatedUser }
-                    : edge
+                    : edge,
                 ),
               },
             })
@@ -224,7 +224,7 @@ const Page = () => {
                 ...prev.users,
                 total: prev.users.total - 1,
                 edges: prev.users.edges.filter(
-                  (edge: any) => edge.node._id !== deletedUser._id
+                  (edge: any) => edge.node._id !== deletedUser._id,
                 ),
               },
             })
@@ -232,7 +232,7 @@ const Page = () => {
             const updatedUsers = users
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.success(
-              `Batch update successful for ${updatedUsers.length} users.`
+              `Batch update successful for ${updatedUsers.length} users.`,
             )
             const updatedIds = new Set(updatedUsers.map((u: any) => u._id))
             return Object.assign({}, prev, {
@@ -245,11 +245,11 @@ const Page = () => {
                         node: {
                           ...edge.node,
                           ...updatedUsers.find(
-                            (u: any) => u._id === edge.node._id
+                            (u: any) => u._id === edge.node._id,
                           ),
                         },
                       }
-                    : edge
+                    : edge,
                 ),
               },
             })
@@ -258,7 +258,11 @@ const Page = () => {
         }
       },
     })
-    return () => unsubscribe()
+    return () => {
+      if (typeof unsubscribe === "function") {
+        unsubscribe()
+      }
+    }
   }, [subscribeToMore, search, sort, filter])
 
   // Memoized Data Processing
@@ -315,7 +319,7 @@ const Page = () => {
               onCheckedChange={(value: boolean) => {
                 if (value) {
                   const allIds = new Set<string>(
-                    data?.users.edges.map((edge: any) => edge.node._id)
+                    data?.users.edges.map((edge: any) => edge.node._id),
                   )
                   setSelectedIds(allIds)
                 } else {
@@ -434,7 +438,7 @@ const Page = () => {
         cell: ({ row }) => <ActiveBadge isActive={row.original.isActive} />,
       },
     ],
-    [sort, onSort, filter, onFilter, selectedIds, data?.users]
+    [sort, onSort, filter, onFilter, selectedIds, data?.users],
   )
 
   // Next Page
