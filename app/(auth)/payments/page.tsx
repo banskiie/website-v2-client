@@ -56,6 +56,7 @@ import BatchMenu from "./dialogs/batch"
 import PaymentStatusBadge from "@/components/badges/payment-status-badge"
 import VerifyDialog from "./dialogs/verify"
 import RejectDialog from "./dialogs/reject"
+import { Badge } from "@/components/ui/badge"
 
 const PAYMENTS = gql`
   query Payments(
@@ -85,6 +86,26 @@ const PAYMENTS = gql`
           paymentDate
           currentStatus
           entries
+          appliedAmount
+          hasExcess
+          excessAmount
+          refundAmountForThisPayment
+          hasRefundsForThisPayment
+          netAmountForThisPayment
+          entryList {
+            isFullyPaid
+            entry {
+              _id
+              entryNumber
+              entryKey
+              transactions {
+                pendingAmount
+                amountChanged
+                transactionType
+              }
+              currentStatus
+            }
+          }
         }
       }
       pageInfo {
@@ -99,7 +120,7 @@ const PAYMENT_CHANGED = gql`
   subscription PaymentChanged {
     paymentChanged {
       type
-      payment {
+       payment {
         _id
         payerName
         referenceNumber
@@ -108,6 +129,26 @@ const PAYMENT_CHANGED = gql`
         paymentDate
         currentStatus
         entries
+        appliedAmount
+        hasExcess
+        excessAmount
+        refundAmountForThisPayment
+        hasRefundsForThisPayment
+        netAmountForThisPayment
+        entryList {
+          isFullyPaid
+          entry {
+            _id
+            entryNumber
+            entryKey
+            transactions {
+              pendingAmount
+              amountChanged
+              transactionType
+            }
+            currentStatus
+          }
+        }
       }
       payments {
         _id
@@ -118,6 +159,26 @@ const PAYMENT_CHANGED = gql`
         paymentDate
         currentStatus
         entries
+        appliedAmount
+        hasExcess
+        excessAmount
+        refundAmountForThisPayment
+        hasRefundsForThisPayment
+        netAmountForThisPayment
+        entryList {
+          isFullyPaid
+          entry {
+            _id
+            entryNumber
+            entryKey
+            transactions {
+              pendingAmount
+              amountChanged
+              transactionType
+            }
+            currentStatus
+          }
+        }
       }
     }
   }
@@ -323,6 +384,12 @@ const Page = () => {
     resetPage()
   }, [])
 
+  const getEntryBalance = (entry: any) => {
+    if (!entry?.transactions) return 0;
+    const lastTransaction = entry.transactions[entry.transactions.length - 1];
+    return lastTransaction?.pendingAmount || 0;
+  };
+
   const columns: ColumnDef<IPayment>[] = useMemo(
     () => [
       {
@@ -454,11 +521,125 @@ const Page = () => {
             onFilterChange={onFilter}
           />
         ),
-        cell: ({ row }) =>
-          `₱${parseFloat((row.original as any).amount).toLocaleString("en-PH", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}`,
+        cell: ({ row }) => {
+          const payment = row.original as any;
+          const amount = payment.amount;
+
+          return (
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">
+                ₱{parseFloat(amount).toLocaleString("en-PH", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        id: "paymentFinancials",
+        header: "Payment Details",
+        cell: ({ row }) => {
+          const payment = row.original as any;
+          const {
+            amount,
+            appliedAmount,
+            hasExcess,
+            excessAmount,
+            refundAmountForThisPayment,
+            hasRefundsForThisPayment,
+            currentStatus,
+            entryList,
+          } = payment;
+
+          const usedAmount = parseFloat(appliedAmount) || 0;
+          const excess = parseFloat(excessAmount) || 0;
+          const refundAmount = parseFloat(refundAmountForThisPayment) || 0;
+
+          const entryBalances = (entryList || []).map((item: any) => {
+            const balance = getEntryBalance(item.entry);
+            return {
+              entryNumber: item.entry?.entryNumber,
+              balance,
+              isFullyPaid: item.isFullyPaid
+            };
+          });
+
+          return (
+            <div className="flex items-start gap-7 min-w-[140px]">
+              <div className="flex flex-col items-start gap-1">
+                {entryBalances.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-[13px]">
+                    <span className="text-gray-600 font-mono">{item.entryNumber}:</span>
+                    {item.balance < 0 ? (
+                      <span className="text-red-600  text-[13px] flex gap-1"> Excess:
+                        <span className=" font-medium underline underline-offset-2">
+                          ₱{Math.abs(item.balance).toLocaleString()}
+                        </span></span>
+                    ) : item.balance === 0 ? (
+                      <span className="text-green-600 font-medium">Paid</span>
+                    ) : (
+                      <span className="flex gap-1 text-orange-600 text-[13px]">
+                        Balance Due:
+                        <span className=" font-medium underline underline-offset-2">
+                          ₱{item.balance.toLocaleString()}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                ))}
+
+                {hasExcess && excess > 0 && entryBalances.length === 0 && (
+                  <span className=" text-[13px] gap2 flex">
+                    Excess:<span className="text-blue-600 font-medium underline underline-offset-2">₱{excess.toLocaleString()}
+                    </span>
+                  </span>
+                )}
+                {hasRefundsForThisPayment && refundAmount > 0 && (
+                  <span className=" text-[13px] gap-2 flex text-gray-600">
+                    Refunded:<span className="text-green-600 font-medium underline underline-offset-2"> ₱{refundAmount.toLocaleString()}
+                    </span>
+                  </span>
+
+                )}
+              </div>
+            </div>
+          );
+        },
+        size: 280,
+      },
+      {
+        id: "distribution",
+        header: "Distribution",
+        cell: ({ row }) => {
+          const payment = row.original as any;
+          const entryList = payment.entryList || [];
+
+          if (entryList.length === 0) return <span className=" text-[13px] text-muted-foreground">Not distributed</span>;
+
+          return (
+            <div className="flex flex-col gap-1">
+              {entryList.map((item: any, index: number) => (
+                <div key={index} className="flex items-center gap-2  text-[13px]">
+                  <span className="font-mono text-gray-600">
+                    {item.entry?.entryNumber}:
+                  </span>
+                  {item.isFullyPaid ? (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[11px] px-1">
+                      Fully Paid
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[11px] px-1">
+                      Partial
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        },
+        size: 200,
       },
 
       {
@@ -484,16 +665,21 @@ const Page = () => {
             onFilterChange={onFilter}
           />
         ),
-        cell: ({ row }) => (
-          <PaymentStatusBadge
-            status={(row.original as any).currentStatus as PaymentStatus}
-          />
-        ),
+        cell: ({ row }) => {
+          const payment = row.original as any;
+          const status = payment.currentStatus;
+
+          return (
+            <div className="flex flex-col gap-1">
+              <PaymentStatusBadge status={status} />
+            </div>
+          );
+        },
         size: 20,
       },
     ],
     [sort, onSort, filter, onFilter, selectedIds, data?.payments]
-  )
+  );
 
   const goNext = async () => {
     if (page.current === page.max) return

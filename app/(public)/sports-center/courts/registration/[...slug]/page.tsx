@@ -263,21 +263,22 @@ const SuccessModal = ({ isOpen, onClose, message }: {
 }
 
 const showValidationToast = (errors: string[], title?: string) => {
-
     if (!errors || errors.length === 0) return;
+
+    const uniqueErrors = [...new Set(errors)];
 
     toast.error(
         <div className="py-2">
             <h4 className="font-semibold text-red-800 mb-2">{title || "Validation Failed"}</h4>
             <div className="space-y-1 max-h-60 overflow-y-auto">
-                {errors.slice(0, 5).map((error, index) => (
+                {uniqueErrors.slice(0, 5).map((error, index) => (
                     <p key={index} className="text-sm text-red-700">
                         • {error}
                     </p>
                 ))}
-                {errors.length > 5 && (
+                {uniqueErrors.length > 5 && (
                     <p className="text-xs text-red-600 mt-1">
-                        ...and {errors.length - 5} more errors
+                        ...and {uniqueErrors.length - 5} more errors
                     </p>
                 )}
             </div>
@@ -313,38 +314,38 @@ const showValidationToast = (errors: string[], title?: string) => {
     );
 };
 
-const showFieldErrorToast = (fieldName: string, errors: any[]) => {
-    if (!errors || errors.length === 0) return;
+// const showFieldErrorToast = (fieldName: string, errors: any[]) => {
+//     if (!errors || errors.length === 0) return;
 
-    const errorMessages = errors.map(err =>
-        typeof err === 'object' && err.message ? err.message : String(err)
-    );
+//     const errorMessages = errors.map(err =>
+//         typeof err === 'object' && err.message ? err.message : String(err)
+//     );
 
-    const displayFieldName = fieldName
-        .replace(/([A-Z])/g, ' $1')
-        .replace(/^./, str => str.toUpperCase())
-        .replace('player1', 'Player 1')
-        .replace('player2', 'Player 2');
+//     const displayFieldName = fieldName
+//         .replace(/([A-Z])/g, ' $1')
+//         .replace(/^./, str => str.toUpperCase())
+//         .replace('player1', 'Player 1')
+//         .replace('player2', 'Player 2');
 
-    toast.warning(
-        <div className="py-2">
-            <h4 className="font-semibold text-amber-800 mb-2">{displayFieldName}</h4>
-            <div className="space-y-1">
-                {errorMessages.map((error, index) => (
-                    <p key={index} className="text-sm text-amber-700">
-                        • {error}
-                    </p>
-                ))}
-            </div>
-        </div>,
-        {
-            duration: 6000,
-            position: 'bottom-right',
-            icon: <AlertCircle className="w-5 h-5 text-amber-600" />,
-            id: `field-${fieldName}-${Date.now()}`,
-        }
-    );
-};
+//     toast.warning(
+//         <div className="py-2">
+//             <h4 className="font-semibold text-amber-800 mb-2">{displayFieldName}</h4>
+//             <div className="space-y-1">
+//                 {errorMessages.map((error, index) => (
+//                     <p key={index} className="text-sm text-amber-700">
+//                         • {error}
+//                     </p>
+//                 ))}
+//             </div>
+//         </div>,
+//         {
+//             duration: 6000,
+//             position: 'bottom-right',
+//             icon: <AlertCircle className="w-5 h-5 text-amber-600" />,
+//             id: `field-${fieldName}-${Date.now()}`,
+//         }
+//     );
+// };
 
 const UploadingOverlay = () => (
     <motion.div
@@ -529,7 +530,7 @@ export default function Page({ params }: RegistrationPageProps) {
     const [previewDocumentType, setPreviewDocumentType] = useState("")
 
     // Track shown field errors to prevent duplicate toasts
-    const [shownFieldErrors, setShownFieldErrors] = useState<Set<string>>(new Set());
+    // const [shownFieldErrors, setShownFieldErrors] = useState<Set<string>>(new Set());
 
     const tournaments = data?.publicTournaments ?? []
     const tournament = tournaments.find((t: any) => t._id === tournamentId) ?? tournaments.find((t: any) => t.isActive)
@@ -874,14 +875,14 @@ export default function Page({ params }: RegistrationPageProps) {
 
                 setIsSubmitting(true);
 
-                setShownFieldErrors(new Set());
+                // setShownFieldErrors(new Set());
 
                 const schema = createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation);
                 const validationResult = schema.safeParse(value);
 
                 if (!validationResult.success) {
-
                     const allErrors = validationResult.error.issues.map((err: any) => err.message);
+                    const uniqueAllErrors = [...new Set(allErrors)];
 
                     const fieldErrors: Record<string, string[]> = {};
                     validationResult.error.issues.forEach((err: any) => {
@@ -889,7 +890,10 @@ export default function Page({ params }: RegistrationPageProps) {
                         if (!fieldErrors[fieldPath]) {
                             fieldErrors[fieldPath] = [];
                         }
-                        fieldErrors[fieldPath].push(err.message);
+                        // Only add unique error messages per field
+                        if (!fieldErrors[fieldPath].includes(err.message)) {
+                            fieldErrors[fieldPath].push(err.message);
+                        }
                     });
 
                     const ageErrors = validationResult.error.issues.filter((err: any) =>
@@ -903,6 +907,7 @@ export default function Page({ params }: RegistrationPageProps) {
                         err.message.toLowerCase().includes('minimum age') ||
                         err.message.toLowerCase().includes('maximum age')
                     );
+                    const uniqueAgeMessages = [...new Set(ageErrors.map((err: any) => err.message))];
 
                     const genderErrors = validationResult.error.issues.filter((err: any) =>
                         err.path.some(path =>
@@ -913,11 +918,13 @@ export default function Page({ params }: RegistrationPageProps) {
                         err.message.toLowerCase().includes('male') ||
                         err.message.toLowerCase().includes('female')
                     );
+                    const uniqueGenderMessages = [...new Set(genderErrors.map((err: any) => err.message))];
 
                     const requiredFieldErrors = validationResult.error.issues.filter((err: any) =>
                         err.message.toLowerCase().includes('required') ||
-                        err.code === 'invalid_type' && err.message.includes('Required')
+                        (err.code === 'invalid_type' && err.message.includes('Required'))
                     );
+                    const uniqueRequiredMessages = [...new Set(requiredFieldErrors.map((err: any) => err.message))];
 
                     const documentErrors = validationResult.error.issues.filter((err: any) =>
                         err.path.some(path =>
@@ -929,6 +936,7 @@ export default function Page({ params }: RegistrationPageProps) {
                         err.message.toLowerCase().includes('document') ||
                         err.message.toLowerCase().includes('file')
                     );
+                    const uniqueDocumentMessages = [...new Set(documentErrors.map((err: any) => err.message))];
 
                     const contactErrors = validationResult.error.issues.filter((err: any) =>
                         err.path.some(path =>
@@ -940,11 +948,10 @@ export default function Page({ params }: RegistrationPageProps) {
                         err.message.toLowerCase().includes('phone') ||
                         err.message.toLowerCase().includes('contact')
                     );
+                    const uniqueContactMessages = [...new Set(contactErrors.map((err: any) => err.message))];
 
-                    if (ageErrors.length > 0) {
-                        const ageErrorMessages = ageErrors.map((err: any) => err.message);
-                        showValidationToast(ageErrorMessages, "🎂 Age Validation Failed");
-
+                    if (uniqueAgeMessages.length > 0) {
+                        showValidationToast(uniqueAgeMessages, "🎂 Age Validation Failed");
                         setTimeout(() => {
                             const firstAgeField = document.querySelector('[name*="Birthday"]');
                             if (firstAgeField) {
@@ -953,19 +960,16 @@ export default function Page({ params }: RegistrationPageProps) {
                         }, 100);
                     }
 
-                    if (genderErrors.length > 0) {
-                        const genderErrorMessages = genderErrors.map((err: any) => err.message);
-                        showValidationToast(genderErrorMessages, "⚥ Gender Validation Failed");
+                    if (uniqueGenderMessages.length > 0) {
+                        showValidationToast(uniqueGenderMessages, "⚥ Gender Validation Failed");
                     }
 
-                    if (documentErrors.length > 0) {
-                        const documentErrorMessages = documentErrors.map((err: any) => err.message);
-                        showValidationToast(documentErrorMessages, "📄 Document Upload Required");
+                    if (uniqueDocumentMessages.length > 0) {
+                        showValidationToast(uniqueDocumentMessages, "📄 Document Upload Required");
                     }
 
-                    if (contactErrors.length > 0) {
-                        const contactErrorMessages = contactErrors.map((err: any) => err.message);
-                        showValidationToast(contactErrorMessages, "📞 Contact Information Error");
+                    if (uniqueContactMessages.length > 0) {
+                        showValidationToast(uniqueContactMessages, "📞 Contact Information Error");
                     }
 
                     const otherErrors = validationResult.error.issues.filter((err: any) =>
@@ -974,47 +978,52 @@ export default function Page({ params }: RegistrationPageProps) {
                         !documentErrors.includes(err) &&
                         !contactErrors.includes(err)
                     );
+                    const uniqueOtherMessages = [...new Set(otherErrors.map((err: any) => err.message))];
 
-                    if (otherErrors.length > 0) {
-                        const otherErrorMessages = otherErrors.map((err: any) => err.message);
-                        showValidationToast(otherErrorMessages, "Validation Failed");
-                    } else if (requiredFieldErrors.length > 0 &&
-                        ageErrors.length === 0 &&
-                        genderErrors.length === 0 &&
-                        documentErrors.length === 0 &&
-                        contactErrors.length === 0) {
-                        showValidationToast(
-                            requiredFieldErrors.map((err: any) => err.message),
-                            "Required Fields Missing"
-                        );
+                    if (uniqueOtherMessages.length > 0) {
+                        showValidationToast(uniqueOtherMessages, "Validation Failed");
+                    } else if (uniqueRequiredMessages.length > 0 &&
+                        uniqueAgeMessages.length === 0 &&
+                        uniqueGenderMessages.length === 0 &&
+                        uniqueDocumentMessages.length === 0 &&
+                        uniqueContactMessages.length === 0) {
+                        showValidationToast(uniqueRequiredMessages, "Required Fields Missing");
                     }
 
+                    // Set field meta errors (only first error per field) - FIXED VERSION
                     Object.entries(fieldErrors).forEach(([fieldPath, errors]) => {
                         const fieldName = fieldPath as any;
-
                         try {
-                            // @ts-ignore - Bypass TypeScript for this line if needed
-                            form.setFieldMeta(fieldName, {
+                            // Get the current field meta
+                            const currentMeta = form.getFieldMeta(fieldName);
+
+                            // Update with proper FieldMeta structure
+                            form.setFieldMeta(fieldName, (prev: any) => ({
+                                ...prev,
                                 isTouched: true,
+                                errors: [errors[0]],
                                 errorMap: {
+                                    ...(prev?.errorMap || {}),
                                     onBlur: errors[0],
                                     onChange: errors[0]
                                 }
-                            });
+                            }));
                         } catch (e) {
+                            console.error("Error setting field meta:", e);
                         }
 
+                        // Trigger re-render by updating the field value
                         const currentValue = form.getFieldValue(fieldName);
                         if (currentValue !== undefined) {
                             form.setFieldValue(fieldName, currentValue);
                         }
                     });
 
-                    if (allErrors.length > 3) {
+                    if (uniqueAllErrors.length > 3) {
                         toast.error(
                             <div>
                                 <strong>Multiple Fields Need Attention</strong>
-                                <p className="text-sm mt-1">Found {allErrors.length} validation error(s). Please check the highlighted fields below.</p>
+                                <p className="text-sm mt-1">Found {uniqueAllErrors.length} validation error(s). Please check the highlighted fields below.</p>
                             </div>,
                             {
                                 duration: 8000,
@@ -1042,13 +1051,16 @@ export default function Page({ params }: RegistrationPageProps) {
                 let documentUrlPlayer2 = ""
 
                 if (filePlayer1) {
+                    // console.log("Uploading player 1 document...");
                     setIsUploading(true);
                     try {
                         const uploadedUrl = await uploadFile(filePlayer1, `registration-player1-${Date.now()}`)
                         if (uploadedUrl) {
                             documentUrlPlayer1 = uploadedUrl
+                            // console.log("Player 1 document uploaded:", uploadedUrl);
                         }
                     } catch (error) {
+                        // console.error("Failed to upload player 1 document:", error);
                         toast.error("Failed to upload document for Player 1", {
                             description: "Please try again or contact support if the issue persists.",
                             duration: 5000,
@@ -1302,46 +1314,18 @@ export default function Page({ params }: RegistrationPageProps) {
     };
 
     const EnhancedFieldError = ({ errors, fieldName }: { errors: any[], fieldName?: string }) => {
-        const hasShownToast = useRef(false);
-
-        // useEffect(() => {
-        //     if (errors && errors.length > 0 && fieldName && !hasShownToast.current) {
-        //         const firstError = typeof errors[0] === 'object' && errors[0].message
-        //             ? errors[0].message
-        //             : String(errors[0]);
-
-        //         const errorKey = `${fieldName}-${firstError}`;
-
-        //         if (!shownFieldErrors.has(errorKey)) {
-        //             showFieldErrorToast(fieldName, errors);
-
-        //             setShownFieldErrors(prev => new Set(prev).add(errorKey));
-        //             hasShownToast.current = true;
-        //         }
-        //     } else if (!errors || errors.length === 0) {
-        //         hasShownToast.current = false;
-        //     }
-        // }, [errors, fieldName]);
-
         if (!errors || errors.length === 0) return null;
+        const firstError = errors[0];
+        const errorMessage = typeof firstError === 'object' && firstError.message
+            ? firstError.message
+            : String(firstError);
 
         return (
             <div className="space-y-1">
-                {errors.map((error, index) => {
-                    const errorMessage = typeof error === 'object' && error.message
-                        ? error.message
-                        : String(error);
-
-                    return (
-                        <div
-                            key={index}
-                            className="flex items-start gap-2 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200"
-                        >
-                            <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
-                            <span>{errorMessage}</span>
-                        </div>
-                    );
-                })}
+                <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+                    <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+                    <span>{errorMessage}</span>
+                </div>
             </div>
         );
     };
@@ -1635,24 +1619,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                                                     if (isEmail) {
                                                                         field.handleChange(e.target.value);
                                                                     } else {
-                                                                        // Phone number field - fixed for 11 digits starting with 09
-                                                                        // Remove any non-digit characters
                                                                         const rawValue = e.target.value.replace(/\D/g, '');
-
-                                                                        // Ensure it starts with 09 and limit to 11 digits
-                                                                        let formattedValue = rawValue;
-                                                                        if (formattedValue && !formattedValue.startsWith('9')) {
-                                                                            // If it starts with just 9, make it 09
-                                                                            if (formattedValue.startsWith('9')) {
-                                                                                formattedValue = '0' + formattedValue;
-                                                                            } else {
-                                                                                formattedValue = '9' + formattedValue;
-                                                                            }
-                                                                        }
-                                                                        if (formattedValue.length > 10) {
-                                                                            formattedValue = formattedValue.substring(0, 10);
-                                                                        }
-
+                                                                        const formattedValue = rawValue.slice(0, 10);
                                                                         field.handleChange(formattedValue);
                                                                     }
                                                                 }}

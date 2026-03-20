@@ -83,6 +83,27 @@ const PAYMENT_CHANGED = gql`
         paymentDate
         currentStatus
         entries
+        # Add these missing fields
+        appliedAmount
+        hasExcess
+        excessAmount
+        refundAmountForThisPayment
+        hasRefundsForThisPayment
+        netAmountForThisPayment
+        entryList {
+          isFullyPaid
+          entry {
+            _id
+            entryNumber
+            entryKey
+            transactions {
+              pendingAmount
+              amountChanged
+              transactionType
+            }
+            currentStatus
+          }
+        }
       }
     }
   }

@@ -202,7 +202,7 @@ const PAYMENT_CHANGED = gql`
   subscription PaymentChanged {
     paymentChanged {
       type
-      payment {
+       payment {
         _id
         payerName
         referenceNumber
@@ -211,6 +211,27 @@ const PAYMENT_CHANGED = gql`
         paymentDate
         currentStatus
         entries
+        # Add these missing fields
+        appliedAmount
+        hasExcess
+        excessAmount
+        refundAmountForThisPayment
+        hasRefundsForThisPayment
+        netAmountForThisPayment
+        entryList {
+          isFullyPaid
+          entry {
+            _id
+            entryNumber
+            entryKey
+            transactions {
+              pendingAmount
+              amountChanged
+              transactionType
+            }
+            currentStatus
+          }
+        }
       }
       payments {
         _id
@@ -221,6 +242,26 @@ const PAYMENT_CHANGED = gql`
         paymentDate
         currentStatus
         entries
+        appliedAmount
+        hasExcess
+        excessAmount
+        refundAmountForThisPayment
+        hasRefundsForThisPayment
+        netAmountForThisPayment
+        entryList {
+          isFullyPaid
+          entry {
+            _id
+            entryNumber
+            entryKey
+            transactions {
+              pendingAmount
+              amountChanged
+              transactionType
+            }
+            currentStatus
+          }
+        }
       }
     }
   }

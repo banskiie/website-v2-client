@@ -69,7 +69,7 @@ const PROTECTED_ROUTES = [
     needsAuth: true,
   },
 ]
- 
+
 
 export async function proxy(req: NextRequest) {
   const COOKIES = await cookies()
@@ -81,18 +81,18 @@ export async function proxy(req: NextRequest) {
     (route) => route.needsAuth,
   ).map((r) => r.path)
 
-  if (PROTECTED_ROUTES_PATHS.includes(PATHNAME)) {
-    // If no refresh token, redirect to login
-    if (!REFRESH_TOKEN) return NextResponse.redirect(new URL("/login", req.url))
-    const route = PROTECTED_ROUTES.find((r) => r.path === PATHNAME)
-    // If invalid role permissions, redirect to dashboard
-    if (route && ROLE && !route.roles.includes(ROLE as Role)) {
-      console.warn(
-        "Invalid permission to access route, redirecting to dashboard...",
-      )
-      return NextResponse.redirect(new URL("/dashboard", req.url))
-    }
-  }
+  // if (PROTECTED_ROUTES_PATHS.includes(PATHNAME)) {
+  //   // If no refresh token, redirect to login
+  //   if (!REFRESH_TOKEN) return NextResponse.redirect(new URL("/login", req.url))
+  //   const route = PROTECTED_ROUTES.find((r) => r.path === PATHNAME)
+  //   // If invalid role permissions, redirect to dashboard
+  //   if (route && ROLE && !route.roles.includes(ROLE as Role)) {
+  //     console.warn(
+  //       "Invalid permission to access route, redirecting to dashboard...",
+  //     )
+  //     return NextResponse.redirect(new URL("/dashboard", req.url))
+  //   }
+  // }
 
   return NextResponse.next()
 }

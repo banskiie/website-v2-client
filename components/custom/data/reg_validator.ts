@@ -39,7 +39,9 @@ const getBaseFields = (hasFreeJersey: boolean) => {
         player1Suffix: z.string().optional(),
         player1Birthday: z.string().min(1, "Birthday is required"),
         player1Email: z.string().email("Invalid email address").optional(),
-        player1ContactNumber: z.string().optional(),
+        player1ContactNumber: z.string()
+            .min(1, "Contact number is required")
+            .regex(/^9\d{9}$/, "Contact number must be 10 digits starting with 9"),
         player1Gender: GenderEnum,
     };
 
@@ -61,7 +63,9 @@ const getDoublesFields = (hasFreeJersey: boolean) => {
         player2Suffix: z.string().optional(),
         player2Birthday: z.string().min(1, "Birthday is required"),
         player2Email: z.string().email("Invalid email address").optional(),
-        player2ContactNumber: z.string().optional(),
+        player2ContactNumber: z.string()
+            .min(1, "Contact number is required")
+            .regex(/^9\d{9}$/, "Contact number must be 10 digits starting with 9"),
         player2Gender: GenderEnum,
     };
 
