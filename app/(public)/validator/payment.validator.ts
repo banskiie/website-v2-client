@@ -91,7 +91,7 @@ export const validatePaymentForm = (data: PaymentFormData): ValidationResult => 
   const entryErrors: string[] = [];
   data.entries.forEach((entry, index) => {
     const entryError = data.entryErrors[index];
-    
+
     if (!entry.entryNumber || !entry.entryKey) {
       const errorMsg = `Entry ${index + 1} requires both Entry Number and Entry Key`;
       entryErrors.push(errorMsg);
@@ -148,28 +148,28 @@ export const validatePayerName = (name: string): string => {
 
 export const validateAmount = (amount: string): string => {
   if (!amount) return 'Amount is required';
-  
+
   const amountNum = parseFloat(amount);
   if (isNaN(amountNum)) return 'Amount must be a valid number';
   if (amountNum <= 0) return 'Amount must be greater than 0';
   if (amountNum > 1000000) return 'Amount cannot exceed ₱1,000,000';
-  
+
   return '';
 };
 
 export const validateFile = (file: File | null): string => {
   if (!file) return 'Proof of payment is required';
-  
+
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
   if (!allowedTypes.includes(file.type)) {
     return 'File must be an image (JPEG, PNG, GIF, or WEBP)';
   }
-  
-  const maxSize = 5 * 1024 * 1024;
+
+  const maxSize = 20 * 1024 * 1024;
   if (file.size > maxSize) {
-    return 'File size must be less than 5MB';
+    return 'File size must be less than 20MB';
   }
-  
+
   return '';
 };
 

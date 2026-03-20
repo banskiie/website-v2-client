@@ -651,7 +651,7 @@
 
 "use client"
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -714,13 +714,26 @@ function CategoryCard({
             'bg-purple-100 text-purple-800'
 
     return (
-        <button
+        <motion.button
             onClick={onClick}
-            className={`flex flex-col items-start p-4 rounded-lg border cursor-pointer transition w-full min-w-0 ${isDissolved
+            className={`relative flex flex-col items-start p-4 rounded-lg border cursor-pointer transition w-full min-w-0 overflow-hidden group ${isDissolved
                 ? 'border-red-200 bg-red-50/50 hover:bg-red-100/50'
-                : 'border-gray-200 bg-white hover:shadow-md hover:border-gray-300'
+                : 'border-gray-200 bg-white hover:border-gray-300'
                 }`}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
+            {/* Hover overlay with instruction */}
+            <motion.div
+                className="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                initial={false}
+            >
+                <span className="bg-black/70 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap">
+                    Click to Register
+                </span>
+            </motion.div>
+
             <div className="flex flex-wrap items-center gap-2 mb-2 w-full relative">
                 {type === "Doubles"
                     ? <Users className="w-4 h-4 text-gray-600 flex-shrink-0" />
@@ -737,7 +750,7 @@ function CategoryCard({
             </div>
             <span className="font-medium text-gray-800 text-sm md:text-base lg:text-base xl:text-base 2xl:text-base text-left break-words w-full">{name}</span>
             <div className="text-xs text-gray-500 mt-1">{type}</div>
-        </button>
+        </motion.button>
     )
 }
 
@@ -762,6 +775,7 @@ function CategoriesContent() {
     const [isCheckEntryModalOpen, setIsCheckEntryModalOpen] = useState(false)
     const [showReconciliation, setShowReconciliation] = useState(false)
     const [localEvents, setLocalEvents] = useState<any[]>([])
+    const doublesSectionRef = useRef<HTMLDivElement>(null)
 
     const oldData = {
         firstName: "Juan",
@@ -928,6 +942,13 @@ function CategoriesContent() {
                     <div className={`w-2 h-2 rounded-full ${colorClass}`} />
                     {group} {title}
                 </h3>
+
+                {/* Add instruction text for mobile/tablet users */}
+                <div className="mb-3 text-xs text-gray-500 italic flex items-center gap-1 md:hidden">
+                    <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                    Tap any card to register
+                </div>
+
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {groupCategories.map((category: any, idx: any) => (
                         <CategoryCard
@@ -955,6 +976,8 @@ function CategoriesContent() {
             </div>
         )
     }
+
+
 
     if (error) {
         console.error("GraphQL Error:", error)
@@ -1086,6 +1109,53 @@ function CategoriesContent() {
                         </Button>
                     </div>
 
+                    <motion.div
+                        className="mt-2 flex flex-col items-center justify-center gap-2 cursor-pointer group"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.8, duration: 0.5 }}
+                        onClick={() => doublesSectionRef.current?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        })}
+                    >
+                        <div className="relative">
+                            <motion.div
+                                animate={{ y: [0, 8, 0] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                                className="text-gray-500 group-hover:text-green-600 transition-colors duration-200"
+                            >
+                                <svg
+                                    className="w-8 h-8"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 14l-7 7-7-7m14-6l-7 7-7-7"
+                                    />
+                                </svg>
+                            </motion.div>
+
+                            {/* <motion.div
+                                className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-green-500 rounded-full group-hover:bg-green-600 transition-colors duration-200"
+                                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                            /> */}
+                        </div>
+
+                        <motion.p
+                            className="text-sm font-medium hover:scale-105 text-gray-600 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-md border border-gray-200 group-hover:bg-green-50 group-hover:text-green-700 group-hover:border-green-300 transition-all duration-200"
+                            animate={{ opacity: [0.7, 1, 0.7] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                            ⬇️ Click here to see the Categories to Register  ⬇️
+                        </motion.p>
+                    </motion.div>
+
                 </div>
 
             </div>
@@ -1106,9 +1176,18 @@ function CategoriesContent() {
                         animate={{ width: "9rem" }}
                         transition={{ duration: 0.8, delay: 0.3 }}
                     />
-                    <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
-                        Choose your category below and click on any category to view details and register.
-                    </p>
+                    <motion.div
+                        className="mt-4 text-center"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5, duration: 0.5 }}
+                    >
+                        <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg border border-blue-200 shadow-sm">
+                            <span className="text-sm font-medium">💡</span>
+                            <span className="text-sm font-medium"> Choose your category below and click on any category to view details and register.
+                            </span>
+                        </div>
+                    </motion.div>
                 </div>
 
                 {activeTournament?.settings?.hasEarlyBird && (
@@ -1225,7 +1304,8 @@ function CategoriesContent() {
                     </div>
                 )}
 
-                <div className="mb-12">
+
+                <div ref={doublesSectionRef} className="mb-12">
                     <div className="flex items-center gap-3 mb-6">
                         <Users className="w-6 h-6 text-blue-600" />
                         <h2 className="text-xl md:text-2xl font-semibold text-gray-900">

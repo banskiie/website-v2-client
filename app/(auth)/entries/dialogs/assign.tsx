@@ -254,33 +254,541 @@ type DocumentSelection = {
 const extractFileIdFromUrl = (url: string): string | null => {
   if (!url) return null
 
-  // Various Google Drive URL patterns
-  const patterns = [
-    // Standard file URL: https://drive.google.com/file/d/FILE_ID/view
-    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
+  const cloudinaryPattern = /\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]+)?$/
+  const match = url.match(cloudinaryPattern)
 
-    // Open URL: https://drive.google.com/open?id=FILE_ID
-    /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
-
-    // URL with /u/0/: https://drive.google.com/u/0/uc?id=FILE_ID&export=download
-    /drive\.google\.com\/.*[?&]id=([a-zA-Z0-9_-]+)/,
-
-    // Direct download link
-    /drive\.google\.com\/uc\?id=([a-zA-Z0-9_-]+)/,
-
-    // Share link: https://drive.google.com/file/d/FILE_ID/edit?usp=sharing
-    /drive\.google\.com\/.*\/d\/([a-zA-Z0-9_-]+)/,
-  ]
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern)
-    if (match && match[1]) {
-      return match[1]
-    }
+  if (match && match[1]) {
+    return match[1].replace(/\.[^.]+$/, '')
   }
 
-  return null
+  return url
 }
+
+// const replaceDocumentsInDrive = async (
+//   existingDocuments: any[],
+//   newDocuments: any[],
+//   playerType: "player1" | "player2",
+//   documentSelection?: DocumentSelection,
+// ) => {
+//   try {
+//     const replacedDocuments: any[] = []
+//     const failedReplacements: any[] = []
+
+//     if (documentSelection) {
+//       // Process based on document selection
+//       for (const [documentType, selection] of Object.entries(
+//         documentSelection,
+//       )) {
+//         const { selectedSource, existingDocs, newDocs } = selection
+
+//         if (selectedSource === "existing" && existingDocs) {
+//           // Keep existing document - no action needed for Google Drive
+//           continue
+//         }
+
+//         if (selectedSource === "new" && newDocs) {
+//           const newFileId = extractFileIdFromUrl(newDocs[0].documentURL)
+
+//           if (!newFileId) {
+//             console.warn(
+//               `Could not extract file ID from new document: ${newDocs[0].documentURL}`,
+//             )
+//             failedReplacements.push({
+//               documentType,
+//               error: "Invalid file URL",
+//             })
+//             continue
+//           }
+
+//           if (existingDocs) {
+//             const oldFileId = extractFileIdFromUrl(existingDocs[0].documentURL)
+
+//             if (oldFileId) {
+
+
+//               try {
+//                 const replaceResponse = await fetch("/api/transfer/replace", {
+//                   method: "POST",
+//                   headers: { "Content-Type": "application/json" },
+//                   body: JSON.stringify({
+//                     oldFileId,
+//                     newFileId,
+//                     documentType,
+//                     playerType,
+//                   }),
+//                 })
+
+//                 const replaceResult = await replaceResponse.json()
+
+//                 if (replaceResponse.ok && replaceResult.success) {
+//                   replacedDocuments.push({
+//                     documentType,
+//                     oldFileId,
+//                     newFileId: replaceResult.newFileId || newFileId,
+//                     status: "replaced",
+//                     action: replaceResult.action,
+//                     message: replaceResult.message,
+//                   })
+
+//                 } else {
+//                   console.error(
+//                     `❌ Failed to replace ${documentType}:`,
+//                     replaceResult.message,
+//                   )
+//                   failedReplacements.push({
+//                     documentType,
+//                     error: replaceResult.message,
+//                     fallback: true,
+//                   })
+
+//                   // Fallback: Try to move new document
+//                   try {
+//                     const moveResponse = await fetch(
+//                       "/api/transfer/entry_requirement",
+//                       {
+//                         method: "POST",
+//                         headers: { "Content-Type": "application/json" },
+//                         body: JSON.stringify({ fileId: newFileId }),
+//                       },
+//                     )
+
+//                     if (moveResponse.ok) {
+//                       replacedDocuments.push({
+//                         documentType,
+//                         oldFileId,
+//                         newFileId,
+//                         status: "moved_new_only",
+//                         action: "moved",
+//                         message:
+//                           "Replacement failed, moved new document instead",
+//                       })
+
+//                     }
+//                   } catch (moveError) {
+//                     console.error(`❌ Failed to move new document:`, moveError)
+//                   }
+//                 }
+//               } catch (replaceError: any) {
+//                 console.error(
+//                   `❌ Error replacing ${documentType}:`,
+//                   replaceError,
+//                 )
+//                 failedReplacements.push({
+//                   documentType,
+//                   error: replaceError?.message || "Unknown error",
+//                 })
+//               }
+//             } else {
+
+
+//               try {
+//                 const moveResponse = await fetch(
+//                   "/api/transfer/entry_requirement",
+//                   {
+//                     method: "POST",
+//                     headers: { "Content-Type": "application/json" },
+//                     body: JSON.stringify({ fileId: newFileId }),
+//                   },
+//                 )
+
+//                 if (moveResponse.ok) {
+//                   replacedDocuments.push({
+//                     documentType,
+//                     newFileId,
+//                     status: "added_new_no_old",
+//                     action: "added",
+//                     message: "No existing file found, added new document",
+//                   })
+//                   // console.log(`✅ Added new document: ${documentType}`)
+//                 }
+//               } catch (moveError) {
+//                 console.error(`❌ Error adding new document:`, moveError)
+//               }
+//             }
+//           } else {
+//             // No existing document, just move the new one
+//             try {
+//               const moveResponse = await fetch(
+//                 "/api/transfer/entry_requirement",
+//                 {
+//                   method: "POST",
+//                   headers: { "Content-Type": "application/json" },
+//                   body: JSON.stringify({ fileId: newFileId }),
+//                 },
+//               )
+
+//               if (moveResponse.ok) {
+//                 replacedDocuments.push({
+//                   documentType,
+//                   newFileId,
+//                   status: "added_new_type",
+//                   action: "added",
+//                   message: "Added new document type",
+//                 })
+//                 // console.log(`✅ Added new document type: ${documentType}`)
+//               }
+//             } catch (moveError) {
+//               console.error(
+//                 `❌ Error moving new document ${documentType}:`,
+//                 moveError,
+//               )
+//             }
+//           }
+//         }
+//       }
+//     } else {
+//       // Fallback: Old behavior - replace all documents
+//       for (const newDoc of newDocuments) {
+//         const newFileId = extractFileIdFromUrl(newDoc.documentURL)
+
+//         if (!newFileId) {
+//           console.warn(
+//             `Could not extract file ID from new document: ${newDoc.documentURL}`,
+//           )
+//           failedReplacements.push({
+//             documentType: newDoc.documentType,
+//             error: "Invalid file URL",
+//           })
+//           continue
+//         }
+
+//         const existingDoc = existingDocuments.find(
+//           (doc) => doc.documentType === newDoc.documentType,
+//         )
+
+//         if (existingDoc) {
+//           const oldFileId = extractFileIdFromUrl(existingDoc.documentURL)
+
+//           if (oldFileId) {
+//             // console.log(
+//             //   `🔄 Replacing ${existingDoc.documentType}: ${oldFileId} -> ${newFileId}`,
+//             // )
+
+//             try {
+//               const replaceResponse = await fetch("/api/transfer/replace", {
+//                 method: "POST",
+//                 headers: { "Content-Type": "application/json" },
+//                 body: JSON.stringify({
+//                   oldFileId,
+//                   newFileId,
+//                   documentType: newDoc.documentType,
+//                   playerType,
+//                 }),
+//               })
+
+//               const replaceResult = await replaceResponse.json()
+
+//               if (replaceResponse.ok && replaceResult.success) {
+//                 replacedDocuments.push({
+//                   documentType: newDoc.documentType,
+//                   oldFileId,
+//                   newFileId: replaceResult.newFileId || newFileId,
+//                   status: "replaced",
+//                   action: replaceResult.action,
+//                   message: replaceResult.message,
+//                 })
+//                 // console.log(
+//                 //   `✅ Successfully replaced in Google Drive: ${newDoc.documentType}`,
+//                 // )
+//               } else {
+//                 console.error(
+//                   `❌ Failed to replace ${newDoc.documentType}:`,
+//                   replaceResult.message,
+//                 )
+//                 failedReplacements.push({
+//                   documentType: newDoc.documentType,
+//                   error: replaceResult.message,
+//                   fallback: true,
+//                 })
+
+//                 try {
+//                   const moveResponse = await fetch(
+//                     "/api/transfer/entry_requirement",
+//                     {
+//                       method: "POST",
+//                       headers: { "Content-Type": "application/json" },
+//                       body: JSON.stringify({ fileId: newFileId }),
+//                     },
+//                   )
+
+//                   if (moveResponse.ok) {
+//                     replacedDocuments.push({
+//                       documentType: newDoc.documentType,
+//                       oldFileId,
+//                       newFileId,
+//                       status: "moved_new_only",
+//                       action: "moved",
+//                       message: "Replacement failed, moved new document instead",
+//                     })
+//                     // console.log(
+//                     //   `✅ Moved new document instead: ${newDoc.documentType}`,
+//                     // )
+//                   }
+//                 } catch (moveError) {
+//                   console.error(`❌ Failed to move new document:`, moveError)
+//                 }
+//               }
+//             } catch (replaceError: any) {
+//               console.error(
+//                 `❌ Error replacing ${newDoc.documentType}:`,
+//                 replaceError,
+//               )
+//               failedReplacements.push({
+//                 documentType: newDoc.documentType,
+//                 error: replaceError?.message || "Unknown error",
+//               })
+//             }
+//           } else {
+//             // console.log(
+//             //   `⚠️ Could not extract old file ID, moving new document...`,
+//             // )
+
+//             try {
+//               const moveResponse = await fetch(
+//                 "/api/transfer/entry_requirement",
+//                 {
+//                   method: "POST",
+//                   headers: { "Content-Type": "application/json" },
+//                   body: JSON.stringify({ fileId: newFileId }),
+//                 },
+//               )
+
+//               if (moveResponse.ok) {
+//                 replacedDocuments.push({
+//                   documentType: newDoc.documentType,
+//                   newFileId,
+//                   status: "added_new_no_old",
+//                   action: "added",
+//                   message: "No existing file found, added new document",
+//                 })
+//                 // console.log(`✅ Added new document: ${newDoc.documentType}`)
+//               }
+//             } catch (moveError) {
+//               console.error(`Error adding new document:`, moveError)
+//             }
+//           }
+//         } else {
+//           // No existing document of this type, just move the new one
+//           try {
+//             const moveResponse = await fetch(
+//               "/api/transfer/entry_requirement",
+//               {
+//                 method: "POST",
+//                 headers: { "Content-Type": "application/json" },
+//                 body: JSON.stringify({ fileId: newFileId }),
+//               },
+//             )
+
+//             if (moveResponse.ok) {
+//               replacedDocuments.push({
+//                 documentType: newDoc.documentType,
+//                 newFileId,
+//                 status: "added_new_type",
+//                 action: "added",
+//                 message: "Added new document type",
+//               })
+//               // console.log(`✅ Added new document type: ${newDoc.documentType}`)
+//             }
+//           } catch (moveError) {
+//             console.error(
+//               `Error moving new document ${newDoc.documentType}:`,
+//               moveError,
+//             )
+//           }
+//         }
+//       }
+//     }
+
+//     // console.log(
+//     //   `✅ Google Drive replacement completed for ${playerType}: ${replacedDocuments.length} documents processed`,
+//     // )
+
+//     return {
+//       replacedDocuments,
+//       failedReplacements,
+//       success: replacedDocuments.length > 0 || failedReplacements.length === 0,
+//     }
+//   } catch (error) {
+//     console.error(
+//       `❌ Error in replaceDocumentsInDrive for ${playerType}:`,
+//       error,
+//     )
+//     return {
+//       replacedDocuments: [],
+//       failedReplacements: [],
+//       success: false,
+//     }
+//   }
+// }
+
+// const checkAndMoveDocuments = async (
+//   entry: IEntry,
+//   connectedPlayer1?: any,
+//   connectedPlayer2?: any,
+//   documentSelections: {
+//     player1?: DocumentSelection
+//     player2?: DocumentSelection
+//   } = {},
+// ) => {
+//   try {
+//     const movedDocuments: any[] = []
+//     const replacedDocuments: any[] = []
+
+//     // Helper function to move documents
+//     const moveDocumentsToRequirements = async (docs: any[], player: string) => {
+//       for (const doc of docs) {
+//         const fileId = extractFileIdFromUrl(doc.documentURL)
+//         if (fileId) {
+//           try {
+//             // console.log(
+//             //   `📦 Moving ${doc.documentType} for ${player} from entry_requirement to requirements...`,
+//             // )
+
+//             const moveResponse = await fetch(
+//               "/api/transfer/entry_requirement",
+//               {
+//                 method: "POST",
+//                 headers: { "Content-Type": "application/json" },
+//                 body: JSON.stringify({ fileId }),
+//               },
+//             )
+
+//             if (moveResponse.ok) {
+//               movedDocuments.push({
+//                 documentType: doc.documentType,
+//                 fileId,
+//                 status: "moved",
+//                 player: player,
+//                 message: "Successfully moved to requirements folder",
+//               })
+//               // console.log(
+//               //   `✅ Successfully moved ${doc.documentType} for ${player}`,
+//               // )
+//             } else {
+//               console.error(
+//                 `Failed to move ${doc.documentType} for ${player}`,
+//               )
+//             }
+//           } catch (error) {
+//             console.error(
+//               `Error moving document ${doc.documentType}:`,
+//               error,
+//             )
+//           }
+//         }
+//       }
+//     }
+
+//     // Process Player 1 documents
+//     if (
+//       entry.player1Entry?.validDocuments &&
+//       entry.player1Entry.validDocuments.length > 0
+//     ) {
+//       const player1Docs = entry.player1Entry.validDocuments
+
+//       // Check if player has existing documents in the database
+//       const hasExistingPlayer1Docs =
+//         connectedPlayer1?.validDocuments?.length > 0
+
+//       if (hasExistingPlayer1Docs) {
+//         // REASSIGN CASE: First move the new documents, then handle replacement if needed
+//         // console.log(
+//         //   `🔄 Player 1 has existing documents - moving new documents first`,
+//         // )
+
+//         // Step 1: Move all new documents from entry_requirement to requirements
+//         await moveDocumentsToRequirements(player1Docs, "player1")
+
+//         // Step 2: If we have document selections, handle replacements
+//         if (documentSelections.player1) {
+//           // console.log(`🔄 Processing document selections for Player 1`)
+//           const player1Result = await replaceDocumentsInDrive(
+//             connectedPlayer1.validDocuments,
+//             player1Docs,
+//             "player1",
+//             documentSelections.player1,
+//           )
+//           replacedDocuments.push(...player1Result.replacedDocuments)
+
+//           if (player1Result.failedReplacements.length > 0) {
+//             console.warn(
+//               `⚠️ Some Player 1 documents failed to replace:`,
+//               player1Result.failedReplacements,
+//             )
+//           }
+//         }
+//       } else {
+//         // console.log(
+//         //   `📦 Player 1 has NO existing documents - moving documents directly`,
+//         // )
+//         await moveDocumentsToRequirements(player1Docs, "player1")
+//       }
+//     }
+
+//     // Process Player 2 documents
+//     if (
+//       entry.player2Entry?.validDocuments &&
+//       entry.player2Entry.validDocuments.length > 0
+//     ) {
+//       const player2Docs = entry.player2Entry.validDocuments
+
+//       // Check if player has existing documents in the database
+//       const hasExistingPlayer2Docs =
+//         connectedPlayer2?.validDocuments?.length > 0
+
+//       if (hasExistingPlayer2Docs) {
+//         // // REASSIGN CASE: First move the new documents, then handle replacement if needed
+//         // console.log(
+//         //   `🔄 Player 2 has existing documents - moving new documents first`,
+//         // )
+
+//         await moveDocumentsToRequirements(player2Docs, "player2")
+
+//         if (documentSelections.player2) {
+//           // console.log(`🔄 Processing document selections for Player 2`)
+//           const player2Result = await replaceDocumentsInDrive(
+//             connectedPlayer2.validDocuments,
+//             player2Docs,
+//             "player2",
+//             documentSelections.player2,
+//           )
+//           replacedDocuments.push(...player2Result.replacedDocuments)
+
+//           if (player2Result.failedReplacements.length > 0) {
+//             console.warn(
+//               `⚠️ Some Player 2 documents failed to replace:`,
+//               player2Result.failedReplacements,
+//             )
+//           }
+//         }
+//       } else {
+//         // console.log(
+//         //   `📦 Player 2 has NO existing documents - moving documents directly`,
+//         // )
+//         await moveDocumentsToRequirements(player2Docs, "player2")
+//       }
+//     }
+//     // console.log(`📊 Document processing completed:`)
+//     // console.log(`   - Moved: ${movedDocuments.length} documents`)
+//     // console.log(`   - Replaced: ${replacedDocuments.length} documents`)
+//     // console.log(
+//     //   `   - Total: ${movedDocuments.length + replacedDocuments.length} documents processed`,
+//     // )
+//     return {
+//       moved: movedDocuments,
+//       replaced: replacedDocuments,
+//       total: movedDocuments.length + replacedDocuments.length,
+//     }
+//   } catch (error) {
+//     console.error("❌ Error in checkAndMoveDocuments:", error)
+//     return {
+//       moved: [],
+//       replaced: [],
+//       total: 0,
+//     }
+//   }
+// }
+
 
 const replaceDocumentsInDrive = async (
   existingDocuments: any[],
@@ -288,9 +796,18 @@ const replaceDocumentsInDrive = async (
   playerType: "player1" | "player2",
   documentSelection?: DocumentSelection,
 ) => {
+  type ReplaceResult = {
+    replacedDocuments: any[]
+    failedReplacements: any[]
+    deletedDocuments: any[]
+    success: boolean
+  }
+
+
   try {
     const replacedDocuments: any[] = []
     const failedReplacements: any[] = []
+    const deletedDocuments: any[] = []
 
     if (documentSelection) {
       // Process based on document selection
@@ -300,11 +817,60 @@ const replaceDocumentsInDrive = async (
         const { selectedSource, existingDocs, newDocs } = selection
 
         if (selectedSource === "existing" && existingDocs) {
-          // Keep existing document - no action needed for Google Drive
+          // ✅ USER SELECTED EXISTING DOCUMENT
+          // Keep existing document - we need to DELETE the new document
+          console.log(`📌 Keeping existing ${documentType} for ${playerType}`)
+
+          const newFileId = extractFileIdFromUrl(newDocs[0]?.documentURL)
+
+          if (newFileId) {
+            try {
+              // Delete the new document since we're keeping the existing one
+              const deleteResponse = await fetch("/api/transfer/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  fileId: newFileId,
+                  documentType,
+                  playerType,
+                  reason: "user_selected_existing"
+                }),
+              })
+
+              const deleteResult = await deleteResponse.json()
+
+              if (deleteResponse.ok && deleteResult.success) {
+                deletedDocuments.push({
+                  documentType,
+                  fileId: newFileId,
+                  status: "deleted",
+                  message: "New document deleted (keeping existing)"
+                })
+                console.log(`✅ Deleted new document: ${documentType}`)
+              } else {
+                console.warn(`⚠️ Could not delete new document: ${documentType}`, deleteResult)
+                failedReplacements.push({
+                  documentType,
+                  error: deleteResult.error || "Failed to delete new document",
+                  action: "delete_failed"
+                })
+              }
+            } catch (deleteError: any) {
+              console.error(`❌ Error deleting new document:`, deleteError)
+              failedReplacements.push({
+                documentType,
+                error: deleteError?.message || "Unknown error deleting document",
+                action: "delete_error"
+              })
+            }
+          }
+
+          // No replacement needed - we're keeping the existing
           continue
         }
 
         if (selectedSource === "new" && newDocs) {
+          // ✅ USER SELECTED NEW DOCUMENT - Replace existing with new
           const newFileId = extractFileIdFromUrl(newDocs[0].documentURL)
 
           if (!newFileId) {
@@ -318,13 +884,10 @@ const replaceDocumentsInDrive = async (
             continue
           }
 
-          if (existingDocs) {
-            // Replace existing document with new one
+          if (existingDocs && existingDocs.length > 0) {
             const oldFileId = extractFileIdFromUrl(existingDocs[0].documentURL)
 
             if (oldFileId) {
-
-
               try {
                 const replaceResponse = await fetch("/api/transfer/replace", {
                   method: "POST",
@@ -348,7 +911,7 @@ const replaceDocumentsInDrive = async (
                     action: replaceResult.action,
                     message: replaceResult.message,
                   })
-
+                  console.log(`✅ Replaced ${documentType} with new document`)
                 } else {
                   console.error(
                     `❌ Failed to replace ${documentType}:`,
@@ -371,7 +934,9 @@ const replaceDocumentsInDrive = async (
                       },
                     )
 
-                    if (moveResponse.ok) {
+                    const moveResult = await moveResponse.json()
+
+                    if (moveResponse.ok && moveResult.success) {
                       replacedDocuments.push({
                         documentType,
                         oldFileId,
@@ -381,7 +946,7 @@ const replaceDocumentsInDrive = async (
                         message:
                           "Replacement failed, moved new document instead",
                       })
-
+                      console.log(`✅ Moved new document as fallback: ${documentType}`)
                     }
                   } catch (moveError) {
                     console.error(`❌ Failed to move new document:`, moveError)
@@ -398,8 +963,6 @@ const replaceDocumentsInDrive = async (
                 })
               }
             } else {
-
-
               try {
                 const moveResponse = await fetch(
                   "/api/transfer/entry_requirement",
@@ -410,7 +973,9 @@ const replaceDocumentsInDrive = async (
                   },
                 )
 
-                if (moveResponse.ok) {
+                const moveResult = await moveResponse.json()
+
+                if (moveResponse.ok && moveResult.success) {
                   replacedDocuments.push({
                     documentType,
                     newFileId,
@@ -418,10 +983,13 @@ const replaceDocumentsInDrive = async (
                     action: "added",
                     message: "No existing file found, added new document",
                   })
-                  // console.log(`✅ Added new document: ${documentType}`)
+                  console.log(`✅ Added new document (no existing): ${documentType}`)
                 }
               } catch (moveError) {
                 console.error(`❌ Error adding new document:`, moveError)
+                failedReplacements.push({
+                  documentType,
+                })
               }
             }
           } else {
@@ -436,7 +1004,9 @@ const replaceDocumentsInDrive = async (
                 },
               )
 
-              if (moveResponse.ok) {
+              const moveResult = await moveResponse.json()
+
+              if (moveResponse.ok && moveResult.success) {
                 replacedDocuments.push({
                   documentType,
                   newFileId,
@@ -444,19 +1014,24 @@ const replaceDocumentsInDrive = async (
                   action: "added",
                   message: "Added new document type",
                 })
-                // console.log(`✅ Added new document type: ${documentType}`)
+                console.log(`✅ Added new document type: ${documentType}`)
               }
             } catch (moveError) {
               console.error(
                 `❌ Error moving new document ${documentType}:`,
                 moveError,
               )
+              failedReplacements.push({
+                documentType,
+              })
             }
           }
         }
       }
     } else {
       // Fallback: Old behavior - replace all documents
+      console.log(`📋 No document selection, processing all documents for ${playerType}`)
+
       for (const newDoc of newDocuments) {
         const newFileId = extractFileIdFromUrl(newDoc.documentURL)
 
@@ -479,10 +1054,6 @@ const replaceDocumentsInDrive = async (
           const oldFileId = extractFileIdFromUrl(existingDoc.documentURL)
 
           if (oldFileId) {
-            // console.log(
-            //   `🔄 Replacing ${existingDoc.documentType}: ${oldFileId} -> ${newFileId}`,
-            // )
-
             try {
               const replaceResponse = await fetch("/api/transfer/replace", {
                 method: "POST",
@@ -506,9 +1077,7 @@ const replaceDocumentsInDrive = async (
                   action: replaceResult.action,
                   message: replaceResult.message,
                 })
-                // console.log(
-                //   `✅ Successfully replaced in Google Drive: ${newDoc.documentType}`,
-                // )
+                console.log(`✅ Replaced ${newDoc.documentType}`)
               } else {
                 console.error(
                   `❌ Failed to replace ${newDoc.documentType}:`,
@@ -530,7 +1099,9 @@ const replaceDocumentsInDrive = async (
                     },
                   )
 
-                  if (moveResponse.ok) {
+                  const moveResult = await moveResponse.json()
+
+                  if (moveResponse.ok && moveResult.success) {
                     replacedDocuments.push({
                       documentType: newDoc.documentType,
                       oldFileId,
@@ -539,9 +1110,7 @@ const replaceDocumentsInDrive = async (
                       action: "moved",
                       message: "Replacement failed, moved new document instead",
                     })
-                    // console.log(
-                    //   `✅ Moved new document instead: ${newDoc.documentType}`,
-                    // )
+                    console.log(`✅ Moved new document as fallback: ${newDoc.documentType}`)
                   }
                 } catch (moveError) {
                   console.error(`❌ Failed to move new document:`, moveError)
@@ -558,10 +1127,6 @@ const replaceDocumentsInDrive = async (
               })
             }
           } else {
-            // console.log(
-            //   `⚠️ Could not extract old file ID, moving new document...`,
-            // )
-
             try {
               const moveResponse = await fetch(
                 "/api/transfer/entry_requirement",
@@ -572,7 +1137,9 @@ const replaceDocumentsInDrive = async (
                 },
               )
 
-              if (moveResponse.ok) {
+              const moveResult = await moveResponse.json()
+
+              if (moveResponse.ok && moveResult.success) {
                 replacedDocuments.push({
                   documentType: newDoc.documentType,
                   newFileId,
@@ -580,10 +1147,13 @@ const replaceDocumentsInDrive = async (
                   action: "added",
                   message: "No existing file found, added new document",
                 })
-                // console.log(`✅ Added new document: ${newDoc.documentType}`)
+                console.log(`✅ Added new document (no existing): ${newDoc.documentType}`)
               }
             } catch (moveError) {
               console.error(`Error adding new document:`, moveError)
+              failedReplacements.push({
+                documentType: newDoc.documentType,
+              })
             }
           }
         } else {
@@ -598,7 +1168,9 @@ const replaceDocumentsInDrive = async (
               },
             )
 
-            if (moveResponse.ok) {
+            const moveResult = await moveResponse.json()
+
+            if (moveResponse.ok && moveResult.success) {
               replacedDocuments.push({
                 documentType: newDoc.documentType,
                 newFileId,
@@ -606,27 +1178,34 @@ const replaceDocumentsInDrive = async (
                 action: "added",
                 message: "Added new document type",
               })
-              // console.log(`✅ Added new document type: ${newDoc.documentType}`)
+              console.log(`✅ Added new document type: ${newDoc.documentType}`)
             }
           } catch (moveError) {
             console.error(
               `Error moving new document ${newDoc.documentType}:`,
               moveError,
             )
+            failedReplacements.push({
+              documentType: newDoc.documentType,
+            })
           }
         }
       }
     }
 
-    // console.log(
-    //   `✅ Google Drive replacement completed for ${playerType}: ${replacedDocuments.length} documents processed`,
-    // )
+    console.log(
+      `✅ Document processing completed for ${playerType}:`,
+      `\n   - Replaced: ${replacedDocuments.length} documents`,
+      `\n   - Deleted: ${deletedDocuments.length} documents`,
+      `\n   - Failed: ${failedReplacements.length} documents`,
+    )
 
     return {
       replacedDocuments,
       failedReplacements,
-      success: replacedDocuments.length > 0 || failedReplacements.length === 0,
-    }
+      deletedDocuments,
+      success: replacedDocuments.length > 0 || deletedDocuments.length > 0 || failedReplacements.length === 0,
+    } as ReplaceResult
   } catch (error) {
     console.error(
       `❌ Error in replaceDocumentsInDrive for ${playerType}:`,
@@ -635,8 +1214,9 @@ const replaceDocumentsInDrive = async (
     return {
       replacedDocuments: [],
       failedReplacements: [],
+      deletedDocuments: [],
       success: false,
-    }
+    } as ReplaceResult
   }
 }
 
@@ -650,18 +1230,31 @@ const checkAndMoveDocuments = async (
   } = {},
 ) => {
   try {
-    const movedDocuments: any[] = []
-    const replacedDocuments: any[] = []
+    // Define types for the document objects
+    type ProcessedDocument = {
+      documentType: string
+      fileId: string
+      status: string
+      player: string
+      message: string
+      newFileId?: string
+    }
 
-    // Helper function to move documents
-    const moveDocumentsToRequirements = async (docs: any[], player: string) => {
+    const movedDocuments: ProcessedDocument[] = []
+    const replacedDocuments: ProcessedDocument[] = []
+    const deletedDocuments: ProcessedDocument[] = []
+
+    // Helper function to move documents with proper typing
+    const moveDocumentsToRequirements = async (docs: any[], player: string): Promise<ProcessedDocument[]> => {
+      const movedDocs: ProcessedDocument[] = []
+
       for (const doc of docs) {
         const fileId = extractFileIdFromUrl(doc.documentURL)
         if (fileId) {
           try {
-            // console.log(
-            //   `📦 Moving ${doc.documentType} for ${player} from entry_requirement to requirements...`,
-            // )
+            console.log(
+              `📦 Moving ${doc.documentType} for ${player} to requirements folder...`,
+            )
 
             const moveResponse = await fetch(
               "/api/transfer/entry_requirement",
@@ -672,20 +1265,24 @@ const checkAndMoveDocuments = async (
               },
             )
 
-            if (moveResponse.ok) {
-              movedDocuments.push({
+            const moveResult = await moveResponse.json()
+
+            if (moveResponse.ok && moveResult.success) {
+              movedDocs.push({
                 documentType: doc.documentType,
                 fileId,
                 status: "moved",
                 player: player,
                 message: "Successfully moved to requirements folder",
+                newFileId: moveResult.newFileId || fileId,
               })
-              // console.log(
-              //   `✅ Successfully moved ${doc.documentType} for ${player}`,
-              // )
+              console.log(
+                `✅ Successfully moved ${doc.documentType} for ${player}`,
+              )
             } else {
               console.error(
-                `Failed to move ${doc.documentType} for ${player}`,
+                `Failed to move ${doc.documentType} for ${player}:`,
+                moveResult.error
               )
             }
           } catch (error) {
@@ -696,6 +1293,7 @@ const checkAndMoveDocuments = async (
           }
         }
       }
+      return movedDocs
     }
 
     // Process Player 1 documents
@@ -710,37 +1308,65 @@ const checkAndMoveDocuments = async (
         connectedPlayer1?.validDocuments?.length > 0
 
       if (hasExistingPlayer1Docs) {
-        // REASSIGN CASE: First move the new documents, then handle replacement if needed
-        // console.log(
-        //   `🔄 Player 1 has existing documents - moving new documents first`,
-        // )
+        console.log(
+          `🔄 Player 1 has existing documents - processing documents...`,
+        )
 
         // Step 1: Move all new documents from entry_requirement to requirements
-        await moveDocumentsToRequirements(player1Docs, "player1")
+        const moved = await moveDocumentsToRequirements(player1Docs, "player1")
+        movedDocuments.push(...moved)
 
-        // Step 2: If we have document selections, handle replacements
+        // Step 2: If we have document selections, handle replacements and deletions
         if (documentSelections.player1) {
-          // console.log(`🔄 Processing document selections for Player 1`)
+          console.log(`🔄 Processing document selections for Player 1`)
           const player1Result = await replaceDocumentsInDrive(
             connectedPlayer1.validDocuments,
             player1Docs,
             "player1",
             documentSelections.player1,
           )
-          replacedDocuments.push(...player1Result.replacedDocuments)
 
-          if (player1Result.failedReplacements.length > 0) {
+          // Type assertion or proper typing for the results
+          if (player1Result.replacedDocuments) {
+            replacedDocuments.push(...player1Result.replacedDocuments)
+          }
+
+          if (player1Result.deletedDocuments) {
+            deletedDocuments.push(...player1Result.deletedDocuments)
+          }
+
+          if (player1Result.failedReplacements?.length > 0) {
             console.warn(
-              `⚠️ Some Player 1 documents failed to replace:`,
+              `⚠️ Some Player 1 documents failed to process:`,
+              player1Result.failedReplacements,
+            )
+          }
+        } else {
+          // No document selections, process all documents with fallback behavior
+          console.log(`📋 No document selections for Player 1, processing all documents`)
+          const player1Result = await replaceDocumentsInDrive(
+            connectedPlayer1.validDocuments,
+            player1Docs,
+            "player1",
+          )
+
+          if (player1Result.replacedDocuments) {
+            replacedDocuments.push(...player1Result.replacedDocuments)
+          }
+
+          if (player1Result.failedReplacements?.length > 0) {
+            console.warn(
+              `⚠️ Some Player 1 documents failed to process:`,
               player1Result.failedReplacements,
             )
           }
         }
       } else {
-        // console.log(
-        //   `📦 Player 1 has NO existing documents - moving documents directly`,
-        // )
-        await moveDocumentsToRequirements(player1Docs, "player1")
+        console.log(
+          `📦 Player 1 has NO existing documents - moving documents directly`,
+        )
+        const moved = await moveDocumentsToRequirements(player1Docs, "player1")
+        movedDocuments.push(...moved)
       }
     }
 
@@ -756,57 +1382,89 @@ const checkAndMoveDocuments = async (
         connectedPlayer2?.validDocuments?.length > 0
 
       if (hasExistingPlayer2Docs) {
-        // // REASSIGN CASE: First move the new documents, then handle replacement if needed
-        // console.log(
-        //   `🔄 Player 2 has existing documents - moving new documents first`,
-        // )
+        console.log(
+          `🔄 Player 2 has existing documents - processing documents...`,
+        )
 
-        await moveDocumentsToRequirements(player2Docs, "player2")
+        const moved = await moveDocumentsToRequirements(player2Docs, "player2")
+        movedDocuments.push(...moved)
 
         if (documentSelections.player2) {
-          // console.log(`🔄 Processing document selections for Player 2`)
+          console.log(`🔄 Processing document selections for Player 2`)
           const player2Result = await replaceDocumentsInDrive(
             connectedPlayer2.validDocuments,
             player2Docs,
             "player2",
             documentSelections.player2,
           )
-          replacedDocuments.push(...player2Result.replacedDocuments)
 
-          if (player2Result.failedReplacements.length > 0) {
+          if (player2Result.replacedDocuments) {
+            replacedDocuments.push(...player2Result.replacedDocuments)
+          }
+
+          if (player2Result.deletedDocuments) {
+            deletedDocuments.push(...player2Result.deletedDocuments)
+          }
+
+          if (player2Result.failedReplacements?.length > 0) {
             console.warn(
-              `⚠️ Some Player 2 documents failed to replace:`,
+              `⚠️ Some Player 2 documents failed to process:`,
+              player2Result.failedReplacements,
+            )
+          }
+        } else {
+          console.log(`📋 No document selections for Player 2, processing all documents`)
+          const player2Result = await replaceDocumentsInDrive(
+            connectedPlayer2.validDocuments,
+            player2Docs,
+            "player2",
+          )
+
+          if (player2Result.replacedDocuments) {
+            replacedDocuments.push(...player2Result.replacedDocuments)
+          }
+
+          if (player2Result.failedReplacements?.length > 0) {
+            console.warn(
+              `⚠️ Some Player 2 documents failed to process:`,
               player2Result.failedReplacements,
             )
           }
         }
       } else {
-        // console.log(
-        //   `📦 Player 2 has NO existing documents - moving documents directly`,
-        // )
-        await moveDocumentsToRequirements(player2Docs, "player2")
+        console.log(
+          `📦 Player 2 has NO existing documents - moving documents directly`,
+        )
+        const moved = await moveDocumentsToRequirements(player2Docs, "player2")
+        movedDocuments.push(...moved)
       }
     }
-    // console.log(`📊 Document processing completed:`)
-    // console.log(`   - Moved: ${movedDocuments.length} documents`)
-    // console.log(`   - Replaced: ${replacedDocuments.length} documents`)
-    // console.log(
-    //   `   - Total: ${movedDocuments.length + replacedDocuments.length} documents processed`,
-    // )
+
+    console.log(`📊 Document processing completed:`)
+    console.log(`   - Moved: ${movedDocuments.length} documents`)
+    console.log(`   - Replaced: ${replacedDocuments.length} documents`)
+    console.log(`   - Deleted: ${deletedDocuments.length} documents`)
+    console.log(
+      `   - Total: ${movedDocuments.length + replacedDocuments.length + deletedDocuments.length} documents processed`,
+    )
+
     return {
       moved: movedDocuments,
       replaced: replacedDocuments,
-      total: movedDocuments.length + replacedDocuments.length,
+      deleted: deletedDocuments,
+      total: movedDocuments.length + replacedDocuments.length + deletedDocuments.length,
     }
   } catch (error) {
     console.error("❌ Error in checkAndMoveDocuments:", error)
     return {
       moved: [],
       replaced: [],
+      deleted: [],
       total: 0,
     }
   }
 }
+
 const DocumentSelectionDialog = ({
   open,
   onOpenChange,

@@ -545,7 +545,7 @@ const FormDialog = (props: Props) => {
   const [open, setOpen] = useState(false)
   const isUpdate = Boolean(props._id)
   const [isPending, startTransition] = useTransition()
-
+  const [currentTab, setCurrentTab] = useState('details')
   const [isInitializing, setIsInitializing] = useState(false)
 
   const { data, loading: fetchLoading, refetch }: any = useQuery(ENTRY, {
@@ -606,6 +606,7 @@ const FormDialog = (props: Props) => {
     { value: JerseySize.XXL, label: "Double Extra Large" },
     { value: JerseySize.XXXL, label: "Triple Extra Large" },
   ]
+
 
   const autoSetGendersBasedOnEvent = useCallback((eventId: string, form: any) => {
     const event = events.find(e => e.value === eventId);
@@ -690,8 +691,6 @@ const FormDialog = (props: Props) => {
 
   const isSubmittingRef = useRef(false)
 
-
-
   const form = useForm({
     defaultValues: {
       tournament: "",
@@ -768,19 +767,28 @@ const FormDialog = (props: Props) => {
           }
         } catch (error: any) {
           console.error(error);
-          if (error.name === "ZodError") {
-            error.errors.forEach((err: any) => {
-              const path = err.path.join(".");
-              formApi.fieldInfo[path as keyof typeof formApi.fieldInfo]?.instance?.setErrorMap({
-                onSubmit: { message: err.message },
+          // FIX: Check if it's a ZodError and handle safely
+          if (error && error.name === "ZodError") {
+            // Check if errors exists and is iterable
+            if (error.errors && Array.isArray(error.errors)) {
+              error.errors.forEach((err: any) => {
+                if (err && err.path) {
+                  const path = err.path.join(".");
+                  formApi.fieldInfo[path as keyof typeof formApi.fieldInfo]?.instance?.setErrorMap({
+                    onSubmit: { message: err.message || "Validation error" },
+                  });
+                }
               });
-            });
+            }
           }
         }
       },
     },
     listeners: {
       onChange: async ({ formApi, fieldApi }) => {
+
+        const activeTab = document.querySelector('[data-state="active"]')?.getAttribute('value') || 'unknown'
+
         const fieldName = fieldApi.name
         const fieldValue = fieldApi.state.value
 
@@ -837,20 +845,90 @@ const FormDialog = (props: Props) => {
                 if (result.data) {
                   const playerData = result.data as { player: any }
                   const player1 = playerData.player
+                  // Clean the phone number
+                  const cleanedPhoneNumber = player1.phoneNumber?.replace(/^0/, "") || "";
+
                   formApi.setFieldValue("player1Entry", {
                     firstName: player1.firstName,
                     middleName: player1.middleName,
                     lastName: player1.lastName,
                     suffix: player1.suffix,
                     email: player1.email,
-                    phoneNumber: player1.phoneNumber,
+                    phoneNumber: cleanedPhoneNumber,
                     birthDate: new Date(player1.birthDate),
                     gender: player1.gender,
                     jerseySize: "M",
                     validDocuments: [],
                   })
+
                   // Clear selected suggestion when player is connected via dropdown
                   setSelectedSuggestionId1(null)
+
+                  // --- FIXED VALIDATION ---
+                  // Get the current event and validate gender
+                  const currentEventId = formApi.getFieldValue("event");
+                  if (currentEventId) {
+                    const currentEvent = events.find(e => e.value === currentEventId);
+                    if (currentEvent) {
+                      const isDoubles = currentEvent.type === EventType.DOUBLES;
+
+                      if (isDoubles) {
+                        const player2Gender = formApi.getFieldValue("player2Entry.gender");
+                        const validation = validateEntryGenders(
+                          currentEvent.gender,
+                          true,
+                          player1.gender,
+                          player2Gender
+                        );
+
+                        if (!validation.valid) {
+                          if (validation.errors.player1) {
+                            // Set the error directly on the field using setFieldMeta
+                            formApi.setFieldMeta("player1Entry.gender", (prev: any) => ({
+                              ...prev,
+                              errors: [validation.errors.player1],
+                              isTouched: true,
+                            }));
+
+                            // For the error map, we need to use the field's setErrorMap method
+                            // But since we can't access it directly here, we'll rely on the errors array
+
+                            toast.error(validation.errors.player1);
+                          }
+                        } else {
+                          // Clear any existing errors
+                          formApi.setFieldMeta("player1Entry.gender", (prev: any) => ({
+                            ...prev,
+                            errors: [],
+                          }));
+                        }
+                      } else {
+                        // Singles event validation
+                        let error: string | null = null;
+                        if (currentEvent.gender === EventGender.MALE && player1.gender !== Gender.MALE) {
+                          error = "Player must be Male for Men's Singles";
+                        }
+                        if (currentEvent.gender === EventGender.FEMALE && player1.gender !== Gender.FEMALE) {
+                          error = "Player must be Female for Women's Singles";
+                        }
+
+                        if (error) {
+                          formApi.setFieldMeta("player1Entry.gender", (prev: any) => ({
+                            ...prev,
+                            errors: [error],
+                            isTouched: true,
+                          }));
+                          toast.error(error);
+                        } else {
+                          formApi.setFieldMeta("player1Entry.gender", (prev: any) => ({
+                            ...prev,
+                            errors: [],
+                          }));
+                        }
+                      }
+                    }
+                  }
+                  // --- END OF FIXED VALIDATION ---
                 }
               } catch (error: any) {
                 if (error.name !== 'AbortError') {
@@ -896,20 +974,60 @@ const FormDialog = (props: Props) => {
                 if (result.data) {
                   const playerData = result.data as { player: any }
                   const player2 = playerData.player
+                  // Clean the phone number
+                  const cleanedPhoneNumber = player2.phoneNumber?.replace(/^0/, "") || "";
+
                   formApi.setFieldValue("player2Entry", {
                     firstName: player2.firstName,
                     middleName: player2.middleName,
                     lastName: player2.lastName,
                     suffix: player2.suffix,
                     email: player2.email,
-                    phoneNumber: player2.phoneNumber,
+                    phoneNumber: cleanedPhoneNumber,
                     birthDate: new Date(player2.birthDate),
                     gender: player2.gender,
                     jerseySize: "M",
                     validDocuments: [],
                   })
+
                   // Clear selected suggestion when player is connected via dropdown
                   setSelectedSuggestionId2(null)
+
+                  // --- FIXED VALIDATION ---
+                  // Get the current event and validate gender
+                  const currentEventId = formApi.getFieldValue("event");
+                  if (currentEventId) {
+                    const currentEvent = events.find(e => e.value === currentEventId);
+                    if (currentEvent && currentEvent.type === EventType.DOUBLES) {
+                      const player1Gender = formApi.getFieldValue("player1Entry.gender");
+                      const validation = validateEntryGenders(
+                        currentEvent.gender,
+                        true,
+                        player1Gender,
+                        player2.gender
+                      );
+
+                      if (!validation.valid) {
+                        if (validation.errors.player2) {
+                          // Set the error directly on the field using setFieldMeta
+                          formApi.setFieldMeta("player2Entry.gender", (prev: any) => ({
+                            ...prev,
+                            errors: [validation.errors.player2],
+                            isTouched: true,
+                          }));
+
+                          toast.error(validation.errors.player2);
+                        }
+                      } else {
+                        // Clear any existing errors
+                        formApi.setFieldMeta("player2Entry.gender", (prev: any) => ({
+                          ...prev,
+                          errors: [],
+                        }));
+                      }
+                    }
+                  }
+                  // --- END OF FIXED VALIDATION ---
                 }
               } catch (error: any) {
                 if (error.name !== 'AbortError') {
@@ -1084,6 +1202,30 @@ const FormDialog = (props: Props) => {
     },
   })
 
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-state') {
+          const target = mutation.target as HTMLElement
+          if (target.getAttribute('data-state') === 'active') {
+            const tabValue = target.getAttribute('value')
+            if (tabValue) {
+              setCurrentTab(tabValue)
+            }
+          }
+        }
+      })
+    })
+
+    const tabTriggers = document.querySelectorAll('[role="tab"]')
+    tabTriggers.forEach(trigger => {
+      observer.observe(trigger, { attributes: true })
+    })
+
+    return () => observer.disconnect()
+  }, [form.state.values])
+
+
   const validateDocuments = useCallback((): Record<string, string> => {
     const errors: Record<string, string> = {};
     const eventId = form.getFieldValue("event");
@@ -1157,13 +1299,16 @@ const FormDialog = (props: Props) => {
           }
 
           if (entry?.player1Entry) {
+            // Clean the phone number
+            const cleanedPhoneNumber1 = entry.player1Entry.phoneNumber?.replace(/^0/, "") || "";
+
             form.setFieldValue("player1Entry", {
               firstName: entry.player1Entry.firstName || "",
               middleName: entry.player1Entry.middleName || "",
               lastName: entry.player1Entry.lastName || "",
               suffix: entry.player1Entry.suffix || "",
               email: entry.player1Entry.email || "",
-              phoneNumber: entry.player1Entry.phoneNumber || "",
+              phoneNumber: cleanedPhoneNumber1, // Use cleaned version
               birthDate: entry.player1Entry.birthDate
                 ? new Date(entry.player1Entry.birthDate)
                 : new Date(),
@@ -1174,13 +1319,16 @@ const FormDialog = (props: Props) => {
           }
 
           if (entry?.player2Entry) {
+            // Clean the phone number
+            const cleanedPhoneNumber2 = entry.player2Entry.phoneNumber?.replace(/^0/, "") || "";
+
             form.setFieldValue("player2Entry", {
               firstName: entry.player2Entry.firstName || "",
               middleName: entry.player2Entry.middleName || "",
               lastName: entry.player2Entry.lastName || "",
               suffix: entry.player2Entry.suffix || "",
               email: entry.player2Entry.email || "",
-              phoneNumber: entry.player2Entry.phoneNumber || "",
+              phoneNumber: cleanedPhoneNumber2, // Use cleaned version
               birthDate: entry.player2Entry.birthDate
                 ? new Date(entry.player2Entry.birthDate)
                 : new Date(),
@@ -1274,22 +1422,52 @@ const FormDialog = (props: Props) => {
 
     const isDoubles = event.type === EventType.DOUBLES;
 
-    // Check if there are any field errors
+    // IMPROVED: Check field errors more thoroughly
     const hasFieldErrors = Object.values(form.state.fieldMeta).some(
-      (meta: any) => meta.errors && meta.errors.length > 0
+      (meta: any) => {
+        // Check if there are any actual error messages in errors array
+        if (meta.errors && meta.errors.length > 0) {
+          // Check if the errors are actual error objects/strings, not empty
+          const hasActualErrors = meta.errors.some((err: any) => {
+            if (typeof err === 'string' && err.length > 0) return true;
+            if (err && typeof err === 'object' && err.message) return true;
+            return false;
+          });
+          if (hasActualErrors) return true;
+        }
+
+        // Check errorMap for actual validation errors
+        if (meta.errorMap) {
+          // Check if there are any onSubmit or onChange errors with messages
+          const hasErrorMapErrors = Object.values(meta.errorMap).some(
+            (error: any) => error && error.message && error.message.length > 0
+          );
+          if (hasErrorMapErrors) return true;
+        }
+
+        return false;
+      }
     );
 
-    if (hasFieldErrors) return false;
+    if (hasFieldErrors) {
+      return false;
+    }
 
     if (!values.tournament) return false;
     if (!values.club) return false;
 
+    // Player 1 validation
     if (!values.player1Entry.firstName) return false;
     if (!values.player1Entry.lastName) return false;
     if (!values.player1Entry.birthDate) return false;
     if (!values.player1Entry.gender) return false;
     if (!values.player1Entry.phoneNumber) return false;
     if (!values.player1Entry.email) return false;
+
+    const phoneRegex = /^9\d{9}$/;
+    if (!phoneRegex.test(values.player1Entry.phoneNumber)) {
+      return false;
+    }
 
     const hasPlayer1Doc = filePlayer1 || initialDocumentUrlPlayer1;
     if (!hasPlayer1Doc) return false;
@@ -1301,6 +1479,9 @@ const FormDialog = (props: Props) => {
       if (!values.player2Entry?.gender) return false;
       if (!values.player2Entry?.phoneNumber) return false;
       if (!values.player2Entry?.email) return false;
+
+      // Phone number format validation for player 2
+      if (!phoneRegex.test(values.player2Entry.phoneNumber)) return false;
 
       const hasPlayer2Doc = filePlayer2 || initialDocumentUrlPlayer2;
       if (!hasPlayer2Doc) return false;
@@ -1477,13 +1658,13 @@ const FormDialog = (props: Props) => {
   }
 
   const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+
     try {
       setIsUploading(true)
 
       const formData = new FormData()
       const fileExt = file.name.split('.').pop() || ''
 
-      // Truncate the original file name for the server
       const originalName = file.name.slice(0, file.name.lastIndexOf('.'))
       const truncatedOriginalName = originalName.length > 30
         ? originalName.slice(0, 30) + '...'
@@ -1498,10 +1679,12 @@ const FormDialog = (props: Props) => {
       })
 
       if (!response.ok) {
+        console.error('Upload failed with status:', response.status);
         throw new Error("Upload Failed")
       }
 
       const data = await response.json()
+
       toast.success("Document uploaded successfully!")
       return data.url
     } catch (error: any) {
@@ -1519,7 +1702,6 @@ const FormDialog = (props: Props) => {
     const uploadedFile = event.target.files?.[0]
     if (!uploadedFile) return
 
-    // Validate file
     const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/pdf']
     if (!validTypes.includes(uploadedFile.type)) {
       toast.error('Please upload a valid image file (JPEG, PNG, JPG, WEBP) or PDF')
@@ -1540,7 +1722,6 @@ const FormDialog = (props: Props) => {
 
     setFieldErrors(prev => ({ ...prev, [`filePlayer${playerNumber}`]: '' }))
 
-    // Create preview for images only (not PDFs)
     if (uploadedFile.type.startsWith('image/')) {
       const reader = new FileReader()
       reader.onload = () => {
@@ -1559,9 +1740,11 @@ const FormDialog = (props: Props) => {
         setPreviewPlayer2(null)
       }
     }
+
   }
 
   const handleRemoveFile = (playerNumber: number) => {
+
     if (playerNumber === 1) {
       setFilePlayer1(null)
       setPreviewPlayer1(null)
@@ -1572,6 +1755,7 @@ const FormDialog = (props: Props) => {
       form.setFieldValue("player2Entry.validDocuments" as any, [])
     }
     setFieldErrors(prev => ({ ...prev, [`filePlayer${playerNumber}`]: '' }))
+
   }
 
   const fetchPlayer1Suggestions = useCallback(async () => {
@@ -1672,21 +1856,73 @@ const FormDialog = (props: Props) => {
           const playerData = result.data as { player: any }
           if (playerData.player) {
             const player = playerData.player;
+            // Clean the phone number - remove leading zero if it exists
+            const cleanedPhoneNumber = player.phoneNumber?.replace(/^0/, "") || "";
+
             form.setFieldValue("player1Entry", {
               firstName: player.firstName || "",
               middleName: player.middleName || "",
               lastName: player.lastName || "",
               suffix: player.suffix || "",
               email: player.email || "",
-              phoneNumber: player.phoneNumber || "",
+              phoneNumber: cleanedPhoneNumber,
               birthDate: player.birthDate ? new Date(player.birthDate) : new Date(),
               gender: player.gender || Gender.MALE,
               jerseySize: "M",
               validDocuments: [],
             });
+
+            // --- ADD THIS VALIDATION ---
+            const currentEventId = form.getFieldValue("event");
+            if (currentEventId) {
+              const currentEvent = events.find(e => e.value === currentEventId);
+              if (currentEvent) {
+                const isDoubles = currentEvent.type === EventType.DOUBLES;
+
+                if (isDoubles) {
+                  const player2Gender = form.getFieldValue("player2Entry.gender");
+                  const validation = validateEntryGenders(
+                    currentEvent.gender,
+                    true,
+                    player.gender,
+                    player2Gender
+                  );
+
+                  if (!validation.valid) {
+                    if (validation.errors.player1) {
+                      form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+                        ...prev,
+                        errors: [validation.errors.player1],
+                        isTouched: true,
+                      }));
+                    }
+                    toast.error(validation.errors.player1 || "Gender validation failed");
+                  }
+                } else {
+                  if (currentEvent.gender === EventGender.MALE && player.gender !== Gender.MALE) {
+                    form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+                      ...prev,
+                      errors: ["Player must be Male for Men's Singles"],
+                      isTouched: true,
+                    }));
+                    toast.error("Player must be Male for Men's Singles");
+                  }
+                  if (currentEvent.gender === EventGender.FEMALE && player.gender !== Gender.FEMALE) {
+                    form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+                      ...prev,
+                      errors: ["Player must be Female for Women's Singles"],
+                      isTouched: true,
+                    }));
+                    toast.error("Player must be Female for Women's Singles");
+                  }
+                }
+              }
+            }
+            // --- END OF ADDED VALIDATION ---
           }
         }
       } else {
+        // Similar for player 2...
         form.setFieldValue("connectedPlayer2", playerId);
         setSelectedSuggestionId2(playerId);
 
@@ -1698,18 +1934,46 @@ const FormDialog = (props: Props) => {
           const playerData = result.data as { player: any }
           if (playerData.player) {
             const player = playerData.player;
+            const cleanedPhoneNumber = player.phoneNumber?.replace(/^0/, "") || "";
+
             form.setFieldValue("player2Entry", {
               firstName: player.firstName || "",
               middleName: player.middleName || "",
               lastName: player.lastName || "",
               suffix: player.suffix || "",
               email: player.email || "",
-              phoneNumber: player.phoneNumber || "",
+              phoneNumber: cleanedPhoneNumber,
               birthDate: player.birthDate ? new Date(player.birthDate) : new Date(),
               gender: player.gender || Gender.MALE,
               jerseySize: "M",
               validDocuments: [],
             });
+
+            // --- ADD THIS VALIDATION ---
+            const currentEventId = form.getFieldValue("event");
+            if (currentEventId) {
+              const currentEvent = events.find(e => e.value === currentEventId);
+              if (currentEvent && currentEvent.type === EventType.DOUBLES) {
+                const player1Gender = form.getFieldValue("player1Entry.gender");
+                const validation = validateEntryGenders(
+                  currentEvent.gender,
+                  true,
+                  player1Gender,
+                  player.gender
+                );
+
+                if (!validation.valid) {
+                  if (validation.errors.player2) {
+                    form.setFieldMeta("player2Entry.gender", (prev: any) => ({
+                      ...prev,
+                      errors: [validation.errors.player2],
+                      isTouched: true,
+                    }));
+                  }
+                  toast.error(validation.errors.player2 || "Gender validation failed");
+                }
+              }
+            }
           }
         }
       }
@@ -1719,7 +1983,6 @@ const FormDialog = (props: Props) => {
       }
     }
   }
-
   const SuggestedPlayersSection = ({
     suggestions,
     isLoading,
@@ -1891,6 +2154,9 @@ const FormDialog = (props: Props) => {
     e.preventDefault()
     e.stopPropagation()
 
+    const activeTab = document.querySelector('[data-state="active"]')?.getAttribute('value') || 'unknown'
+    const formValues = form.state.values
+
     if (isSubmittingRef.current) {
       toast.warning('Submission already in progress. Please wait.')
       return
@@ -1914,18 +2180,32 @@ const FormDialog = (props: Props) => {
 
           if (!validation.valid) {
             if (validation.errors.player1) {
+              // Set error using setFieldMeta
               form.setFieldMeta("player1Entry.gender", (prev: any) => ({
                 ...prev,
                 errors: [validation.errors.player1],
                 isTouched: true,
+                isValid: false,
               }));
+
+              // Also set error using setErrorMap if available
+              const field = form.getFieldInfo("player1Entry.gender")?.instance;
+              if (field) {
+                field.setErrorMap({ onSubmit: validation.errors.player1 });
+              }
             }
             if (validation.errors.player2) {
               form.setFieldMeta("player2Entry.gender", (prev: any) => ({
                 ...prev,
                 errors: [validation.errors.player2],
                 isTouched: true,
+                isValid: false,
               }));
+
+              const field = form.getFieldInfo("player2Entry.gender")?.instance;
+              if (field) {
+                field.setErrorMap({ onSubmit: validation.errors.player2 });
+              }
             }
             toast.error("Please fix gender validation errors");
             return;
@@ -1936,7 +2216,14 @@ const FormDialog = (props: Props) => {
               ...prev,
               errors: ["Player must be Male for Men's Singles"],
               isTouched: true,
+              isValid: false,
             }));
+
+            const field = form.getFieldInfo("player1Entry.gender")?.instance;
+            if (field) {
+              field.setErrorMap({ onSubmit: "Player must be Male for Men's Singles" });
+            }
+
             toast.error("Player must be Male for Men's Singles");
             return;
           }
@@ -1945,7 +2232,14 @@ const FormDialog = (props: Props) => {
               ...prev,
               errors: ["Player must be Female for Women's Singles"],
               isTouched: true,
+              isValid: false,
             }));
+
+            const field = form.getFieldInfo("player1Entry.gender")?.instance;
+            if (field) {
+              field.setErrorMap({ onSubmit: "Player must be Female for Women's Singles" });
+            }
+
             toast.error("Player must be Female for Women's Singles");
             return;
           }
@@ -2022,7 +2316,10 @@ const FormDialog = (props: Props) => {
                 const hasPlayer2Data = state.player2Entry.firstName && state.player2Entry.lastName && state.player2Entry.birthDate
 
                 return (
-                  <Tabs defaultValue="details" className="">
+                  <Tabs
+                    defaultValue="details"
+                    className=""
+                  >
                     {visibleTabs.length > 1 && (
                       <TabsList className="w-full -mt-2 mb-1 grid" style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, 1fr)` }}>
                         {visibleTabs.map((tab) => (
@@ -2830,7 +3127,45 @@ const FormDialog = (props: Props) => {
                                     },
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    // DEBUG: Log the field meta to see what's causing the error
+                                    console.log('Gender field meta:', {
+                                      name: field.name,
+                                      errors: field.state.meta.errors,
+                                      errorMap: field.state.meta.errorMap,
+                                      isTouched: field.state.meta.isTouched,
+                                      isValid: field.state.meta.isValid,
+                                      value: field.state.value
+                                    });
+
+                                    // Check for errors in errors array - with proper type guarding
+                                    const hasErrorsInArray = field.state.meta.errors &&
+                                      field.state.meta.errors.length > 0 &&
+                                      field.state.meta.errors.some((err: any) => {
+                                        if (typeof err === 'string' && err.length > 0) return true;
+                                        if (err && typeof err === 'object' && err !== null) {
+                                          // Use type assertion with optional chaining
+                                          const errorObj = err as { message?: string };
+                                          return errorObj.message && errorObj.message.length > 0;
+                                        }
+                                        return false;
+                                      });
+
+                                    // Check for errors in errorMap - with proper type handling
+                                    const hasErrorsInMap = field.state.meta.errorMap &&
+                                      Object.values(field.state.meta.errorMap).length > 0 &&
+                                      Object.values(field.state.meta.errorMap).some((error: any) => {
+                                        if (error && typeof error === 'object' && error !== null) {
+                                          const errorObj = error as { message?: string };
+                                          return errorObj.message && errorObj.message.length > 0;
+                                        }
+                                        return false;
+                                      });
+
+                                    // Also check if the field has been marked as invalid by the form
+                                    const isFieldInvalid = !field.state.meta.isValid;
+
+                                    const isInvalid = hasErrorsInArray || hasErrorsInMap || isFieldInvalid;
+
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
@@ -2849,7 +3184,7 @@ const FormDialog = (props: Props) => {
                                               aria-invalid={isInvalid}
                                               className={cn(
                                                 "w-full justify-between font-normal capitalize -mt-2",
-                                                isInvalid && "border-red-500 text-red-700"
+                                                isInvalid && "border-red-500 text-red-700 ring-1 ring-red-500"
                                               )}
                                               type="button"
                                             >
@@ -2872,6 +3207,9 @@ const FormDialog = (props: Props) => {
                                                       onSelect={(v) => {
                                                         field.handleChange(v as Gender);
                                                         setOpenGenders(false);
+
+                                                        // Clear errors when user selects a new value
+                                                        field.setErrorMap({});
                                                       }}
                                                       className="capitalize"
                                                     >
@@ -2891,7 +3229,7 @@ const FormDialog = (props: Props) => {
                                         </Popover>
                                         {isInvalid && (
                                           <FieldError
-                                            errors={field.state.meta.errors.map((err) =>
+                                            errors={field.state.meta.errors.map((err: any) =>
                                               typeof err === "string" ? { message: err } : err
                                             )}
                                           />
@@ -3564,7 +3902,33 @@ const FormDialog = (props: Props) => {
                                     },
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    // Check for errors in errors array - with proper type guarding
+                                    const hasErrorsInArray = field.state.meta.errors &&
+                                      field.state.meta.errors.length > 0 &&
+                                      field.state.meta.errors.some((err: any) => {
+                                        if (typeof err === 'string' && err.length > 0) return true;
+                                        if (err && typeof err === 'object' && err !== null) {
+                                          const errorObj = err as { message?: string };
+                                          return errorObj.message && errorObj.message.length > 0;
+                                        }
+                                        return false;
+                                      });
+
+                                    // Check for errors in errorMap - with proper type handling
+                                    const hasErrorsInMap = field.state.meta.errorMap &&
+                                      Object.values(field.state.meta.errorMap).length > 0 &&
+                                      Object.values(field.state.meta.errorMap).some((error: any) => {
+                                        if (error && typeof error === 'object' && error !== null) {
+                                          const errorObj = error as { message?: string };
+                                          return errorObj.message && errorObj.message.length > 0;
+                                        }
+                                        return false;
+                                      });
+
+                                    const isFieldInvalid = !field.state.meta.isValid;
+
+                                    const isInvalid = hasErrorsInArray || hasErrorsInMap || isFieldInvalid;
+
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
@@ -3583,7 +3947,7 @@ const FormDialog = (props: Props) => {
                                               aria-invalid={isInvalid}
                                               className={cn(
                                                 "w-full justify-between font-normal capitalize -mt-2",
-                                                isInvalid && "border-red-500 text-red-700"
+                                                isInvalid && "border-red-500 text-red-700 ring-1 ring-red-500"
                                               )}
                                               type="button"
                                             >
@@ -3606,6 +3970,9 @@ const FormDialog = (props: Props) => {
                                                       onSelect={(v) => {
                                                         field.handleChange(v as Gender);
                                                         setOpenGenders(false);
+
+                                                        // Clear errors when user selects a new value
+                                                        field.setErrorMap({});
                                                       }}
                                                       className="capitalize"
                                                     >
@@ -3625,7 +3992,7 @@ const FormDialog = (props: Props) => {
                                         </Popover>
                                         {isInvalid && (
                                           <FieldError
-                                            errors={field.state.meta.errors.map((err) =>
+                                            errors={field.state.meta.errors.map((err: any) =>
                                               typeof err === "string" ? { message: err } : err
                                             )}
                                           />

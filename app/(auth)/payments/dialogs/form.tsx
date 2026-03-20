@@ -2061,9 +2061,9 @@ const FormDialog = (props: Props) => {
                         <div className="w-full mb-4 p-3 bg-white border rounded-lg">
                           <div className="flex items-center gap-2">
                             <Paperclip className="w-4 h-4 text-gray-500" />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium truncate">
-                                {file.name}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate" title={file.name}>
+                                {file.name.length > 30 ? `${file.name.substring(0, 27)}...` : file.name}
                               </p>
                               <p className="text-xs text-gray-500">
                                 {(file.size / 1024).toFixed(2)} KB
@@ -2073,7 +2073,7 @@ const FormDialog = (props: Props) => {
                               type="button"
                               onClick={handleRemoveFile}
                               disabled={isUploading}
-                              className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer"
+                              className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer flex-shrink-0"
                             >
                               <XCircle className="w-4 h-4" />
                             </Button>

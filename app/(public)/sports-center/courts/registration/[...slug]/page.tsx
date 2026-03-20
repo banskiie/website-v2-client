@@ -880,8 +880,6 @@ export default function Page({ params }: RegistrationPageProps) {
                 const validationResult = schema.safeParse(value);
 
                 if (!validationResult.success) {
-                    // console.log("Form validation failed:", validationResult.error);
-                    // console.log("Number of errors:", validationResult.error.issues.length);
 
                     const allErrors = validationResult.error.issues.map((err: any) => err.message);
 
@@ -943,12 +941,10 @@ export default function Page({ params }: RegistrationPageProps) {
                         err.message.toLowerCase().includes('contact')
                     );
 
-                    // Show appropriate toast based on error types
                     if (ageErrors.length > 0) {
                         const ageErrorMessages = ageErrors.map((err: any) => err.message);
                         showValidationToast(ageErrorMessages, "🎂 Age Validation Failed");
 
-                        // Also scroll to the first age-related field
                         setTimeout(() => {
                             const firstAgeField = document.querySelector('[name*="Birthday"]');
                             if (firstAgeField) {
@@ -972,7 +968,6 @@ export default function Page({ params }: RegistrationPageProps) {
                         showValidationToast(contactErrorMessages, "📞 Contact Information Error");
                     }
 
-                    // If there are other errors but no specific categories, show a general validation toast
                     const otherErrors = validationResult.error.issues.filter((err: any) =>
                         !ageErrors.includes(err) &&
                         !genderErrors.includes(err) &&
@@ -982,7 +977,7 @@ export default function Page({ params }: RegistrationPageProps) {
 
                     if (otherErrors.length > 0) {
                         const otherErrorMessages = otherErrors.map((err: any) => err.message);
-                        showValidationToast(otherErrorMessages, "❌ Validation Failed");
+                        showValidationToast(otherErrorMessages, "Validation Failed");
                     } else if (requiredFieldErrors.length > 0 &&
                         ageErrors.length === 0 &&
                         genderErrors.length === 0 &&
@@ -990,7 +985,7 @@ export default function Page({ params }: RegistrationPageProps) {
                         contactErrors.length === 0) {
                         showValidationToast(
                             requiredFieldErrors.map((err: any) => err.message),
-                            "⚠️ Required Fields Missing"
+                            "Required Fields Missing"
                         );
                     }
 
@@ -1007,7 +1002,6 @@ export default function Page({ params }: RegistrationPageProps) {
                                 }
                             });
                         } catch (e) {
-                            // console.log("Error setting field meta:", e);
                         }
 
                         const currentValue = form.getFieldValue(fieldName);
@@ -1033,8 +1027,6 @@ export default function Page({ params }: RegistrationPageProps) {
                     return;
                 }
 
-                // console.log("Form validation passed, proceeding...");
-
                 const finalFormData = {
                     ...value,
                     player1Gender: value.player1Gender || autoGender || "",
@@ -1050,16 +1042,13 @@ export default function Page({ params }: RegistrationPageProps) {
                 let documentUrlPlayer2 = ""
 
                 if (filePlayer1) {
-                    // console.log("Uploading player 1 document...");
                     setIsUploading(true);
                     try {
                         const uploadedUrl = await uploadFile(filePlayer1, `registration-player1-${Date.now()}`)
                         if (uploadedUrl) {
                             documentUrlPlayer1 = uploadedUrl
-                            // console.log("Player 1 document uploaded:", uploadedUrl);
                         }
                     } catch (error) {
-                        // console.error("Failed to upload player 1 document:", error);
                         toast.error("Failed to upload document for Player 1", {
                             description: "Please try again or contact support if the issue persists.",
                             duration: 5000,
@@ -1315,24 +1304,24 @@ export default function Page({ params }: RegistrationPageProps) {
     const EnhancedFieldError = ({ errors, fieldName }: { errors: any[], fieldName?: string }) => {
         const hasShownToast = useRef(false);
 
-        useEffect(() => {
-            if (errors && errors.length > 0 && fieldName && !hasShownToast.current) {
-                const firstError = typeof errors[0] === 'object' && errors[0].message
-                    ? errors[0].message
-                    : String(errors[0]);
+        // useEffect(() => {
+        //     if (errors && errors.length > 0 && fieldName && !hasShownToast.current) {
+        //         const firstError = typeof errors[0] === 'object' && errors[0].message
+        //             ? errors[0].message
+        //             : String(errors[0]);
 
-                const errorKey = `${fieldName}-${firstError}`;
+        //         const errorKey = `${fieldName}-${firstError}`;
 
-                if (!shownFieldErrors.has(errorKey)) {
-                    showFieldErrorToast(fieldName, errors);
+        //         if (!shownFieldErrors.has(errorKey)) {
+        //             showFieldErrorToast(fieldName, errors);
 
-                    setShownFieldErrors(prev => new Set(prev).add(errorKey));
-                    hasShownToast.current = true;
-                }
-            } else if (!errors || errors.length === 0) {
-                hasShownToast.current = false;
-            }
-        }, [errors, fieldName]);
+        //             setShownFieldErrors(prev => new Set(prev).add(errorKey));
+        //             hasShownToast.current = true;
+        //         }
+        //     } else if (!errors || errors.length === 0) {
+        //         hasShownToast.current = false;
+        //     }
+        // }, [errors, fieldName]);
 
         if (!errors || errors.length === 0) return null;
 

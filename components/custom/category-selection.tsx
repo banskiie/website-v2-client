@@ -2645,7 +2645,7 @@ export function UploadProofMergedModal({
                           {file.name}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {(file.size / 1024).toFixed(2)} KB
+                          {(file.size / (1024 * 1024)).toFixed(2)} MB
                         </p>
                       </div>
                       <Button
@@ -2724,11 +2724,14 @@ export function UploadProofMergedModal({
                   <input
                     id="proofUpload"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
                     className="hidden"
                     onChange={handleFileUpload}
                     disabled={isUploading || loading}
                   />
+                  <span className="text-xs text-gray-500 mt-1">
+                    Supports JPEG, PNG, JPG, WEBP images up to 20MB
+                  </span>
                 </label>
 
                 {isUploading && (
