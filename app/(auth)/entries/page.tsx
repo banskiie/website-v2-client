@@ -325,8 +325,11 @@ const Page = () => {
         return prev
       },
     })
-
-    return () => unsubscribeRefund?.()
+ return () => {
+    if (typeof unsubscribeRefund === "function") {
+      unsubscribeRefund()
+    }
+  }
   }, [subscribeToMore])
 
   useEffect(() => {
@@ -742,7 +745,11 @@ const Page = () => {
       },
     })
 
-    return () => unsubscribe?.()
+    return () => {
+    if (typeof unsubscribe === "function") {
+      unsubscribe()
+    }
+  }
   }, [subscribeToMore, search, sort, filter])
 
   // Memoized Data Processing

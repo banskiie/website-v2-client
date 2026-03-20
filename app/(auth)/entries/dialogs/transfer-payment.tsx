@@ -287,7 +287,11 @@ const TransferDialog = ({ entryId, onClose }: TransferDialogProps) => {
             }
         });
 
-        return () => unsubscribe?.();
+        return () => {
+    if (typeof unsubscribe === "function") {
+      unsubscribe()
+    }
+  };
     }, [subscribeToMore, open, selectedPaymentId]);
 
     const payments = paymentsData?.paymentsByEntryId || []

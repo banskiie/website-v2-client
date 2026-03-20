@@ -232,7 +232,11 @@ const Page = () => {
         }
       },
     })
-    return () => unsubscribe?.()
+    return () => {
+    if (typeof unsubscribe === "function") {
+      unsubscribe()
+    }
+  }
   }, [subscribeToMore, search, sort, filter])
 
   // Memoized Data Processing
