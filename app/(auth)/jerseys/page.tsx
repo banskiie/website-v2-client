@@ -267,7 +267,7 @@ const Page = () => {
         }
       },
     })
-    return () => unsubscribe()
+    return () => unsubscribe?.()
   }, [subscribeToMore, search, sort, filter])
 
   const { total, nodes, pageInfo } = useMemo(() => {

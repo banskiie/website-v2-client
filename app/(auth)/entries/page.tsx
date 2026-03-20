@@ -326,7 +326,7 @@ const Page = () => {
       },
     })
 
-    return () => unsubscribeRefund()
+    return () => unsubscribeRefund?.()
   }, [subscribeToMore])
 
   useEffect(() => {
@@ -742,7 +742,7 @@ const Page = () => {
       },
     })
 
-    return () => unsubscribe()
+    return () => unsubscribe?.()
   }, [subscribeToMore, search, sort, filter])
 
   // Memoized Data Processing

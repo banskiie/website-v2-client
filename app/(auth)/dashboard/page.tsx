@@ -758,7 +758,7 @@ const Page = () => {
     })
 
     return () => {
-      unsubscribeRefund()
+      unsubscribeRefund?.()
     }
   }, [subscribeToMoreEntries])
 
