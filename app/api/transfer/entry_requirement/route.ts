@@ -1,4 +1,3 @@
-// app/api/transfer/entry_requirement/route.ts
 import { NextResponse } from "next/server"
 import { v2 as cloudinary } from 'cloudinary'
 
@@ -9,10 +8,9 @@ cloudinary.config({
 })
 
 export async function POST(request: Request) {
-    console.log("🔄 /api/transfer/entry_requirement called - CLOUDINARY VERSION")
+    console.log("🔄 /api/transfer/entry_requirements called - CLOUDINARY VERSION")
 
     try {
-        // Parse JSON body
         const body = await request.json()
         const { fileId } = body
 
@@ -28,17 +26,14 @@ export async function POST(request: Request) {
             )
         }
 
-        // The fileId is the public_id from Cloudinary (e.g., "entry_requirements/filename")
         const publicId = fileId
-
         console.log(`📁 Using public ID: ${publicId}`)
 
-        // Use the actual folder names
-        const entryRequirementsFolder = 'entry_requirements'
-        const requirementsFolder = 'requirements'
+        // Match your Cloudinary folder names
+        const sourceFolder = 'entry_requirements' // plural
+        const destinationFolder = 'requirement' // singular
 
         try {
-            // Verify the file exists in Cloudinary
             const resource = await cloudinary.api.resource(publicId, {
                 colors: false,
                 exif: false,
@@ -52,24 +47,24 @@ export async function POST(request: Request) {
             })
 
             // Check if the file is in entry_requirements folder
-            const isInEntryRequirements = publicId.startsWith(entryRequirementsFolder + '/')
+            const isInSourceFolder = publicId.startsWith(sourceFolder + '/')
 
-            if (!isInEntryRequirements) {
-                console.log(`⚠️ File is not in entry_requirements folder. Current path: ${publicId}`)
+            if (!isInSourceFolder) {
+                console.log(`⚠️ File is not in ${sourceFolder} folder. Current path: ${publicId}`)
                 return NextResponse.json(
                     {
                         success: false,
-                        error: "File is not in entry_requirements folder",
+                        error: `File is not in ${sourceFolder} folder`,
                         currentLocation: publicId,
-                        expectedFolder: entryRequirementsFolder
+                        expectedFolder: sourceFolder
                     },
                     { status: 400 }
                 )
             }
 
             // Extract the filename without the folder prefix
-            const filename = publicId.replace(entryRequirementsFolder + '/', '')
-            const newPublicId = `${requirementsFolder}/${filename}`
+            const filename = publicId.replace(sourceFolder + '/', '')
+            const newPublicId = `${destinationFolder}/${filename}`
 
             console.log(`🔄 Moving file from ${publicId} to ${newPublicId}`)
 
@@ -81,7 +76,6 @@ export async function POST(request: Request) {
 
             console.log(`📥 Downloading from: ${fileUrl}`)
 
-            // Download the file
             const response = await fetch(fileUrl)
             if (!response.ok) {
                 throw new Error(`Failed to download file: ${response.statusText}`)
@@ -89,7 +83,6 @@ export async function POST(request: Request) {
 
             const buffer = Buffer.from(await response.arrayBuffer())
 
-            // Upload to new location using stream
             console.log(`📤 Uploading to: ${newPublicId}`)
 
             const result: any = await new Promise((resolve, reject) => {
@@ -104,8 +97,8 @@ export async function POST(request: Request) {
                             moved_from: publicId,
                             moved_at: new Date().toISOString(),
                             original_public_id: publicId,
-                            original_folder: entryRequirementsFolder,
-                            destination_folder: requirementsFolder
+                            original_folder: sourceFolder,
+                            destination_folder: destinationFolder
                         }
                     },
                     (error, result) => {
@@ -132,7 +125,7 @@ export async function POST(request: Request) {
             return NextResponse.json(
                 {
                     success: true,
-                    message: `File moved successfully from ${entryRequirementsFolder} to ${requirementsFolder} folder`,
+                    message: `File moved successfully from ${sourceFolder} to ${destinationFolder} folder`,
                     oldFileId: publicId,
                     newFileId: newPublicId,
                     newUrl: cloudinary.url(newPublicId, {

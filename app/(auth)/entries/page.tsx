@@ -299,7 +299,7 @@ const Page = () => {
         sort: sort || {
           key: "dateUpdated",
           order: "DESC",
-        }, // Default sort
+        },
         filter,
       },
       fetchPolicy: "network-only",
@@ -483,23 +483,23 @@ const Page = () => {
             const cancelledEdges = prev.entries.edges.map((edge: any) =>
               edge.node._id === cancelledEntry._id
                 ? {
-                    ...edge,
-                    node: {
-                      ...edge.node,
-                      ...cancelledEntry,
-                      currentStatus: "CANCELLED",
-                      hasOverpayment: cancelledEntry.hasOverpayment,
-                      totalExcess: cancelledEntry.totalExcess,
-                      pendingAmount: cancelledEntry.pendingAmount,
-                      totalRefundAmount:
-                        cancelledEntry.totalRefundAmount ||
-                        edge.node.totalRefundAmount,
-                      hasRefunds:
-                        cancelledEntry.hasRefunds || edge.node.hasRefunds,
-                      totalPaid:
-                        cancelledEntry.totalPaid || edge.node.totalPaid,
-                    },
-                  }
+                  ...edge,
+                  node: {
+                    ...edge.node,
+                    ...cancelledEntry,
+                    currentStatus: "CANCELLED",
+                    hasOverpayment: cancelledEntry.hasOverpayment,
+                    totalExcess: cancelledEntry.totalExcess,
+                    pendingAmount: cancelledEntry.pendingAmount,
+                    totalRefundAmount:
+                      cancelledEntry.totalRefundAmount ||
+                      edge.node.totalRefundAmount,
+                    hasRefunds:
+                      cancelledEntry.hasRefunds || edge.node.hasRefunds,
+                    totalPaid:
+                      cancelledEntry.totalPaid || edge.node.totalPaid,
+                  },
+                }
                 : edge,
             )
 
@@ -577,7 +577,7 @@ const Page = () => {
               if (!search && !sort && filter.length === 0) {
                 toast.info(
                   `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
-                    `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
+                  `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
                 )
               }
             }
@@ -723,14 +723,14 @@ const Page = () => {
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                        ...edge,
-                        node: {
-                          ...edge.node,
-                          ...updatedEntries.find(
-                            (u: any) => u._id === edge.node._id,
-                          ),
-                        },
-                      }
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...updatedEntries.find(
+                          (u: any) => u._id === edge.node._id,
+                        ),
+                      },
+                    }
                     : edge,
                 ),
               },

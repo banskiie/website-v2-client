@@ -273,15 +273,13 @@ const extractFileIdFromUrl = (url: string): string | null => {
   return url
 }
 
-// Helper function to check file location
-const getFileLocation = async (fileId: string): Promise<'root' | 'entry_requirements' | 'requirements' | 'unknown'> => {
+const getFileLocation = async (fileId: string): Promise<'root' | 'entry_requirements' | 'requirement' | 'unknown'> => {
   try {
     console.log(`🔍 Checking location for file: ${fileId}`)
 
-    // Check if file is in requirements folder by public_id pattern or API
-    if (fileId.startsWith('requirements/')) {
-      console.log(`📁 File is in requirements folder (by path): ${fileId}`)
-      return 'requirements'
+    if (fileId.startsWith('requirement/')) {
+      console.log(`📁 File is in requirement folder (by path): ${fileId}`)
+      return 'requirement'
     }
 
     if (fileId.startsWith('entry_requirements/')) {
@@ -289,7 +287,6 @@ const getFileLocation = async (fileId: string): Promise<'root' | 'entry_requirem
       return 'entry_requirements'
     }
 
-    // If not in a known folder pattern, check via API
     try {
       const checkResponse = await fetch("/api/transfer/requirement", {
         method: "POST",
@@ -301,15 +298,14 @@ const getFileLocation = async (fileId: string): Promise<'root' | 'entry_requirem
 
       if (checkResult.success) {
         if (checkResult.isRequirement) {
-          console.log(`📁 File is in requirements folder (by API): ${fileId}`)
-          return 'requirements'
+          console.log(`📁 File is in requirement folder (by API): ${fileId}`)
+          return 'requirement'
         }
       }
     } catch (apiError) {
       console.warn(`⚠️ API check failed, using path-based detection:`, apiError)
     }
 
-    // Default to root if no folder pattern matches
     console.log(`📁 File appears to be in root folder: ${fileId}`)
     return 'root'
   } catch (error) {
@@ -739,8 +735,6 @@ const replaceDocumentsInDrive = async (
     } as ReplaceResult
   }
 }
-
-// Enhanced function to move documents with location detection
 const moveDocumentsToRequirements = async (docs: any[], player: string): Promise<ProcessedDocument[]> => {
   const movedDocs: ProcessedDocument[] = []
 
@@ -753,28 +747,24 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
           { fileId }
         )
 
-        // Step 1: Check where the file is located
         const location = await getFileLocation(fileId)
         console.log(`📍 File location for ${doc.documentType}:`, location)
 
-        // Step 2: Handle based on location
-        if (location === 'requirements') {
-          // File is already in requirements folder
-          console.log(`✅ File already in requirements folder: ${fileId}`)
+        if (location === 'requirement') {
+          console.log(`✅ File already in requirement folder: ${fileId}`)
           movedDocs.push({
             documentType: doc.documentType,
             fileId,
             status: "already_exists",
             player: player,
-            message: "File already in requirements folder",
+            message: "File already in requirement folder",
             newFileId: fileId,
           })
           continue
         }
 
         if (location === 'entry_requirements') {
-          // File is in entry_requirements, move it to requirements
-          console.log(`📦 Moving from entry_requirements to requirements: ${fileId}`)
+          console.log(`Moving from entry_requirements to requirement: ${fileId}`)
 
           const moveResponse = await fetch("/api/transfer/entry_requirement", {
             method: "POST",
@@ -790,7 +780,7 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
               fileId,
               status: "moved",
               player: player,
-              message: "Successfully moved to requirements folder",
+              message: "Successfully moved to requirement folder",
               newFileId: moveResult.newFileId || fileId,
             })
             console.log(`✅ Successfully moved ${doc.documentType} for ${player}`)
@@ -798,8 +788,8 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
             console.error(`Failed to move ${doc.documentType} for ${player}:`, moveResult.error)
           }
         } else if (location === 'root') {
-          // File is in root folder, copy it to requirements (and optionally delete original)
-          console.log(`📦 File in root folder, copying to requirements: ${fileId}`)
+          // File is in root folder, copy it to requirement (and optionally delete original)
+          console.log(`📦 File in root folder, copying to requirement: ${fileId}`)
 
           const copyResponse = await fetch("/api/transfer/copy", {
             method: "POST",
@@ -815,7 +805,7 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
               fileId,
               status: "copied",
               player: player,
-              message: "Copied from root to requirements folder",
+              message: "Copied from root to requirement folder",
               newFileId: copyResult.copiedFileId,
             })
             console.log(`✅ Successfully copied ${doc.documentType} for ${player}`)
@@ -829,7 +819,7 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
                   fileId,
                   documentType: doc.documentType,
                   playerType: player,
-                  reason: "original_in_root_copied_to_requirements"
+                  reason: "original_in_root_copied_to_requirement"
                 }),
               })
 
@@ -860,7 +850,7 @@ const moveDocumentsToRequirements = async (docs: any[], player: string): Promise
               fileId,
               status: "copied_fallback",
               player: player,
-              message: "Copied as fallback to requirements folder",
+              message: "Copied as fallback to requirement folder",
               newFileId: copyResult.copiedFileId,
             })
             console.log(`✅ Successfully copied ${doc.documentType} as fallback`)
@@ -1788,7 +1778,7 @@ const AssignDialog = (props: Props) => {
 
                   if (alreadyExistsCount > 0) {
                     messages.push(
-                      `${alreadyExistsCount} document(s) already in folder`,
+                      `${alreadyExistsCount} document(s) already in requirement folder`,
                     )
                   }
                 }
