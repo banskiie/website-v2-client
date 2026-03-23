@@ -296,22 +296,22 @@ const replaceDocumentsInDrive = async (
   playerType: "player1" | "player2",
   documentSelection?: DocumentSelection,
 ): Promise<ReplaceResult> => {
-  console.log(`🔍 replaceDocumentsInDrive called for ${playerType}`);
-  console.log(
-    `📋 Document selection received:`,
-    JSON.stringify(documentSelection, null, 2),
-  );
-  console.log(
-    `📋 Existing documents:`,
-    existingDocuments.map((d) => ({
-      type: d.documentType,
-      url: d.documentURL,
-    })),
-  );
-  console.log(
-    `📋 New documents:`,
-    newDocuments.map((d) => ({ type: d.documentType, url: d.documentURL })),
-  );
+  // console.log(`🔍 replaceDocumentsInDrive called for ${playerType}`);
+  // console.log(
+  //   `📋 Document selection received:`,
+  //   JSON.stringify(documentSelection, null, 2),
+  // );
+  // console.log(
+  //   `📋 Existing documents:`,
+  //   existingDocuments.map((d) => ({
+  //     type: d.documentType,
+  //     url: d.documentURL,
+  //   })),
+  // );
+  // console.log(
+  //   `📋 New documents:`,
+  //   newDocuments.map((d) => ({ type: d.documentType, url: d.documentURL })),
+  // );
 
   try {
     const replacedDocuments: any[] = [];
@@ -325,31 +325,31 @@ const replaceDocumentsInDrive = async (
     }> = [];
 
     if (documentSelection) {
-      console.log(
-        `📋 Processing document selections. Keys: ${Object.keys(documentSelection).join(", ")}`,
-      );
+      // console.log(
+      //   `📋 Processing document selections. Keys: ${Object.keys(documentSelection).join(", ")}`,
+      // );
 
       for (const [documentType, selection] of Object.entries(
         documentSelection,
       )) {
-        console.log(`📋 Processing document type: ${documentType}`);
-        console.log(`📋 Selection:`, selection);
+        // console.log(`📋 Processing document type: ${documentType}`);
+        // console.log(`📋 Selection:`, selection);
         const { selectedSource, existingDocs, newDocs } = selection;
 
         if (selectedSource.startsWith("existing") && existingDocs) {
           // ✅ USER SELECTED EXISTING DOCUMENT
-          console.log(`📌 Keeping existing ${documentType} for ${playerType}`);
+          // console.log(`📌 Keeping existing ${documentType} for ${playerType}`);
 
           const selectedIndex = parseInt(selectedSource.split("-")[1]);
           const selectedExistingDoc = existingDocs[selectedIndex];
 
-          console.log(`📄 Selected document index: ${selectedIndex}`);
-          console.log(
-            `📄 Selected existing document URL: ${selectedExistingDoc?.documentURL}`,
-          );
-          console.log(
-            `📄 Selected existing document type: ${selectedExistingDoc?.documentType}`,
-          );
+          // console.log(`📄 Selected document index: ${selectedIndex}`);
+          // console.log(
+          //   `📄 Selected existing document URL: ${selectedExistingDoc?.documentURL}`,
+          // );
+          // console.log(
+          //   `📄 Selected existing document type: ${selectedExistingDoc?.documentType}`,
+          // );
 
           // Get the old URL (the one currently in the entry)
           const oldUrl =
@@ -363,9 +363,9 @@ const replaceDocumentsInDrive = async (
             player: playerType,
           });
 
-          console.log(`🔄 URL will be updated:`);
-          console.log(`   Old URL: ${oldUrl}`);
-          console.log(`   New URL: ${selectedExistingDoc.documentURL}`);
+          // console.log(`🔄 URL will be updated:`);
+          // console.log(`   Old URL: ${oldUrl}`);
+          // console.log(`   New URL: ${selectedExistingDoc.documentURL}`);
 
           replacedDocuments.push({
             documentType,
@@ -401,7 +401,7 @@ const replaceDocumentsInDrive = async (
                   message:
                     "New document deleted (keeping selected existing document)",
                 });
-                console.log(`✅ Deleted new document: ${documentType}`);
+                // console.log(`✅ Deleted new document: ${documentType}`);
               } else {
                 console.warn(
                   `⚠️ Could not delete new document: ${documentType}`,
@@ -418,7 +418,7 @@ const replaceDocumentsInDrive = async (
 
         if (selectedSource.startsWith("new") && newDocs) {
           // ✅ USER SELECTED NEW DOCUMENT - Replace existing with new
-          console.log(`📌 Using new ${documentType} for ${playerType}`);
+          // console.log(`📌 Using new ${documentType} for ${playerType}`);
 
           const selectedIndex = parseInt(selectedSource.split("-")[1]);
           const selectedNewDoc = newDocs[selectedIndex];
@@ -432,8 +432,8 @@ const replaceDocumentsInDrive = async (
             player: playerType,
           });
 
-          console.log(`🔄 URL will be updated to new document:`);
-          console.log(`   New URL: ${selectedNewDoc.documentURL}`);
+          // console.log(`🔄 URL will be updated to new document:`);
+          // console.log(`   New URL: ${selectedNewDoc.documentURL}`);
 
           replacedDocuments.push({
             documentType,
@@ -449,10 +449,9 @@ const replaceDocumentsInDrive = async (
         }
       }
     } else {
-      // Fallback: Keep the new documents (don't replace anything)
-      console.log(
-        `📋 No document selection, keeping new documents for ${playerType}`,
-      );
+      // console.log(
+      //   `📋 No document selection, keeping new documents for ${playerType}`,
+      // );
       for (const newDoc of newDocuments) {
         const oldUrl = existingDocuments.find(
           (d) => d.documentType === newDoc.documentType,
@@ -477,13 +476,13 @@ const replaceDocumentsInDrive = async (
       }
     }
 
-    console.log(
-      `✅ Document processing completed for ${playerType}:`,
-      `\n   - Replaced: ${replacedDocuments.length} documents`,
-      `\n   - Deleted: ${deletedDocuments.length} documents`,
-      `\n   - Failed: ${failedReplacements.length} documents`,
-      `\n   - URL Updates: ${urlUpdates.length} documents`,
-    );
+    // console.log(
+    //   `✅ Document processing completed for ${playerType}:`,
+    //   `\n   - Replaced: ${replacedDocuments.length} documents`,
+    //   `\n   - Deleted: ${deletedDocuments.length} documents`,
+    //   `\n   - Failed: ${failedReplacements.length} documents`,
+    //   `\n   - URL Updates: ${urlUpdates.length} documents`,
+    // );
 
     return {
       replacedDocuments,
@@ -537,25 +536,25 @@ const checkAndMoveDocuments = async (
         connectedPlayer1?.validDocuments?.length > 0;
 
       if (hasExistingPlayer1Docs && documentSelections.player1) {
-        console.log(`🔄 Processing document selections for Player 1`);
-        console.log(
-          `📋 documentSelections.player1:`,
-          JSON.stringify(documentSelections.player1, null, 2),
-        );
-        console.log(
-          `📋 connectedPlayer1.validDocuments:`,
-          connectedPlayer1?.validDocuments?.map((d: any) => ({
-            type: d.documentType,
-            url: d.documentURL,
-          })),
-        );
-        console.log(
-          `player1Docs (new):`,
-          player1Docs.map((d) => ({
-            type: d.documentType,
-            url: d.documentURL,
-          })),
-        );
+        // console.log(`🔄 Processing document selections for Player 1`);
+        // console.log(
+        //   `📋 documentSelections.player1:`,
+        //   JSON.stringify(documentSelections.player1, null, 2),
+        // );
+        // console.log(
+        //   `📋 connectedPlayer1.validDocuments:`,
+        //   connectedPlayer1?.validDocuments?.map((d: any) => ({
+        //     type: d.documentType,
+        //     url: d.documentURL,
+        //   })),
+        // );
+        // console.log(
+        //   `player1Docs (new):`,
+        //   player1Docs.map((d) => ({
+        //     type: d.documentType,
+        //     url: d.documentURL,
+        //   })),
+        // );
 
         const player1Result = await replaceDocumentsInDrive(
           connectedPlayer1.validDocuments,
@@ -568,9 +567,9 @@ const checkAndMoveDocuments = async (
           replacedDocuments.push(...player1Result.replacedDocuments);
           if (player1Result.urlUpdates) {
             allUrlUpdates.push(...player1Result.urlUpdates);
-            console.log(
-              `📝 Added ${player1Result.urlUpdates.length} URL updates from document selections`,
-            );
+            // console.log(
+            //   `📝 Added ${player1Result.urlUpdates.length} URL updates from document selections`,
+            // );
           }
         }
 
@@ -585,10 +584,9 @@ const checkAndMoveDocuments = async (
           );
         }
       } else if (!hasExistingPlayer1Docs) {
-        // No existing documents - keep the new ones
-        console.log(
-          `📦 Player 1 has NO existing documents - keeping new documents`,
-        );
+        // console.log(
+        //   `📦 Player 1 has NO existing documents - keeping new documents`,
+        // );
         for (const doc of player1Docs) {
           allUrlUpdates.push({
             oldUrl: "",
@@ -606,10 +604,9 @@ const checkAndMoveDocuments = async (
           });
         }
       } else {
-        // Has existing but no selections - keep existing documents
-        console.log(
-          `📋 No document selections for Player 1 - keeping existing documents`,
-        );
+        // console.log(
+        //   `📋 No document selections for Player 1 - keeping existing documents`,
+        // );
         for (const existingDoc of connectedPlayer1.validDocuments) {
           allUrlUpdates.push({
             oldUrl:
@@ -642,25 +639,25 @@ const checkAndMoveDocuments = async (
         connectedPlayer2?.validDocuments?.length > 0;
 
       if (hasExistingPlayer2Docs && documentSelections.player2) {
-        console.log(`🔄 Processing document selections for Player 2`);
-        console.log(
-          `📋 documentSelections.player2:`,
-          JSON.stringify(documentSelections.player2, null, 2),
-        );
-        console.log(
-          `📋 connectedPlayer2.validDocuments:`,
-          connectedPlayer2?.validDocuments?.map((d: any) => ({
-            type: d.documentType,
-            url: d.documentURL,
-          })),
-        );
-        console.log(
-          `player2Docs (new):`,
-          player2Docs.map((d) => ({
-            type: d.documentType,
-            url: d.documentURL,
-          })),
-        );
+        // console.log(`🔄 Processing document selections for Player 2`);
+        // console.log(
+        //   `📋 documentSelections.player2:`,
+        //   JSON.stringify(documentSelections.player2, null, 2),
+        // );
+        // console.log(
+        //   `📋 connectedPlayer2.validDocuments:`,
+        //   connectedPlayer2?.validDocuments?.map((d: any) => ({
+        //     type: d.documentType,
+        //     url: d.documentURL,
+        //   })),
+        // );
+        // console.log(
+        //   `player2Docs (new):`,
+        //   player2Docs.map((d) => ({
+        //     type: d.documentType,
+        //     url: d.documentURL,
+        //   })),
+        // );
 
         const player2Result = await replaceDocumentsInDrive(
           connectedPlayer2.validDocuments,
@@ -673,9 +670,9 @@ const checkAndMoveDocuments = async (
           replacedDocuments.push(...player2Result.replacedDocuments);
           if (player2Result.urlUpdates) {
             allUrlUpdates.push(...player2Result.urlUpdates);
-            console.log(
-              `📝 Added ${player2Result.urlUpdates.length} URL updates from document selections`,
-            );
+            // console.log(
+            //   `📝 Added ${player2Result.urlUpdates.length} URL updates from document selections`,
+            // );
           }
         }
 
@@ -690,9 +687,9 @@ const checkAndMoveDocuments = async (
           );
         }
       } else if (!hasExistingPlayer2Docs) {
-        console.log(
-          `📦 Player 2 has NO existing documents - keeping new documents`,
-        );
+        // console.log(
+        //   `📦 Player 2 has NO existing documents - keeping new documents`,
+        // );
         for (const doc of player2Docs) {
           allUrlUpdates.push({
             oldUrl: "",
@@ -710,9 +707,9 @@ const checkAndMoveDocuments = async (
           });
         }
       } else {
-        console.log(
-          `📋 No document selections for Player 2 - keeping existing documents`,
-        );
+        // console.log(
+        //   `📋 No document selections for Player 2 - keeping existing documents`,
+        // );
         for (const existingDoc of connectedPlayer2.validDocuments) {
           allUrlUpdates.push({
             oldUrl:
@@ -735,24 +732,22 @@ const checkAndMoveDocuments = async (
       }
     }
 
-    console.log(`📊 Document processing completed:`);
-    console.log(`   - Moved: ${movedDocuments.length} documents`);
-    console.log(`   - Replaced: ${replacedDocuments.length} documents`);
-    console.log(`   - Deleted: ${deletedDocuments.length} documents`);
-    console.log(`   - URL updates needed: ${allUrlUpdates.length} documents`);
+    // console.log(`📊 Document processing completed:`);
+    // console.log(`   - Moved: ${movedDocuments.length} documents`);
+    // console.log(`   - Replaced: ${replacedDocuments.length} documents`);
+    // console.log(`   - Deleted: ${deletedDocuments.length} documents`);
+    // console.log(`   - URL updates needed: ${allUrlUpdates.length} documents`);
 
     if (allUrlUpdates.length > 0) {
-      console.log(`📝 DETAILED URL UPDATES TO APPLY:`);
+      // console.log(`📝 DETAILED URL UPDATES TO APPLY:`);
       allUrlUpdates.forEach((update, index) => {
-        console.log(
-          `   ${index + 1}. ${update.player}: ${update.documentType}`,
-        );
-        console.log(`      Old URL: ${update.oldUrl}`);
-        console.log(`      New URL: ${update.newUrl}`);
+        // console.log(
+        //   `   ${index + 1}. ${update.player}: ${update.documentType}`,
+        // );
+        // console.log(`      Old URL: ${update.oldUrl}`);
+        // console.log(`      New URL: ${update.newUrl}`);
       });
-    } else {
-      console.log(`⚠️ No URL updates were generated!`);
-    }
+    } 
 
     return {
       moved: movedDocuments,
@@ -878,10 +873,10 @@ const DocumentSelectionDialog = ({
       return;
     }
 
-    console.log(
-      "💾 DocumentSelectionDialog - Saving selections:",
-      JSON.stringify(selections, null, 2),
-    );
+    // console.log(
+    //   "💾 DocumentSelectionDialog - Saving selections:",
+    //   JSON.stringify(selections, null, 2),
+    // );
     onSave(selections);
     onOpenChange(false);
   };
@@ -1561,23 +1556,23 @@ const AssignDialog = (props: Props) => {
 
               urlUpdates = documentResult.urlUpdates || [];
 
-              console.log(`📦 Document processing result:`);
-              console.log(
-                `   - Total documents processed: ${documentResult.total}`,
-              );
-              console.log(`   - URL updates found: ${urlUpdates.length}`);
+              // console.log(`📦 Document processing result:`);
+              // console.log(
+              //   `   - Total documents processed: ${documentResult.total}`,
+              // );
+              // console.log(`   - URL updates found: ${urlUpdates.length}`);
 
               if (urlUpdates.length > 0) {
-                console.log(`🔄 URL updates to be sent to backend:`);
+                // console.log(`🔄 URL updates to be sent to backend:`);
                 urlUpdates.forEach((update, index) => {
-                  console.log(
-                    `   ${index + 1}. ${update.player} - ${update.documentType}`,
-                  );
-                  console.log(`      Old: ${update.oldUrl}`);
-                  console.log(`      New: ${update.newUrl}`);
+                  // console.log(
+                  //   `   ${index + 1}. ${update.player} - ${update.documentType}`,
+                  // );
+                  // console.log(`      Old: ${update.oldUrl}`);
+                  // console.log(`      New: ${update.newUrl}`);
                 });
               } else {
-                console.log(`⚠️ No URL updates to send to backend`);
+                // console.log(`⚠️ No URL updates to send to backend`);
               }
 
               if (documentResult.total > 0) {
@@ -1614,9 +1609,9 @@ const AssignDialog = (props: Props) => {
 
           if (response?.data?.assignPlayers?.ok) {
             if (urlUpdates && urlUpdates.length > 0) {
-              console.log(
-                `📝 Updating ${urlUpdates.length} document URLs in database...`,
-              );
+              // console.log(
+              //   `📝 Updating ${urlUpdates.length} document URLs in database...`,
+              // );
 
               try {
                 const updatesForMutation = urlUpdates.map((update: any) => ({
@@ -1646,9 +1641,9 @@ const AssignDialog = (props: Props) => {
                       duration: 3000,
                     },
                   );
-                  console.log(
-                    `✅ Successfully updated ${urlUpdates.length} document URLs`,
-                  );
+                  // console.log(
+                  //   `✅ Successfully updated ${urlUpdates.length} document URLs`,
+                  // );
 
                   await refetch();
                 } else {
@@ -1811,7 +1806,7 @@ const AssignDialog = (props: Props) => {
   };
 
   const handleSaveDocumentSelections2 = (selections: DocumentSelection) => {
-    console.log("💾 Saving document selections for Player 2:", selections);
+    // console.log("💾 Saving document selections for Player 2:", selections);
     setDocumentSelections((prev) => ({ ...prev, player2: selections }));
     form.setFieldValue("migratePlayer2Data.validDocuments", true);
     toast.success("Document selections saved for Player 2", {
