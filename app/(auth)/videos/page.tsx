@@ -58,23 +58,24 @@ const Page = () => {
   // Global Search
   const [search, setSearch] = useState<string>("")
   const [searchTerm, setSearchTerm] = useState("")
-  const { data, loading }: any = useQuery(VIDEOS, {
+  const { data, loading, subscribeToMore } = useQuery(VIDEOS, {
     variables: { first: rows, search },
     fetchPolicy: "network-only",
     notifyOnNetworkStatusChange: true,
   })
 
   const { total, nodes, pageInfo } = useMemo(() => {
-    const nodes = data?.videos.edges.map((edge: any) => edge.node) || []
-    const pageInfo = data?.videos.pageInfo
+    const nodes =
+      (data as any)?.videos.edges.map((edge: any) => edge.node) || []
+    const pageInfo = (data as any)?.videos.pageInfo
 
     setPage((prev) => ({
       ...prev,
-      max: data?.videos.pages || 1,
+      max: (data as any)?.videos.pages || 1,
     }))
 
     return {
-      total: data?.videos.total || 0,
+      total: (data as any)?.videos.total || 0,
       nodes,
       pageInfo,
     }
@@ -182,7 +183,7 @@ const Page = () => {
                       : video?.players
                           .map(
                             (player: any) =>
-                              `${player.firstName} ${player.lastName}`
+                              `${player.firstName} ${player.lastName}`,
                           )
                           .join(", ")}
                   </span>

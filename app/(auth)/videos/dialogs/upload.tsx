@@ -31,7 +31,11 @@ import {
   FieldContent,
   FieldError,
 } from "@/components/ui/field"
-import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupTextarea,
+} from "@/components/ui/input-group"
 import { cn } from "@/lib/utils"
 import {
   Popover,
@@ -103,6 +107,7 @@ const UploadDialog = () => {
   const form = useForm({
     defaultValues: {
       title: "",
+      description: "",
       players: [] as string[],
     },
     validators: {
@@ -145,6 +150,7 @@ const UploadDialog = () => {
                 input: {
                   title: value.title,
                   players: value.players,
+                  description: value.description,
                   youtubeUrl: data.url,
                   youtubeId: data.videoId,
                 },
@@ -242,6 +248,47 @@ const UploadDialog = () => {
                                 }
                                 aria-invalid={isInvalid}
                                 placeholder="Enter video title"
+                                className={cn(
+                                  isInvalid
+                                    ? "placeholder:text-destructive border-destructive focus:border-destructive focus:ring-destructive"
+                                    : "",
+                                )}
+                              />
+                            </InputGroup>
+                            {isInvalid && (
+                              <FieldError
+                                className="text-xs"
+                                errors={field.state.meta.errors}
+                              />
+                            )}
+                          </FieldContent>
+                        </Field>
+                      )
+                    }}
+                  />
+                  <form.Field
+                    name="description"
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel className="-mb-2" htmlFor={field.name}>
+                            Description
+                          </FieldLabel>
+                          <FieldContent>
+                            <InputGroup>
+                              <InputGroupTextarea
+                                disabled={isPending}
+                                id={field.name}
+                                name={field.name}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                                aria-invalid={isInvalid}
+                                placeholder="Enter description"
                                 className={cn(
                                   isInvalid
                                     ? "placeholder:text-destructive border-destructive focus:border-destructive focus:ring-destructive"

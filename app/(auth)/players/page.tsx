@@ -49,6 +49,7 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns/format"
 import StatusDialog from "./dialogs/status"
 import ActiveBadge from "@/components/badges/active-badge"
+import UpdateLevelDialog from "./dialogs/update-level"
 
 const PLAYERS = gql`
   query Players(
@@ -126,6 +127,10 @@ const ActionsColumn = ({ data }: { data?: IPlayer }) => {
         <DropdownMenuGroup>
           <ViewDialog _id={player?._id} />
           <FormDialog _id={player?._id} onClose={() => setMenuOpen(false)} />
+          <UpdateLevelDialog
+            _id={player?._id}
+            onClose={() => setMenuOpen(false)}
+          />
           <DropdownMenuSeparator />
           <StatusDialog
             _id={player?._id}
@@ -189,7 +194,7 @@ const Page = () => {
             // Add the new player to the top of the list
             const newPlayer = player
             const newPlayerExists = prev.players.edges.find(
-              (edge: any) => edge.node._id === newPlayer?._id
+              (edge: any) => edge.node._id === newPlayer?._id,
             )
             if (newPlayerExists || search || sort || filter.length > 0)
               return prev // Skip updating during search/sort/filter
@@ -215,7 +220,7 @@ const Page = () => {
                 edges: prev.players.edges.map((edge: any) =>
                   edge.node._id === updatedPlayer._id
                     ? { ...edge, node: updatedPlayer }
-                    : edge
+                    : edge,
                 ),
               },
             })
@@ -229,7 +234,7 @@ const Page = () => {
                 ...prev.players,
                 total: prev.players.total - 1,
                 edges: prev.players.edges.filter(
-                  (edge: any) => edge.node._id !== deletedPlayer._id
+                  (edge: any) => edge.node._id !== deletedPlayer._id,
                 ),
               },
             })
@@ -237,7 +242,7 @@ const Page = () => {
             const updatedPlayers = players
             if (search || sort || filter.length > 0) return prev // Skip updating during search/sort/filter
             toast.success(
-              `Batch update successful for ${updatedPlayers.length} players.`
+              `Batch update successful for ${updatedPlayers.length} players.`,
             )
             const updatedIds = new Set(updatedPlayers.map((u: any) => u._id))
             return Object.assign({}, prev, {
@@ -250,11 +255,11 @@ const Page = () => {
                         node: {
                           ...edge.node,
                           ...updatedPlayers.find(
-                            (u: any) => u._id === edge.node._id
+                            (u: any) => u._id === edge.node._id,
                           ),
                         },
                       }
-                    : edge
+                    : edge,
                 ),
               },
             })
@@ -264,10 +269,10 @@ const Page = () => {
       },
     })
     return () => {
-    if (typeof unsubscribe === "function") {
-      unsubscribe()
+      if (typeof unsubscribe === "function") {
+        unsubscribe()
+      }
     }
-  }
   }, [subscribeToMore, search, sort, filter])
 
   // Memoized Data Processing
@@ -324,7 +329,7 @@ const Page = () => {
               onCheckedChange={(value: boolean) => {
                 if (value) {
                   const allIds = new Set<string>(
-                    data?.players.edges.map((edge: any) => edge.node._id)
+                    data?.players.edges.map((edge: any) => edge.node._id),
                   )
                   setSelectedIds(allIds)
                 } else {
@@ -433,7 +438,7 @@ const Page = () => {
             <span
               className={cn(
                 gender == "MALE" ? "text-blue-700" : "text-pink-600",
-                "capitalize"
+                "capitalize",
               )}
             >
               {gender.toLocaleLowerCase()}
@@ -470,7 +475,7 @@ const Page = () => {
                 {birthDate
                   ? `${Math.floor(
                       (Date.now() - new Date(birthDate).getTime()) /
-                        (1000 * 60 * 60 * 24 * 365.25)
+                        (1000 * 60 * 60 * 24 * 365.25),
                     )} y.o.`
                   : "N/A"}
                 )
@@ -501,7 +506,7 @@ const Page = () => {
         cell: ({ row }) => <ActiveBadge isActive={row.original.isActive} />,
       },
     ],
-    [sort, onSort, filter, onFilter, selectedIds, data?.players]
+    [sort, onSort, filter, onFilter, selectedIds, data?.players],
   )
 
   // Next Page
