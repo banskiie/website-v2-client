@@ -23,6 +23,7 @@ const VIDEO = gql`
       title
       youtubeUrl
       youtubeId
+      description
       players {
         _id
         firstName
@@ -102,6 +103,11 @@ const Page = ({ params }: { params: Promise<{ id: string }> }) => {
                   No players tagged.
                 </span>
               )}
+            </div>
+            <div>
+              <span className="whitespace-pre-line text-muted-foreground italic">
+                {data?.video?.description || "No description"}
+              </span>
             </div>
           </div>
           <Button size="icon-lg" className="mr-2 scale-150" variant="ghost">
