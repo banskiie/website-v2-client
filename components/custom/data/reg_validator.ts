@@ -107,19 +107,23 @@ const createBaseSchema = (hasFreeJersey: boolean, eventData?: any) => {
     const schema = z.object(baseFields);
 
     return schema.superRefine((data, ctx) => {
-        if (eventData?.tournamentStart && data.player1Birthday) {
+        // Only validate age if minAge or maxAge are defined, not null/undefined, and not 0
+        const hasMinAge = eventData?.minAge !== undefined && eventData?.minAge !== null && eventData?.minAge !== 0;
+        const hasMaxAge = eventData?.maxAge !== undefined && eventData?.maxAge !== null && eventData?.maxAge !== 0;
+
+        if (eventData?.tournamentStart && data.player1Birthday && (hasMinAge || hasMaxAge)) {
             const birthDate = new Date(data.player1Birthday);
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
+            if (hasMinAge && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Age ${age} is below minimum age of ${eventData.minAge}`,
                     path: ["player1Birthday"],
                 });
             }
-            if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
+            if (hasMaxAge && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Age ${age} is above maximum age of ${eventData.maxAge}`,
@@ -142,19 +146,24 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
     const schema = z.object(allFields);
 
     return schema.superRefine((data, ctx) => {
-        if (eventData?.tournamentStart && data.player1Birthday) {
+        // Check if minAge or maxAge are valid (not null, undefined, or 0)
+        const hasMinAge = eventData?.minAge !== undefined && eventData?.minAge !== null && eventData?.minAge !== 0;
+        const hasMaxAge = eventData?.maxAge !== undefined && eventData?.maxAge !== null && eventData?.maxAge !== 0;
+
+        // Player 1 age validation
+        if (eventData?.tournamentStart && data.player1Birthday && (hasMinAge || hasMaxAge)) {
             const birthDate = new Date(data.player1Birthday);
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
+            if (hasMinAge && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Player 1: Age ${age} is below minimum age of ${eventData.minAge}`,
                     path: ["player1Birthday"],
                 });
             }
-            if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
+            if (hasMaxAge && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Player 1: Age ${age} is above maximum age of ${eventData.maxAge}`,
@@ -163,19 +172,20 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
             }
         }
 
-        if (eventData?.tournamentStart && data.player2Birthday) {
+        // Player 2 age validation
+        if (eventData?.tournamentStart && data.player2Birthday && (hasMinAge || hasMaxAge)) {
             const birthDate = new Date(data.player2Birthday);
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
+            if (hasMinAge && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Player 2: Age ${age} is below minimum age of ${eventData.minAge}`,
                     path: ["player2Birthday"],
                 });
             }
-            if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
+            if (hasMaxAge && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Player 2: Age ${age} is above maximum age of ${eventData.maxAge}`,
@@ -208,19 +218,23 @@ const createSinglesSchema = (hasFreeJersey: boolean, eventData?: any) => {
     const schema = z.object(allFields);
 
     return schema.superRefine((data, ctx) => {
-        if (eventData?.tournamentStart && data.player1Birthday) {
+        // Check if minAge or maxAge are valid (not null, undefined, or 0)
+        const hasMinAge = eventData?.minAge !== undefined && eventData?.minAge !== null && eventData?.minAge !== 0;
+        const hasMaxAge = eventData?.maxAge !== undefined && eventData?.maxAge !== null && eventData?.maxAge !== 0;
+
+        if (eventData?.tournamentStart && data.player1Birthday && (hasMinAge || hasMaxAge)) {
             const birthDate = new Date(data.player1Birthday);
             const tournamentDate = new Date(eventData.tournamentStart);
             const age = calculateAge(birthDate, tournamentDate);
 
-            if (eventData?.minAge !== undefined && eventData?.minAge !== 0 && age < eventData.minAge) {
+            if (hasMinAge && age < eventData.minAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Age ${age} is below minimum age of ${eventData.minAge}`,
                     path: ["player1Birthday"],
                 });
             }
-            if (eventData?.maxAge !== undefined && eventData?.maxAge !== 0 && age > eventData.maxAge) {
+            if (hasMaxAge && age > eventData.maxAge) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Age ${age} is above maximum age of ${eventData.maxAge}`,

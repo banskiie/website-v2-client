@@ -62,6 +62,16 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import z from "zod"
 
+const CHECK_EVENT_ENTRIES = gql`
+  query CheckEventEntries($eventId: ID!) {
+    event(_id: $eventId) {
+      _id
+      maxEntries
+    }
+    entryCountByEvent(eventId: $eventId)
+  }
+`
+
 const ENTRY = gql`
   query Entry($_id: ID!) {
     entry(_id: $_id) {
@@ -170,6 +180,7 @@ const EVENT_OPTIONS_BY_TOURNAMENT = gql`
       gender
       pricePerPlayer
       earlyBirdPricePerPlayer
+      maxEntries
     }
   }
 `
@@ -233,11 +244,20 @@ type ExtendedEventOption = {
   gender: EventGender;
   pricePerPlayer: number;
   earlyBirdPricePerPlayer?: number;
+  maxEntries?: number;
 }
 
 type Props = {
   _id?: string
   onClose?: () => void
+}
+
+type CheckEventEntriesResponse = {
+  event: {
+    _id: string;
+    maxEntries: number;
+  };
+  entryCountByEvent: number;
 }
 
 const truncateFileNameWithEllipsis = (fileName: string, prefixLength: number = 15): string => {
@@ -585,7 +605,7 @@ const FormDialog = (props: Props) => {
 
   const [tournamentId, setTournamentId] = useState<string | null>(null)
   const [openEvents, setOpenEvents] = useState(false)
-  const { data: eventOptionsData, loading: eventOptionsLoading }: any =
+  const { data: eventOptionsData, loading: eventOptionsLoading, refetch: refetchEvents }: any =
     useQuery(EVENT_OPTIONS_BY_TOURNAMENT, {
       skip: !tournamentId,
       fetchPolicy: "network-only",
@@ -594,6 +614,10 @@ const FormDialog = (props: Props) => {
   const events: ExtendedEventOption[] = eventOptionsData?.eventOptionsByTournament || []
 
   const [selectedEvent, setSelectedEvent] = useState<ExtendedEventOption | null>(null)
+
+  const [checkingMaxEntries, setCheckingMaxEntries] = useState(false)
+  const [maxEntriesReached, setMaxEntriesReached] = useState(false)
+  const [maxEntriesLimit, setMaxEntriesLimit] = useState<number | null>(null)
 
   const [openJerseySizes, setOpenJerseySizes] = useState(false)
   const jerseySizes = [
@@ -607,6 +631,39 @@ const FormDialog = (props: Props) => {
     { value: JerseySize.XXXL, label: "Triple Extra Large" },
   ]
 
+  const [checkEventEntries] = useLazyQuery(CHECK_EVENT_ENTRIES, {
+    fetchPolicy: "network-only",
+  })
+
+  const checkEventMaxEntries = useCallback(async (eventId: string) => {
+    if (!eventId) return false
+
+    setCheckingMaxEntries(true)
+    try {
+      const { data } = await checkEventEntries({
+        variables: { eventId },
+      }) as { data: CheckEventEntriesResponse }
+
+      if (data?.event?.maxEntries && data.event.maxEntries > 0) {
+        const totalEntries = data?.entryCountByEvent || 0
+        const isFull = totalEntries >= data.event.maxEntries
+
+        setMaxEntriesLimit(data.event.maxEntries)
+        setMaxEntriesReached(isFull)
+
+        if (isFull) {
+          toast.error(`This event has reached its maximum capacity of ${data.event.maxEntries} entries.`)
+        }
+
+        return isFull
+      }
+    } catch (error) {
+      console.error("Error checking event entries:", error)
+    } finally {
+      setCheckingMaxEntries(false)
+    }
+    return false
+  }, [checkEventEntries])
 
   const autoSetGendersBasedOnEvent = useCallback((eventId: string, form: any) => {
     const event = events.find(e => e.value === eventId);
@@ -658,7 +715,7 @@ const FormDialog = (props: Props) => {
   }))
 
   const isLoading =
-    isPending || optionsLoading || eventOptionsLoading || fetchLoading || isInitializing
+    isPending || optionsLoading || eventOptionsLoading || fetchLoading || isInitializing || checkingMaxEntries
 
   const initialValidDocumentsPlayer1 = entry?.player1Entry?.validDocuments?.[0] || null
   const initialDocumentUrlPlayer1 = initialValidDocumentsPlayer1?.documentURL || ""
@@ -767,9 +824,7 @@ const FormDialog = (props: Props) => {
           }
         } catch (error: any) {
           console.error(error);
-          // FIX: Check if it's a ZodError and handle safely
           if (error && error.name === "ZodError") {
-            // Check if errors exists and is iterable
             if (error.errors && Array.isArray(error.errors)) {
               error.errors.forEach((err: any) => {
                 if (err && err.path) {
@@ -798,6 +853,8 @@ const FormDialog = (props: Props) => {
               setTournamentId(null)
               formApi.resetField("event")
               setSelectedEvent(null)
+              setMaxEntriesReached(false)
+              setMaxEntriesLimit(null)
             } else {
               setTournamentId(fieldValue as string)
               const { hasEarlyBird, earlyBirdRegistrationEnd } =
@@ -824,6 +881,8 @@ const FormDialog = (props: Props) => {
 
               formApi.resetField("event")
               setSelectedEvent(null)
+              setMaxEntriesReached(false)
+              setMaxEntriesLimit(null)
             }
             break
           case "event":
@@ -831,9 +890,19 @@ const FormDialog = (props: Props) => {
               const event = events.find(e => e.value === fieldValue);
               setSelectedEvent(event || null);
 
+              if (!isUpdate) {
+                const isFull = await checkEventMaxEntries(fieldValue as string)
+                if (isFull) {
+                  formApi.setFieldValue("event", "")
+                  setSelectedEvent(null)
+                }
+              }
+
               autoSetGendersBasedOnEvent(fieldValue as string, formApi);
             } else {
               setSelectedEvent(null);
+              setMaxEntriesReached(false)
+              setMaxEntriesLimit(null)
             }
             break
           case "connectedPlayer1":
@@ -845,7 +914,6 @@ const FormDialog = (props: Props) => {
                 if (result.data) {
                   const playerData = result.data as { player: any }
                   const player1 = playerData.player
-                  // Clean the phone number
                   const cleanedPhoneNumber = player1.phoneNumber?.replace(/^0/, "") || "";
 
                   formApi.setFieldValue("player1Entry", {
@@ -861,11 +929,8 @@ const FormDialog = (props: Props) => {
                     validDocuments: [],
                   })
 
-                  // Clear selected suggestion when player is connected via dropdown
                   setSelectedSuggestionId1(null)
 
-                  // --- FIXED VALIDATION ---
-                  // Get the current event and validate gender
                   const currentEventId = formApi.getFieldValue("event");
                   if (currentEventId) {
                     const currentEvent = events.find(e => e.value === currentEventId);
@@ -883,27 +948,21 @@ const FormDialog = (props: Props) => {
 
                         if (!validation.valid) {
                           if (validation.errors.player1) {
-                            // Set the error directly on the field using setFieldMeta
                             formApi.setFieldMeta("player1Entry.gender", (prev: any) => ({
                               ...prev,
                               errors: [validation.errors.player1],
                               isTouched: true,
                             }));
 
-                            // For the error map, we need to use the field's setErrorMap method
-                            // But since we can't access it directly here, we'll rely on the errors array
-
                             toast.error(validation.errors.player1);
                           }
                         } else {
-                          // Clear any existing errors
                           formApi.setFieldMeta("player1Entry.gender", (prev: any) => ({
                             ...prev,
                             errors: [],
                           }));
                         }
                       } else {
-                        // Singles event validation
                         let error: string | null = null;
                         if (currentEvent.gender === EventGender.MALE && player1.gender !== Gender.MALE) {
                           error = "Player must be Male for Men's Singles";
@@ -928,7 +987,6 @@ const FormDialog = (props: Props) => {
                       }
                     }
                   }
-                  // --- END OF FIXED VALIDATION ---
                 }
               } catch (error: any) {
                 if (error.name !== 'AbortError') {
@@ -974,7 +1032,6 @@ const FormDialog = (props: Props) => {
                 if (result.data) {
                   const playerData = result.data as { player: any }
                   const player2 = playerData.player
-                  // Clean the phone number
                   const cleanedPhoneNumber = player2.phoneNumber?.replace(/^0/, "") || "";
 
                   formApi.setFieldValue("player2Entry", {
@@ -990,11 +1047,8 @@ const FormDialog = (props: Props) => {
                     validDocuments: [],
                   })
 
-                  // Clear selected suggestion when player is connected via dropdown
                   setSelectedSuggestionId2(null)
 
-                  // --- FIXED VALIDATION ---
-                  // Get the current event and validate gender
                   const currentEventId = formApi.getFieldValue("event");
                   if (currentEventId) {
                     const currentEvent = events.find(e => e.value === currentEventId);
@@ -1009,7 +1063,6 @@ const FormDialog = (props: Props) => {
 
                       if (!validation.valid) {
                         if (validation.errors.player2) {
-                          // Set the error directly on the field using setFieldMeta
                           formApi.setFieldMeta("player2Entry.gender", (prev: any) => ({
                             ...prev,
                             errors: [validation.errors.player2],
@@ -1019,7 +1072,6 @@ const FormDialog = (props: Props) => {
                           toast.error(validation.errors.player2);
                         }
                       } else {
-                        // Clear any existing errors
                         formApi.setFieldMeta("player2Entry.gender", (prev: any) => ({
                           ...prev,
                           errors: [],
@@ -1027,7 +1079,6 @@ const FormDialog = (props: Props) => {
                       }
                     }
                   }
-                  // --- END OF FIXED VALIDATION ---
                 }
               } catch (error: any) {
                 if (error.name !== 'AbortError') {
@@ -1064,11 +1115,9 @@ const FormDialog = (props: Props) => {
             break;
         }
 
-        // Handle player field changes for suggestions
         if (fieldName === "player1Entry.firstName" ||
           fieldName === "player1Entry.lastName" ||
           fieldName === "player1Entry.birthDate") {
-          // Debounce player 1 suggestions
           if (debounceTimer1.current) clearTimeout(debounceTimer1.current)
           debounceTimer1.current = setTimeout(() => {
             fetchPlayer1Suggestions()
@@ -1078,16 +1127,13 @@ const FormDialog = (props: Props) => {
         if (fieldName === "player2Entry.firstName" ||
           fieldName === "player2Entry.lastName" ||
           fieldName === "player2Entry.birthDate") {
-          // Debounce player 2 suggestions
           if (debounceTimer2.current) clearTimeout(debounceTimer2.current)
           debounceTimer2.current = setTimeout(() => {
             fetchPlayer2Suggestions()
           }, 500)
         }
 
-        // Also handle when player is marked as new or connected player is cleared
         if (fieldName === "connectedPlayer1" && !fieldValue) {
-          // When connected player is cleared, fetch suggestions if there's data
           if (debounceTimer1.current) clearTimeout(debounceTimer1.current)
           debounceTimer1.current = setTimeout(() => {
             fetchPlayer1Suggestions()
@@ -1095,7 +1141,6 @@ const FormDialog = (props: Props) => {
         }
 
         if (fieldName === "connectedPlayer2" && !fieldValue) {
-          // When connected player is cleared, fetch suggestions if there's data
           if (debounceTimer2.current) clearTimeout(debounceTimer2.current)
           debounceTimer2.current = setTimeout(() => {
             fetchPlayer2Suggestions()
@@ -1104,15 +1149,19 @@ const FormDialog = (props: Props) => {
       },
     },
     onSubmit: async ({ value: payload, formApi }) => {
-      // console.log('SUBMITTING WITH PAYLOAD:', payload);
-      // console.log('isEarlyBird value:', payload.isEarlyBird);
       if (isSubmittingRef.current) {
-        // console.log('Submission already in progress, skipping...')
         return
       }
 
+      if (!isUpdate && payload.event) {
+        const isFull = await checkEventMaxEntries(payload.event)
+        if (isFull) {
+          toast.error(`Cannot create entry. Event has reached its maximum capacity of ${maxEntriesLimit} entries.`)
+          return
+        }
+      }
+
       isSubmittingRef.current = true
-      // console.log('Form submission started at:', new Date().toISOString())
 
       try {
         let documentUrlPlayer1 = initialDocumentUrlPlayer1
@@ -1137,7 +1186,6 @@ const FormDialog = (props: Props) => {
         )
         const isDoubles = event?.type === EventType.DOUBLES
 
-        // Prepare player entries with their documents
         const player1Entry = {
           ...payload.player1Entry,
           validDocuments: documentUrlPlayer1 ? [{
@@ -1164,8 +1212,6 @@ const FormDialog = (props: Props) => {
 
         const { tournament, ...finalPayload } = modifiedPayload
 
-        // console.log('Submitting form with payload:', finalPayload)
-
         const response: any = await submitForm({
           variables: {
             input: isUpdate
@@ -1174,10 +1220,9 @@ const FormDialog = (props: Props) => {
           },
         })
 
-        // console.log('Form submission response:', response)
-
-        if (response) {
+        if (response?.data?.createEntry?.ok || response?.data?.updateEntry?.ok) {
           onClose()
+          toast.success(response?.data?.createEntry?.message || response?.data?.updateEntry?.message)
         }
       } catch (error: any) {
         if (error.name !== 'AbortError') {
@@ -1197,7 +1242,6 @@ const FormDialog = (props: Props) => {
         }
       } finally {
         isSubmittingRef.current = false
-        // console.log('Submission flag reset at:', new Date().toISOString())
       }
     },
   })
@@ -1299,7 +1343,6 @@ const FormDialog = (props: Props) => {
           }
 
           if (entry?.player1Entry) {
-            // Clean the phone number
             const cleanedPhoneNumber1 = entry.player1Entry.phoneNumber?.replace(/^0/, "") || "";
 
             form.setFieldValue("player1Entry", {
@@ -1308,7 +1351,7 @@ const FormDialog = (props: Props) => {
               lastName: entry.player1Entry.lastName || "",
               suffix: entry.player1Entry.suffix || "",
               email: entry.player1Entry.email || "",
-              phoneNumber: cleanedPhoneNumber1, // Use cleaned version
+              phoneNumber: cleanedPhoneNumber1,
               birthDate: entry.player1Entry.birthDate
                 ? new Date(entry.player1Entry.birthDate)
                 : new Date(),
@@ -1319,7 +1362,6 @@ const FormDialog = (props: Props) => {
           }
 
           if (entry?.player2Entry) {
-            // Clean the phone number
             const cleanedPhoneNumber2 = entry.player2Entry.phoneNumber?.replace(/^0/, "") || "";
 
             form.setFieldValue("player2Entry", {
@@ -1328,7 +1370,7 @@ const FormDialog = (props: Props) => {
               lastName: entry.player2Entry.lastName || "",
               suffix: entry.player2Entry.suffix || "",
               email: entry.player2Entry.email || "",
-              phoneNumber: cleanedPhoneNumber2, // Use cleaned version
+              phoneNumber: cleanedPhoneNumber2,
               birthDate: entry.player2Entry.birthDate
                 ? new Date(entry.player2Entry.birthDate)
                 : new Date(),
@@ -1367,13 +1409,9 @@ const FormDialog = (props: Props) => {
             form.setFieldValue("isEarlyBird", entry.isEarlyBird);
           }
 
-          // Set isPlayer1New based on whether there's a connected player
           form.setFieldValue("isPlayer1New", !entry?.connectedPlayer1?._id);
-
-          // Set isPlayer2New based on whether there's a connected player
           form.setFieldValue("isPlayer2New", !entry?.connectedPlayer2?._id);
 
-          // Update preview images
           if (initialDocumentUrlPlayer1) {
             setPreviewPlayer1(initialDocumentUrlPlayer1);
           }
@@ -1381,7 +1419,6 @@ const FormDialog = (props: Props) => {
             setPreviewPlayer2(initialDocumentUrlPlayer2);
           }
 
-          // Update document types
           if (initialDocumentTypePlayer1) {
             setSelectedDocumentTypePlayer1(initialDocumentTypePlayer1);
           }
@@ -1417,17 +1454,18 @@ const FormDialog = (props: Props) => {
 
     if (!eventId) return false;
 
+    if (!isUpdate && maxEntriesReached) {
+      return false;
+    }
+
     const event = events.find(e => e.value === eventId);
     if (!event) return false;
 
     const isDoubles = event.type === EventType.DOUBLES;
 
-    // IMPROVED: Check field errors more thoroughly
     const hasFieldErrors = Object.values(form.state.fieldMeta).some(
       (meta: any) => {
-        // Check if there are any actual error messages in errors array
         if (meta.errors && meta.errors.length > 0) {
-          // Check if the errors are actual error objects/strings, not empty
           const hasActualErrors = meta.errors.some((err: any) => {
             if (typeof err === 'string' && err.length > 0) return true;
             if (err && typeof err === 'object' && err.message) return true;
@@ -1436,9 +1474,7 @@ const FormDialog = (props: Props) => {
           if (hasActualErrors) return true;
         }
 
-        // Check errorMap for actual validation errors
         if (meta.errorMap) {
-          // Check if there are any onSubmit or onChange errors with messages
           const hasErrorMapErrors = Object.values(meta.errorMap).some(
             (error: any) => error && error.message && error.message.length > 0
           );
@@ -1456,7 +1492,6 @@ const FormDialog = (props: Props) => {
     if (!values.tournament) return false;
     if (!values.club) return false;
 
-    // Player 1 validation
     if (!values.player1Entry.firstName) return false;
     if (!values.player1Entry.lastName) return false;
     if (!values.player1Entry.birthDate) return false;
@@ -1480,13 +1515,11 @@ const FormDialog = (props: Props) => {
       if (!values.player2Entry?.phoneNumber) return false;
       if (!values.player2Entry?.email) return false;
 
-      // Phone number format validation for player 2
       if (!phoneRegex.test(values.player2Entry.phoneNumber)) return false;
 
       const hasPlayer2Doc = filePlayer2 || initialDocumentUrlPlayer2;
       if (!hasPlayer2Doc) return false;
 
-      // Additional gender validation for doubles
       if (event.gender === EventGender.MALE) {
         if (values.player1Entry.gender !== Gender.MALE ||
           values.player2Entry?.gender !== Gender.MALE) {
@@ -1519,7 +1552,9 @@ const FormDialog = (props: Props) => {
     initialDocumentUrlPlayer1,
     initialDocumentUrlPlayer2,
     selectedDocumentTypePlayer1,
-    selectedDocumentTypePlayer2
+    selectedDocumentTypePlayer2,
+    maxEntriesReached,
+    isUpdate
   ]);
 
   useEffect(() => {
@@ -1540,7 +1575,6 @@ const FormDialog = (props: Props) => {
           player2Gender
         );
 
-        // Set errors on the form fields
         if (validation.errors.player1) {
           form.setFieldMeta("player1Entry.gender", (prev: any) => ({
             ...prev,
@@ -1567,7 +1601,6 @@ const FormDialog = (props: Props) => {
           }));
         }
       } else {
-        // Clear gender errors for non-doubles events
         form.setFieldMeta("player1Entry.gender", (prev: any) => ({
           ...prev,
           errors: [],
@@ -1640,20 +1673,16 @@ const FormDialog = (props: Props) => {
     setFieldErrors({})
     setSelectedDocumentTypePlayer1(ValidDocumentType.BIRTH_CERTIFICATE)
     setSelectedDocumentTypePlayer2(ValidDocumentType.BIRTH_CERTIFICATE)
-    // Reset suggested players
     setSuggestedPlayers1([])
     setSuggestedPlayers2([])
-    // Reset selected suggestions
     setSelectedSuggestionId1(null)
     setSelectedSuggestionId2(null)
-    // Clear debounce timers
+    setMaxEntriesReached(false)
+    setMaxEntriesLimit(null)
     if (debounceTimer1.current) clearTimeout(debounceTimer1.current)
     if (debounceTimer2.current) clearTimeout(debounceTimer2.current)
-    // Reset submission flag when dialog closes
     isSubmittingRef.current = false
-    // Reset initialization state
     setIsInitializing(false)
-    // Reset selected event
     setSelectedEvent(null)
   }
 
@@ -1856,7 +1885,6 @@ const FormDialog = (props: Props) => {
           const playerData = result.data as { player: any }
           if (playerData.player) {
             const player = playerData.player;
-            // Clean the phone number - remove leading zero if it exists
             const cleanedPhoneNumber = player.phoneNumber?.replace(/^0/, "") || "";
 
             form.setFieldValue("player1Entry", {
@@ -1872,7 +1900,6 @@ const FormDialog = (props: Props) => {
               validDocuments: [],
             });
 
-            // --- ADD THIS VALIDATION ---
             const currentEventId = form.getFieldValue("event");
             if (currentEventId) {
               const currentEvent = events.find(e => e.value === currentEventId);
@@ -1918,11 +1945,9 @@ const FormDialog = (props: Props) => {
                 }
               }
             }
-            // --- END OF ADDED VALIDATION ---
           }
         }
       } else {
-        // Similar for player 2...
         form.setFieldValue("connectedPlayer2", playerId);
         setSelectedSuggestionId2(playerId);
 
@@ -1949,7 +1974,6 @@ const FormDialog = (props: Props) => {
               validDocuments: [],
             });
 
-            // --- ADD THIS VALIDATION ---
             const currentEventId = form.getFieldValue("event");
             if (currentEventId) {
               const currentEvent = events.find(e => e.value === currentEventId);
@@ -1983,6 +2007,7 @@ const FormDialog = (props: Props) => {
       }
     }
   }
+
   const SuggestedPlayersSection = ({
     suggestions,
     isLoading,
@@ -2123,7 +2148,6 @@ const FormDialog = (props: Props) => {
     </motion.div>
   )
 
-  // Determine which tabs to show based on event selection
   const getVisibleTabs = (selectedEventId?: string) => {
     if (!selectedEventId) {
       return ["details"]
@@ -2180,7 +2204,6 @@ const FormDialog = (props: Props) => {
 
           if (!validation.valid) {
             if (validation.errors.player1) {
-              // Set error using setFieldMeta
               form.setFieldMeta("player1Entry.gender", (prev: any) => ({
                 ...prev,
                 errors: [validation.errors.player1],
@@ -2188,7 +2211,6 @@ const FormDialog = (props: Props) => {
                 isValid: false,
               }));
 
-              // Also set error using setErrorMap if available
               const field = form.getFieldInfo("player1Entry.gender")?.instance;
               if (field) {
                 field.setErrorMap({ onSubmit: validation.errors.player1 });
@@ -2262,6 +2284,26 @@ const FormDialog = (props: Props) => {
     }
   }
 
+  // Add a warning message when event is full
+  const EventFullWarning = () => {
+    if (!maxEntriesReached || !selectedEvent) return null
+
+    return (
+      <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+          <div>
+            <p className="font-medium text-red-800">Event is Full</p>
+            <p className="text-sm text-red-700">
+              This event has reached its maximum capacity of {maxEntriesLimit} entries.
+              No more entries can be created for this event.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Dialog modal open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -2306,6 +2348,7 @@ const FormDialog = (props: Props) => {
           </div>
         ) : (
           <div className="-mt-2 mb-2">
+            <EventFullWarning />
             <form.Subscribe
               selector={(state) => state.values}
               children={(state) => {
@@ -2454,6 +2497,9 @@ const FormDialog = (props: Props) => {
                           }}
                           children={(field) => {
                             const isInvalid = field.state.meta.errors.length > 0
+                            const selectedEventObj = events.find(e => e.value === field.state.value)
+                            const isFull = selectedEventObj?.maxEntries ? maxEntriesReached : false
+
                             return (
                               <Field data-invalid={isInvalid}>
                                 <FieldLabel htmlFor={field.name}>Event</FieldLabel>
@@ -2475,7 +2521,8 @@ const FormDialog = (props: Props) => {
                                       aria-invalid={isInvalid}
                                       className={cn(
                                         "w-full justify-between font-normal capitalize -mt-2 h-fit",
-                                        isInvalid && "border-red-500 text-red-700"
+                                        isInvalid && "border-red-500 text-red-700",
+                                        isFull && "border-red-300 bg-red-50"
                                       )}
                                       type="button"
                                     >
@@ -2490,17 +2537,26 @@ const FormDialog = (props: Props) => {
                                                 type: EventType
                                                 pricePerPlayer: number
                                                 earlyBirdPricePerPlayer?: number
+                                                maxEntries?: number
                                               }) => o.value === field.state.value
                                             )
                                             return (
                                               <div className="w-full flex flex-col items-start">
                                                 <span>{selectedEvent?.label}</span>
-                                                <span className="block text-xs text-muted-foreground capitalize">
-                                                  {selectedEvent?.gender.toLocaleLowerCase()}{" "}
-                                                  (
-                                                  {selectedEvent?.type.toLowerCase()}
-                                                  )
-                                                </span>
+                                                <div className="flex flex-row gap-2">
+                                                  <span className=" text-xs text-muted-foreground capitalize underline underline-offset-2 font-semibold">
+                                                    {selectedEvent?.gender.toLocaleLowerCase()}{" "}
+                                                    (
+                                                    {selectedEvent?.type.toLowerCase()}
+                                                    )
+                                                  </span>
+                                                  -
+                                                  {selectedEvent?.maxEntries != null && (
+                                                    <span className=" text-xs text-muted-foreground underline underline-offset-2 font-semibold">
+                                                      Max: {selectedEvent.maxEntries} entries
+                                                    </span>
+                                                  )}
+                                                </div>
                                               </div>
                                             )
                                           })()}
@@ -2540,6 +2596,7 @@ const FormDialog = (props: Props) => {
                                               type: EventType
                                               pricePerPlayer: number
                                               earlyBirdPricePerPlayer?: number
+                                              maxEntries?: number
                                             }) => (
                                               <CommandItem
                                                 key={o.value}
@@ -2574,6 +2631,11 @@ const FormDialog = (props: Props) => {
                                                       </span>
                                                     )}
                                                   </span>
+                                                  {o.maxEntries !== undefined && o.maxEntries !== null && (
+                                                    <span className="block text-xs text-muted-foreground">
+                                                      Max entries: {o.maxEntries}
+                                                    </span>
+                                                  )}
                                                 </div>
                                               </CommandItem>
                                             )
@@ -2632,8 +2694,6 @@ const FormDialog = (props: Props) => {
                           children={(field) => {
                             const isInvalid = field.state.meta.errors.length > 0
                             const amount = calculateEntryAmount();
-                            // Log the current field value whenever it changes
-                            // console.log('isEarlyBird field value:', field.state.value);
                             return (
                               <div className="space-y-3">
                                 <Field
@@ -2647,11 +2707,7 @@ const FormDialog = (props: Props) => {
                                       checked={field.state.value}
                                       onBlur={field.handleBlur}
                                       onCheckedChange={(checked) => {
-                                        // console.log('Checkbox clicked, new value:', checked);
                                         field.handleChange(checked === true);
-                                        // setTimeout(() => {
-                                        //   console.log('After handleChange, field value:', field.state.value);
-                                        // }, 100);
                                       }}
                                       className="mx-2"
                                       aria-invalid={isInvalid}
@@ -2674,7 +2730,6 @@ const FormDialog = (props: Props) => {
                                   )}
                                 </Field>
 
-                                {/* Show the price based on checkbox state */}
                                 {selectedEvent && amount && (
                                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                     <div className="flex items-center justify-between">
@@ -3127,30 +3182,17 @@ const FormDialog = (props: Props) => {
                                     },
                                   }}
                                   children={(field) => {
-                                    // DEBUG: Log the field meta to see what's causing the error
-                                    console.log('Gender field meta:', {
-                                      name: field.name,
-                                      errors: field.state.meta.errors,
-                                      errorMap: field.state.meta.errorMap,
-                                      isTouched: field.state.meta.isTouched,
-                                      isValid: field.state.meta.isValid,
-                                      value: field.state.value
-                                    });
-
-                                    // Check for errors in errors array - with proper type guarding
                                     const hasErrorsInArray = field.state.meta.errors &&
                                       field.state.meta.errors.length > 0 &&
                                       field.state.meta.errors.some((err: any) => {
                                         if (typeof err === 'string' && err.length > 0) return true;
                                         if (err && typeof err === 'object' && err !== null) {
-                                          // Use type assertion with optional chaining
                                           const errorObj = err as { message?: string };
                                           return errorObj.message && errorObj.message.length > 0;
                                         }
                                         return false;
                                       });
 
-                                    // Check for errors in errorMap - with proper type handling
                                     const hasErrorsInMap = field.state.meta.errorMap &&
                                       Object.values(field.state.meta.errorMap).length > 0 &&
                                       Object.values(field.state.meta.errorMap).some((error: any) => {
@@ -3161,7 +3203,6 @@ const FormDialog = (props: Props) => {
                                         return false;
                                       });
 
-                                    // Also check if the field has been marked as invalid by the form
                                     const isFieldInvalid = !field.state.meta.isValid;
 
                                     const isInvalid = hasErrorsInArray || hasErrorsInMap || isFieldInvalid;
@@ -3207,8 +3248,6 @@ const FormDialog = (props: Props) => {
                                                       onSelect={(v) => {
                                                         field.handleChange(v as Gender);
                                                         setOpenGenders(false);
-
-                                                        // Clear errors when user selects a new value
                                                         field.setErrorMap({});
                                                       }}
                                                       className="capitalize"
@@ -3902,7 +3941,6 @@ const FormDialog = (props: Props) => {
                                     },
                                   }}
                                   children={(field) => {
-                                    // Check for errors in errors array - with proper type guarding
                                     const hasErrorsInArray = field.state.meta.errors &&
                                       field.state.meta.errors.length > 0 &&
                                       field.state.meta.errors.some((err: any) => {
@@ -3914,7 +3952,6 @@ const FormDialog = (props: Props) => {
                                         return false;
                                       });
 
-                                    // Check for errors in errorMap - with proper type handling
                                     const hasErrorsInMap = field.state.meta.errorMap &&
                                       Object.values(field.state.meta.errorMap).length > 0 &&
                                       Object.values(field.state.meta.errorMap).some((error: any) => {
@@ -3970,8 +4007,6 @@ const FormDialog = (props: Props) => {
                                                       onSelect={(v) => {
                                                         field.handleChange(v as Gender);
                                                         setOpenGenders(false);
-
-                                                        // Clear errors when user selects a new value
                                                         field.setErrorMap({});
                                                       }}
                                                       className="capitalize"
@@ -4317,7 +4352,7 @@ const FormDialog = (props: Props) => {
             loading={isLoading || isUploading || isSubmittingRef.current}
             type="button"
             onClick={handleSubmit}
-            disabled={!isFormValid() || isSubmittingRef.current}
+            disabled={!isFormValid() || isSubmittingRef.current || maxEntriesReached}
           >
             Submit
           </Button>

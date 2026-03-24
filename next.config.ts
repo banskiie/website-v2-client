@@ -28,6 +28,7 @@
 // export default nextConfig
 
 const nextConfig = {
+  allowedDevOrigins: ["192.168.6.64"],
   images: {
     remotePatterns: [
       {
@@ -68,6 +69,7 @@ const nextConfig = {
   experimental: {
     turbo: undefined,
   },
+
 }
 
 export default nextConfig

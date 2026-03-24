@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, Mail, Phone, User, Users2, Check, UploadIcon, MailIcon, PhoneIcon, InfoIcon, User2, VenusAndMarsIcon, RulerIcon, AlertCircle, ArrowLeftIcon, Loader2, Paperclip, XCircle, ChevronsUpDown, CheckIcon, File, Maximize2, ExternalLink, Download, Eye } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
-import { startTransition, use, useEffect, useRef, useState } from "react"
+import { startTransition, use, useCallback, useEffect, useRef, useState } from "react"
 import Header from "@/components/custom/header-white"
 import {
     Select,
@@ -29,7 +29,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { useMutation, useQuery } from "@apollo/client/react"
+import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
@@ -62,9 +62,29 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+import { gql } from "@apollo/client"
 
+const CHECK_EVENT_ENTRIES = gql`
+  query CheckEventEntries($eventId: ID!) {
+    event(_id: $eventId) {
+      _id
+      maxEntries
+      name
+    }
+    entryCountByEvent(eventId: $eventId)
+  }
+`
 interface RegistrationPageProps {
     params: Promise<{ slug: string[] }>
+}
+
+type CheckEventEntriesResponse = {
+    event: {
+        _id: string;
+        maxEntries: number;
+        name: string;
+    };
+    entryCountByEvent: number;
 }
 
 const RegistrationFeeModal = ({
@@ -497,10 +517,78 @@ const DocumentPreviewDialog = ({
     );
 };
 
+const MaxEntriesModal = ({
+    isOpen,
+    onClose,
+    eventName,
+    maxEntries
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    eventName: string;
+    maxEntries: number | null;
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="animate-in fade-in-90 zoom-in-90 duration-300 w-full max-w-md">
+                <div className="bg-white rounded-2xl shadow-2xl p-6 text-center transform transition-all duration-300 scale-100 border border-red-200">
+                    <div className="flex items-center justify-center mb-6">
+                        <div className="p-3 bg-red-100 rounded-full">
+                            <AlertCircle className="w-12 h-12 text-red-600" />
+                        </div>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-red-800 mb-3">
+                        Event is Full!
+                    </h3>
+
+                    <p className="text-gray-700 mb-2">
+                        The event <strong className="text-red-700">{eventName}</strong> has reached its maximum capacity.
+                    </p>
+
+                    {maxEntries && (
+                        <p className="text-gray-600 text-sm mb-4">
+                            Maximum entries: <strong>{maxEntries}</strong> entries
+                        </p>
+                    )}
+
+                    <p className="text-gray-600 mb-6">
+                        No more entries can be registered for this event. Please select another category or tournament.
+                    </p>
+
+                    <Button
+                        onClick={() => {
+                            window.location.href = "/sports-center/courts/categories"
+                        }}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-all duration-300"
+                    >
+                        <ArrowLeftIcon className="w-4 h-4 mr-2 inline" />
+                        Return to Categories
+                    </Button>
+
+                    <button
+                        onClick={onClose}
+                        className="mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors w-full text-center"
+                    >
+                        Dismiss
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default function Page({ params }: RegistrationPageProps) {
     const paramData = use(params)
     const [tournamentId, eventId] = paramData.slug ?? []
     const [showFeeModal, setShowFeeModal] = useState(false)
+    const [checkingEntries, setCheckingEntries] = useState(false)
+    const [maxEntriesReached, setMaxEntriesReached] = useState(false)
+    const [maxEntriesLimit, setMaxEntriesLimit] = useState<number | null>(null)
+    const [eventName, setEventName] = useState<string>("")
+    const [showMaxEntriesModal, setShowMaxEntriesModal] = useState(false)
 
     const { data, loading, error } = useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS, {
         variables: { id: eventId ?? "" },
@@ -537,18 +625,55 @@ export default function Page({ params }: RegistrationPageProps) {
     const event = tournament?.events?.find((e: any) => e._id === eventId) ?? tournament?.events?.[0]
     const hasFreeJersey = tournament?.settings?.hasFreeJersey || false
 
-    // Check if modal should be shown
+    const [checkEventEntries] = useLazyQuery(CHECK_EVENT_ENTRIES, {
+        fetchPolicy: "network-only",
+    })
+
+    const checkEventMaxEntries = useCallback(async () => {
+        if (!eventId) return false
+
+        setCheckingEntries(true)
+        try {
+            const { data } = await checkEventEntries({
+                variables: { eventId },
+            }) as { data: CheckEventEntriesResponse }
+
+            if (data?.event?.maxEntries && data.event.maxEntries > 0) {
+                const totalEntries = data?.entryCountByEvent || 0
+                const isFull = totalEntries >= data.event.maxEntries
+
+                setMaxEntriesLimit(data.event.maxEntries)
+                setEventName(data.event.name)
+                setMaxEntriesReached(isFull)
+
+                if (isFull) {
+                    setShowMaxEntriesModal(true)
+                }
+
+                return isFull
+            }
+        } catch (error) {
+            console.error("Error checking event entries:", error)
+        } finally {
+            setCheckingEntries(false)
+        }
+        return false
+    }, [checkEventEntries, eventId])
+
+    useEffect(() => {
+        if (eventId) {
+            checkEventMaxEntries()
+        }
+    }, [eventId, checkEventMaxEntries])
+
     useEffect(() => {
         if (event && tournament && !showSuccessModal) {
-            // Check if modal has been shown before (using localStorage for permanent storage)
             const modalKey = `registrationFeeModalShown-${tournamentId}-${eventId}`
             const hasSeenModalBefore = localStorage.getItem(modalKey)
 
-            // Also check sessionStorage for current session
             const sessionKey = `registrationFeeModalSession-${tournamentId}-${eventId}`
             const hasSeenThisSession = sessionStorage.getItem(sessionKey)
 
-            // Only show modal if user hasn't seen it before in localStorage AND hasn't seen it this session
             if (!hasSeenModalBefore && !hasSeenThisSession) {
                 const timer = setTimeout(() => {
                     setShowFeeModal(true)
@@ -862,7 +987,21 @@ export default function Page({ params }: RegistrationPageProps) {
             onSubmit: createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation) as any,
         },
         onSubmit: async ({ value }) => {
-            // console.log("=== FORM SUBMISSION TRIGGERED ===");
+            if (maxEntriesReached) {
+                console.log("Max entries reached, showing modal and preventing submission");
+                setShowMaxEntriesModal(true);
+                toast.error(`Cannot register. The event "${eventName}" has reached its maximum capacity of ${maxEntriesLimit} entries.`);
+                return;
+            }
+
+            if (eventId && !isSubmitting && !isUploading) {
+                const isFull = await checkEventMaxEntries();
+                if (isFull) {
+                    console.log("Event is full after fresh check, preventing submission");
+                    setShowMaxEntriesModal(true);
+                    return;
+                }
+            }
 
             // Don't proceed if already submitting
             if (isSubmitting || isUploading) {
@@ -1442,6 +1581,7 @@ export default function Page({ params }: RegistrationPageProps) {
         )
     }
 
+
     return (
         <div className="bg-linear-to-br from-green-50 to-emerald-100">
             <Header />
@@ -1512,6 +1652,30 @@ export default function Page({ params }: RegistrationPageProps) {
                         </CardDescription>
                     </div>
                 </CardHeader>
+
+                {maxEntriesReached && (
+                    <div className="max-w-5xl mx-auto mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-red-800">Registration Closed</h3>
+                                <p className="text-sm text-red-700">
+                                    The event "{eventName}" has reached its maximum capacity of {maxEntriesLimit} entries.
+                                    Please go back and select another category.
+                                </p>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-red-300 text-red-700 hover:bg-red-50 shrink-0"
+                                onClick={() => window.location.href = "/sports-center/courts/categories"}
+                            >
+                                <ArrowLeftIcon className="w-4 h-4 mr-2" />
+                                Back
+                            </Button>
+                        </div>
+                    </div>
+                )}
 
                 <CardContent>
                     <form
@@ -2232,7 +2396,8 @@ export default function Page({ params }: RegistrationPageProps) {
                         <Button
                             type="submit"
                             form="registration-form"
-                            disabled={isSubmitting || submitting || isUploading}
+                            // disabled={isSubmitting || submitting || isUploading}
+                            disabled={isSubmitting || submitting || isUploading || maxEntriesReached}
                             className="lg:w-1/2! w-auto! px-6 py-5 cursor-pointer disabled:cursor-not-allowed relative overflow-hidden bg-green-600 hover:bg-green-700 text-white"
                         >
                             <span className={`transition-opacity duration-200 ${isSubmitting || submitting ? 'opacity-0' : 'opacity-100'}`}>
@@ -2249,6 +2414,14 @@ export default function Page({ params }: RegistrationPageProps) {
                 </CardFooter>
                 <FloatingTicketing />
             </Card>
+
+            <MaxEntriesModal
+                isOpen={showMaxEntriesModal}
+                onClose={() => setShowMaxEntriesModal(false)}
+                eventName={eventName}
+                maxEntries={maxEntriesLimit}
+            />
+
         </div>
     )
 }
