@@ -14,7 +14,7 @@ export interface IEvent {
   location?: string
   maxAge?: number
   minAge?: number
-  isDissolved: boolean
+  isClosed: boolean
   isActive: boolean
   createdAt: Date
   updatedAt: Date

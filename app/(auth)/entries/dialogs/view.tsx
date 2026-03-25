@@ -57,7 +57,7 @@ const ENTRY = gql`
         pricePerPlayer
         earlyBirdPricePerPlayer
         currency
-        isDissolved
+        isClosed
         tournament {
           name
         }
@@ -358,7 +358,7 @@ const ViewDialog = (props: Props) => {
                     <span className="block text-sm">
                       <span
                         className={cn(
-                          entry?.event?.isDissolved && "line-through"
+                          entry?.event?.isClosed && "line-through"
                         )}
                       >
                         {entry?.event?.name} (
@@ -367,9 +367,9 @@ const ViewDialog = (props: Props) => {
                         </span>
                         )
                       </span>
-                      {entry?.event?.isDissolved && (
+                      {entry?.event?.isClosed && (
                         <span className="text-destructive ml-1">
-                          (Dissolved)
+                          (Closed)
                         </span>
                       )}
                     </span>

@@ -88,7 +88,13 @@ import {
 import { Label } from "../ui/label"
 import { cn } from "@/lib/utils"
 import Guidelines from "./guidelines"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select"
 // const tournament = tournaments.find(t => t.isActive)
 
 export type PublicTournamentsData = {
@@ -167,12 +173,13 @@ export function CategoryCard({
         )}
         <Badge className={`text-xs px-2 ${levelColor}`}>{level}</Badge>
         <Badge
-          className={`text-xs px-2 ${gender === "Male"
-            ? "bg-blue-100 text-blue-800"
-            : gender === "Women"
-              ? "bg-pink-100 text-pink-800"
-              : "bg-green-100 text-green-800"
-            }`}
+          className={`text-xs px-2 ${
+            gender === "Male"
+              ? "bg-blue-100 text-blue-800"
+              : gender === "Women"
+                ? "bg-pink-100 text-pink-800"
+                : "bg-green-100 text-green-800"
+          }`}
         >
           {gender}
         </Badge>
@@ -200,109 +207,116 @@ export function CategoryModal({
     earlyBirdPricePerPlayer?: number
     hasEarlyBird?: boolean
     currency?: string
-    isDissolved?: boolean
+    isClosed?: boolean
   } | null
 }) {
-  const [showGuidelines, setShowGuidelines] = useState(false);
-  const { data, loading, error } = useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS);
+  const [showGuidelines, setShowGuidelines] = useState(false)
+  const { data, loading, error } =
+    useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
+
+  console.log(category)
 
   const handleRegisterClick = () => {
-    setShowGuidelines(true);
-  };
+    setShowGuidelines(true)
+  }
 
   const handleAgreeToGuidelines = () => {
     const activeTournament = data?.publicTournaments?.find(
-      (t: ITournament) => t.isActive
-    );
-    const tournament = activeTournament || data?.publicTournaments?.[0];
+      (t: ITournament) => t.isActive,
+    )
+    const tournament = activeTournament || data?.publicTournaments?.[0]
 
     if (tournament && category) {
-      window.location.href = `/sports-center/courts/registration/${tournament._id}/${category.id}`;
+      window.location.href = `/sports-center/courts/registration/${tournament._id}/${category.id}`
     }
-  };
+  }
 
-  if (!isOpen || !category) return null;
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error loading tournaments: {error.message}</p>;
+  if (!isOpen || !category) return null
+  if (loading) return <p>Loading...</p>
+  if (error) return <p>Error loading tournaments: {error.message}</p>
 
   const activeTournament = data?.publicTournaments?.find(
-    (t: ITournament) => t.isActive
-  );
-  const tournament = activeTournament || data?.publicTournaments?.[0];
+    (t: ITournament) => t.isActive,
+  )
+  const tournament = activeTournament || data?.publicTournaments?.[0]
 
   // ✅ FIXED: Check both setting AND date
   const checkEarlyBirdActive = () => {
     // First check if early bird is enabled in settings
-    const hasEarlyBirdSetting = category.hasEarlyBird || tournament?.settings.hasEarlyBird;
-    if (!hasEarlyBirdSetting) return false;
+    const hasEarlyBirdSetting =
+      category.hasEarlyBird || tournament?.settings.hasEarlyBird
+    if (!hasEarlyBirdSetting) return false
 
     // Then check if the early bird period has ended
-    const earlyBirdEndDate = tournament?.dates?.earlyBirdPaymentEnd;
-    if (!earlyBirdEndDate) return false;
+    const earlyBirdEndDate = tournament?.dates?.earlyBirdPaymentEnd
+    if (!earlyBirdEndDate) return false
 
     // Get current date in UTC for comparison
-    const nowUTC = new Date().toISOString();
-    const now = new Date(nowUTC);
-    const endDate = new Date(earlyBirdEndDate);
+    const nowUTC = new Date().toISOString()
+    const now = new Date(nowUTC)
+    const endDate = new Date(earlyBirdEndDate)
 
     // Early bird is active if current date is before/equal to end date
-    return now <= endDate;
-  };
+    return now <= endDate
+  }
 
-  const isEarlyBirdActive = checkEarlyBirdActive(); // ✅ Now includes date check
+  const isEarlyBirdActive = checkEarlyBirdActive() // ✅ Now includes date check
 
   const displayPricePerPlayer =
     isEarlyBirdActive && category.earlyBirdPricePerPlayer // ✅ Use isEarlyBirdActive
       ? category.earlyBirdPricePerPlayer
-      : category.pricePerPlayer;
+      : category.pricePerPlayer
 
   const getCurrencySymbol = (currency?: string) => {
-    if (!currency) return "";
-    return currency.toUpperCase() === "USD" ? "$" : "₱";
-  };
+    if (!currency) return ""
+    return currency.toUpperCase() === "USD" ? "$" : "₱"
+  }
 
-  const symbol = getCurrencySymbol(category.currency);
+  const symbol = getCurrencySymbol(category.currency)
   const perPlayerPrice = displayPricePerPlayer
     ? `${symbol}${displayPricePerPlayer.toLocaleString()}`
-    : "N/A";
+    : "N/A"
 
   const earlyBirdPerPlayer = category.earlyBirdPricePerPlayer
     ? `${symbol}${category.earlyBirdPricePerPlayer.toLocaleString()}`
-    : null;
+    : null
 
   const perPairPrice =
     category.type === "Doubles" && displayPricePerPlayer
       ? `${symbol}${(displayPricePerPlayer * 2).toLocaleString()}`
-      : null;
+      : null
 
   const earlyBirdPerPair =
     category.type === "Doubles" && category.earlyBirdPricePerPlayer
       ? `${symbol}${(category.earlyBirdPricePerPlayer * 2).toLocaleString()}`
-      : null;
+      : null
 
   // Calculate savings if early bird is active
   const savingsPerPlayer =
-    isEarlyBirdActive && category.earlyBirdPricePerPlayer && category.pricePerPlayer // ✅ Use isEarlyBirdActive
+    isEarlyBirdActive &&
+    category.earlyBirdPricePerPlayer &&
+    category.pricePerPlayer // ✅ Use isEarlyBirdActive
       ? category.pricePerPlayer - category.earlyBirdPricePerPlayer
-      : 0;
+      : 0
 
   const savingsPerPair =
-    category.type === "Doubles" && savingsPerPlayer ? savingsPerPlayer * 2 : 0;
+    category.type === "Doubles" && savingsPerPlayer ? savingsPerPlayer * 2 : 0
 
   // Helper to format remaining time (optional)
   const getTimeRemaining = () => {
-    if (!tournament?.dates?.earlyBirdPaymentEnd || !isEarlyBirdActive) return null;
+    if (!tournament?.dates?.earlyBirdPaymentEnd || !isEarlyBirdActive)
+      return null
 
-    const endDate = new Date(tournament.dates.earlyBirdPaymentEnd);
-    const now = new Date();
-    const diffMs = endDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const endDate = new Date(tournament.dates.earlyBirdPaymentEnd)
+    const now = new Date()
+    const diffMs = endDate.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 
-    if (diffDays <= 0) return null;
-    return diffDays;
-  };
+    if (diffDays <= 0) return null
+    return diffDays
+  }
 
-  const daysRemaining = getTimeRemaining();
+  const daysRemaining = getTimeRemaining()
 
   return (
     <>
@@ -329,12 +343,14 @@ export function CategoryModal({
           <div className="mb-4 text-left">
             <div className="flex items-center gap-2 mb-2">
               <Users
-                className={`w-5 h-5 text-gray-600 ${category.type === "Singles" ? "hidden" : ""
-                  }`}
+                className={`w-5 h-5 text-gray-600 ${
+                  category.type === "Singles" ? "hidden" : ""
+                }`}
               />
               <User
-                className={`w-5 h-5 text-gray-600 ${category.type === "Doubles" ? "hidden" : ""
-                  }`}
+                className={`w-5 h-5 text-gray-600 ${
+                  category.type === "Doubles" ? "hidden" : ""
+                }`}
               />
               <span className="font-semibold text-gray-800 text-sm">
                 {category.name}
@@ -374,7 +390,7 @@ export function CategoryModal({
                       <Clock className="size-3" />
                       <span className="text-xs">
                         {daysRemaining
-                          ? `Ends in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`
+                          ? `Ends in ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""}`
                           : "Ends soon"}
                       </span>
                     </div>
@@ -420,7 +436,7 @@ export function CategoryModal({
                       <div className="bg-green-50 border border-green-400 text-green-700 text-[12px] font-bold px-3 py-2 rounded-md">
                         {format(
                           new Date(tournament.dates.earlyBirdPaymentEnd),
-                          "MMM dd, yyyy"
+                          "MMM dd, yyyy",
                         )}
                       </div>
                     )}
@@ -483,32 +499,35 @@ export function CategoryModal({
               {tournament?.name || "Tournament TBA"}
             </p>
             <p
-              className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"
-                }`}
+              className={`text-sm font-medium ${
+                tournament?.isActive ? "text-green-700" : "text-red-700"
+              }`}
             >
               {tournament?.isActive ? "Active" : "Inactive"}
             </p>
             <p className="text-gray-700 text-xs font-medium">
               {tournament
                 ? `${format(
-                  new Date(tournament.dates.tournamentStart),
-                  "MMM dd, yyyy"
-                )} - ${format(
-                  new Date(tournament.dates.tournamentEnd),
-                  "MMM dd, yyyy"
-                )}`
+                    new Date(tournament.dates.tournamentStart),
+                    "MMM dd, yyyy",
+                  )} - ${format(
+                    new Date(tournament.dates.tournamentEnd),
+                    "MMM dd, yyyy",
+                  )}`
                 : "Dates TBD"}
             </p>
           </div>
 
           <div className="flex gap-3">
-            {!category?.isDissolved ? (
-              <Button
-                onClick={handleRegisterClick}
-                className="flex-1 bg-black text-white cursor-pointer hover:bg-gray-900 px-4 py-2"
-              >
-                Register Now
-              </Button>
+            {!category?.isClosed ? (
+              <>
+                <Button
+                  onClick={handleRegisterClick}
+                  className="flex-1 bg-black text-white cursor-pointer hover:bg-gray-900 px-4 py-2"
+                >
+                  Register Now
+                </Button>
+              </>
             ) : (
               <div className="flex-1 bg-gray-200 text-gray-500 px-4 py-2 rounded-md text-center text-sm font-medium cursor-not-allowed">
                 Registration Closed
@@ -521,7 +540,7 @@ export function CategoryModal({
               onClick={() =>
                 window.open(
                   "https://www.facebook.com/c.onebadmintonchallenge/",
-                  "_blank"
+                  "_blank",
                 )
               }
               className="cursor-pointer"
@@ -539,7 +558,7 @@ export function CategoryModal({
         categoryName={category.name}
       />
     </>
-  );
+  )
 }
 
 function SubmissionSuccessModal({
@@ -639,7 +658,7 @@ export function UploadProofMergedModal({
   >({})
   const [entryErrors, setEntryErrors] = useState<Record<number, string>>({})
   const [entryDetails, setEntryDetails] = useState<Record<number, any | null>>(
-    {}
+    {},
   )
   const [duplicateReferenceError, setDuplicateReferenceError] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -672,8 +691,11 @@ export function UploadProofMergedModal({
 
   // New states for duplicate handling
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
-  const [duplicateReferenceNumber, setDuplicateReferenceNumber] = useState<string>("")
-  const [duplicatePaymentData, setDuplicatePaymentData] = useState<any | null>(null)
+  const [duplicateReferenceNumber, setDuplicateReferenceNumber] =
+    useState<string>("")
+  const [duplicatePaymentData, setDuplicatePaymentData] = useState<any | null>(
+    null,
+  )
   const [userConfirmedDuplicate, setUserConfirmedDuplicate] = useState(false)
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false)
 
@@ -686,7 +708,7 @@ export function UploadProofMergedModal({
     createPayment,
     { loading: createPaymentLoading, error: createPaymentError },
   ] = useMutation<createPaymentResponse, { input: CreatePaymentInput }>(
-    CREATE_PAYMENT
+    CREATE_PAYMENT,
   )
 
   const [
@@ -700,10 +722,10 @@ export function UploadProofMergedModal({
     fetchPolicy: "network-only",
   })
 
-  const [checkDuplicate, {
-    data: duplicatePaymentQueryData,
-    loading: duplicatePaymentLoading
-  }] = useLazyQuery<DuplicateCheckResponse>(CHECK_DUPLICATE_REFERENCE, {
+  const [
+    checkDuplicate,
+    { data: duplicatePaymentQueryData, loading: duplicatePaymentLoading },
+  ] = useLazyQuery<DuplicateCheckResponse>(CHECK_DUPLICATE_REFERENCE, {
     fetchPolicy: "network-only",
   })
 
@@ -711,11 +733,11 @@ export function UploadProofMergedModal({
 
   const uploadFile = async (file: File): Promise<string | null> => {
     try {
-      setIsUploading(true);
-      const formData = new FormData();
-      const fileExt = file.name.split('.').pop() || '';
-      const fileName = `payment-${Date.now()}.${fileExt}`;
-      formData.append("file", file, fileName);
+      setIsUploading(true)
+      const formData = new FormData()
+      const fileExt = file.name.split(".").pop() || ""
+      const fileName = `payment-${Date.now()}.${fileExt}`
+      formData.append("file", file, fileName)
 
       // console.log("Uploading file to PAYMENTS folder:", {
       //   name: file.name,
@@ -727,19 +749,19 @@ export function UploadProofMergedModal({
       const response = await fetch("/api/upload/payment", {
         method: "POST",
         body: formData,
-      });
+      })
 
       if (!response.ok) {
-        throw new Error("Upload Failed");
+        throw new Error("Upload Failed")
       }
 
-      const data = await response.json();
-      return data.url;
+      const data = await response.json()
+      return data.url
     } catch (error) {
-      toast.error("Error uploading file. Please try again.");
-      return null;
+      toast.error("Error uploading file. Please try again.")
+      return null
     } finally {
-      setIsUploading(false);
+      setIsUploading(false)
     }
   }
 
@@ -750,7 +772,13 @@ export function UploadProofMergedModal({
     }
   }
 
-  const UploadingOverlay = ({ message, progress }: { message?: string; progress?: number }) => (
+  const UploadingOverlay = ({
+    message,
+    progress,
+  }: {
+    message?: string
+    progress?: number
+  }) => (
     <motion.div
       className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl z-50"
       initial={{ opacity: 0 }}
@@ -778,18 +806,23 @@ export function UploadProofMergedModal({
             </div>
           </div>
         )}
-        <p className="text-sm text-gray-500 mt-4">Please don't close this window</p>
+        <p className="text-sm text-gray-500 mt-4">
+          Please don't close this window
+        </p>
       </div>
     </motion.div>
   )
 
-  const checkForRejectedStatus = (entryDetails: any, entryNumber: string): { isRejected: boolean; reason?: string; date?: string } => {
+  const checkForRejectedStatus = (
+    entryDetails: any,
+    entryNumber: string,
+  ): { isRejected: boolean; reason?: string; date?: string } => {
     if (!entryDetails?.entry?.statuses) {
       return { isRejected: false }
     }
 
     const rejectedStatus = entryDetails.entry.statuses.find(
-      (status: IEntryStatus) => status.status === "REJECTED"
+      (status: IEntryStatus) => status.status === "REJECTED",
     )
 
     if (rejectedStatus) {
@@ -806,7 +839,7 @@ export function UploadProofMergedModal({
   const getEntryAmountDetails = async (
     entryNumber: string,
     entryKey: string,
-    index: number
+    index: number,
   ) => {
     const referenceNumber = `${entryNumber}_${entryKey}`
     // console.log("Fetching amount details for reference:", referenceNumber)
@@ -976,7 +1009,7 @@ export function UploadProofMergedModal({
   }
 
   const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const uploadedFile = event.target.files?.[0]
     if (!uploadedFile) return
@@ -1008,7 +1041,7 @@ export function UploadProofMergedModal({
         setScannedText(text)
 
         const confirmationMatch = text.match(
-          /confirmation[\s#:=-]*no\.?\s*([A-Z0-9-]{5,})/i
+          /confirmation[\s#:=-]*no\.?\s*([A-Z0-9-]{5,})/i,
         )
         if (confirmationMatch) {
           setShowConfirmationInput(true)
@@ -1025,7 +1058,7 @@ export function UploadProofMergedModal({
         }
 
         const landBankTransactionRefMatch = text.match(
-          /Transaction Reference Number\s*([A-Z0-9\/]+)/i
+          /Transaction Reference Number\s*([A-Z0-9\/]+)/i,
         )
         if (landBankTransactionRefMatch) {
           setShowConfirmationInput(true)
@@ -1037,33 +1070,33 @@ export function UploadProofMergedModal({
         const bdoAmountMatch = text.match(/PHP\s*([\d,]+\.[\d]{2})/i)
 
         const paidMatch = text.match(
-          new RegExp(`paid\\s*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i")
+          new RegExp(`paid\\s*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`, "i"),
         )
         const transferMatch = text.match(
           new RegExp(
             `transfer\\s*amount[\\s\\S]*?${currencyPattern}\\s?([\\d,]+\\.\\d{2})`,
-            "i"
-          )
+            "i",
+          ),
         )
 
         const totalMatch =
           text.match(
             new RegExp(
               `total[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`,
-              "i"
-            )
+              "i",
+            ),
           ) ||
           text.match(
             new RegExp(
               `amount[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`,
-              "i"
-            )
+              "i",
+            ),
           ) ||
           text.match(
             new RegExp(
               `total\\s*amount\\s*sent[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`,
-              "i"
-            )
+              "i",
+            ),
           )
 
         let detectedAmount: any = null
@@ -1126,7 +1159,7 @@ export function UploadProofMergedModal({
               line.includes("transaction ref no")
             ) {
               const inlineMatch = lines[i].match(
-                /(?:ref(?:\.|erence)?(?: no\.?)?[:\s]*)\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i
+                /(?:ref(?:\.|erence)?(?: no\.?)?[:\s]*)\s*([A-Z0-9\s-]{4,})(?=\s|$|[A-Za-z]|\.)/i,
               )
 
               if (inlineMatch) {
@@ -1229,7 +1262,7 @@ export function UploadProofMergedModal({
           const result = await getEntryAmountDetails(
             entry.entryNumber,
             entry.entryKey,
-            i
+            i,
           )
           newAmounts[i] = result.data ? result.data.amount : null
           newDetails[i] = result.data || null
@@ -1274,13 +1307,11 @@ export function UploadProofMergedModal({
       if (numAmount === 0 || total === 0) {
         setPriceReminder(null)
       } else if (numAmount >= total) {
-        setPriceReminder(
-          `✅ Enough Amount : ₱${total}`
-        )
+        setPriceReminder(`✅ Enough Amount : ₱${total}`)
       } else {
         const diff = total - numAmount
         setPriceReminder(
-          `Not Enough Amount : ₱${diff.toFixed(2)} Missing Amount`
+          `Not Enough Amount : ₱${diff.toFixed(2)} Missing Amount`,
         )
       }
     }
@@ -1304,7 +1335,11 @@ export function UploadProofMergedModal({
         variables: { referenceNumber },
       })
 
-      if (data?.checkDuplicateReference && Array.isArray(data.checkDuplicateReference) && data.checkDuplicateReference.length > 0) {
+      if (
+        data?.checkDuplicateReference &&
+        Array.isArray(data.checkDuplicateReference) &&
+        data.checkDuplicateReference.length > 0
+      ) {
         setDuplicatePaymentData(data.checkDuplicateReference[0])
         setShowDuplicateDialog(true)
       } else {
@@ -1313,9 +1348,12 @@ export function UploadProofMergedModal({
     } catch (error: any) {
       console.error("Error checking duplicate:", error)
 
-      toast.error("Unable to check for duplicate references. Please verify your reference number is unique.", {
-        duration: 5000,
-      })
+      toast.error(
+        "Unable to check for duplicate references. Please verify your reference number is unique.",
+        {
+          duration: 5000,
+        },
+      )
 
       setShowConfirmationDialog(true)
     } finally {
@@ -1331,7 +1369,7 @@ export function UploadProofMergedModal({
       if (details?.entry?.statuses) {
         const rejectedCheck = checkForRejectedStatus(
           details,
-          details.entry.entryNumber
+          details.entry.entryNumber,
         )
         if (rejectedCheck.isRejected) {
           setRejectedEntryInfo({
@@ -1348,7 +1386,8 @@ export function UploadProofMergedModal({
 
     if (foundRejected) {
       toast.error("Cannot Submit Payment", {
-        description: "One or more entries have been rejected and cannot be paid.",
+        description:
+          "One or more entries have been rejected and cannot be paid.",
         duration: 5000,
       })
       return
@@ -1379,7 +1418,8 @@ export function UploadProofMergedModal({
     setFieldErrors((prev) => ({ ...prev, ...newFieldErrors }))
 
     if (!validationResult.isValid) {
-      const errorMessage = validationResult.errors[0] || "Please fix the errors before submitting."
+      const errorMessage =
+        validationResult.errors[0] || "Please fix the errors before submitting."
 
       toast.error("Validation Error", {
         description: errorMessage,
@@ -1389,31 +1429,35 @@ export function UploadProofMergedModal({
           onClick: () => {
             const firstErrorField = Object.keys(validationResult.fields)[0]
             if (firstErrorField) {
-              const element = document.querySelector(`[name="${firstErrorField}"]`) ||
+              const element =
+                document.querySelector(`[name="${firstErrorField}"]`) ||
                 document.querySelector(`#${firstErrorField}`) ||
-                document.querySelector(`input[placeholder*="${firstErrorField}"]`)
+                document.querySelector(
+                  `input[placeholder*="${firstErrorField}"]`,
+                )
 
               if (element) {
                 element.scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'center'
+                  behavior: "smooth",
+                  block: "center",
                 })
-                  ; (element as HTMLElement).focus()
+                ;(element as HTMLElement).focus()
               }
             }
-          }
-        }
+          },
+        },
       })
 
       setError("")
       return
     }
 
-    const currentRef = reference && reference !== "Not found"
-      ? reference
-      : confirmationNumber && confirmationNumber !== "Not found"
-        ? confirmationNumber
-        : null
+    const currentRef =
+      reference && reference !== "Not found"
+        ? reference
+        : confirmationNumber && confirmationNumber !== "Not found"
+          ? confirmationNumber
+          : null
 
     if (currentRef) {
       await handleOpenDuplicateDialog(currentRef)
@@ -1430,7 +1474,7 @@ export function UploadProofMergedModal({
     return (
       hasRejectedEntry ||
       Object.values(entryErrors).some(
-        (error) => error && !error.includes("REJECTED")
+        (error) => error && !error.includes("REJECTED"),
       )
     ) // Don't count Reject error twice
   }
@@ -1480,7 +1524,7 @@ export function UploadProofMergedModal({
       const finalReferenceNumber =
         reference && reference !== "Not found"
           ? reference
-          : confirmationNumber || `ref_${Date.now()}`;
+          : confirmationNumber || `ref_${Date.now()}`
 
       const input: CreatePaymentInput = {
         referenceNumber: finalReferenceNumber,
@@ -1490,49 +1534,51 @@ export function UploadProofMergedModal({
         proofOfPaymentURL: imageUrl,
         payerName: finalPayerName,
         entryList,
-      };
+      }
 
       // console.log("Submitting payment:", input);
 
       const result = await createPayment({
         variables: { input },
-      });
+      })
 
       if (result.data?.createPayment.ok) {
         toast.success("Payment Submitted Successfully!", {
-          description: "Your payment has been recorded. Please wait for verification.",
+          description:
+            "Your payment has been recorded. Please wait for verification.",
           duration: 4000,
-        });
-        setSuccess(true);
+        })
+        setSuccess(true)
       } else {
         toast.error("Payment Failed", {
           description: "Failed to create payment. Please try again.",
           duration: 5000,
-        });
-        setError("");
+        })
+        setError("")
       }
     } catch (err: any) {
-
-      if (err.message?.includes("E1100") ||
+      if (
+        err.message?.includes("E1100") ||
         err.message?.toLowerCase().includes("duplicate") ||
-        err.message?.toLowerCase().includes("reference number")) {
-
+        err.message?.toLowerCase().includes("reference number")
+      ) {
         setDuplicateReferenceError(true)
 
         toast.error("Duplicate Reference Number", {
-          description: "This reference number has already been used. Please check your receipt or use a different reference.",
+          description:
+            "This reference number has already been used. Please check your receipt or use a different reference.",
           duration: 15000,
-        });
-
+        })
       } else {
         toast.error("Error Processing Payment", {
-          description: err.message || "An unexpected error occurred. Please try again.",
+          description:
+            err.message || "An unexpected error occurred. Please try again.",
           duration: 15000,
-        });
+        })
       }
-      setError("");
+      setError("")
     } finally {
-      setIsUploading(false);
+      setIsUploading(false)
     }
   }
 
@@ -1564,10 +1610,10 @@ export function UploadProofMergedModal({
     const { active, over } = event
     if (active.id !== over?.id) {
       const oldIndex = entriesState.findIndex(
-        (_, i) => i.toString() === active.id
+        (_, i) => i.toString() === active.id,
       )
       const newIndex = entriesState.findIndex(
-        (_, i) => i.toString() === over?.id
+        (_, i) => i.toString() === over?.id,
       )
 
       const reorderedEntries = arrayMove(entriesState, oldIndex, newIndex)
@@ -1581,35 +1627,35 @@ export function UploadProofMergedModal({
       reorderedEntries.forEach((_, newIdx) => {
         reorderedAmounts[newIdx] =
           entryAmounts[
-          oldIndex === newIdx
-            ? newIndex
-            : newIdx === newIndex
-              ? oldIndex
-              : newIdx
+            oldIndex === newIdx
+              ? newIndex
+              : newIdx === newIndex
+                ? oldIndex
+                : newIdx
           ] || null
         reorderedLoadingStates[newIdx] =
           entryLoadingStates[
-          oldIndex === newIdx
-            ? newIndex
-            : newIdx === newIndex
-              ? oldIndex
-              : newIdx
+            oldIndex === newIdx
+              ? newIndex
+              : newIdx === newIndex
+                ? oldIndex
+                : newIdx
           ] || false
         reorderedErrors[newIdx] =
           entryErrors[
-          oldIndex === newIdx
-            ? newIndex
-            : newIdx === newIndex
-              ? oldIndex
-              : newIdx
+            oldIndex === newIdx
+              ? newIndex
+              : newIdx === newIndex
+                ? oldIndex
+                : newIdx
           ] || ""
         reorderedDetails[newIdx] =
           entryDetails[
-          oldIndex === newIdx
-            ? newIndex
-            : newIdx === newIndex
-              ? oldIndex
-              : newIdx
+            oldIndex === newIdx
+              ? newIndex
+              : newIdx === newIndex
+                ? oldIndex
+                : newIdx
           ] || null
       })
 
@@ -1723,11 +1769,11 @@ export function UploadProofMergedModal({
               const indexToRemove = entriesState.findIndex(
                 (entry) =>
                   entry.entryNumber ===
-                  rejectedEntryInfo?.entryNumber.split("_")[0]
+                  rejectedEntryInfo?.entryNumber.split("_")[0],
               )
               if (indexToRemove !== -1) {
                 setEntriesState(
-                  entriesState.filter((_, idx) => idx !== indexToRemove)
+                  entriesState.filter((_, idx) => idx !== indexToRemove),
                 )
                 setEntryAmounts((prev) => {
                   const newAmounts = { ...prev }
@@ -1796,8 +1842,9 @@ export function UploadProofMergedModal({
                 Duplicate Reference Number Found
               </h3>
               <p className="text-gray-600 text-sm mb-4">
-                A payment with the reference number "{duplicateReferenceNumber}" already exists in the system.
-                Are you sure you want to proceed with this duplicate reference?
+                A payment with the reference number "{duplicateReferenceNumber}"
+                already exists in the system. Are you sure you want to proceed
+                with this duplicate reference?
               </p>
             </div>
 
@@ -1812,14 +1859,20 @@ export function UploadProofMergedModal({
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <Label className="text-sm font-medium text-gray-500">Payer Name</Label>
+                        <Label className="text-sm font-medium text-gray-500">
+                          Payer Name
+                        </Label>
                         <div className="flex items-center gap-2">
-                          <p className="text-base font-medium">{duplicatePaymentData.payerName}</p>
+                          <p className="text-base font-medium">
+                            {duplicatePaymentData.payerName}
+                          </p>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0"
-                            onClick={() => copyToClipboard(duplicatePaymentData.payerName)}
+                            onClick={() =>
+                              copyToClipboard(duplicatePaymentData.payerName)
+                            }
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
@@ -1827,76 +1880,108 @@ export function UploadProofMergedModal({
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-sm font-medium text-gray-500">Payment Amount</Label>
+                        <Label className="text-sm font-medium text-gray-500">
+                          Payment Amount
+                        </Label>
                         <p className="text-base font-bold text-green-600">
-                          ₱{duplicatePaymentData.amount.toLocaleString('en-US', {
+                          ₱
+                          {duplicatePaymentData.amount.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
+                            maximumFractionDigits: 2,
                           })}
                         </p>
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-sm font-medium text-gray-500">Payment Method</Label>
+                        <Label className="text-sm font-medium text-gray-500">
+                          Payment Method
+                        </Label>
                         <Badge variant="outline" className="capitalize">
                           {duplicatePaymentData.method.replace("_", " ")}
                         </Badge>
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-sm font-medium text-gray-500">Payment Date</Label>
-                        <p className="text-base">{formatDate(duplicatePaymentData.paymentDate)}</p>
+                        <Label className="text-sm font-medium text-gray-500">
+                          Payment Date
+                        </Label>
+                        <p className="text-base">
+                          {formatDate(duplicatePaymentData.paymentDate)}
+                        </p>
                       </div>
                     </div>
 
                     <Separator />
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-500">Associated Entries</Label>
+                      <Label className="text-sm font-medium text-gray-500">
+                        Associated Entries
+                      </Label>
                       <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                        {duplicatePaymentData.entryList.map((entryItem: any, index: number) => (
-                          <div key={index} className="p-3 border rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">{entryItem.entry.entryNumber}</span>
-                                  {entryItem.isFullyPaid ? (
-                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                                      Fully Paid
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                                      Partial
-                                    </Badge>
-                                  )}
+                        {duplicatePaymentData.entryList.map(
+                          (entryItem: any, index: number) => (
+                            <div key={index} className="p-3 border rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">
+                                      {entryItem.entry.entryNumber}
+                                    </span>
+                                    {entryItem.isFullyPaid ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-green-50 text-green-700 border-green-200 text-xs"
+                                      >
+                                        Fully Paid
+                                      </Badge>
+                                    ) : (
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
+                                      >
+                                        Partial
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-500">
+                                    Entry Key: {entryItem.entry.entryKey}
+                                  </p>
                                 </div>
-                                <p className="text-sm text-gray-500">Entry Key: {entryItem.entry.entryKey}</p>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ),
+                        )}
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-500">Current Status</Label>
+                      <Label className="text-sm font-medium text-gray-500">
+                        Current Status
+                      </Label>
                       <div className="flex flex-wrap gap-2">
-                        {duplicatePaymentData.statuses.slice(-1).map((status: any, index: number) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className={cn(
-                              "capitalize",
-                              status.status === "VERIFIED" && "bg-green-50 text-green-700 border-green-200",
-                              status.status === "REJECTED" && "bg-red-50 text-red-700 border-red-200",
-                              status.status === "PAYMENT_PENDING" && "bg-yellow-50 text-yellow-700 border-yellow-200",
-                              status.status === "SENT" && "bg-blue-50 text-blue-700 border-blue-200",
-                              status.status === "DUPLICATE" && "bg-red-50 text-red-700 border-red-200"
-                            )}
-                          >
-                            {status.status.replace("_", " ")}
-                          </Badge>
-                        ))}
+                        {duplicatePaymentData.statuses
+                          .slice(-1)
+                          .map((status: any, index: number) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className={cn(
+                                "capitalize",
+                                status.status === "VERIFIED" &&
+                                  "bg-green-50 text-green-700 border-green-200",
+                                status.status === "REJECTED" &&
+                                  "bg-red-50 text-red-700 border-red-200",
+                                status.status === "PAYMENT_PENDING" &&
+                                  "bg-yellow-50 text-yellow-700 border-yellow-200",
+                                status.status === "SENT" &&
+                                  "bg-blue-50 text-blue-700 border-blue-200",
+                                status.status === "DUPLICATE" &&
+                                  "bg-red-50 text-red-700 border-red-200",
+                              )}
+                            >
+                              {status.status.replace("_", " ")}
+                            </Badge>
+                          ))}
                       </div>
                     </div>
                   </div>
@@ -1904,7 +1989,9 @@ export function UploadProofMergedModal({
               ) : (
                 <div className="text-center py-8">
                   <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Unable to load payment details</p>
+                  <p className="text-gray-600">
+                    Unable to load payment details
+                  </p>
                 </div>
               )}
             </div>
@@ -2080,8 +2167,9 @@ export function UploadProofMergedModal({
                         </div>
                         <div className="text-right">
                           <div
-                            className={`font-medium ${isFullyPaid ? "text-green-600" : "text-yellow-600"
-                              }`}
+                            className={`font-medium ${
+                              isFullyPaid ? "text-green-600" : "text-yellow-600"
+                            }`}
                           >
                             {isFullyPaid
                               ? "✓ Fully Paid"
@@ -2091,8 +2179,8 @@ export function UploadProofMergedModal({
                             {isFullyPaid
                               ? `₱${entryAmount.toLocaleString()}`
                               : `Missing ₱${(
-                                entryAmount - amountPaid
-                              ).toLocaleString()}`}
+                                  entryAmount - amountPaid
+                                ).toLocaleString()}`}
                           </div>
                         </div>
                       </div>
@@ -2103,9 +2191,12 @@ export function UploadProofMergedModal({
             </div>
 
             <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <span className="text-sm font-bold text-blue-700">Payment Amount </span>
+              <span className="text-sm font-bold text-blue-700">
+                Payment Amount{" "}
+              </span>
               <span className="text-lg font-bold text-blue-700 ">
-                ₱{parseFloat(amount).toLocaleString('en-US', {
+                ₱
+                {parseFloat(amount).toLocaleString("en-US", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -2241,7 +2332,7 @@ export function UploadProofMergedModal({
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   {Object.values(entryAmounts).some(
-                    (amount) => amount !== null
+                    (amount) => amount !== null,
                   ) ? (
                     <div className="font-medium text-black">
                       <div className="font-semibold mb-1 text-sm">
@@ -2249,10 +2340,11 @@ export function UploadProofMergedModal({
                       </div>
                       {totalRequired > 0 && (
                         <div
-                          className={`inline-block w-full text-md bg-gray-50 border border-gray-200 underline underline-offset-2 mb-1 px-3 py-[6.2px] rounded-md font-semibold ${amount && Number(amount) < totalRequired
-                            ? "text-red-600"
-                            : "text-green-600"
-                            }`}
+                          className={`inline-block w-full text-md bg-gray-50 border border-gray-200 underline underline-offset-2 mb-1 px-3 py-[6.2px] rounded-md font-semibold ${
+                            amount && Number(amount) < totalRequired
+                              ? "text-red-600"
+                              : "text-green-600"
+                          }`}
                         >
                           <span className="font-medium">₱</span>
                           {totalRequired.toLocaleString("en-US", {
@@ -2263,10 +2355,11 @@ export function UploadProofMergedModal({
                       )}
                       {priceReminder && (
                         <div
-                          className={`text-xs w-full p-2 rounded-lg border ${priceReminder.startsWith("✅")
-                            ? "border-none text-green-600 underline underline-offset-2"
-                            : "border-none underline underline-offset-2 text-red-600"
-                            }`}
+                          className={`text-xs w-full p-2 rounded-lg border ${
+                            priceReminder.startsWith("✅")
+                              ? "border-none text-green-600 underline underline-offset-2"
+                              : "border-none underline underline-offset-2 text-red-600"
+                          }`}
                         >
                           {priceReminder}
                         </div>
@@ -2276,7 +2369,8 @@ export function UploadProofMergedModal({
                     <div className="text-sm font-medium text-green-600">
                       <div className="font-semibold mb-1">Payment Amount</div>
                       <div className="text-lg underline tracking-wide">
-                        ₱{parseFloat(amount).toLocaleString('en-US', {
+                        ₱
+                        {parseFloat(amount).toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
@@ -2285,7 +2379,8 @@ export function UploadProofMergedModal({
                   ) : (
                     <div className="text-xs md:text-sm lg:text-sm xl:text-sm font-medium text-gray-600">
                       <div className="text-black font-semibold mb-1">
-                        Total Amount Required <span className="text-red-500">*</span>
+                        Total Amount Required{" "}
+                        <span className="text-red-500">*</span>
                       </div>
 
                       <div className="min-h-10 mb-0.5">
@@ -2332,7 +2427,6 @@ export function UploadProofMergedModal({
                       )}
                     </div>
                   )}
-
                 </div>
 
                 <div>
@@ -2358,31 +2452,37 @@ export function UploadProofMergedModal({
                         <div className="space-y-2">
                           <Input
                             type="text"
-                            value={reference && reference !== "Not found" ? reference : confirmationNumber || ""}
+                            value={
+                              reference && reference !== "Not found"
+                                ? reference
+                                : confirmationNumber || ""
+                            }
                             onChange={(e) => {
-                              const newValue = e.target.value;
-                              setReference(newValue);
+                              const newValue = e.target.value
+                              setReference(newValue)
                               setConfirmationNumber("")
                               setDuplicateReferenceError(false)
                             }}
                             placeholder="Enter reference number"
                             className={cn(
                               "w-full rounded-md! text-sm! lg:text-base! xl:text-base! placeholder:text-xs! p-3!",
-                              duplicateReferenceError && "border-red-500 focus:ring-red-500"
+                              duplicateReferenceError &&
+                                "border-red-500 focus:ring-red-500",
                             )}
                           />
 
                           {/* Status messages */}
                           <div className="text-xs space-y-1">
-                            {reference && reference !== "Not found" && !duplicateReferenceError && (
-                              <div>
-                                <p className="text-green-600 flex items-center gap-1">
-                                  <Check className="w-3 h-3" />
-                                  Reference detected
-                                </p>
-
-                              </div>
-                            )}
+                            {reference &&
+                              reference !== "Not found" &&
+                              !duplicateReferenceError && (
+                                <div>
+                                  <p className="text-green-600 flex items-center gap-1">
+                                    <Check className="w-3 h-3" />
+                                    Reference detected
+                                  </p>
+                                </div>
+                              )}
 
                             {confirmationNumber && (
                               <p className="text-yellow-600 flex items-center gap-1">
@@ -2407,7 +2507,8 @@ export function UploadProofMergedModal({
 
                             {!reference && !confirmationNumber && !file && (
                               <p className="text-gray-400">
-                                Upload receipt to scan reference or enter manually
+                                Upload receipt to scan reference or enter
+                                manually
                               </p>
                             )}
                           </div>
@@ -2451,7 +2552,7 @@ export function UploadProofMergedModal({
                           entryError?.includes("REJECTED") ||
                           details?.entry?.statuses?.some(
                             (status: IEntryStatus) =>
-                              status.status === "REJECTED"
+                              status.status === "REJECTED",
                           )
 
                         return (
@@ -2463,22 +2564,29 @@ export function UploadProofMergedModal({
                               details && (
                                 <div className="px-14">
                                   <div
-                                    className={`text-xs text-gray-600 p-1 rounded border w-full ${isEntryRejected
-                                      ? "bg-red-50 border-red-200"
-                                      : "bg-gray-50"
-                                      }`}
+                                    className={`text-xs text-gray-600 p-1 rounded border w-full ${
+                                      isEntryRejected
+                                        ? "bg-red-50 border-red-200"
+                                        : "bg-gray-50"
+                                    }`}
                                   >
                                     <div className="flex ml-2 justify-between items-center">
                                       <div>
                                         <strong>Entry {index + 1}:</strong>{" "}
                                         {details.entry?.event?.type} Event -
-                                        <span className="font-medium text-green-600 underline underline-offset-2"> ₱ </span><span className="font-semibold underline underline-offset-2 text-green-600">{entryAmounts[index]?.toLocaleString(
-                                          "en-US",
-                                          {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2,
-                                          }
-                                        )}</span>
+                                        <span className="font-medium text-green-600 underline underline-offset-2">
+                                          {" "}
+                                          ₱{" "}
+                                        </span>
+                                        <span className="font-semibold underline underline-offset-2 text-green-600">
+                                          {entryAmounts[index]?.toLocaleString(
+                                            "en-US",
+                                            {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            },
+                                          )}
+                                        </span>
                                         {isEntryRejected && (
                                           <span className="ml-2 text-red-600 font-medium">
                                             (REJECTED - Cannot Pay)
@@ -2487,10 +2595,11 @@ export function UploadProofMergedModal({
                                       </div>
 
                                       <div
-                                        className={`text-xs font-bold ${isEntryRejected
-                                          ? "text-red-600"
-                                          : "text-gray-600"
-                                          }`}
+                                        className={`text-xs font-bold ${
+                                          isEntryRejected
+                                            ? "text-red-600"
+                                            : "text-gray-600"
+                                        }`}
                                       >
                                         {details.entry?.event?.type} Event
                                       </div>
@@ -2507,13 +2616,15 @@ export function UploadProofMergedModal({
 
                             {entryError && (
                               <div
-                                className={`text-sm font-medium px-14 ${isEntryRejected
-                                  ? "text-red-600 bg-red-50"
-                                  : "text-red-600 bg-red-50"
-                                  } p-2 rounded-lg border ${isEntryRejected
+                                className={`text-sm font-medium px-14 ${
+                                  isEntryRejected
+                                    ? "text-red-600 bg-red-50"
+                                    : "text-red-600 bg-red-50"
+                                } p-2 rounded-lg border ${
+                                  isEntryRejected
                                     ? "border-red-200"
                                     : "border-red-200"
-                                  }`}
+                                }`}
                               >
                                 {isEntryRejected ? (
                                   <div className="flex items-center gap-2">
@@ -2538,7 +2649,7 @@ export function UploadProofMergedModal({
                               }}
                               onDelete={(i) => {
                                 setEntriesState(
-                                  entriesState.filter((_, idx) => idx !== i)
+                                  entriesState.filter((_, idx) => idx !== i),
                                 )
                                 setEntryAmounts((prev) => {
                                   const newAmounts = { ...prev }
@@ -2562,11 +2673,11 @@ export function UploadProofMergedModal({
                                 })
                                 if (hasRejectedEntry) {
                                   const remainingHasRejected = Object.values(
-                                    entryErrors
+                                    entryErrors,
                                   )
                                     .filter((_, idx) => idx !== i)
                                     .some((error) =>
-                                      error?.includes("REJECTED")
+                                      error?.includes("REJECTED"),
                                     )
                                   setHasRejectedEntry(remainingHasRejected)
                                 }
@@ -2607,10 +2718,11 @@ export function UploadProofMergedModal({
                     setFieldErrors((prev) => ({ ...prev, payerName: error }))
                   }}
                   placeholder="Enter payer name"
-                  className={`w-full placeholder:text-sm py-1.5 ${fieldErrors.payerName
-                    ? "border-red-500 focus:ring-red-400"
-                    : "border-gray-300 focus:ring-green-400"
-                    }`}
+                  className={`w-full placeholder:text-sm py-1.5 ${
+                    fieldErrors.payerName
+                      ? "border-red-500 focus:ring-red-400"
+                      : "border-gray-300 focus:ring-green-400"
+                  }`}
                 />
                 {fieldErrors.payerName ? (
                   <p className="text-red-500 text-xs mt-1">
@@ -2671,7 +2783,9 @@ export function UploadProofMergedModal({
                             transition={{ duration: 2, repeat: Infinity }}
                           />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 text-center">Please wait while we upload your file</p>
+                        <p className="text-xs text-gray-500 mt-1 text-center">
+                          Please wait while we upload your file
+                        </p>
                       </div>
                     )}
                   </div>
@@ -2697,26 +2811,37 @@ export function UploadProofMergedModal({
 
                 <label
                   htmlFor="proofUpload"
-                  className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${fieldErrors.file
-                    ? "border-red-300 bg-red-50 hover:bg-red-100"
-                    : "border-green-400 hover:bg-green-50"
-                    }`}
+                  className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${
+                    fieldErrors.file
+                      ? "border-red-300 bg-red-50 hover:bg-red-100"
+                      : "border-green-400 hover:bg-green-50"
+                  }`}
                 >
                   {isUploading ? (
                     <div className="flex flex-col items-center">
                       <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
-                      <span className="font-medium text-sm text-green-700">Uploading...</span>
-                      <span className="text-xs text-gray-500 mt-1">Please wait</span>
+                      <span className="font-medium text-sm text-green-700">
+                        Uploading...
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">
+                        Please wait
+                      </span>
                     </div>
                   ) : loading ? (
                     <div className="flex flex-col items-center">
                       <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
-                      <span className="font-medium text-sm text-green-700">Scanning receipt...</span>
+                      <span className="font-medium text-sm text-green-700">
+                        Scanning receipt...
+                      </span>
                     </div>
                   ) : (
                     <>
-                      <UploadIcon className={`w-6 h-6 mb-2 ${fieldErrors.file ? 'text-red-500' : 'text-green-600'}`} />
-                      <span className={`font-medium text-sm ${fieldErrors.file ? 'text-red-700' : 'text-green-700'}`}>
+                      <UploadIcon
+                        className={`w-6 h-6 mb-2 ${fieldErrors.file ? "text-red-500" : "text-green-600"}`}
+                      />
+                      <span
+                        className={`font-medium text-sm ${fieldErrors.file ? "text-red-700" : "text-green-700"}`}
+                      >
                         Upload your receipt or Browse
                       </span>
                     </>
@@ -2738,7 +2863,9 @@ export function UploadProofMergedModal({
                   <div className="w-full mt-3">
                     <div className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent"></div>
-                      <span className="text-sm text-gray-600">Uploading file to server...</span>
+                      <span className="text-sm text-gray-600">
+                        Uploading file to server...
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                       <div className="bg-green-600 h-1.5 rounded-full animate-pulse w-3/4"></div>
@@ -2757,11 +2884,11 @@ export function UploadProofMergedModal({
                       <div className="p-3 bg-yellow-100 rounded-xl">
                         <p className="text-sm text-gray-500">
                           {confirmationNumber &&
-                            (confirmationNumber.includes("MB") ||
-                              confirmationNumber.includes("/"))
+                          (confirmationNumber.includes("MB") ||
+                            confirmationNumber.includes("/"))
                             ? "Transaction Reference No."
                             : confirmationNumber &&
-                              confirmationNumber.length <= 10
+                                confirmationNumber.length <= 10
                               ? "Trace No."
                               : "Confirmation No."}
                         </p>
@@ -2815,8 +2942,9 @@ export function UploadProofMergedModal({
                       setFieldErrors((prev) => ({ ...prev, amount: error }))
                     }}
                     placeholder="₱1000.00"
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 ${fieldErrors.amount ? "border-red-500" : "border-gray-300"
-                      }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 ${
+                      fieldErrors.amount ? "border-red-500" : "border-gray-300"
+                    }`}
                   />
                   {fieldErrors.amount && (
                     <p className="text-red-500 text-xs mt-1">
@@ -2842,17 +2970,20 @@ export function UploadProofMergedModal({
                     }}
                   >
                     <SelectTrigger
-                      className={`w-full ${fieldErrors.paymentMethod
-                        ? "border-red-500 focus:ring-red-400"
-                        : "border-gray-300 focus:ring-green-400"
-                        }`}
+                      className={`w-full ${
+                        fieldErrors.paymentMethod
+                          ? "border-red-500 focus:ring-red-400"
+                          : "border-gray-300 focus:ring-green-400"
+                      }`}
                     >
                       <SelectValue placeholder="Select payment method" />
                     </SelectTrigger>
 
                     <SelectContent>
                       <SelectItem value="GCASH">GCash</SelectItem>
-                      <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
+                      <SelectItem value="BANK_TRANSFER">
+                        Bank Transfer
+                      </SelectItem>
                       <SelectItem value="OVER_THE_COUNTER">
                         Over the Counter
                       </SelectItem>
@@ -2899,7 +3030,7 @@ export function UploadProofMergedModal({
                   entriesState.length === 0 ||
                   entriesState.some(
                     (entry) =>
-                      !entry.entryNumber.trim() || !entry.entryKey.trim()
+                      !entry.entryNumber.trim() || !entry.entryKey.trim(),
                   )
                 }
               >
@@ -2918,7 +3049,9 @@ export function UploadProofMergedModal({
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Submitting...</span>
                   </div>
-                ) : "Submit Payment"}
+                ) : (
+                  "Submit Payment"
+                )}
               </Button>
             </div>
 
@@ -2927,13 +3060,18 @@ export function UploadProofMergedModal({
               {showConfirmationDialog && <ConfirmationDialog />}
               {showRejectedModal && <RejectedEntryModal />}
               {showDuplicateDialog && <DuplicateReferenceDialog />}
-              {(isUploading || loading) && <UploadingOverlay message={loading ? "Scanning receipt..." : "Uploading file..."} />}
+              {(isUploading || loading) && (
+                <UploadingOverlay
+                  message={
+                    loading ? "Scanning receipt..." : "Uploading file..."
+                  }
+                />
+              )}
             </AnimatePresence>
           </motion.div>
         </motion.div>
-      )
-      }
-    </AnimatePresence >
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -2951,7 +3089,7 @@ export function CheckEntryModal({
 
   const [fetchStatusHistory, { loading, error: queryError }] =
     useLazyQuery<EntryStatusHistoryData>(ENTRY_STATUS_HISTORY, {
-      fetchPolicy: 'network-only'
+      fetchPolicy: "network-only",
     })
 
   useEffect(() => {
@@ -2971,7 +3109,7 @@ export function CheckEntryModal({
 
     if (!entryValue.includes("_")) {
       setError(
-        "Invalid format. Use EntryNum_EntryKey (e.g. V8-009809_kajKER55)."
+        "Invalid format. Use EntryNum_EntryKey (e.g. V8-009809_kajKER55).",
       )
       return
     }
@@ -3067,10 +3205,11 @@ export function CheckEntryModal({
                       setEntryValue(e.target.value)
                       setError("")
                     }}
-                    className={`w-full pl-10 pr-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition ${error
-                      ? "border-red-500 focus:ring-red-300"
-                      : "border-gray-300 focus:ring-green-400"
-                      }`}
+                    className={`w-full pl-10 pr-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition ${
+                      error
+                        ? "border-red-500 focus:ring-red-300"
+                        : "border-gray-300 focus:ring-green-400"
+                    }`}
                   />
                 </div>
                 {(error || queryError) && (
@@ -3152,12 +3291,12 @@ export function CheckEntryModal({
                       <div>
                         <p
                           className={`${getStatusColor(
-                            statusItem.status
+                            statusItem.status,
                           )} font-medium text-sm`}
                         >
                           {format(
                             new Date(statusItem.date),
-                            "MMM dd, yyyy h:mm a"
+                            "MMM dd, yyyy h:mm a",
                           )}{" "}
                           → {statusItem.status.replaceAll("_", " ")}
                         </p>
@@ -3281,10 +3420,10 @@ export default function App() {
   }
 
   const doublesCategories = sortCategoriesByGender(
-    events.filter((level: any) => level.type === "Doubles")
+    events.filter((level: any) => level.type === "Doubles"),
   )
   const singlesCategories = sortCategoriesByGender(
-    events.filter((level: any) => level.type === "Singles")
+    events.filter((level: any) => level.type === "Singles"),
   )
 
   const handleCategoryClick = (category: any) => {
@@ -3331,10 +3470,10 @@ export default function App() {
   const renderGenderSection = (
     group: string,
     categories: typeof events,
-    title: string
+    title: string,
   ) => {
     const groupCategories = categories.filter(
-      (level: any) => level.gender === group
+      (level: any) => level.gender === group,
     )
     if (groupCategories.length === 0) return null
 
@@ -3457,7 +3596,7 @@ export default function App() {
           </div>
 
           {["Men's", "Women's", "Mixed"].map((group) =>
-            renderGenderSection(group, doublesCategories, "Doubles")
+            renderGenderSection(group, doublesCategories, "Doubles"),
           )}
         </div>
 
@@ -3467,16 +3606,14 @@ export default function App() {
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-6">
             <User className="w-6 h-6 text-green-600" />
-            <h2 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-900">
-              Singles Categories
-            </h2>
+            <h2 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-900"></h2>
             <Badge variant="outline" className="bg-green-50 text-green-700">
               {singlesCategories.length} categories
             </Badge>
           </div>
 
           {["Men's", "Women's", "Mixed"].map((group) =>
-            renderGenderSection(group, singlesCategories, "Singles")
+            renderGenderSection(group, singlesCategories, "Singles"),
           )}
         </div>
 

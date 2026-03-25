@@ -46,13 +46,13 @@ type Props = {
 const BatchStatusDialog = (props: Props) => {
   // Dialog open state
   const [open, setOpen] = useState(false)
-  const [isDissolved, setIsDissolved] = useState(true)
+  const [isClosed, setisClosed] = useState(true)
 
   // Mutation for changing status
   const [changeStatus, { loading: changeStatusLoading }] = useMutation(
     BATCH_CHANGE_EVENT_DISSOLVE_STATUS,
     {
-      variables: { input: { _ids: props._ids, isDissolved } },
+      variables: { input: { _ids: props._ids, isClosed } },
     }
   )
   // Loading State
@@ -95,8 +95,8 @@ const BatchStatusDialog = (props: Props) => {
                 dissolve?
               </span>
               <Select
-                onValueChange={(value) => setIsDissolved(value === "true")}
-                value={isDissolved.toString()}
+                onValueChange={(value) => setisClosed(value === "true")}
+                value={isClosed.toString()}
               >
                 <SelectTrigger className="w-full mt-2 mb-3 text-black">
                   <SelectValue placeholder="Select a status" />
@@ -116,12 +116,12 @@ const BatchStatusDialog = (props: Props) => {
               Cancel
             </Button>
             <Button
-              variant={isDissolved ? "destructive" : "success"}
-              className={cn(isDissolved ? "w-22" : "w-26")}
+              variant={isClosed ? "destructive" : "success"}
+              className={cn(isClosed ? "w-22" : "w-26")}
               loading={loading}
               onClick={onSubmit}
             >
-              {isDissolved ? "Dissolve" : "Reactivate"}
+              {isClosed ? "Dissolve" : "Reactivate"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

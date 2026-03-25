@@ -109,7 +109,7 @@ const GET_ENTRY_DETAILS = gql`
         location
         maxAge
         minAge
-        isDissolved
+        isClosed
         createdAt
         updatedAt
       }
@@ -434,8 +434,8 @@ const EntryDetailsDialog = ({ entryId, entryNumber, children }: {
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Status</Label>
                         <div className="flex items-center gap-1">
-                          <div className={`w-2 h-2 rounded-full ${entry.event.isDissolved ? 'bg-red-500' : 'bg-green-500'}`} />
-                          <span className="text-sm">{entry.event.isDissolved ? "Dissolved" : "Active"}</span>
+                          <div className={`w-2 h-2 rounded-full ${entry.event.isClosed ? 'bg-red-500' : 'bg-green-500'}`} />
+                          <span className="text-sm">{entry.event.isClosed ? "Closed" : "Active"}</span>
                         </div>
                       </div>
                     </div>
