@@ -696,9 +696,9 @@ export default function Page({ params }: RegistrationPageProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [selectedDocumentTypePlayer1, setSelectedDocumentTypePlayer1] =
-    useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
+    useState<ValidDocumentType | null>(null)
   const [selectedDocumentTypePlayer2, setSelectedDocumentTypePlayer2] =
-    useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
+    useState<ValidDocumentType | null>(null)
   const [openDocumentTypesPlayer1, setOpenDocumentTypesPlayer1] =
     useState(false)
   const [openDocumentTypesPlayer2, setOpenDocumentTypesPlayer2] =
@@ -1619,8 +1619,8 @@ export default function Page({ params }: RegistrationPageProps) {
     setFilePlayer1(null)
     setFilePlayer2(null)
     setFieldErrors({})
-    setSelectedDocumentTypePlayer1(ValidDocumentType.BIRTH_CERTIFICATE)
-    setSelectedDocumentTypePlayer2(ValidDocumentType.BIRTH_CERTIFICATE)
+    setSelectedDocumentTypePlayer1(null)
+    setSelectedDocumentTypePlayer2(null)
 
     form.reset({
       club: "",
@@ -1735,6 +1735,8 @@ export default function Page({ params }: RegistrationPageProps) {
       playerNum === 1
         ? setOpenDocumentTypesPlayer1
         : setOpenDocumentTypesPlayer2
+
+    const hasSelectedDocument = selectedDocumentType !== null
 
     return (
       <Field className="text-left">
@@ -2482,10 +2484,16 @@ export default function Page({ params }: RegistrationPageProps) {
                                 ? selectedDocumentTypePlayer1
                                 : selectedDocumentTypePlayer2
 
+                            const hasSelectedDocumentType = selectedDocumentType !== null
+
+                            if (!hasSelectedDocumentType) {
+                              return null
+                            }
+
                             return (
                               <Field
                                 data-invalid={isInvalid}
-                                className="text-left"
+                                className="text-left mt-4"
                               >
                                 <div className="border-2 border-dashed border-green-300 rounded-2xl p-4 sm:p-6 bg-white flex flex-col items-center justify-center text-center gap-4">
                                   <div className="w-full flex flex-col text-left">
