@@ -850,6 +850,7 @@ export default function Page({ params }: RegistrationPageProps) {
     | "player1ContactNumber"
     | "player1Gender"
     | "player1JerseySize"
+    | "player1DocumentType"
     | "player1IdUpload"
     | "player2FirstName"
     | "player2LastName"
@@ -860,6 +861,7 @@ export default function Page({ params }: RegistrationPageProps) {
     | "player2ContactNumber"
     | "player2Gender"
     | "player2JerseySize"
+    | "player2DocumentType"
     | "player2IdUpload"
 
   const calculateAgeAtTournament = (
@@ -1130,6 +1132,7 @@ export default function Page({ params }: RegistrationPageProps) {
       player1Email: "",
       player1ContactNumber: "",
       player1Gender: autoGender || "",
+      player1DocumentType: null as ValidDocumentType | null,
       player1IdUpload: null as FileList | null,
       ...(hasFreeJersey && { player1JerseySize: "" }),
       player2FirstName: "",
@@ -1140,6 +1143,7 @@ export default function Page({ params }: RegistrationPageProps) {
       player2Email: "",
       player2ContactNumber: "",
       player2Gender: autoGender || "",
+      player2DocumentType: null as ValidDocumentType | null,
       player2IdUpload: null as FileList | null,
       ...(hasFreeJersey && { player2JerseySize: "" }),
     },
@@ -1634,6 +1638,7 @@ export default function Page({ params }: RegistrationPageProps) {
       player1Email: "",
       player1ContactNumber: "",
       player1Gender: autoGender || "",
+      player1DocumentType: null,
       player1IdUpload: null,
       ...(hasFreeJersey && { player1JerseySize: "" }),
       player2FirstName: "",
@@ -1644,6 +1649,7 @@ export default function Page({ params }: RegistrationPageProps) {
       player2Email: "",
       player2ContactNumber: "",
       player2Gender: autoGender || "",
+      player2DocumentType: null,
       player2IdUpload: null,
       ...(hasFreeJersey && { player2JerseySize: "" }),
     })
@@ -1721,22 +1727,92 @@ export default function Page({ params }: RegistrationPageProps) {
   }
 
   const DocumentTypeSelector = ({ playerNum }: { playerNum: number }) => {
-    const selectedDocumentType =
-      playerNum === 1
-        ? selectedDocumentTypePlayer1
-        : selectedDocumentTypePlayer2
-    const setSelectedDocumentType =
-      playerNum === 1
-        ? setSelectedDocumentTypePlayer1
-        : setSelectedDocumentTypePlayer2
-    const openDocumentTypes =
+    const [openDocumentTypes, setOpenDocumentTypes] = useState(
       playerNum === 1 ? openDocumentTypesPlayer1 : openDocumentTypesPlayer2
-    const setOpenDocumentTypes =
-      playerNum === 1
-        ? setOpenDocumentTypesPlayer1
-        : setOpenDocumentTypesPlayer2
+    )
+    const [selectedDocumentType, setSelectedDocumentType] = useState(
+      playerNum === 1 ? selectedDocumentTypePlayer1 : selectedDocumentTypePlayer2
+    )
 
-    const hasSelectedDocument = selectedDocumentType !== null
+    useEffect(() => {
+      if (playerNum === 1) {
+        setSelectedDocumentTypePlayer1(selectedDocumentType)
+      } else {
+        setSelectedDocumentTypePlayer2(selectedDocumentType)
+      }
+    }, [selectedDocumentType, playerNum])
+
+    useEffect(() => {
+      if (playerNum === 1) {
+        setOpenDocumentTypesPlayer1(openDocumentTypes)
+      } else {
+        setOpenDocumentTypesPlayer2(openDocumentTypes)
+      }
+    }, [openDocumentTypes, playerNum])
+
+    const fieldName = `player${playerNum}DocumentType` as FormFieldNames
+    const formValue = form.getFieldValue(fieldName)
+
+    const field = useField({ form, name: fieldName })
+    const hasError = field.state.meta.isTouched && !field.state.meta.isValid
+    const errorMessage = field.state.meta.errors?.[0]?.message
+
+    const uploadFieldName = `player${playerNum}IdUpload` as FormFieldNames
+    const uploadField = useField({ form, name: uploadFieldName })
+
+    useEffect(() => {
+      if (formValue !== selectedDocumentType) {
+        setSelectedDocumentType(formValue as ValidDocumentType | null)
+      }
+    }, [formValue])
+
+    useEffect(() => {
+      if (selectedDocumentType !== formValue) {
+        form.setFieldValue(fieldName, selectedDocumentType)
+        if (selectedDocumentType) {
+          field.setMeta((prev: any) => ({
+            ...prev,
+            errors: [],
+            errorMap: {},
+            isValid: true,
+          }))
+        }
+      }
+    }, [selectedDocumentType, fieldName, formValue])
+
+    const handleDocumentTypeSelect = (value: ValidDocumentType) => {
+      setSelectedDocumentType(value)
+      setOpenDocumentTypes(false)
+      uploadField.setMeta((prev: any) => ({
+        ...prev,
+        errors: [],
+        errorMap: {},
+      }))
+      field.setMeta((prev: any) => ({
+        ...prev,
+        errors: [],
+        errorMap: {},
+        isTouched: true,
+        isValid: true,
+      }))
+    }
+
+    const handleBlur = () => {
+      field.setMeta((prev: any) => ({
+        ...prev,
+        isTouched: true,
+      }))
+    }
+
+    const handlePopoverOpenChange = (open: boolean) => {
+      setOpenDocumentTypes(open)
+      if (!open && !selectedDocumentType) {
+        field.setMeta((prev: any) => ({
+          ...prev,
+          isTouched: true,
+        }))
+      }
+    }
 
     return (
       <Field className="text-left">
@@ -1749,7 +1825,7 @@ export default function Page({ params }: RegistrationPageProps) {
         </FieldLabel>
         <Popover
           open={openDocumentTypes}
-          onOpenChange={setOpenDocumentTypes}
+          onOpenChange={handlePopoverOpenChange}
           modal
         >
           <PopoverTrigger asChild>
@@ -1758,31 +1834,23 @@ export default function Page({ params }: RegistrationPageProps) {
               name={`documentType${playerNum}`}
               disabled={isUploading || submitting}
               aria-expanded={openDocumentTypes}
+              onBlur={handleBlur}
               variant="outline"
               role="combobox"
-              className="w-full justify-between font-normal capitalize -mt-2"
+              className={`w-full justify-between font-normal capitalize -mt-2 ${hasError
+                ? "border-red-500 bg-red-50 hover:bg-red-100 focus:ring-red-500"
+                : "border-green-200 hover:border-green-300"
+                }`}
               type="button"
             >
               {selectedDocumentType
-                ? documentTypes.find((o) => o.value === selectedDocumentType)
-                  ?.label
+                ? documentTypes.find((o) => o.value === selectedDocumentType)?.label
                 : "Select Document Type"}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0">
-            <Command
-              filter={(value, search) =>
-                documentTypes
-                  .find(
-                    (t: { value: string; label: string }) => t.value === value,
-                  )
-                  ?.label.toLowerCase()
-                  .includes(search.toLowerCase())
-                  ? 1
-                  : 0
-              }
-            >
+            <Command>
               <CommandInput placeholder="Search document type..." />
               <CommandList className="max-h-72 overflow-y-auto">
                 <CommandEmpty>No document type found.</CommandEmpty>
@@ -1794,10 +1862,7 @@ export default function Page({ params }: RegistrationPageProps) {
                     <CommandItem
                       key={o.value}
                       value={o.value}
-                      onSelect={(v) => {
-                        setSelectedDocumentType(v as ValidDocumentType)
-                        setOpenDocumentTypes(false)
-                      }}
+                      onSelect={() => handleDocumentTypeSelect(o.value as ValidDocumentType)}
                       className="capitalize"
                     >
                       <CheckIcon
@@ -1817,8 +1882,13 @@ export default function Page({ params }: RegistrationPageProps) {
           </PopoverContent>
         </Popover>
         <p className="text-xs text-gray-500 mt-1">
-          Select the type of document you're uploading (ID, Passport, etc.)
+          Select the type of document you're uploading (Birth Certificate, ID, Passport, etc.)
         </p>
+        {hasError && errorMessage && (
+          <p className="text-xs text-red-500 mt-1">
+            {errorMessage}
+          </p>
+        )}
       </Field>
     )
   }
@@ -2486,6 +2556,11 @@ export default function Page({ params }: RegistrationPageProps) {
 
                             const hasSelectedDocumentType = selectedDocumentType !== null
 
+                            // Show error message if file is uploaded but no document type selected
+                            const showNoDocumentTypeError = file && !selectedDocumentType
+                            // Show error message if document type selected but no file uploaded
+                            const showNoFileError = selectedDocumentType && !file
+
                             if (!hasSelectedDocumentType) {
                               return null
                             }
@@ -2640,17 +2715,13 @@ export default function Page({ params }: RegistrationPageProps) {
                                     ) : (
                                       <>
                                         <UploadIcon
-                                          className={`w-6 h-6 mb-2 ${fieldErrors[
-                                            `filePlayer${playerNum}`
-                                          ]
+                                          className={`w-6 h-6 mb-2 ${fieldErrors[`filePlayer${playerNum}`]
                                             ? "text-red-500"
                                             : "text-green-600"
                                             }`}
                                         />
                                         <span
-                                          className={`font-medium text-sm ${fieldErrors[
-                                            `filePlayer${playerNum}`
-                                          ]
+                                          className={`font-medium text-sm ${fieldErrors[`filePlayer${playerNum}`]
                                             ? "text-red-700"
                                             : "text-green-700"
                                             }`}
@@ -2679,6 +2750,17 @@ export default function Page({ params }: RegistrationPageProps) {
                                     />
                                   </label>
 
+                                  {/* Show validation error messages */}
+                                  {showNoDocumentTypeError && (
+                                    <p className="text-xs text-red-500 mt-2">
+                                      Please select a document type for Player {playerNum} before uploading.
+                                    </p>
+                                  )}
+                                  {showNoFileError && (
+                                    <p className="text-xs text-red-500 mt-2">
+                                      Please upload a document for Player {playerNum} after selecting document type.
+                                    </p>
+                                  )}
                                   {fieldErrors[`filePlayer${playerNum}`] && (
                                     <p className="text-xs text-red-500 mt-2">
                                       {fieldErrors[`filePlayer${playerNum}`]}
