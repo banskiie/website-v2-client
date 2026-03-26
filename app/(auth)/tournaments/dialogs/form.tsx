@@ -29,6 +29,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
+import { logging } from "googleapis/build/src/apis/logging"
 
 const TOURNAMENT = gql`
   query Tournament($_id: ID!) {
@@ -37,6 +38,7 @@ const TOURNAMENT = gql`
       settings {
         hasEarlyBird
         hasFreeJersey
+        maxEntriesIfFreeJersey
         ticket
         maxEntriesPerPlayer
       }
@@ -93,6 +95,8 @@ const FormDialog = (props: Props) => {
     skip: !open || !isUpdate,
     fetchPolicy: "no-cache",
   })
+
+
   // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
   // Combined loading state
@@ -105,6 +109,7 @@ const FormDialog = (props: Props) => {
       settings: {
         hasEarlyBird: false,
         hasFreeJersey: false,
+        maxEntriesIfFreeJersey: 1,
         ticket: "",
         maxEntriesPerPlayer: 3,
       },
@@ -172,6 +177,7 @@ const FormDialog = (props: Props) => {
       form.setFieldValue("name", name)
       form.setFieldValue("settings.hasEarlyBird", settings.hasEarlyBird)
       form.setFieldValue("settings.hasFreeJersey", settings.hasFreeJersey)
+      form.setFieldValue("settings.maxEntriesIfFreeJersey", settings.maxEntriesIfFreeJersey)
       form.setFieldValue("settings.ticket", settings.ticket)
       form.setFieldValue(
         "settings.maxEntriesPerPlayer",
@@ -455,6 +461,7 @@ const FormDialog = (props: Props) => {
                                       onCheckedChange={(val) => {
                                         field.handleChange(val as boolean)
                                       }}
+                                      // onClick={() => setIsFreeJersey(!isFreeJersey)}
                                       className="m-1"
                                       aria-invalid={isInvalid}
                                       disabled={loading}
@@ -483,6 +490,52 @@ const FormDialog = (props: Props) => {
                               )
                             }}
                           />
+                          {form.getFieldValue("settings.hasFreeJersey") && (
+                            <div className="mx-9">
+                              <form.Field
+                                name="settings.maxEntriesIfFreeJersey"
+                                children={(field) => {
+                                  const isInvalid =
+                                    field.state.meta.isTouched &&
+                                    !field.state.meta.isValid
+                                  return (
+                                    <Field data-invalid={isInvalid} >
+                                      <FieldLabel htmlFor={field.name}>
+                                        Max Entries Per Player with Free Jersey
+                                      </FieldLabel>
+                                      <div className="grid grid-cols-2">
+                                        <InputGroup className="-my-1">
+                                          <InputGroupInput
+                                            placeholder="Name"
+                                            disabled={loading}
+                                            id={field.name}
+                                            name={field.name}
+                                            value={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onChange={(e) =>
+                                              field.handleChange(
+                                                parseInt(e.target.value)
+                                              )
+                                            }
+                                            type="number"
+                                            aria-invalid={isInvalid}
+                                            min={1}
+                                            max={100}
+                                          />
+                                        </InputGroup>
+                                      </div>
+                                      {isInvalid && (
+                                        <FieldError
+                                          errors={field.state.meta.errors}
+                                        />
+                                      )}
+                                    </Field>
+                                  )
+                                }}
+
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </FieldSet>
