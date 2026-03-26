@@ -664,6 +664,7 @@ import {
   UploadIcon,
   Calendar,
   Ampersand,
+  ArrowLeftIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -735,18 +736,51 @@ function CategoryCard({
         ? "bg-pink-100 text-pink-800"
         : "bg-purple-100 text-purple-800"
 
+  const getGenderBadgeColor = () => {
+    if (gender === "Men's") return "bg-blue-100 text-blue-800"
+    if (gender === "Women's") return "bg-pink-100 text-pink-800"
+    if (gender === "Mixed") return "bg-purple-100 text-purple-800"
+    if (gender === "No Gender") return "bg-gray-100 text-gray-800"
+    return "bg-gray-100 text-gray-800"
+  }
+
+  const getBorderColor = () => {
+    if (isClosed) return "border-red-200"
+    if (gender === "Men's") return "border-blue-500 hover:border-blue-600"
+    if (gender === "Women's") return "border-pink-500 hover:border-pink-600"
+    if (gender === "Mixed") return "border-purple-500 hover:border-purple-600"
+    if (gender === "No Gender") return "border-gray-500 hover:border-gray-600"
+    return "border-gray-200 hover:border-gray-300"
+  }
+
+  const getHoverBackground = () => {
+    if (isClosed) return "hover:bg-red-100/10"
+    if (gender === "Men's") return "hover:bg-blue-100/50"
+    if (gender === "Women's") return "hover:bg-pink-100/50"
+    if (gender === "Mixed") return "hover:bg-purple-100/50"
+    if (gender === "No Gender") return "hover:bg-gray-100/50"
+    return "hover:bg-gray-100/50"
+  }
+
+  const genderBadgeColor = getGenderBadgeColor()
+  const borderColor = getBorderColor()
+  const hoverBackground = getHoverBackground()
+
   return (
     <motion.button
       onClick={onClick}
-      className={`relative flex flex-col items-start p-4 rounded-lg border cursor-pointer transition w-full min-w-0 overflow-hidden group ${isClosed
-        ? "border-red-200 bg-red-50/50 hover:bg-red-100/50"
-        : "border-gray-200 bg-white hover:border-gray-300"
+      className={`relative flex flex-col items-start p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 w-full min-w-0 overflow-hidden group ${borderColor} ${hoverBackground} ${isClosed
+        ? "border-red-200 bg-red-50/50 hover:bg-red-100/20"
+        : "bg-white"
         }`}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      transition={{
+        type: "tween",
+        duration: 0.2,
+        ease: "easeOut"
+      }}
     >
-      {/* Hover overlay with instruction */}
       <motion.div
         className="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
         initial={false}
@@ -765,8 +799,8 @@ function CategoryCard({
         <Badge className={`text-xs px-2 py-0.5 ${levelColor} flex-shrink-0`}>
           {level}
         </Badge>
-        <Badge className={`text-xs px-2 py-0.5 ${genderColor} flex-shrink-0`}>
-          {gender}
+        <Badge className={`text-xs px-2 py-0.5 ${genderBadgeColor} flex-shrink-0`}>
+          {gender === "No Gender" ? "No Gender" : gender}
         </Badge>
         {isClosed && (
           <Badge className="absolute top-0 right-0 bg-red-100 text-red-800 text-xs px-2 py-0.5 border border-red-300">
@@ -883,6 +917,7 @@ function CategoriesContent() {
         )
           gender = "Women's"
         else if (rawGender === "x" || rawGender === "mixed") gender = "Mixed"
+        else if (rawGender === "no_gender" || rawGender === "no gender") gender = "No Gender"
 
         const type =
           event.type?.toUpperCase() === "DOUBLES" ? "Doubles" : "Singles"
@@ -935,8 +970,9 @@ function CategoriesContent() {
   const sortCategoriesByGender = (list: typeof events) => {
     const mens = list.filter((level: any) => level.gender === "Men's")
     const womens = list.filter((level: any) => level.gender === "Women's")
+    const noGender = list.filter((level: any) => level.gender === "No Gender")
     const mixed = list.filter((level: any) => level.gender === "Mixed")
-    return [...mens, ...womens, ...mixed]
+    return [...mens, ...womens, ...noGender, ...mixed]
   }
 
   const doublesCategories = sortCategoriesByGender(
@@ -978,16 +1014,19 @@ function CategoriesContent() {
         ? "bg-blue-500"
         : group === "Women's"
           ? "bg-pink-500"
-          : "bg-purple-500"
+          : group === "Mixed"
+            ? "bg-purple-500"
+            : "bg-gray-500"
+
+    const displayGroupName = group === "No Gender" ? "No Gender" : group
 
     return (
       <div key={group} className="mb-8">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${colorClass}`} />
-          {group} {title}
+          {displayGroupName} {title}
         </h3>
 
-        {/* Add instruction text for mobile/tablet users */}
         <div className="mb-3 text-xs text-gray-500 italic flex items-center gap-1 md:hidden">
           <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
           Tap any card to register
@@ -1083,6 +1122,20 @@ function CategoriesContent() {
   return (
     <div className="min-h-screen bg-linear-to-b from-green-50/30 to-green-100/30 relative">
       <Header />
+
+      <div className="p-4 sm:p-6 pb-0 mt-20 mb-2 md:mb-0 lg:mb-0 xl:mb-0 2xl:mb-0">
+        <Button
+          variant="ghost"
+          asChild
+          className="text-green-700 hover:text-green-800 hover:bg-green-200 transition-all duration-300 hover:scale-105"
+        >
+          <Link href="/sports-center/courts#tournament" className="flex items-center gap-2">
+            <ArrowLeftIcon className="w-6 h-6 transition-transform duration-300 group-hover:-translate-x-1" />
+            <span className="underline text-md">Back to Tournament</span>
+          </Link>
+        </Button>
+      </div>
+
       <div className="relative bg-white border-b shadow-sm overflow-hidden mt-16">
         <div
           className="
@@ -1392,7 +1445,7 @@ function CategoriesContent() {
             </Badge>
           </div>
 
-          {["Men's", "Women's", "Mixed"].map((group) =>
+          {["Men's", "Women's", "No Gender", "Mixed"].map((group) =>
             renderGenderSection(group, doublesCategories, "Doubles"),
           )}
         </div>
@@ -1410,7 +1463,7 @@ function CategoriesContent() {
             </Badge>
           </div>
 
-          {["Men's", "Women's", "Mixed"].map((group) =>
+          {["Men's", "Women's", "No Gender", "Mixed"].map((group) =>
             renderGenderSection(group, singlesCategories, "Singles"),
           )}
         </div>
