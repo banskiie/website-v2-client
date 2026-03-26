@@ -95,6 +95,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select"
+import { useSearchParams } from "next/navigation"
 // const tournament = tournaments.find(t => t.isActive)
 
 export type PublicTournamentsData = {
@@ -173,13 +174,12 @@ export function CategoryCard({
         )}
         <Badge className={`text-xs px-2 ${levelColor}`}>{level}</Badge>
         <Badge
-          className={`text-xs px-2 ${
-            gender === "Male"
-              ? "bg-blue-100 text-blue-800"
-              : gender === "Women"
-                ? "bg-pink-100 text-pink-800"
-                : "bg-green-100 text-green-800"
-          }`}
+          className={`text-xs px-2 ${gender === "Male"
+            ? "bg-blue-100 text-blue-800"
+            : gender === "Women"
+              ? "bg-pink-100 text-pink-800"
+              : "bg-green-100 text-green-800"
+            }`}
         >
           {gender}
         </Badge>
@@ -208,26 +208,48 @@ export function CategoryModal({
     hasEarlyBird?: boolean
     currency?: string
     isClosed?: boolean
+    tournamentId?: string
   } | null
 }) {
   const [showGuidelines, setShowGuidelines] = useState(false)
   const { data, loading, error } =
     useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
 
-  console.log(category)
+  console.log("CategoryModal - category:", category)
+  console.log("CategoryModal - category.tournamentId:", category?.tournamentId)
 
   const handleRegisterClick = () => {
-    setShowGuidelines(true)
+    if (hasGuidelines) {
+      setShowGuidelines(true)
+    } else {
+      handleAgreeToGuidelines()
+    }
   }
 
   const handleAgreeToGuidelines = () => {
-    const activeTournament = data?.publicTournaments?.find(
-      (t: ITournament) => t.isActive,
-    )
-    const tournament = activeTournament || data?.publicTournaments?.[0]
+    let tournament: ITournament | undefined
+
+    console.log("handleAgreeToGuidelines - category.tournamentId:", category?.tournamentId)
+
+    if (category?.tournamentId) {
+      tournament = data?.publicTournaments?.find(
+        (t: ITournament) => t._id === category.tournamentId
+      )
+      console.log("handleAgreeToGuidelines - Found tournament by ID:", tournament?._id, tournament?.name)
+    }
+
+    if (!tournament) {
+      const activeTournament = data?.publicTournaments?.find(
+        (t: ITournament) => t.isActive,
+      )
+      tournament = activeTournament || data?.publicTournaments?.[0]
+      console.log("handleAgreeToGuidelines - Using fallback tournament:", tournament?._id, tournament?.name)
+    }
 
     if (tournament && category) {
-      window.location.href = `/sports-center/courts/registration/${tournament._id}/${category.id}`
+      const registrationUrl = `/sports-center/courts/registration/${tournament._id}/${category.id}`
+      console.log("handleAgreeToGuidelines - Redirecting to:", registrationUrl)
+      window.location.href = registrationUrl
     }
   }
 
@@ -235,12 +257,15 @@ export function CategoryModal({
   if (loading) return <p>Loading...</p>
   if (error) return <p>Error loading tournaments: {error.message}</p>
 
-  const activeTournament = data?.publicTournaments?.find(
-    (t: ITournament) => t.isActive,
-  )
-  const tournament = activeTournament || data?.publicTournaments?.[0]
+  // IMPORTANT: Find the tournament by the category's tournamentId, not the active tournament
+  const tournament = category.tournamentId
+    ? data?.publicTournaments?.find((t: ITournament) => t._id === category.tournamentId)
+    : data?.publicTournaments?.find((t: ITournament) => t.isActive) || data?.publicTournaments?.[0]
 
-  // ✅ FIXED: Check both setting AND date
+  console.log("CategoryModal - Found tournament for display:", tournament?._id, tournament?.name)
+
+  const hasGuidelines = tournament?.settings?.hasGuidelines || false
+
   const checkEarlyBirdActive = () => {
     // First check if early bird is enabled in settings
     const hasEarlyBirdSetting =
@@ -294,8 +319,8 @@ export function CategoryModal({
   // Calculate savings if early bird is active
   const savingsPerPlayer =
     isEarlyBirdActive &&
-    category.earlyBirdPricePerPlayer &&
-    category.pricePerPlayer // ✅ Use isEarlyBirdActive
+      category.earlyBirdPricePerPlayer &&
+      category.pricePerPlayer // ✅ Use isEarlyBirdActive
       ? category.pricePerPlayer - category.earlyBirdPricePerPlayer
       : 0
 
@@ -343,14 +368,12 @@ export function CategoryModal({
           <div className="mb-4 text-left">
             <div className="flex items-center gap-2 mb-2">
               <Users
-                className={`w-5 h-5 text-gray-600 ${
-                  category.type === "Singles" ? "hidden" : ""
-                }`}
+                className={`w-5 h-5 text-gray-600 ${category.type === "Singles" ? "hidden" : ""
+                  }`}
               />
               <User
-                className={`w-5 h-5 text-gray-600 ${
-                  category.type === "Doubles" ? "hidden" : ""
-                }`}
+                className={`w-5 h-5 text-gray-600 ${category.type === "Doubles" ? "hidden" : ""
+                  }`}
               />
               <span className="font-semibold text-gray-800 text-sm">
                 {category.name}
@@ -499,21 +522,20 @@ export function CategoryModal({
               {tournament?.name || "Tournament TBA"}
             </p>
             <p
-              className={`text-sm font-medium ${
-                tournament?.isActive ? "text-green-700" : "text-red-700"
-              }`}
+              className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"
+                }`}
             >
               {tournament?.isActive ? "Active" : "Inactive"}
             </p>
             <p className="text-gray-700 text-xs font-medium">
               {tournament
                 ? `${format(
-                    new Date(tournament.dates.tournamentStart),
-                    "MMM dd, yyyy",
-                  )} - ${format(
-                    new Date(tournament.dates.tournamentEnd),
-                    "MMM dd, yyyy",
-                  )}`
+                  new Date(tournament.dates.tournamentStart),
+                  "MMM dd, yyyy",
+                )} - ${format(
+                  new Date(tournament.dates.tournamentEnd),
+                  "MMM dd, yyyy",
+                )}`
                 : "Dates TBD"}
             </p>
           </div>
@@ -551,12 +573,14 @@ export function CategoryModal({
         </div>
       </div>
 
-      <Guidelines
-        isOpen={showGuidelines}
-        onClose={() => setShowGuidelines(false)}
-        onAgree={handleAgreeToGuidelines}
-        categoryName={category.name}
-      />
+      {hasGuidelines && (
+        <Guidelines
+          isOpen={showGuidelines}
+          onClose={() => setShowGuidelines(false)}
+          onAgree={handleAgreeToGuidelines}
+          categoryName={category?.name || ""}
+        />
+      )}
     </>
   )
 }
@@ -1441,7 +1465,7 @@ export function UploadProofMergedModal({
                   behavior: "smooth",
                   block: "center",
                 })
-                ;(element as HTMLElement).focus()
+                  ; (element as HTMLElement).focus()
               }
             }
           },
@@ -1627,35 +1651,35 @@ export function UploadProofMergedModal({
       reorderedEntries.forEach((_, newIdx) => {
         reorderedAmounts[newIdx] =
           entryAmounts[
-            oldIndex === newIdx
-              ? newIndex
-              : newIdx === newIndex
-                ? oldIndex
-                : newIdx
+          oldIndex === newIdx
+            ? newIndex
+            : newIdx === newIndex
+              ? oldIndex
+              : newIdx
           ] || null
         reorderedLoadingStates[newIdx] =
           entryLoadingStates[
-            oldIndex === newIdx
-              ? newIndex
-              : newIdx === newIndex
-                ? oldIndex
-                : newIdx
+          oldIndex === newIdx
+            ? newIndex
+            : newIdx === newIndex
+              ? oldIndex
+              : newIdx
           ] || false
         reorderedErrors[newIdx] =
           entryErrors[
-            oldIndex === newIdx
-              ? newIndex
-              : newIdx === newIndex
-                ? oldIndex
-                : newIdx
+          oldIndex === newIdx
+            ? newIndex
+            : newIdx === newIndex
+              ? oldIndex
+              : newIdx
           ] || ""
         reorderedDetails[newIdx] =
           entryDetails[
-            oldIndex === newIdx
-              ? newIndex
-              : newIdx === newIndex
-                ? oldIndex
-                : newIdx
+          oldIndex === newIdx
+            ? newIndex
+            : newIdx === newIndex
+              ? oldIndex
+              : newIdx
           ] || null
       })
 
@@ -1968,15 +1992,15 @@ export function UploadProofMergedModal({
                               className={cn(
                                 "capitalize",
                                 status.status === "VERIFIED" &&
-                                  "bg-green-50 text-green-700 border-green-200",
+                                "bg-green-50 text-green-700 border-green-200",
                                 status.status === "REJECTED" &&
-                                  "bg-red-50 text-red-700 border-red-200",
+                                "bg-red-50 text-red-700 border-red-200",
                                 status.status === "PAYMENT_PENDING" &&
-                                  "bg-yellow-50 text-yellow-700 border-yellow-200",
+                                "bg-yellow-50 text-yellow-700 border-yellow-200",
                                 status.status === "SENT" &&
-                                  "bg-blue-50 text-blue-700 border-blue-200",
+                                "bg-blue-50 text-blue-700 border-blue-200",
                                 status.status === "DUPLICATE" &&
-                                  "bg-red-50 text-red-700 border-red-200",
+                                "bg-red-50 text-red-700 border-red-200",
                               )}
                             >
                               {status.status.replace("_", " ")}
@@ -2167,9 +2191,8 @@ export function UploadProofMergedModal({
                         </div>
                         <div className="text-right">
                           <div
-                            className={`font-medium ${
-                              isFullyPaid ? "text-green-600" : "text-yellow-600"
-                            }`}
+                            className={`font-medium ${isFullyPaid ? "text-green-600" : "text-yellow-600"
+                              }`}
                           >
                             {isFullyPaid
                               ? "✓ Fully Paid"
@@ -2179,8 +2202,8 @@ export function UploadProofMergedModal({
                             {isFullyPaid
                               ? `₱${entryAmount.toLocaleString()}`
                               : `Missing ₱${(
-                                  entryAmount - amountPaid
-                                ).toLocaleString()}`}
+                                entryAmount - amountPaid
+                              ).toLocaleString()}`}
                           </div>
                         </div>
                       </div>
@@ -2340,11 +2363,10 @@ export function UploadProofMergedModal({
                       </div>
                       {totalRequired > 0 && (
                         <div
-                          className={`inline-block w-full text-md bg-gray-50 border border-gray-200 underline underline-offset-2 mb-1 px-3 py-[6.2px] rounded-md font-semibold ${
-                            amount && Number(amount) < totalRequired
-                              ? "text-red-600"
-                              : "text-green-600"
-                          }`}
+                          className={`inline-block w-full text-md bg-gray-50 border border-gray-200 underline underline-offset-2 mb-1 px-3 py-[6.2px] rounded-md font-semibold ${amount && Number(amount) < totalRequired
+                            ? "text-red-600"
+                            : "text-green-600"
+                            }`}
                         >
                           <span className="font-medium">₱</span>
                           {totalRequired.toLocaleString("en-US", {
@@ -2355,11 +2377,10 @@ export function UploadProofMergedModal({
                       )}
                       {priceReminder && (
                         <div
-                          className={`text-xs w-full p-2 rounded-lg border ${
-                            priceReminder.startsWith("✅")
-                              ? "border-none text-green-600 underline underline-offset-2"
-                              : "border-none underline underline-offset-2 text-red-600"
-                          }`}
+                          className={`text-xs w-full p-2 rounded-lg border ${priceReminder.startsWith("✅")
+                            ? "border-none text-green-600 underline underline-offset-2"
+                            : "border-none underline underline-offset-2 text-red-600"
+                            }`}
                         >
                           {priceReminder}
                         </div>
@@ -2467,7 +2488,7 @@ export function UploadProofMergedModal({
                             className={cn(
                               "w-full rounded-md! text-sm! lg:text-base! xl:text-base! placeholder:text-xs! p-3!",
                               duplicateReferenceError &&
-                                "border-red-500 focus:ring-red-500",
+                              "border-red-500 focus:ring-red-500",
                             )}
                           />
 
@@ -2564,11 +2585,10 @@ export function UploadProofMergedModal({
                               details && (
                                 <div className="px-14">
                                   <div
-                                    className={`text-xs text-gray-600 p-1 rounded border w-full ${
-                                      isEntryRejected
-                                        ? "bg-red-50 border-red-200"
-                                        : "bg-gray-50"
-                                    }`}
+                                    className={`text-xs text-gray-600 p-1 rounded border w-full ${isEntryRejected
+                                      ? "bg-red-50 border-red-200"
+                                      : "bg-gray-50"
+                                      }`}
                                   >
                                     <div className="flex ml-2 justify-between items-center">
                                       <div>
@@ -2595,11 +2615,10 @@ export function UploadProofMergedModal({
                                       </div>
 
                                       <div
-                                        className={`text-xs font-bold ${
-                                          isEntryRejected
-                                            ? "text-red-600"
-                                            : "text-gray-600"
-                                        }`}
+                                        className={`text-xs font-bold ${isEntryRejected
+                                          ? "text-red-600"
+                                          : "text-gray-600"
+                                          }`}
                                       >
                                         {details.entry?.event?.type} Event
                                       </div>
@@ -2616,15 +2635,13 @@ export function UploadProofMergedModal({
 
                             {entryError && (
                               <div
-                                className={`text-sm font-medium px-14 ${
-                                  isEntryRejected
-                                    ? "text-red-600 bg-red-50"
-                                    : "text-red-600 bg-red-50"
-                                } p-2 rounded-lg border ${
-                                  isEntryRejected
+                                className={`text-sm font-medium px-14 ${isEntryRejected
+                                  ? "text-red-600 bg-red-50"
+                                  : "text-red-600 bg-red-50"
+                                  } p-2 rounded-lg border ${isEntryRejected
                                     ? "border-red-200"
                                     : "border-red-200"
-                                }`}
+                                  }`}
                               >
                                 {isEntryRejected ? (
                                   <div className="flex items-center gap-2">
@@ -2718,11 +2735,10 @@ export function UploadProofMergedModal({
                     setFieldErrors((prev) => ({ ...prev, payerName: error }))
                   }}
                   placeholder="Enter payer name"
-                  className={`w-full placeholder:text-sm py-1.5 ${
-                    fieldErrors.payerName
-                      ? "border-red-500 focus:ring-red-400"
-                      : "border-gray-300 focus:ring-green-400"
-                  }`}
+                  className={`w-full placeholder:text-sm py-1.5 ${fieldErrors.payerName
+                    ? "border-red-500 focus:ring-red-400"
+                    : "border-gray-300 focus:ring-green-400"
+                    }`}
                 />
                 {fieldErrors.payerName ? (
                   <p className="text-red-500 text-xs mt-1">
@@ -2811,11 +2827,10 @@ export function UploadProofMergedModal({
 
                 <label
                   htmlFor="proofUpload"
-                  className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${
-                    fieldErrors.file
-                      ? "border-red-300 bg-red-50 hover:bg-red-100"
-                      : "border-green-400 hover:bg-green-50"
-                  }`}
+                  className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${fieldErrors.file
+                    ? "border-red-300 bg-red-50 hover:bg-red-100"
+                    : "border-green-400 hover:bg-green-50"
+                    }`}
                 >
                   {isUploading ? (
                     <div className="flex flex-col items-center">
@@ -2884,11 +2899,11 @@ export function UploadProofMergedModal({
                       <div className="p-3 bg-yellow-100 rounded-xl">
                         <p className="text-sm text-gray-500">
                           {confirmationNumber &&
-                          (confirmationNumber.includes("MB") ||
-                            confirmationNumber.includes("/"))
+                            (confirmationNumber.includes("MB") ||
+                              confirmationNumber.includes("/"))
                             ? "Transaction Reference No."
                             : confirmationNumber &&
-                                confirmationNumber.length <= 10
+                              confirmationNumber.length <= 10
                               ? "Trace No."
                               : "Confirmation No."}
                         </p>
@@ -2942,9 +2957,8 @@ export function UploadProofMergedModal({
                       setFieldErrors((prev) => ({ ...prev, amount: error }))
                     }}
                     placeholder="₱1000.00"
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 ${
-                      fieldErrors.amount ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-400 ${fieldErrors.amount ? "border-red-500" : "border-gray-300"
+                      }`}
                   />
                   {fieldErrors.amount && (
                     <p className="text-red-500 text-xs mt-1">
@@ -2970,11 +2984,10 @@ export function UploadProofMergedModal({
                     }}
                   >
                     <SelectTrigger
-                      className={`w-full ${
-                        fieldErrors.paymentMethod
-                          ? "border-red-500 focus:ring-red-400"
-                          : "border-gray-300 focus:ring-green-400"
-                      }`}
+                      className={`w-full ${fieldErrors.paymentMethod
+                        ? "border-red-500 focus:ring-red-400"
+                        : "border-gray-300 focus:ring-green-400"
+                        }`}
                     >
                       <SelectValue placeholder="Select payment method" />
                     </SelectTrigger>
@@ -3205,11 +3218,10 @@ export function CheckEntryModal({
                       setEntryValue(e.target.value)
                       setError("")
                     }}
-                    className={`w-full pl-10 pr-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition ${
-                      error
-                        ? "border-red-500 focus:ring-red-300"
-                        : "border-gray-300 focus:ring-green-400"
-                    }`}
+                    className={`w-full pl-10 pr-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 transition ${error
+                      ? "border-red-500 focus:ring-red-300"
+                      : "border-gray-300 focus:ring-green-400"
+                      }`}
                   />
                 </div>
                 {(error || queryError) && (
@@ -3348,12 +3360,21 @@ export function CheckEntryModal({
 export default function App() {
   useSmoothScroll()
 
+  const searchParams = useSearchParams()
+  const tournamentId = searchParams.get("tournament")
+
   const [selectedCategory, setSelectedCategory] = useState<{
     id: string
     name: string
     type: "Doubles" | "Singles"
     level?: string
     gender?: string
+    isClosed?: boolean
+    pricePerPlayer?: number
+    earlyBirdPricePerPlayer?: number
+    currency?: string
+    hasEarlyBird?: boolean
+    tournamentId?: string
   } | null>(null)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -3383,10 +3404,18 @@ export default function App() {
 
   const { data, loading, error } =
     useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
+  console.log("All tournaments:", data?.publicTournaments)
+  console.log("Tournament from URL:", tournamentId)
 
-  const activeTournament = data?.publicTournaments?.find((t: any) => t.isActive)
+  const currentTournament = tournamentId
+    ? data?.publicTournaments?.find((t: any) => t._id === tournamentId)
+    : data?.publicTournaments?.find((t: any) => t.isActive)
+
+  if (tournamentId && !currentTournament) {
+    console.log("Tournament not found in publicTournaments, checking if it exists at all...")
+  }
   const events =
-    activeTournament?.events?.map((event: any) => {
+    currentTournament?.events?.map((event: any) => {
       const rawGender = event.gender?.toLowerCase()
       let gender = "Mixed"
 
@@ -3398,19 +3427,23 @@ export default function App() {
       const type =
         event.type?.toUpperCase() === "DOUBLES" ? "Doubles" : "Singles"
 
-      return {
+      const eventObj = {
         id: event._id,
         name: event.name,
         level: event.level || "Open",
         type,
         gender,
         pricePerPlayer: event.pricePerPlayer,
+        earlyBirdPricePerPlayer: event.earlyBirdPricePerPlayer,
         currency: event.currency,
         isActive: event.isActive,
+        isClosed: event.isClosed,
+        tournamentId: currentTournament?._id || tournamentId,
       }
-    }) || []
 
-  // console.log("Fetched events from GraphQL:", events)
+      console.log("Created event object with tournamentId:", eventObj)
+      return eventObj
+    }) || []
 
   const sortCategoriesByGender = (list: typeof events) => {
     const mens = list.filter((level: any) => level.gender === "Men's")
@@ -3427,7 +3460,22 @@ export default function App() {
   )
 
   const handleCategoryClick = (category: any) => {
-    setSelectedCategory(category)
+    console.log("Category clicked - raw category object:", category)
+    console.log("Category clicked - tournamentId:", category.tournamentId)
+
+    setSelectedCategory({
+      id: category.id,
+      name: category.name,
+      type: category.type,
+      level: category.level,
+      gender: category.gender,
+      isClosed: category.isClosed,
+      pricePerPlayer: category.pricePerPlayer,
+      earlyBirdPricePerPlayer: category.earlyBirdPricePerPlayer,
+      currency: category.currency,
+      hasEarlyBird: currentTournament?.settings?.hasEarlyBird,
+      tournamentId: category.tournamentId,
+    })
     setIsModalOpen(true)
   }
 

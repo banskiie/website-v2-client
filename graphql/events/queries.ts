@@ -11,6 +11,7 @@ export const PUBLIC_TOURNAMENTS = gql`
       settings {
         hasEarlyBird
         hasFreeJersey
+        hasGuidelines
         ticket
         maxEntriesPerPlayer
       }

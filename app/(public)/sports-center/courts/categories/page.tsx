@@ -712,6 +712,7 @@ function CategoryCard({
   gender: string
   isClosed?: boolean
   onClick: () => void
+  tournamentId?: string
 }) {
   const levelColor =
     {
@@ -737,11 +738,10 @@ function CategoryCard({
   return (
     <motion.button
       onClick={onClick}
-      className={`relative flex flex-col items-start p-4 rounded-lg border cursor-pointer transition w-full min-w-0 overflow-hidden group ${
-        isClosed
-          ? "border-red-200 bg-red-50/50 hover:bg-red-100/50"
-          : "border-gray-200 bg-white hover:border-gray-300"
-      }`}
+      className={`relative flex flex-col items-start p-4 rounded-lg border cursor-pointer transition w-full min-w-0 overflow-hidden group ${isClosed
+        ? "border-red-200 bg-red-50/50 hover:bg-red-100/50"
+        : "border-gray-200 bg-white hover:border-gray-300"
+        }`}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -796,6 +796,7 @@ function CategoriesContent() {
     earlyBirdPricePerPlayer?: number
     currency?: string
     hasEarlyBird?: boolean
+    tournamentId?: string
   } | null>(null)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -846,8 +847,6 @@ function CategoriesContent() {
           })
           return updatedEvents
         })
-
-        // console.log(`Event ${type}: ${event.name} - Closed: ${event.isClosed}`);
       }
     },
   })
@@ -855,6 +854,8 @@ function CategoriesContent() {
   const activeTournament = tournamentId
     ? data?.publicTournaments?.find((t: any) => t._id === tournamentId)
     : data?.publicTournaments?.find((t: any) => t.isActive)
+
+  const tournamentName = activeTournament?.name || "C-ONE Badminton Tournament"
 
   useEffect(() => {
     if (activeTournament && activeTournament.events) {
@@ -896,6 +897,7 @@ function CategoriesContent() {
           earlyBirdPricePerPlayer: event.earlyBirdPricePerPlayer,
           currency: event.currency,
           isClosed: event.isClosed,
+          tournamentId: activeTournament._id,
         }
       })
       setLocalEvents(mappedEvents)
@@ -956,6 +958,7 @@ function CategoriesContent() {
       earlyBirdPricePerPlayer: category.earlyBirdPricePerPlayer,
       currency: category.currency,
       hasEarlyBird: activeTournament?.settings?.hasEarlyBird,
+      tournamentId: activeTournament?._id,
     })
     setIsModalOpen(true)
   }
@@ -1114,7 +1117,7 @@ function CategoriesContent() {
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            C-ONE Badminton Challenge
+            {tournamentName}
           </h1>
 
           <div className="max-w-3xl mx-auto text-gray-600 space-y-3 mb-6">
@@ -1290,21 +1293,21 @@ function CategoriesContent() {
                       <p className="text-2xl font-bold text-yellow-600 mb-0.5">
                         {activeTournament?.dates?.earlyBirdPaymentEnd
                           ? format(
-                              new Date(
-                                activeTournament.dates.earlyBirdPaymentEnd,
-                              ),
-                              "dd",
-                            )
+                            new Date(
+                              activeTournament.dates.earlyBirdPaymentEnd,
+                            ),
+                            "dd",
+                          )
                           : "—"}
                       </p>
                       <p className="text-xs font-semibold text-yellow-700">
                         {activeTournament?.dates?.earlyBirdPaymentEnd
                           ? format(
-                              new Date(
-                                activeTournament.dates.earlyBirdPaymentEnd,
-                              ),
-                              "MMMM yyyy",
-                            )
+                            new Date(
+                              activeTournament.dates.earlyBirdPaymentEnd,
+                            ),
+                            "MMMM yyyy",
+                          )
                           : "—"}
                       </p>
                       <div className="mt-2 pt-2 border-t border-yellow-200">
@@ -1346,17 +1349,17 @@ function CategoriesContent() {
                       <p className="text-2xl font-bold text-green-600 mb-0.5">
                         {activeTournament?.dates?.registrationEnd
                           ? format(
-                              new Date(activeTournament.dates.registrationEnd),
-                              "dd",
-                            )
+                            new Date(activeTournament.dates.registrationEnd),
+                            "dd",
+                          )
                           : "—"}
                       </p>
                       <p className="text-xs font-semibold text-green-700">
                         {activeTournament?.dates?.registrationEnd
                           ? format(
-                              new Date(activeTournament.dates.registrationEnd),
-                              "MMMM yyyy",
-                            )
+                            new Date(activeTournament.dates.registrationEnd),
+                            "MMMM yyyy",
+                          )
                           : "—"}
                       </p>
                       <div className="mt-2 pt-2 border-t border-green-200">

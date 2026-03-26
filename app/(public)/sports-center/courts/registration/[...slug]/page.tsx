@@ -677,6 +677,10 @@ export default function Page({ params }: RegistrationPageProps) {
     },
   )
 
+  const backUrl = tournamentId
+    ? `/sports-center/courts/categories?tournament=${tournamentId}`
+    : "/sports-center/courts/categories"
+
   const [registryEntry, { loading: submitting, error: submitError }] =
     useMutation<RegisterEntryResponse, RegisterEntryVariables>(REGISTRY_ENTRY)
 
@@ -824,6 +828,7 @@ export default function Page({ params }: RegistrationPageProps) {
   }, [event, tournament])
 
   const isMixed = /mixed/i.test(event?.gender || "")
+  const isNoGender = /no_gender/i.test(event?.gender || "") || event?.gender === "NO_GENDER"
   const autoGender = event
     ? /women|girls|female/i.test(event?.gender ?? "")
       ? "FEMALE"
@@ -1887,7 +1892,7 @@ export default function Page({ params }: RegistrationPageProps) {
 
       <div className="p-4 sm:p-6 pb-0 mt-20 mb-2 md:mb-0 lg:mb-0 xl:mb-0 2xl:mb-0">
         <Button variant="ghost" asChild className="text-green-700 hover:text-green-800 hover:bg-green-200">
-          <Link href="/sports-center/courts/categories" className="flex items-center gap-2">
+          <Link href={backUrl} className="flex items-center gap-2">
             <ArrowLeftIcon className="w-6 h-6" />
             <span className="underline text-md ">Back</span>
           </Link>
@@ -2257,12 +2262,12 @@ export default function Page({ params }: RegistrationPageProps) {
                                         <div className="flex items-center gap-1">
                                           <span
                                             className={`text-xs font-medium px-2 rounded ${minAge !== undefined &&
-                                                maxAge !== undefined &&
-                                                calculatedAge !== null &&
-                                                calculatedAge >= minAge &&
-                                                calculatedAge <= maxAge
-                                                ? "text-green-600 bg-green-50 border border-green-200"
-                                                : "text-red-600 bg-red-50 border border-red-200"
+                                              maxAge !== undefined &&
+                                              calculatedAge !== null &&
+                                              calculatedAge >= minAge &&
+                                              calculatedAge <= maxAge
+                                              ? "text-green-600 bg-green-50 border border-green-200"
+                                              : "text-red-600 bg-red-50 border border-red-200"
                                               }`}
                                           >
                                             Age: {calculatedAge}
@@ -2272,7 +2277,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                   </div>
 
                                   {name.includes("Gender") ? (
-                                    isMixed ? (
+                                    (isMixed || isNoGender) ? (
                                       <InputGroup>
                                         <InputGroupAddon className="mx-auto px-3">
                                           <VenusAndMarsIcon className="w-4 h-4" />
@@ -2281,8 +2286,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                         <Select
                                           name={field.name}
                                           value={
-                                            typeof field.state.value ===
-                                              "string"
+                                            typeof field.state.value === "string"
                                               ? field.state.value
                                               : ""
                                           }
@@ -2297,12 +2301,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                             <SelectValue placeholder="Select Gender" />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="MALE">
-                                              Male
-                                            </SelectItem>
-                                            <SelectItem value="FEMALE">
-                                              Female
-                                            </SelectItem>
+                                            <SelectItem value="MALE">Male</SelectItem>
+                                            <SelectItem value="FEMALE">Female</SelectItem>
                                           </SelectContent>
                                         </Select>
                                       </InputGroup>
@@ -2316,7 +2316,9 @@ export default function Page({ params }: RegistrationPageProps) {
                                           value={
                                             autoGender === "MALE"
                                               ? "Male"
-                                              : "Female"
+                                              : autoGender === "FEMALE"
+                                                ? "Female"
+                                                : ""
                                           }
                                           disabled
                                           className="!border-green-200 !bg-gray-100 !pl-3"
@@ -2611,8 +2613,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                   <label
                                     htmlFor={`player${playerNum}IdUpload`}
                                     className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed rounded-xl transition ${fieldErrors[`filePlayer${playerNum}`]
-                                        ? "border-red-300 bg-red-50 hover:bg-red-100"
-                                        : "border-green-300 bg-green-50 hover:bg-green-100"
+                                      ? "border-red-300 bg-red-50 hover:bg-red-100"
+                                      : "border-green-300 bg-green-50 hover:bg-green-100"
                                       } ${submitting || isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
                                   >
                                     {isUploading &&
@@ -2631,18 +2633,18 @@ export default function Page({ params }: RegistrationPageProps) {
                                       <>
                                         <UploadIcon
                                           className={`w-6 h-6 mb-2 ${fieldErrors[
-                                              `filePlayer${playerNum}`
-                                            ]
-                                              ? "text-red-500"
-                                              : "text-green-600"
+                                            `filePlayer${playerNum}`
+                                          ]
+                                            ? "text-red-500"
+                                            : "text-green-600"
                                             }`}
                                         />
                                         <span
                                           className={`font-medium text-sm ${fieldErrors[
-                                              `filePlayer${playerNum}`
-                                            ]
-                                              ? "text-red-700"
-                                              : "text-green-700"
+                                            `filePlayer${playerNum}`
+                                          ]
+                                            ? "text-red-700"
+                                            : "text-green-700"
                                             }`}
                                         >
                                           Upload your files or{" "}
@@ -2737,8 +2739,8 @@ export default function Page({ params }: RegistrationPageProps) {
 
                           <span
                             className={`mt-1 text-xs font-semibold ${(playerNum === 1 ? syncPlayer1 : syncPlayer2)
-                                ? "text-green-700"
-                                : "text-gray-500"
+                              ? "text-green-700"
+                              : "text-gray-500"
                               }`}
                           >
                             {(playerNum === 1 ? syncPlayer1 : syncPlayer2)

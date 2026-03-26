@@ -37,6 +37,7 @@ const TOURNAMENT = gql`
       settings {
         hasEarlyBird
         hasFreeJersey
+        hasGuidelines
         ticket
         maxEntriesPerPlayer
       }
@@ -105,6 +106,7 @@ const FormDialog = (props: Props) => {
       settings: {
         hasEarlyBird: false,
         hasFreeJersey: false,
+        hasGuidelines: false,
         ticket: "",
         maxEntriesPerPlayer: 3,
       },
@@ -172,6 +174,7 @@ const FormDialog = (props: Props) => {
       form.setFieldValue("name", name)
       form.setFieldValue("settings.hasEarlyBird", settings.hasEarlyBird)
       form.setFieldValue("settings.hasFreeJersey", settings.hasFreeJersey)
+      form.setFieldValue("settings.hasGuidelines", settings.hasGuidelines)
       form.setFieldValue("settings.ticket", settings.ticket)
       form.setFieldValue(
         "settings.maxEntriesPerPlayer",
@@ -483,6 +486,50 @@ const FormDialog = (props: Props) => {
                               )
                             }}
                           />
+                          <form.Field
+                            name="settings.hasGuidelines"
+                            children={(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <div className="flex items-start gap-1 px-1.5">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(val) => {
+                                        field.handleChange(val as boolean)
+                                      }}
+                                      className="m-1"
+                                      aria-invalid={isInvalid}
+                                      disabled={loading}
+                                    />
+                                    <div className="grid">
+                                      <FieldLabel htmlFor={field.name}>
+                                        Guidelines
+                                      </FieldLabel>
+                                      <span className="text-muted-foreground text-xs">
+                                        Tournament{" "}
+                                        <span className="font-medium underline">
+                                          {field.state.value ? "has" : "does not have"}{" "}
+                                          guidelines and rules.
+                                        </span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {isInvalid && (
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                    />
+                                  )}
+                                </Field>
+                              )
+                            }}
+                          />
+
                         </div>
                       </div>
                     </FieldSet>

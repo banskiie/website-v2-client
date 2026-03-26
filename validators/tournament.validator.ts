@@ -10,6 +10,7 @@ export const TournamentSchema = z.object({
   settings: z.object({
     hasEarlyBird: z.boolean(),
     hasFreeJersey: z.boolean(),
+    hasGuidelines: z.boolean().default(false),
     ticket: z
       .string()
       .min(2, "Name must be at least 2 character long")

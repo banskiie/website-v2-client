@@ -645,7 +645,6 @@ function Page() {
                       key={tournament.value}
                       className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:shadow-sm transition-all bg-white"
                     >
-                      {/* Header Row - Title and Badges Only */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -749,37 +748,41 @@ function Page() {
                         )}
                       </div>
 
-                      {/* Button at Bottom - Full Width */}
                       <div className="mt-4 pt-3 border-t border-gray-100">
-                        <Link
-                          href={`/sports-center/courts/categories/?tournament=${tournament.value}`}
-                          onClick={() => setShowRegisterModal(false)}
-                          className="block w-full"
-                        >
-                          <Button
-                            size="sm"
-                            className={`w-full px-4 py-2 h-9 text-sm font-medium cursor-pointer rounded-full shadow-sm ${now > regEnd
-                              ? "bg-gray-100 text-gray-500 cursor-not-allowed hover:bg-gray-100"
-                              : now < regStart
+                        {now > regEnd ? (
+                          <div className="block w-full">
+                            <Button
+                              size="sm"
+                              disabled
+                              className="w-full px-4 py-2 h-9 text-sm font-medium rounded-full shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
+                            >
+                              Registration Closed
+                            </Button>
+                          </div>
+                        ) : (
+                          <Link
+                            href={`/sports-center/courts/categories/?tournament=${tournament.value}`}
+                            onClick={() => setShowRegisterModal(false)}
+                            className="block w-full"
+                          >
+                            <Button
+                              size="sm"
+                              className={`w-full px-4 py-2 h-9 text-sm font-medium rounded-full shadow-sm cursor-pointer ${now < regStart
                                 ? "bg-green-600 hover:bg-green-700 text-white relative overflow-hidden group"
                                 : "bg-green-600 hover:bg-green-700 text-white"
-                              }`}
-                            disabled={now > regEnd}
-                          >
-                            {now > regEnd ? (
-                              "Registration Closed"
-                            ) : now < regStart ? (
-                              <span className="relative z-10 flex items-center justify-center gap-2">
-                                <span className="animate-pulse">
-                                  Coming Soon
+                                }`}
+                            >
+                              {now < regStart ? (
+                                <span className="relative z-10 flex items-center justify-center gap-2">
+                                  <span className="animate-pulse">Coming Soon</span>
+                                  <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500"></span>
                                 </span>
-                                <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500"></span>
-                              </span>
-                            ) : (
-                              "Register Now"
-                            )}
-                          </Button>
-                        </Link>
+                              ) : (
+                                "Register Now"
+                              )}
+                            </Button>
+                          </Link>
+                        )}
                       </div>
                     </div>
                   );
