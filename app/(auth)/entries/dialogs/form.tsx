@@ -673,15 +673,16 @@ const FormDialog = (props: Props) => {
 
     if (isDoubles) {
       switch (event.gender) {
+        case EventGender.NO_GENDER:
         case EventGender.MALE:
           form.setFieldValue("player1Entry.gender", Gender.MALE);
           form.setFieldValue("player2Entry.gender", Gender.MALE);
-          toast.info("Gender auto-set to Male for both players (Men's Doubles)");
+          toast.info("Gender auto-set to Male for both players.");
           break;
         case EventGender.FEMALE:
           form.setFieldValue("player1Entry.gender", Gender.FEMALE);
           form.setFieldValue("player2Entry.gender", Gender.FEMALE);
-          toast.info("Gender auto-set to Female for both players (Women's Doubles)");
+          toast.info("Gender auto-set to Female for both players");
           break;
         case EventGender.MIXED:
           form.setFieldValue("player1Entry.gender", Gender.MALE);

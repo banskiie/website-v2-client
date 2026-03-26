@@ -77,7 +77,7 @@ const EVENTS = gql`
           gender
           type
           tournamentName
-          isDissolved
+          isClosed
         }
       }
       pageInfo {
@@ -98,7 +98,7 @@ const EVENT_CHANGED = gql`
         gender
         type
         tournamentName
-        isDissolved
+        isClosed
       }
       events {
         _id
@@ -106,7 +106,7 @@ const EVENT_CHANGED = gql`
         gender
         type
         tournamentName
-        isDissolved
+        isClosed
       }
     }
   }
@@ -132,7 +132,7 @@ const ActionsColumn = ({ data }: { data?: IEventInput }) => {
           <DissolveDialog
             _id={event?._id}
             onClose={() => setMenuOpen(false)}
-            isDissolved={event?.isDissolved}
+            isClosed={event?.isClosed}
           />
         </DropdownMenuGroup>
       </DropdownMenuContent>
@@ -423,7 +423,7 @@ const Page = () => {
         ),
         cell: ({ row }) => (
           <span className="capitalize">
-            {row.original.gender.toLocaleLowerCase()}
+            {row.original.gender.toLocaleLowerCase().replaceAll("_", " ")}
           </span>
         ),
       },
@@ -457,27 +457,27 @@ const Page = () => {
         ),
       },
       {
-        accessorKey: "isDissolved",
+        accessorKey: "isClosed",
         header: () => (
           <SortHeader
-            label="Dissolved"
-            sortKey="isDissolved"
+            label="Active"
+            sortKey="isClosed"
             sortState={sort}
             onSortChange={onSort}
           />
         ),
         footer: () => (
           <ColumnFilter
-            label="Dissolved"
-            filterKey="isDissolved"
+            label="Active"
+            filterKey="isClosed"
             filterType="BOOLEAN"
             filterValue={filter}
             onFilterChange={onFilter}
           />
         ),
         cell: ({ row }) => (
-          <Badge variant={row.original.isDissolved ? "destructive" : "success"}>
-            {row.original.isDissolved ? "Dissolved" : "Active"}
+          <Badge variant={row.original.isClosed ? "destructive" : "success"}>
+            {row.original.isClosed ? "Closed" : "Active"}
           </Badge>
         ),
       },

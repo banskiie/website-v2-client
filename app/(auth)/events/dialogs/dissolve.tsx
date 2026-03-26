@@ -36,7 +36,7 @@ const CHANGE_DISSOLVE_STATUS = gql`
 type Props = {
   _id?: string
   onClose?: () => void
-  isDissolved?: boolean
+  isClosed?: boolean
 }
 
 const DissolveDialog = (props: Props) => {
@@ -53,7 +53,7 @@ const DissolveDialog = (props: Props) => {
     CHANGE_DISSOLVE_STATUS,
     {
       variables: { _id: props._id },
-    }
+    },
   )
   // Loading State
   const loading = eventLoading || changeStatusLoading
@@ -79,17 +79,17 @@ const DissolveDialog = (props: Props) => {
         <AlertDialogTrigger asChild>
           <DropdownMenuItem
             className={cn(
-              props?.isDissolved ? "text-success" : "text-destructive "
+              props?.isClosed ? "text-success" : "text-destructive ",
             )}
             onSelect={(e) => e.preventDefault()}
           >
-            {props?.isDissolved ? "Reactivate" : "Dissolve"}
+            {props?.isClosed ? "Reactivate" : "Dissolve"}
           </DropdownMenuItem>
         </AlertDialogTrigger>
         <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {props?.isDissolved ? "Reactivate" : "Dissolve"} Event:{" "}
+              {props?.isClosed ? "Reactivate" : "Dissolve"} Event:{" "}
               {data?.event?.name}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -97,11 +97,11 @@ const DissolveDialog = (props: Props) => {
                 Are you sure you want to{" "}
                 <span
                   className={cn(
-                    props?.isDissolved ? "text-success" : "text-destructive",
-                    "font-semibold underline"
+                    props?.isClosed ? "text-success" : "text-destructive",
+                    "font-semibold underline",
                   )}
                 >
-                  {props?.isDissolved ? "reactivate" : "dissolve"}
+                  {props?.isClosed ? "reactivate" : "dissolve"}
                 </span>{" "}
                 this event?
               </span>
@@ -118,10 +118,10 @@ const DissolveDialog = (props: Props) => {
             <Button
               loading={loading}
               onClick={onSubmit}
-              variant={props?.isDissolved ? "success" : "destructive"}
-              className={cn(props?.isDissolved ? "w-26" : "w-22")}
+              variant={props?.isClosed ? "success" : "destructive"}
+              className={cn(props?.isClosed ? "w-26" : "w-22")}
             >
-              {props?.isDissolved ? "Reactivate" : "Dissolve"}
+              {props?.isClosed ? "Reactivate" : "Dissolve"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

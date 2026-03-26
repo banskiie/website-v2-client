@@ -31,7 +31,7 @@ const EVENT = gql`
       location
       maxAge
       minAge
-      isDissolved
+      isClosed
       tournament {
         name
         settings {
@@ -136,7 +136,7 @@ const ViewDialog = (props: Props) => {
                 <Skeleton className="w-full my-1 h-3" />
               ) : (
                 <span className="block text-sm capitalize">
-                  {event?.gender.toLocaleLowerCase()}
+                  {event?.gender.toLocaleLowerCase().replaceAll("_", " ")}
                 </span>
               )}
             </div>
@@ -275,16 +275,16 @@ const ViewDialog = (props: Props) => {
                 ) : null}
               </>
             ) : null}
-            {event?.isDissolved ? (
+            {event?.isClosed ? (
               <>
                 <Separator className="col-span-2" />
                 <div>
-                  <Label className="text-destructive">Dissolved</Label>
+                  <Label className="text-destructive">Closed</Label>
                   {loading ? (
                     <Skeleton className="my-1 w-20 h-4.25" />
                   ) : (
                     <span className="block text-sm">
-                      {event?.isDissolved ? "Yes" : "No"}
+                      {event?.isClosed ? "Yes" : "No"}
                     </span>
                   )}
                 </div>

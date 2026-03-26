@@ -26,7 +26,7 @@ export const PUBLIC_TOURNAMENTS = gql`
         location
         maxAge
         minAge
-        isDissolved
+        isClosed
         createdAt
         updatedAt
       }
@@ -57,7 +57,7 @@ export const FETCH_EVENT_WITH_TOURNAMENT = gql`
       location
       maxAge
       minAge
-      isDissolved
+      isClosed
       isActive
       createdAt
       updatedAt
@@ -118,7 +118,7 @@ export const EVENT_CHANGED_SUBSCRIPTION = gql`
         name
         gender
         type
-        isDissolved
+        isClosed
       }
     }
   }

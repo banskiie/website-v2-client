@@ -80,7 +80,7 @@ const EVENT = gql`
       location
       maxAge
       minAge
-      isDissolved
+      isClosed
       tournament {
         _id
       }

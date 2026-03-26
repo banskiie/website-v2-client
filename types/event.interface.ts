@@ -4,6 +4,7 @@ export enum EventGender {
   MALE = "MALE",
   FEMALE = "FEMALE",
   MIXED = "MIXED",
+  NO_GENDER = "NO_GENDER",
 }
 
 export enum EventType {
@@ -36,7 +37,7 @@ export interface IEvent {
   maxAge?: number
   minAge?: number
   tournament: ITournament
-  isDissolved: boolean
+  isClosed: boolean
   isActive: boolean
 }
 
@@ -52,7 +53,7 @@ export interface IEventInput {
   maxAge?: number
   minAge?: number
   tournament: string
-  isDissolved: boolean
+  isClosed: boolean
   maxEntries: number
   isActive: boolean
 }
