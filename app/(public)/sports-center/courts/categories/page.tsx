@@ -1123,141 +1123,139 @@ function CategoriesContent() {
     <div className="min-h-screen bg-linear-to-b from-green-50/30 to-green-100/30 relative">
       <Header />
 
-      <div className="p-4 sm:p-6 pb-0 mt-20 mb-2 md:mb-0 lg:mb-0 xl:mb-0 2xl:mb-0">
-        <Button
-          variant="ghost"
-          asChild
-          className="text-green-700 hover:text-green-800 hover:bg-green-200 transition-all duration-300 hover:scale-105"
-        >
-          <Link href="/sports-center/courts#tournament" className="flex items-center gap-2">
-            <ArrowLeftIcon className="w-6 h-6 transition-transform duration-300 group-hover:-translate-x-1" />
-            <span className="underline text-md">Back to Tournament</span>
-          </Link>
-        </Button>
-      </div>
+
 
       <div className="relative bg-white border-b shadow-sm overflow-hidden mt-16">
         <div
           className="
-    absolute
-    top-5 md:top-7
-    right-[-39px] md:right-[-70px] lg:top-9 lg:right-[-65px]
-    rotate-45
-    bg-linear-to-br from-green-600 to-green-800
-    text-white
-    text-[10px] md:text-base
-    font-medium md:font-semibold
-    py-2 sm:py-3 md:py-5
-    px-8 sm:px-12 md:px-16
-    shadow-md
-    whitespace-nowrap
-  "
+      absolute
+      top-5 md:top-7
+      right-[-39px] md:right-[-70px] lg:top-9 lg:right-[-65px]
+      rotate-45
+      bg-linear-to-br from-green-600 to-green-800
+      text-white
+      text-[10px] md:text-base
+      font-medium md:font-semibold
+      py-2 sm:py-3 md:py-5
+      px-8 sm:px-12 md:px-16
+      shadow-md
+      whitespace-nowrap
+    "
         >
           {formattedRange}
         </div>
 
-        <div className="container mx-auto px-4 py-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">
-            Categories
-          </h2>
-          <div className="h-1 w-36 mx-auto rounded-full bg-linear-to-r from-green-400 to-green-700 mb-6"></div>
-
-          <div className="flex items-center gap-2 mb-4 justify-center">
-            <Trophy className="w-8 h-8 text-yellow-500" />
-            <Badge className="bg-green-100 text-green-800 px-3 py-1">
-              Registration Open
-            </Badge>
-          </div>
-
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            {tournamentName}
-          </h1>
-
-          <div className="max-w-3xl mx-auto text-gray-600 space-y-3 mb-6">
-            <p>
-              Welcome to the C-ONE Badminton Challenge! This exciting event is
-              hosted by C-ONE badminton, offering players of all levels an
-              opportunity to showcase their skills and compete in a friendly and
-              supportive environment.
-            </p>
-            <p>
-              The challenge includes various categories, such as singles,
-              doubles, and mixed doubles, with winners awarded prizes at the end
-              of the event.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-start mb-6">
             <Button
-              variant="outline"
-              onClick={() => setIsCheckEntryModalOpen(true)}
-              className="cursor-pointer text-base bg-teal-600 text-white hover:bg-teal-700 flex items-center justify-center px-5 py-6 gap-2"
+              variant="ghost"
+              asChild
+              className="text-green-700 hover:text-green-800 hover:bg-green-200 transition-all duration-300 hover:scale-105"
             >
-              <Search className="!w-5 !h-5" />
-              Check Entry
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIsUploadModalOpen(true)}
-              className="cursor-pointer text-base bg-green-600 text-white hover:bg-green-700 flex items-center justify-center px-5 py-6 gap-2"
-            >
-              <UploadIcon className="!w-5 !h-5" />
-              Upload Payment
+              <Link href="/sports-center/courts#tournament" className="flex items-center gap-2">
+                <ArrowLeftIcon className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" />
+                <span className="text-xs md:text-sm lg:text-sm 2xl:text-sm font-medium">Back to Tournament</span>
+              </Link>
             </Button>
           </div>
 
-          <motion.div
-            className="mt-2 flex flex-col items-center justify-center gap-2 cursor-pointer group"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.5 }}
-            onClick={() =>
-              doublesSectionRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              })
-            }
-          >
-            <div className="relative">
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="text-gray-500 group-hover:text-green-600 transition-colors duration-200"
-              >
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 14l-7 7-7-7m14-6l-7 7-7-7"
-                  />
-                </svg>
-              </motion.div>
+          <div className="text-center">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">
+              Categories
+            </h2>
+            <div className="h-1 w-36 mx-auto rounded-full bg-linear-to-r from-green-400 to-green-700 mb-6"></div>
 
-              {/* <motion.div
-                                className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-green-500 rounded-full group-hover:bg-green-600 transition-colors duration-200"
-                                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                            /> */}
+            <div className="flex items-center gap-2 mb-4 justify-center">
+              <Trophy className="w-8 h-8 text-yellow-500" />
+              <Badge className="bg-green-100 text-green-800 px-3 py-1">
+                Registration Open
+              </Badge>
             </div>
 
-            <motion.p
-              className="text-sm font-medium hover:scale-105 text-gray-600 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-md border border-gray-200 group-hover:bg-green-50 group-hover:text-green-700 group-hover:border-green-300 transition-all duration-200"
-              animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              {tournamentName}
+            </h1>
+
+            <div className="max-w-3xl mx-auto text-gray-600 space-y-3 mb-6">
+              <p>
+                Welcome to the C-ONE Badminton Challenge! This exciting event is
+                hosted by C-ONE badminton, offering players of all levels an
+                opportunity to showcase their skills and compete in a friendly and
+                supportive environment.
+              </p>
+              <p>
+                The challenge includes various categories, such as singles,
+                doubles, and mixed doubles, with winners awarded prizes at the end
+                of the event.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              <Button
+                variant="outline"
+                onClick={() => setIsCheckEntryModalOpen(true)}
+                className="cursor-pointer text-base bg-teal-600 text-white hover:bg-teal-700 flex items-center justify-center px-5 py-6 gap-2"
+              >
+                <Search className="!w-5 !h-5" />
+                Check Entry
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsUploadModalOpen(true)}
+                className="cursor-pointer text-base bg-green-600 text-white hover:bg-green-700 flex items-center justify-center px-5 py-6 gap-2"
+              >
+                <UploadIcon className="!w-5 !h-5" />
+                Upload Payment
+              </Button>
+            </div>
+
+            <motion.div
+              className="mt-8 flex flex-col items-center justify-center gap-2 cursor-pointer group"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+              onClick={() =>
+                doublesSectionRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                })
+              }
             >
-              ⬇️ Click here to see the Categories to Register ⬇️
-            </motion.p>
-          </motion.div>
+              <div className="relative">
+                <motion.div
+                  animate={{ y: [0, 8, 0] }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="text-gray-500 group-hover:text-green-600 transition-colors duration-200"
+                >
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 14l-7 7-7-7m14-6l-7 7-7-7"
+                    />
+                  </svg>
+                </motion.div>
+              </div>
+
+              <motion.p
+                className="text-sm font-medium hover:scale-105 text-gray-600 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-md border border-gray-200 group-hover:bg-green-50 group-hover:text-green-700 group-hover:border-green-300 transition-all duration-200"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                ⬇️ Click here to see the Categories to Register ⬇️
+              </motion.p>
+            </motion.div>
+          </div>
         </div>
       </div>
 
