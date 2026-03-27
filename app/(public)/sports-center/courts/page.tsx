@@ -101,7 +101,7 @@ function Page() {
   const [showPanel, setShowPanel] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showViewEntriesModal, setShowViewEntriesModal] = useState(false);
-  const [showCheckEntryModal, setShowCheckEntryModal] = useState(false)
+  const [showCheckEntryModal, setShowCheckEntryModal] = useState(false);
 
   const { data, loading, error } = useQuery<TournamentOptionsResponse>(
     TOURNAMENT_OPTIONS,
@@ -115,19 +115,19 @@ function Page() {
   useEffect(() => {
     const handleHashScroll = () => {
       if (window.location.hash) {
-        const id = window.location.hash.replace('#', '');
+        const id = window.location.hash.replace("#", "");
         const element = document.getElementById(id);
 
         if (element) {
-          element.classList.add('scroll-highlight');
+          element.classList.add("scroll-highlight");
 
           element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
+            behavior: "smooth",
+            block: "start",
           });
 
           setTimeout(() => {
-            element.classList.remove('scroll-highlight');
+            element.classList.remove("scroll-highlight");
           }, 2000);
         }
       }
@@ -225,7 +225,6 @@ function Page() {
           </motion.div>
         </div>
 
-
         <motion.div
           className="absolute bottom-8 left-1/2 -translate-x-1/2 cursor-pointer z-10 rounded-full w-12 h-12 flex items-center justify-center"
           initial={{ y: 0, backgroundColor: "#22c55e" }}
@@ -235,11 +234,11 @@ function Page() {
           }}
           transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
           onClick={() => {
-            const tournamentSection = document.getElementById('tournament');
+            const tournamentSection = document.getElementById("tournament");
             if (tournamentSection) {
               tournamentSection.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
+                behavior: "smooth",
+                block: "start",
               });
             }
           }}
@@ -432,7 +431,10 @@ function Page() {
         </motion.div>
       </div>
 
-      <div id="tournament" className="w-full bg-linear-to-b from-green-80 to-gray-250 py-20 relative overflow-hidden">
+      <div
+        id="tournament"
+        className="w-full bg-linear-to-b from-green-80 to-gray-250 py-20 relative overflow-hidden"
+      >
         <div
           className="absolute inset-0 opacity-20 bg-center bg-cover bg-no-repeat"
           style={{
@@ -471,7 +473,9 @@ function Page() {
                   Ready to Compete?
                 </h3>
                 <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-                  Choose your action below to register for a tournament, check your entry status, or view verified entries from previous competitions.
+                  Choose your action below to register for a tournament, check
+                  your entry status, or view verified entries from previous
+                  competitions.
                 </p>
               </div>
 
@@ -544,7 +548,8 @@ function Page() {
                     Check back later for upcoming tournaments.
                   </p>
                   <p className="text-gray-600 underline underline-offset-2 font-medium">
-                    C-<span className="font-bold text-green-700">ONE</span> Sports Center
+                    C-<span className="font-bold text-green-700">ONE</span>{" "}
+                    Sports Center
                   </p>
                 </CardContent>
               </Card>
@@ -569,48 +574,49 @@ function Page() {
         <Footer />
       </div>
 
-      {/* Register Tournament Modal */}
       <Dialog open={showRegisterModal} onOpenChange={setShowRegisterModal}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-lg z-10">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-xl">
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 rounded-t-xl z-10">
             <DialogHeader className="p-0">
-              <DialogTitle className="text-xl font-bold text-gray-800 flex items-center justify-between">
+              <DialogTitle className="text-base sm:text-xl font-bold text-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-green-100 rounded-lg">
-                    <Trophy className="w-5 h-5 text-green-600" />
+                  <div className="p-1 sm:p-1.5 bg-green-100 rounded-lg">
+                    <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   </div>
-                  <span>Select Tournament to Register</span>
+                  <span className="text-sm sm:text-base">
+                    Select Tournament to Register
+                  </span>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowRegisterModal(false)}
-                  className="h-8 w-8 rounded-full hover:bg-gray-100"
+                  className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-gray-100"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
               </DialogTitle>
-              <DialogDescription className="text-sm text-gray-500 mt-1">
+              <DialogDescription className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
                 Choose from our active tournaments below
               </DialogDescription>
             </DialogHeader>
           </div>
 
-          <div className="px-6 py-4">
+          <div className="px-4 sm:px-6 py-4">
             {tournamentOptions.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                  <CalendarIcon className="w-8 h-8 text-gray-400" />
+              <div className="text-center py-8 sm:py-12">
+                <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-3 sm:mb-4">
+                  <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
                   No Active Tournaments
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500">
                   Check back later for upcoming tournaments.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {tournamentOptions.map((tournament) => {
                   const now = new Date();
                   const regStart = new Date(tournament.registrationStart);
@@ -643,22 +649,22 @@ function Page() {
                   return (
                     <div
                       key={tournament.value}
-                      className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:shadow-sm transition-all bg-white"
+                      className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:border-green-300 hover:shadow-sm transition-all bg-white"
                     >
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-lg font-semibold text-gray-900 truncate">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <h4 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                               {tournament.label}
                             </h4>
                             <Badge
-                              className={`${regBadge.color} border px-2 py-0.5 text-xs font-medium`}
+                              className={`${regBadge.color} border px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium`}
                             >
                               {regBadge.label}
                             </Badge>
                             {isEarlyBirdActive && (
-                              <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 px-2 py-0.5 text-xs font-medium">
-                                <Sparkles className="w-3 h-3 mr-1" />
+                              <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium">
+                                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                                 Early Bird
                               </Badge>
                             )}
@@ -666,99 +672,94 @@ function Page() {
                         </div>
                       </div>
 
-                      {/* Dates Grid - Compact */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-start gap-2">
+                      <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3">
+                        <div className="flex items-start gap-1.5 sm:gap-2">
                           <div className="flex-shrink-0 mt-0.5">
-                            <div className="p-1 bg-green-50 rounded">
-                              <Trophy className="w-3.5 h-3.5 text-green-600" />
+                            <div className="p-0.5 sm:p-1 bg-green-50 rounded">
+                              <Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-green-600" />
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-500">
+                            <p className="text-[10px] sm:text-xs font-medium text-gray-500">
                               Tournament
                             </p>
-                            <p className="text-xs text-gray-900 truncate">
+                            <p className="text-[11px] sm:text-xs text-gray-900 truncate">
                               {formatDateShort(tournament.tournamentStart)}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-1.5 sm:gap-2">
                           <div className="flex-shrink-0 mt-0.5">
-                            <div className="p-1 bg-blue-50 rounded">
-                              <CalendarIcon className="w-3.5 h-3.5 text-blue-600" />
+                            <div className="p-0.5 sm:p-1 bg-blue-50 rounded">
+                              <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600" />
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-500">
+                            <p className="text-[10px] sm:text-xs font-medium text-gray-500">
                               Registration
                             </p>
-                            <p className="text-xs text-gray-900 truncate">
+                            <p className="text-[11px] sm:text-xs text-gray-900 truncate">
                               {formatDateShort(tournament.registrationEnd)}
                             </p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Early Bird - Compact */}
                       {tournament.hasEarlyBird &&
                         tournament.earlyBirdRegistrationEnd && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <div className="flex-shrink-0">
-                              <div className="p-1 bg-yellow-50 rounded">
-                                <Sparkles className="w-3 h-3 text-yellow-600" />
+                          <div className="mt-2 flex items-start gap-1.5 sm:gap-2">
+                            <div className="flex-shrink-0 mt-0.5">
+                              <div className="p-0.5 sm:p-1 bg-yellow-50 rounded">
+                                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-600" />
                               </div>
                             </div>
-                            <p className="text-xs text-gray-600">
-                              <span className="flex flex-col">
+                            <div className="flex-1">
+                              <p className="text-[10px] sm:text-xs text-gray-600">
                                 <span className="font-medium">
                                   Early Bird Payment End:
                                 </span>
-                                <span className="underline underlin-offset-2 font-medium">
+                                <span className="ml-1 font-medium underline underline-offset-2">
                                   {formatDateShort(
                                     tournament.earlyBirdRegistrationEnd,
                                   )}
                                 </span>
-                              </span>
-                              {isEarlyBirdActive && (
-                                <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-medium rounded-full">
-                                  Active
-                                </span>
-                              )}
-                            </p>
+                                {isEarlyBirdActive && (
+                                  <span className="ml-1.5 inline-flex items-center px-1 py-0.5 bg-green-100 text-green-700 text-[9px] sm:text-[10px] font-medium rounded-full">
+                                    Active
+                                  </span>
+                                )}
+                              </p>
+                            </div>
                           </div>
                         )}
 
-                      {/* Features - Compact */}
-                      <div className="mt-2 flex flex-wrap gap-1.5">
+                      <div className="mt-2 flex flex-wrap gap-1 sm:gap-1.5">
                         {tournament.hasFreeJersey && (
-                          <span className="inline-flex items-center px-2 py-0.5 bg-purple-50 text-purple-700 text-[10px] font-medium rounded-full border border-purple-200">
+                          <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 bg-purple-50 text-purple-700 text-[9px] sm:text-[10px] font-medium rounded-full border border-purple-200">
                             Free Jersey
                           </span>
                         )}
                         {tournament.ticket && (
-                          <span className="inline-flex items-center px-2 py-0.5 bg-gray-50 text-gray-700 text-[10px] font-medium rounded-full border border-gray-200">
+                          <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 bg-gray-50 text-gray-700 text-[9px] sm:text-[10px] font-medium rounded-full border border-gray-200">
                             {tournament.ticket}
                           </span>
                         )}
                         {tournament.maxEntriesPerPlayer && (
-                          <span className="inline-flex items-center px-2 py-0.5 bg-orange-50 text-orange-700 text-[10px] font-medium rounded-full border border-orange-200">
+                          <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 bg-orange-50 text-orange-700 text-[9px] sm:text-[10px] font-medium rounded-full border border-orange-200">
                             Max {tournament.maxEntriesPerPlayer}
                           </span>
                         )}
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100">
                         {now > regEnd ? (
-                          <div className="block w-full">
-                            <Button
-                              size="sm"
-                              disabled
-                              className="w-full px-4 py-2 h-9 text-sm font-medium rounded-full shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
-                            >
-                              Registration Closed
-                            </Button>
-                          </div>
+                          <Button
+                            size="sm"
+                            disabled
+                            className="w-full px-3 sm:px-4 py-1.5 sm:py-2 h-8 sm:h-9 text-xs sm:text-sm font-medium rounded-full shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
+                          >
+                            Registration Closed
+                          </Button>
                         ) : (
                           <Link
                             href={`/sports-center/courts/categories/?tournament=${tournament.value}`}
@@ -767,15 +768,17 @@ function Page() {
                           >
                             <Button
                               size="sm"
-                              className={`w-full px-4 py-2 h-9 text-sm font-medium rounded-full shadow-sm cursor-pointer ${now < regStart
-                                ? "bg-green-600 hover:bg-green-700 text-white relative overflow-hidden group"
-                                : "bg-green-600 hover:bg-green-700 text-white"
-                                }`}
+                              className={`w-full px-3 sm:px-4 py-1.5 sm:py-2 h-8 sm:h-9 text-xs sm:text-sm font-medium rounded-full shadow-sm cursor-pointer ${
+                                now < regStart
+                                  ? "bg-green-600 hover:bg-green-700 text-white relative overflow-hidden group"
+                                  : "bg-green-600 hover:bg-green-700 text-white"
+                              }`}
                             >
                               {now < regStart ? (
-                                <span className="relative z-10 flex items-center justify-center gap-2">
-                                  <span className="animate-pulse">Coming Soon</span>
-                                  <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500"></span>
+                                <span className="relative z-10 flex items-center justify-center gap-1 sm:gap-2">
+                                  <span className="animate-pulse">
+                                    Coming Soon
+                                  </span>
                                 </span>
                               ) : (
                                 "Register Now"
@@ -791,9 +794,9 @@ function Page() {
             )}
           </div>
 
-          <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-3 rounded-b-lg">
+          <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-4 sm:px-6 py-2.5 sm:py-3 rounded-b-xl">
             <div className="flex justify-between items-center">
-              <p className="text-xs text-gray-500">
+              <p className="text-[10px] sm:text-xs text-gray-500">
                 {tournamentOptions.length} active tournament
                 {tournamentOptions.length !== 1 ? "s" : ""}
               </p>
@@ -801,7 +804,7 @@ function Page() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowRegisterModal(false)}
-                className="text-gray-600 hover:text-gray-900 h-8 px-3 text-xs"
+                className="text-gray-600 hover:text-gray-900 h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs"
               >
                 Cancel
               </Button>
@@ -810,51 +813,52 @@ function Page() {
         </DialogContent>
       </Dialog>
 
-      {/* View Verified Entries Modal */}
       <Dialog
         open={showViewEntriesModal}
         onOpenChange={setShowViewEntriesModal}
       >
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-lg z-10">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-xl">
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 rounded-t-xl z-10">
             <DialogHeader className="p-0">
-              <DialogTitle className="text-xl font-bold text-gray-800 flex items-center justify-between">
+              <DialogTitle className="text-base sm:text-xl font-bold text-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-blue-100 rounded-lg">
-                    <Users className="w-5 h-5 text-blue-600" />
+                  <div className="p-1 sm:p-1.5 bg-blue-100 rounded-lg">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
-                  <span>View Verified Entries</span>
+                  <span className="text-sm sm:text-base">
+                    View Verified Entries
+                  </span>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowViewEntriesModal(false)}
-                  className="h-8 w-8 rounded-full hover:bg-gray-100"
+                  className="h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-gray-100"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
               </DialogTitle>
-              <DialogDescription className="text-sm text-gray-500 mt-1">
+              <DialogDescription className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
                 Select a tournament to view verified entries
               </DialogDescription>
             </DialogHeader>
           </div>
 
-          <div className="px-6 py-4">
+          <div className="px-4 sm:px-6 py-4">
             {tournamentOptions.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                  <Users className="w-8 h-8 text-gray-400" />
+              <div className="text-center py-8 sm:py-12">
+                <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-3 sm:mb-4">
+                  <Users className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
                   No Tournaments Available
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500">
                   There are no tournaments to view entries at this time.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {tournamentOptions.map((tournament) => {
                   const now = new Date();
                   const tournEnd = new Date(tournament.tournamentEnd);
@@ -876,17 +880,16 @@ function Page() {
                   return (
                     <div
                       key={tournament.value}
-                      className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-sm transition-all bg-white"
+                      className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:border-blue-300 hover:shadow-sm transition-all bg-white"
                     >
-                      {/* Header Row - Title and Badges Only */}
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-lg font-semibold text-gray-900 truncate">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <h4 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                               {tournament.label}
                             </h4>
                             <Badge
-                              className={`${tournBadge.color} border px-2 py-0.5 text-xs font-medium`}
+                              className={`${tournBadge.color} border px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium`}
                             >
                               {tournBadge.label}
                             </Badge>
@@ -894,77 +897,78 @@ function Page() {
                         </div>
                       </div>
 
-                      {/* Dates Grid - Compact */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-start gap-2">
+                      <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3">
+                        <div className="flex items-start gap-1.5 sm:gap-2">
                           <div className="flex-shrink-0 mt-0.5">
-                            <div className="p-1 bg-blue-50 rounded">
-                              <Users className="w-3.5 h-3.5 text-blue-600" />
+                            <div className="p-0.5 sm:p-1 bg-blue-50 rounded">
+                              <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600" />
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-500">
+                            <p className="text-[10px] sm:text-xs font-medium text-gray-500">
                               Tournament
                             </p>
-                            <p className="text-xs text-gray-900 truncate">
+                            <p className="text-[11px] sm:text-xs text-gray-900 truncate">
                               {formatDateShort(tournament.tournamentStart)}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-1.5 sm:gap-2">
                           <div className="flex-shrink-0 mt-0.5">
-                            <div className="p-1 bg-purple-50 rounded">
-                              <CalendarIcon className="w-3.5 h-3.5 text-purple-600" />
+                            <div className="p-0.5 sm:p-1 bg-purple-50 rounded">
+                              <CalendarIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-600" />
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-500">
+                            <p className="text-[10px] sm:text-xs font-medium text-gray-500">
                               Registration
                             </p>
-                            <p className="text-xs text-gray-900 truncate">
+                            <p className="text-[11px] sm:text-xs text-gray-900 truncate">
                               {formatDateShort(tournament.registrationEnd)}
                             </p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Tournament Status - Compact */}
-                      <div className="mt-2 flex items-center gap-2">
-                        <div className="flex-shrink-0">
-                          <div
-                            className={`p-1 rounded ${tournBadge.label === "Ongoing" ? "bg-green-50" : tournBadge.label === "Upcoming" ? "bg-yellow-50" : "bg-gray-50"}`}
-                          >
-                            <span className="text-xs">
-                              {tournBadge.label === "Ongoing"
-                                ? "🏸"
-                                : tournBadge.label === "Upcoming"
-                                  ? "⏳"
-                                  : "✓"}
-                            </span>
-                          </div>
+                      <div className="mt-2 flex items-center gap-1.5 sm:gap-2">
+                        <div
+                          className={`flex-shrink-0 p-0.5 sm:p-1 rounded ${
+                            tournBadge.label === "Ongoing"
+                              ? "bg-green-50"
+                              : tournBadge.label === "Upcoming"
+                                ? "bg-yellow-50"
+                                : "bg-gray-50"
+                          }`}
+                        >
+                          <span className="text-[10px] sm:text-xs">
+                            {tournBadge.label === "Ongoing"
+                              ? "🏸"
+                              : tournBadge.label === "Upcoming"
+                                ? "⏳"
+                                : "✓"}
+                          </span>
                         </div>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-[10px] sm:text-xs text-gray-600">
                           <span className="font-medium">Status:</span>{" "}
                           {tournBadge.label}
                         </p>
                       </div>
 
-                      {/* Tournament Features - Compact */}
-                      <div className="mt-2 flex flex-wrap gap-1.5">
+                      <div className="mt-2 flex flex-wrap gap-1 sm:gap-1.5">
                         {tournament.hasFreeJersey && (
-                          <span className="inline-flex items-center px-2 py-0.5 bg-purple-50 text-purple-700 text-[10px] font-medium rounded-full border border-purple-200">
+                          <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 bg-purple-50 text-purple-700 text-[9px] sm:text-[10px] font-medium rounded-full border border-purple-200">
                             Free Jersey
                           </span>
                         )}
                         {tournament.ticket && (
-                          <span className="inline-flex items-center px-2 py-0.5 bg-gray-50 text-gray-700 text-[10px] font-medium rounded-full border border-gray-200">
+                          <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 bg-gray-50 text-gray-700 text-[9px] sm:text-[10px] font-medium rounded-full border border-gray-200">
                             {tournament.ticket}
                           </span>
                         )}
                       </div>
 
-                      {/* Button at Bottom - Full Width */}
-                      <div className="mt-4 pt-3 border-t border-gray-100">
+                      {/* Action Button */}
+                      <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100">
                         <Link
                           href={`/sports-center/v9-verified/?tournament=${tournament.value}`}
                           onClick={() => setShowViewEntriesModal(false)}
@@ -972,9 +976,9 @@ function Page() {
                         >
                           <Button
                             size="sm"
-                            className="w-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 h-9 text-sm font-medium rounded-full shadow-sm"
+                            className="w-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 h-8 sm:h-9 text-xs sm:text-sm font-medium rounded-full shadow-sm"
                           >
-                            <Users className="w-4 h-4 mr-1.5" />
+                            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
                             View Verified Entries
                           </Button>
                         </Link>
@@ -986,9 +990,9 @@ function Page() {
             )}
           </div>
 
-          <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-3 rounded-b-lg">
+          <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-4 sm:px-6 py-2.5 sm:py-3 rounded-b-xl">
             <div className="flex justify-between items-center">
-              <p className="text-xs text-gray-500">
+              <p className="text-[10px] sm:text-xs text-gray-500">
                 {tournamentOptions.length} tournament
                 {tournamentOptions.length !== 1 ? "s" : ""} available
               </p>
@@ -996,7 +1000,7 @@ function Page() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowViewEntriesModal(false)}
-                className="text-gray-600 hover:text-gray-900 h-8 px-3 text-xs"
+                className="text-gray-600 hover:text-gray-900 h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs"
               >
                 Cancel
               </Button>
