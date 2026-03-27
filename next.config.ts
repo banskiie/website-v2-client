@@ -1,7 +1,12 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  allowedDevOrigins: ["192.168.6.56", "192.168.6.64", "192.168.1.34"],
+  allowedDevOrigins: [
+    "192.168.6.56",
+    "192.168.6.64",
+    "192.168.1.34",
+    "192.168.6.67",
+  ],
   images: {
     remotePatterns: [
       {
@@ -42,7 +47,6 @@ const nextConfig = {
   experimental: {
     turbo: undefined,
   },
-
 }
 
 export default nextConfig
