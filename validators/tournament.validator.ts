@@ -10,7 +10,6 @@ export const TournamentSchema = z.object({
   settings: z.object({
     hasEarlyBird: z.boolean(),
     hasFreeJersey: z.boolean(),
-<<<<<<< HEAD
     maxEntriesIfFreeJersey: z
       .number()
       .min(1, "Max Entries Per Player if with free jersey must be at least 1")
@@ -18,9 +17,7 @@ export const TournamentSchema = z.object({
         100,
         "Max Entries Per Player if with free jersey must be at most 100",
       ),
-=======
     hasGuidelines: z.boolean().default(false),
->>>>>>> efdc371daa2a33022c8e7fa011660676c2f8f3db
     ticket: z
       .string()
       .min(2, "Name must be at least 2 character long")
@@ -37,7 +34,7 @@ export const TournamentSchema = z.object({
     earlyBirdRegistrationEnd: z.coerce.date().optional(),
     earlyBirdPaymentEnd: z.coerce.date().optional(),
     registrationPaymentEnd: z.coerce.date(
-      "Registration Payment End must be a valid date"
+      "Registration Payment End must be a valid date",
     ),
     tournamentStart: z.coerce.date("Tournament Start must be a valid date"),
     tournamentEnd: z.coerce.date("Tournament End must be a valid date"),
@@ -58,7 +55,7 @@ export const TournamentSchema = z.object({
           .max(50, "Name must be at most 50 character long")
           .trim(),
         imageURL: z.string().trim().optional(),
-      })
+      }),
     )
     .min(1, "At least one bank is required"),
 })
