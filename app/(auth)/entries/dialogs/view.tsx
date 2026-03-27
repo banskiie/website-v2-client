@@ -913,14 +913,14 @@ const ViewDialog = (props: Props) => {
                                     />
                                   )}
 
-                                  {transaction.transactionType === "REFUND_PAYMENT" && (
+                                  {/* {transaction.transactionType === "REFUND_PAYMENT" && (
                                     <RefundViewDialog
                                       externalUse
                                       _id={transaction.transactionId}
                                       title="Click here to see Refund Details 🔍"
                                       titleClassName="block text-xs text-muted-foreground hover:text-foreground"
                                     />
-                                  )}
+                                  )} */}
                                 </>
                               )}
 

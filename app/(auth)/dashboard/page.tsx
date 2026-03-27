@@ -628,15 +628,15 @@ const Page = () => {
             const cancelledEdges = prev.entries.edges.map((edge: any) =>
               edge.node._id === cancelledEntry._id
                 ? {
-                    ...edge,
-                    node: {
-                      ...edge.node,
-                      ...cancelledEntry,
-                      currentStatus: "CANCELLED",
-                      transactions:
-                        cancelledEntry.transactions || edge.node.transactions,
-                    },
-                  }
+                  ...edge,
+                  node: {
+                    ...edge.node,
+                    ...cancelledEntry,
+                    currentStatus: "CANCELLED",
+                    transactions:
+                      cancelledEntry.transactions || edge.node.transactions,
+                  },
+                }
                 : edge,
             )
 
@@ -723,14 +723,14 @@ const Page = () => {
             const updatedEdges = prev.entries.edges.map((edge: any) =>
               edge.node._id === updatedEntry._id
                 ? {
-                    ...edge,
-                    node: {
-                      ...edge.node,
-                      ...updatedEntry,
-                      transactions:
-                        updatedEntry.transactions || edge.node.transactions,
-                    },
-                  }
+                  ...edge,
+                  node: {
+                    ...edge.node,
+                    ...updatedEntry,
+                    transactions:
+                      updatedEntry.transactions || edge.node.transactions,
+                  },
+                }
                 : edge,
             )
 
@@ -775,14 +775,14 @@ const Page = () => {
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                        ...edge,
-                        node: {
-                          ...edge.node,
-                          ...updatedEntries.find(
-                            (u: any) => u._id === edge.node._id,
-                          ),
-                        },
-                      }
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...updatedEntries.find(
+                          (u: any) => u._id === edge.node._id,
+                        ),
+                      },
+                    }
                     : edge,
                 ),
               },
@@ -794,11 +794,11 @@ const Page = () => {
       },
     })
 
-     return () => {
-    if (typeof unsubscribeEntry === "function") {
-      unsubscribeEntry()
+    return () => {
+      if (typeof unsubscribeEntry === "function") {
+        unsubscribeEntry()
+      }
     }
-  }
   }, [subscribeToMoreEntries])
 
   useEffect(() => {
@@ -842,10 +842,10 @@ const Page = () => {
     })
 
     return () => {
-    if (typeof unsubscribeRefund === "function") {
-      unsubscribeRefund()
+      if (typeof unsubscribeRefund === "function") {
+        unsubscribeRefund()
+      }
     }
-  }
   }, [subscribeToMoreEntries])
 
   useEffect(() => {
@@ -989,14 +989,14 @@ const Page = () => {
                 edges: prev.payments.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                        ...edge,
-                        node: {
-                          ...edge.node,
-                          ...updatedPayments.find(
-                            (u: any) => u._id === edge.node._id,
-                          ),
-                        },
-                      }
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...updatedPayments.find(
+                          (u: any) => u._id === edge.node._id,
+                        ),
+                      },
+                    }
                     : edge,
                 ),
               },
@@ -1717,8 +1717,8 @@ const Page = () => {
       <div className="flex items-center justify-between bg-muted/30 rounded-lg px-4 py-2">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-sm text-muted-foreground">Live updates</span>
+            {/* <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> */}
+            {/* <span className="text-sm text-muted-foreground">Live updates</span> */}
           </div>
           {newEntriesCount > 0 && (
             <Badge className="bg-green-500 hover:bg-green-600 text-white animate-bounce">
@@ -2015,11 +2015,10 @@ const Page = () => {
                             >
                               <div className="relative w-full flex justify-center">
                                 <div
-                                  className={`w-full rounded-t transition-all duration-300 hover:opacity-80 cursor-pointer ${
-                                    isCurrentMonth
-                                      ? "bg-gradient-to-t from-green-500 to-green-400"
-                                      : "bg-gradient-to-t from-blue-500 to-blue-400"
-                                  }`}
+                                  className={`w-full rounded-t transition-all duration-300 hover:opacity-80 cursor-pointer ${isCurrentMonth
+                                    ? "bg-gradient-to-t from-green-500 to-green-400"
+                                    : "bg-gradient-to-t from-blue-500 to-blue-400"
+                                    }`}
                                   style={{
                                     height: `${height}%`,
                                     minHeight:
@@ -2078,16 +2077,16 @@ const Page = () => {
                         edge.node.currentStatus === "CANCELLED" ||
                         edge.node.currentStatus === "VOID",
                     ) && (
-                      <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-purple-500 rounded-full" />
-                          <span className="text-sm text-purple-700 dark:text-purple-300">
-                            Refunded/Cancelled payments are automatically
-                            excluded from totals
-                          </span>
+                        <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full" />
+                            <span className="text-sm text-purple-700 dark:text-purple-300">
+                              Refunded/Cancelled payments are automatically
+                              excluded from totals
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* No payments state */}
                     {monthlyPayments.every((m) => m.verifiedCount === 0) && (
@@ -2139,7 +2138,7 @@ const Page = () => {
                       <p className="text-xs text-muted-foreground mt-1">
                         {(
                           (entrySummary.earlyBirdCount / entrySummary.total) *
-                            100 || 0
+                          100 || 0
                         ).toFixed(1)}
                         % of total
                       </p>
@@ -2271,7 +2270,7 @@ const Page = () => {
 
               <div className="space-y-4">
                 {selectedStatus &&
-                getEntriesByStatus(selectedStatus).length === 0 ? (
+                  getEntriesByStatus(selectedStatus).length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No entries found with this status
                   </div>
@@ -2309,7 +2308,7 @@ const Page = () => {
                               {entry.playerList?.player2Name
                                 ? `${entry.playerList.player1Name} & ${entry.playerList.player2Name}`
                                 : entry.playerList?.player1Name ||
-                                  "Unknown Player"}
+                                "Unknown Player"}
                             </p>
 
                             <div className="flex items-center justify-between text-xs">
@@ -2569,7 +2568,7 @@ const Page = () => {
                 </div>
               </div>
               <CardDescription>
-                Most recently registered entries (live updates)
+                Most recently registered entries
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -2749,11 +2748,11 @@ const Page = () => {
                                 variant="outline"
                                 className={cn(
                                   entry.status === "VERIFIED" &&
-                                    "bg-green-50 text-green-700 border-green-200",
+                                  "bg-green-50 text-green-700 border-green-200",
                                   entry.status === "PAYMENT_PENDING" &&
-                                    "bg-yellow-50 text-yellow-700 border-yellow-200",
+                                  "bg-yellow-50 text-yellow-700 border-yellow-200",
                                   entry.status === "REJECTED" &&
-                                    "bg-red-50 text-red-700 border-red-200",
+                                  "bg-red-50 text-red-700 border-red-200",
                                 )}
                               >
                                 {entry.status.replace(/_/g, " ")}

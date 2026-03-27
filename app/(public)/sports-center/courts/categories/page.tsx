@@ -664,6 +664,7 @@ import {
   UploadIcon,
   Calendar,
   Ampersand,
+  ArrowLeftIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -712,6 +713,7 @@ function CategoryCard({
   gender: string
   isClosed?: boolean
   onClick: () => void
+  tournamentId?: string
 }) {
   const levelColor =
     {
@@ -734,19 +736,51 @@ function CategoryCard({
         ? "bg-pink-100 text-pink-800"
         : "bg-purple-100 text-purple-800"
 
+  const getGenderBadgeColor = () => {
+    if (gender === "Men's") return "bg-blue-100 text-blue-800"
+    if (gender === "Women's") return "bg-pink-100 text-pink-800"
+    if (gender === "Mixed") return "bg-purple-100 text-purple-800"
+    if (gender === "No Gender") return "bg-gray-100 text-gray-800"
+    return "bg-gray-100 text-gray-800"
+  }
+
+  const getBorderColor = () => {
+    if (isClosed) return "border-red-200"
+    if (gender === "Men's") return "border-blue-500 hover:border-blue-600"
+    if (gender === "Women's") return "border-pink-500 hover:border-pink-600"
+    if (gender === "Mixed") return "border-purple-500 hover:border-purple-600"
+    if (gender === "No Gender") return "border-gray-500 hover:border-gray-600"
+    return "border-gray-200 hover:border-gray-300"
+  }
+
+  const getHoverBackground = () => {
+    if (isClosed) return "hover:bg-red-100/10"
+    if (gender === "Men's") return "hover:bg-blue-100/50"
+    if (gender === "Women's") return "hover:bg-pink-100/50"
+    if (gender === "Mixed") return "hover:bg-purple-100/50"
+    if (gender === "No Gender") return "hover:bg-gray-100/50"
+    return "hover:bg-gray-100/50"
+  }
+
+  const genderBadgeColor = getGenderBadgeColor()
+  const borderColor = getBorderColor()
+  const hoverBackground = getHoverBackground()
+
   return (
     <motion.button
       onClick={onClick}
-      className={`relative flex flex-col items-start p-4 rounded-lg border cursor-pointer transition w-full min-w-0 overflow-hidden group ${
-        isClosed
-          ? "border-red-200 bg-red-50/50 hover:bg-red-100/50"
-          : "border-gray-200 bg-white hover:border-gray-300"
-      }`}
+      className={`relative flex flex-col items-start p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 w-full min-w-0 overflow-hidden group ${borderColor} ${hoverBackground} ${isClosed
+        ? "border-red-200 bg-red-50/50 hover:bg-red-100/20"
+        : "bg-white"
+        }`}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      transition={{
+        type: "tween",
+        duration: 0.2,
+        ease: "easeOut"
+      }}
     >
-      {/* Hover overlay with instruction */}
       <motion.div
         className="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
         initial={false}
@@ -765,8 +799,8 @@ function CategoryCard({
         <Badge className={`text-xs px-2 py-0.5 ${levelColor} flex-shrink-0`}>
           {level}
         </Badge>
-        <Badge className={`text-xs px-2 py-0.5 ${genderColor} flex-shrink-0`}>
-          {gender}
+        <Badge className={`text-xs px-2 py-0.5 ${genderBadgeColor} flex-shrink-0`}>
+          {gender === "No Gender" ? "No Gender" : gender}
         </Badge>
         {isClosed && (
           <Badge className="absolute top-0 right-0 bg-red-100 text-red-800 text-xs px-2 py-0.5 border border-red-300">
@@ -796,6 +830,7 @@ function CategoriesContent() {
     earlyBirdPricePerPlayer?: number
     currency?: string
     hasEarlyBird?: boolean
+    tournamentId?: string
   } | null>(null)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -846,8 +881,6 @@ function CategoriesContent() {
           })
           return updatedEvents
         })
-
-        // console.log(`Event ${type}: ${event.name} - Closed: ${event.isClosed}`);
       }
     },
   })
@@ -855,6 +888,8 @@ function CategoriesContent() {
   const activeTournament = tournamentId
     ? data?.publicTournaments?.find((t: any) => t._id === tournamentId)
     : data?.publicTournaments?.find((t: any) => t.isActive)
+
+  const tournamentName = activeTournament?.name || "C-ONE Badminton Tournament"
 
   useEffect(() => {
     if (activeTournament && activeTournament.events) {
@@ -882,6 +917,7 @@ function CategoriesContent() {
         )
           gender = "Women's"
         else if (rawGender === "x" || rawGender === "mixed") gender = "Mixed"
+        else if (rawGender === "no_gender" || rawGender === "no gender") gender = "No Gender"
 
         const type =
           event.type?.toUpperCase() === "DOUBLES" ? "Doubles" : "Singles"
@@ -896,6 +932,7 @@ function CategoriesContent() {
           earlyBirdPricePerPlayer: event.earlyBirdPricePerPlayer,
           currency: event.currency,
           isClosed: event.isClosed,
+          tournamentId: activeTournament._id,
         }
       })
       setLocalEvents(mappedEvents)
@@ -933,8 +970,9 @@ function CategoriesContent() {
   const sortCategoriesByGender = (list: typeof events) => {
     const mens = list.filter((level: any) => level.gender === "Men's")
     const womens = list.filter((level: any) => level.gender === "Women's")
+    const noGender = list.filter((level: any) => level.gender === "No Gender")
     const mixed = list.filter((level: any) => level.gender === "Mixed")
-    return [...mens, ...womens, ...mixed]
+    return [...mens, ...womens, ...noGender, ...mixed]
   }
 
   const doublesCategories = sortCategoriesByGender(
@@ -956,6 +994,7 @@ function CategoriesContent() {
       earlyBirdPricePerPlayer: category.earlyBirdPricePerPlayer,
       currency: category.currency,
       hasEarlyBird: activeTournament?.settings?.hasEarlyBird,
+      tournamentId: activeTournament?._id,
     })
     setIsModalOpen(true)
   }
@@ -975,16 +1014,19 @@ function CategoriesContent() {
         ? "bg-blue-500"
         : group === "Women's"
           ? "bg-pink-500"
-          : "bg-purple-500"
+          : group === "Mixed"
+            ? "bg-purple-500"
+            : "bg-gray-500"
+
+    const displayGroupName = group === "No Gender" ? "No Gender" : group
 
     return (
       <div key={group} className="mb-8">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${colorClass}`} />
-          {group} {title}
+          {displayGroupName} {title}
         </h3>
 
-        {/* Add instruction text for mobile/tablet users */}
         <div className="mb-3 text-xs text-gray-500 italic flex items-center gap-1 md:hidden">
           <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
           Tap any card to register
@@ -1080,128 +1122,140 @@ function CategoriesContent() {
   return (
     <div className="min-h-screen bg-linear-to-b from-green-50/30 to-green-100/30 relative">
       <Header />
+
+
+
       <div className="relative bg-white border-b shadow-sm overflow-hidden mt-16">
         <div
           className="
-    absolute
-    top-5 md:top-7
-    right-[-39px] md:right-[-70px] lg:top-9 lg:right-[-65px]
-    rotate-45
-    bg-linear-to-br from-green-600 to-green-800
-    text-white
-    text-[10px] md:text-base
-    font-medium md:font-semibold
-    py-2 sm:py-3 md:py-5
-    px-8 sm:px-12 md:px-16
-    shadow-md
-    whitespace-nowrap
-  "
+      absolute
+      top-5 md:top-7
+      right-[-39px] md:right-[-70px] lg:top-9 lg:right-[-65px]
+      rotate-45
+      bg-linear-to-br from-green-600 to-green-800
+      text-white
+      text-[10px] md:text-base
+      font-medium md:font-semibold
+      py-2 sm:py-3 md:py-5
+      px-8 sm:px-12 md:px-16
+      shadow-md
+      whitespace-nowrap
+    "
         >
           {formattedRange}
         </div>
 
-        <div className="container mx-auto px-4 py-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">
-            Categories
-          </h2>
-          <div className="h-1 w-36 mx-auto rounded-full bg-linear-to-r from-green-400 to-green-700 mb-6"></div>
-
-          <div className="flex items-center gap-2 mb-4 justify-center">
-            <Trophy className="w-8 h-8 text-yellow-500" />
-            <Badge className="bg-green-100 text-green-800 px-3 py-1">
-              Registration Open
-            </Badge>
-          </div>
-
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            C-ONE Badminton Challenge
-          </h1>
-
-          <div className="max-w-3xl mx-auto text-gray-600 space-y-3 mb-6">
-            <p>
-              Welcome to the C-ONE Badminton Challenge! This exciting event is
-              hosted by C-ONE badminton, offering players of all levels an
-              opportunity to showcase their skills and compete in a friendly and
-              supportive environment.
-            </p>
-            <p>
-              The challenge includes various categories, such as singles,
-              doubles, and mixed doubles, with winners awarded prizes at the end
-              of the event.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-start mb-6">
             <Button
-              variant="outline"
-              onClick={() => setIsCheckEntryModalOpen(true)}
-              className="cursor-pointer text-base bg-teal-600 text-white hover:bg-teal-700 flex items-center justify-center px-5 py-6 gap-2"
+              variant="ghost"
+              asChild
+              className="text-green-700 hover:text-green-800 hover:bg-green-200 transition-all duration-300 hover:scale-105"
             >
-              <Search className="!w-5 !h-5" />
-              Check Entry
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIsUploadModalOpen(true)}
-              className="cursor-pointer text-base bg-green-600 text-white hover:bg-green-700 flex items-center justify-center px-5 py-6 gap-2"
-            >
-              <UploadIcon className="!w-5 !h-5" />
-              Upload Payment
+              <Link href="/sports-center/courts#tournament" className="flex items-center gap-2">
+                <ArrowLeftIcon className="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" />
+                <span className="text-xs md:text-sm lg:text-sm 2xl:text-sm font-medium">Back to Tournament</span>
+              </Link>
             </Button>
           </div>
 
-          <motion.div
-            className="mt-2 flex flex-col items-center justify-center gap-2 cursor-pointer group"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.5 }}
-            onClick={() =>
-              doublesSectionRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              })
-            }
-          >
-            <div className="relative">
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="text-gray-500 group-hover:text-green-600 transition-colors duration-200"
-              >
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 14l-7 7-7-7m14-6l-7 7-7-7"
-                  />
-                </svg>
-              </motion.div>
+          <div className="text-center">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">
+              Categories
+            </h2>
+            <div className="h-1 w-36 mx-auto rounded-full bg-linear-to-r from-green-400 to-green-700 mb-6"></div>
 
-              {/* <motion.div
-                                className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-green-500 rounded-full group-hover:bg-green-600 transition-colors duration-200"
-                                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                            /> */}
+            <div className="flex items-center gap-2 mb-4 justify-center">
+              <Trophy className="w-8 h-8 text-yellow-500" />
+              <Badge className="bg-green-100 text-green-800 px-3 py-1">
+                Registration Open
+              </Badge>
             </div>
 
-            <motion.p
-              className="text-sm font-medium hover:scale-105 text-gray-600 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-md border border-gray-200 group-hover:bg-green-50 group-hover:text-green-700 group-hover:border-green-300 transition-all duration-200"
-              animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              {tournamentName}
+            </h1>
+
+            <div className="max-w-3xl mx-auto text-gray-600 space-y-3 mb-6">
+              <p>
+                Welcome to the C-ONE Badminton Challenge! This exciting event is
+                hosted by C-ONE badminton, offering players of all levels an
+                opportunity to showcase their skills and compete in a friendly and
+                supportive environment.
+              </p>
+              <p>
+                The challenge includes various categories, such as singles,
+                doubles, and mixed doubles, with winners awarded prizes at the end
+                of the event.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              <Button
+                variant="outline"
+                onClick={() => setIsCheckEntryModalOpen(true)}
+                className="cursor-pointer text-base bg-teal-600 text-white hover:bg-teal-700 flex items-center justify-center px-5 py-6 gap-2"
+              >
+                <Search className="!w-5 !h-5" />
+                Check Entry
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsUploadModalOpen(true)}
+                className="cursor-pointer text-base bg-green-600 text-white hover:bg-green-700 flex items-center justify-center px-5 py-6 gap-2"
+              >
+                <UploadIcon className="!w-5 !h-5" />
+                Upload Payment
+              </Button>
+            </div>
+
+            <motion.div
+              className="mt-8 flex flex-col items-center justify-center gap-2 cursor-pointer group"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+              onClick={() =>
+                doublesSectionRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                })
+              }
             >
-              ⬇️ Click here to see the Categories to Register ⬇️
-            </motion.p>
-          </motion.div>
+              <div className="relative">
+                <motion.div
+                  animate={{ y: [0, 8, 0] }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="text-gray-500 group-hover:text-green-600 transition-colors duration-200"
+                >
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 14l-7 7-7-7m14-6l-7 7-7-7"
+                    />
+                  </svg>
+                </motion.div>
+              </div>
+
+              <motion.p
+                className="text-sm font-medium hover:scale-105 text-gray-600 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-md border border-gray-200 group-hover:bg-green-50 group-hover:text-green-700 group-hover:border-green-300 transition-all duration-200"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                ⬇️ Click here to see the Categories to Register ⬇️
+              </motion.p>
+            </motion.div>
+          </div>
         </div>
       </div>
 
@@ -1290,21 +1344,21 @@ function CategoriesContent() {
                       <p className="text-2xl font-bold text-yellow-600 mb-0.5">
                         {activeTournament?.dates?.earlyBirdPaymentEnd
                           ? format(
-                              new Date(
-                                activeTournament.dates.earlyBirdPaymentEnd,
-                              ),
-                              "dd",
-                            )
+                            new Date(
+                              activeTournament.dates.earlyBirdPaymentEnd,
+                            ),
+                            "dd",
+                          )
                           : "—"}
                       </p>
                       <p className="text-xs font-semibold text-yellow-700">
                         {activeTournament?.dates?.earlyBirdPaymentEnd
                           ? format(
-                              new Date(
-                                activeTournament.dates.earlyBirdPaymentEnd,
-                              ),
-                              "MMMM yyyy",
-                            )
+                            new Date(
+                              activeTournament.dates.earlyBirdPaymentEnd,
+                            ),
+                            "MMMM yyyy",
+                          )
                           : "—"}
                       </p>
                       <div className="mt-2 pt-2 border-t border-yellow-200">
@@ -1346,17 +1400,17 @@ function CategoriesContent() {
                       <p className="text-2xl font-bold text-green-600 mb-0.5">
                         {activeTournament?.dates?.registrationEnd
                           ? format(
-                              new Date(activeTournament.dates.registrationEnd),
-                              "dd",
-                            )
+                            new Date(activeTournament.dates.registrationEnd),
+                            "dd",
+                          )
                           : "—"}
                       </p>
                       <p className="text-xs font-semibold text-green-700">
                         {activeTournament?.dates?.registrationEnd
                           ? format(
-                              new Date(activeTournament.dates.registrationEnd),
-                              "MMMM yyyy",
-                            )
+                            new Date(activeTournament.dates.registrationEnd),
+                            "MMMM yyyy",
+                          )
                           : "—"}
                       </p>
                       <div className="mt-2 pt-2 border-t border-green-200">
@@ -1389,7 +1443,7 @@ function CategoriesContent() {
             </Badge>
           </div>
 
-          {["Men's", "Women's", "Mixed"].map((group) =>
+          {["Men's", "Women's", "No Gender", "Mixed"].map((group) =>
             renderGenderSection(group, doublesCategories, "Doubles"),
           )}
         </div>
@@ -1407,7 +1461,7 @@ function CategoriesContent() {
             </Badge>
           </div>
 
-          {["Men's", "Women's", "Mixed"].map((group) =>
+          {["Men's", "Women's", "No Gender", "Mixed"].map((group) =>
             renderGenderSection(group, singlesCategories, "Singles"),
           )}
         </div>

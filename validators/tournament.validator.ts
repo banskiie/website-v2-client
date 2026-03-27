@@ -10,6 +10,7 @@ export const TournamentSchema = z.object({
   settings: z.object({
     hasEarlyBird: z.boolean(),
     hasFreeJersey: z.boolean(),
+<<<<<<< HEAD
     maxEntriesIfFreeJersey: z
       .number()
       .min(1, "Max Entries Per Player if with free jersey must be at least 1")
@@ -17,6 +18,9 @@ export const TournamentSchema = z.object({
         100,
         "Max Entries Per Player if with free jersey must be at most 100",
       ),
+=======
+    hasGuidelines: z.boolean().default(false),
+>>>>>>> efdc371daa2a33022c8e7fa011660676c2f8f3db
     ticket: z
       .string()
       .min(2, "Name must be at least 2 character long")

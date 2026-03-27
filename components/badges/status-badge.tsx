@@ -11,7 +11,7 @@ const StatusBadge = (props: Props) => {
     case false:
       return <Badge className="pointer-events-none bg-destructive">No</Badge>
     default:
-      return <Badge className="pointer-events-none bg-gray-700">Unknown</Badge>
+      return <Badge className="pointer-events-none bg-gray-700">No</Badge>
   }
 }
 

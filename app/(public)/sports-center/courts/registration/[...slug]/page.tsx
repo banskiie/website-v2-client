@@ -677,6 +677,10 @@ export default function Page({ params }: RegistrationPageProps) {
     },
   )
 
+  const backUrl = tournamentId
+    ? `/sports-center/courts/categories?tournament=${tournamentId}`
+    : "/sports-center/courts/categories"
+
   const [registryEntry, { loading: submitting, error: submitError }] =
     useMutation<RegisterEntryResponse, RegisterEntryVariables>(REGISTRY_ENTRY)
 
@@ -692,9 +696,9 @@ export default function Page({ params }: RegistrationPageProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [selectedDocumentTypePlayer1, setSelectedDocumentTypePlayer1] =
-    useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
+    useState<ValidDocumentType | null>(null)
   const [selectedDocumentTypePlayer2, setSelectedDocumentTypePlayer2] =
-    useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
+    useState<ValidDocumentType | null>(null)
   const [openDocumentTypesPlayer1, setOpenDocumentTypesPlayer1] =
     useState(false)
   const [openDocumentTypesPlayer2, setOpenDocumentTypesPlayer2] =
@@ -824,6 +828,7 @@ export default function Page({ params }: RegistrationPageProps) {
   }, [event, tournament])
 
   const isMixed = /mixed/i.test(event?.gender || "")
+  const isNoGender = /no_gender/i.test(event?.gender || "") || event?.gender === "NO_GENDER"
   const autoGender = event
     ? /women|girls|female/i.test(event?.gender ?? "")
       ? "FEMALE"
@@ -845,6 +850,7 @@ export default function Page({ params }: RegistrationPageProps) {
     | "player1ContactNumber"
     | "player1Gender"
     | "player1JerseySize"
+    | "player1DocumentType"
     | "player1IdUpload"
     | "player2FirstName"
     | "player2LastName"
@@ -855,6 +861,7 @@ export default function Page({ params }: RegistrationPageProps) {
     | "player2ContactNumber"
     | "player2Gender"
     | "player2JerseySize"
+    | "player2DocumentType"
     | "player2IdUpload"
 
   const calculateAgeAtTournament = (
@@ -1125,6 +1132,7 @@ export default function Page({ params }: RegistrationPageProps) {
       player1Email: "",
       player1ContactNumber: "",
       player1Gender: autoGender || "",
+      player1DocumentType: null as ValidDocumentType | null,
       player1IdUpload: null as FileList | null,
       ...(hasFreeJersey && { player1JerseySize: "" }),
       player2FirstName: "",
@@ -1135,6 +1143,7 @@ export default function Page({ params }: RegistrationPageProps) {
       player2Email: "",
       player2ContactNumber: "",
       player2Gender: autoGender || "",
+      player2DocumentType: null as ValidDocumentType | null,
       player2IdUpload: null as FileList | null,
       ...(hasFreeJersey && { player2JerseySize: "" }),
     },
@@ -1614,8 +1623,8 @@ export default function Page({ params }: RegistrationPageProps) {
     setFilePlayer1(null)
     setFilePlayer2(null)
     setFieldErrors({})
-    setSelectedDocumentTypePlayer1(ValidDocumentType.BIRTH_CERTIFICATE)
-    setSelectedDocumentTypePlayer2(ValidDocumentType.BIRTH_CERTIFICATE)
+    setSelectedDocumentTypePlayer1(null)
+    setSelectedDocumentTypePlayer2(null)
 
     form.reset({
       club: "",
@@ -1629,6 +1638,7 @@ export default function Page({ params }: RegistrationPageProps) {
       player1Email: "",
       player1ContactNumber: "",
       player1Gender: autoGender || "",
+      player1DocumentType: null,
       player1IdUpload: null,
       ...(hasFreeJersey && { player1JerseySize: "" }),
       player2FirstName: "",
@@ -1639,6 +1649,7 @@ export default function Page({ params }: RegistrationPageProps) {
       player2Email: "",
       player2ContactNumber: "",
       player2Gender: autoGender || "",
+      player2DocumentType: null,
       player2IdUpload: null,
       ...(hasFreeJersey && { player2JerseySize: "" }),
     })
@@ -1716,20 +1727,92 @@ export default function Page({ params }: RegistrationPageProps) {
   }
 
   const DocumentTypeSelector = ({ playerNum }: { playerNum: number }) => {
-    const selectedDocumentType =
-      playerNum === 1
-        ? selectedDocumentTypePlayer1
-        : selectedDocumentTypePlayer2
-    const setSelectedDocumentType =
-      playerNum === 1
-        ? setSelectedDocumentTypePlayer1
-        : setSelectedDocumentTypePlayer2
-    const openDocumentTypes =
+    const [openDocumentTypes, setOpenDocumentTypes] = useState(
       playerNum === 1 ? openDocumentTypesPlayer1 : openDocumentTypesPlayer2
-    const setOpenDocumentTypes =
-      playerNum === 1
-        ? setOpenDocumentTypesPlayer1
-        : setOpenDocumentTypesPlayer2
+    )
+    const [selectedDocumentType, setSelectedDocumentType] = useState(
+      playerNum === 1 ? selectedDocumentTypePlayer1 : selectedDocumentTypePlayer2
+    )
+
+    useEffect(() => {
+      if (playerNum === 1) {
+        setSelectedDocumentTypePlayer1(selectedDocumentType)
+      } else {
+        setSelectedDocumentTypePlayer2(selectedDocumentType)
+      }
+    }, [selectedDocumentType, playerNum])
+
+    useEffect(() => {
+      if (playerNum === 1) {
+        setOpenDocumentTypesPlayer1(openDocumentTypes)
+      } else {
+        setOpenDocumentTypesPlayer2(openDocumentTypes)
+      }
+    }, [openDocumentTypes, playerNum])
+
+    const fieldName = `player${playerNum}DocumentType` as FormFieldNames
+    const formValue = form.getFieldValue(fieldName)
+
+    const field = useField({ form, name: fieldName })
+    const hasError = field.state.meta.isTouched && !field.state.meta.isValid
+    const errorMessage = field.state.meta.errors?.[0]?.message
+
+    const uploadFieldName = `player${playerNum}IdUpload` as FormFieldNames
+    const uploadField = useField({ form, name: uploadFieldName })
+
+    useEffect(() => {
+      if (formValue !== selectedDocumentType) {
+        setSelectedDocumentType(formValue as ValidDocumentType | null)
+      }
+    }, [formValue])
+
+    useEffect(() => {
+      if (selectedDocumentType !== formValue) {
+        form.setFieldValue(fieldName, selectedDocumentType)
+        if (selectedDocumentType) {
+          field.setMeta((prev: any) => ({
+            ...prev,
+            errors: [],
+            errorMap: {},
+            isValid: true,
+          }))
+        }
+      }
+    }, [selectedDocumentType, fieldName, formValue])
+
+    const handleDocumentTypeSelect = (value: ValidDocumentType) => {
+      setSelectedDocumentType(value)
+      setOpenDocumentTypes(false)
+      uploadField.setMeta((prev: any) => ({
+        ...prev,
+        errors: [],
+        errorMap: {},
+      }))
+      field.setMeta((prev: any) => ({
+        ...prev,
+        errors: [],
+        errorMap: {},
+        isTouched: true,
+        isValid: true,
+      }))
+    }
+
+    const handleBlur = () => {
+      field.setMeta((prev: any) => ({
+        ...prev,
+        isTouched: true,
+      }))
+    }
+
+    const handlePopoverOpenChange = (open: boolean) => {
+      setOpenDocumentTypes(open)
+      if (!open && !selectedDocumentType) {
+        field.setMeta((prev: any) => ({
+          ...prev,
+          isTouched: true,
+        }))
+      }
+    }
 
     return (
       <Field className="text-left">
@@ -1742,7 +1825,7 @@ export default function Page({ params }: RegistrationPageProps) {
         </FieldLabel>
         <Popover
           open={openDocumentTypes}
-          onOpenChange={setOpenDocumentTypes}
+          onOpenChange={handlePopoverOpenChange}
           modal
         >
           <PopoverTrigger asChild>
@@ -1751,31 +1834,23 @@ export default function Page({ params }: RegistrationPageProps) {
               name={`documentType${playerNum}`}
               disabled={isUploading || submitting}
               aria-expanded={openDocumentTypes}
+              onBlur={handleBlur}
               variant="outline"
               role="combobox"
-              className="w-full justify-between font-normal capitalize -mt-2"
+              className={`w-full justify-between font-normal capitalize -mt-2 ${hasError
+                ? "border-red-500 bg-red-50 hover:bg-red-100 focus:ring-red-500"
+                : "border-green-200 hover:border-green-300"
+                }`}
               type="button"
             >
               {selectedDocumentType
-                ? documentTypes.find((o) => o.value === selectedDocumentType)
-                  ?.label
+                ? documentTypes.find((o) => o.value === selectedDocumentType)?.label
                 : "Select Document Type"}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0">
-            <Command
-              filter={(value, search) =>
-                documentTypes
-                  .find(
-                    (t: { value: string; label: string }) => t.value === value,
-                  )
-                  ?.label.toLowerCase()
-                  .includes(search.toLowerCase())
-                  ? 1
-                  : 0
-              }
-            >
+            <Command>
               <CommandInput placeholder="Search document type..." />
               <CommandList className="max-h-72 overflow-y-auto">
                 <CommandEmpty>No document type found.</CommandEmpty>
@@ -1787,10 +1862,7 @@ export default function Page({ params }: RegistrationPageProps) {
                     <CommandItem
                       key={o.value}
                       value={o.value}
-                      onSelect={(v) => {
-                        setSelectedDocumentType(v as ValidDocumentType)
-                        setOpenDocumentTypes(false)
-                      }}
+                      onSelect={() => handleDocumentTypeSelect(o.value as ValidDocumentType)}
                       className="capitalize"
                     >
                       <CheckIcon
@@ -1810,8 +1882,13 @@ export default function Page({ params }: RegistrationPageProps) {
           </PopoverContent>
         </Popover>
         <p className="text-xs text-gray-500 mt-1">
-          Select the type of document you're uploading (ID, Passport, etc.)
+          Select the type of document you're uploading (Birth Certificate, ID, Passport, etc.)
         </p>
+        {hasError && errorMessage && (
+          <p className="text-xs text-red-500 mt-1">
+            {errorMessage}
+          </p>
+        )}
       </Field>
     )
   }
@@ -1887,7 +1964,7 @@ export default function Page({ params }: RegistrationPageProps) {
 
       <div className="p-4 sm:p-6 pb-0 mt-20 mb-2 md:mb-0 lg:mb-0 xl:mb-0 2xl:mb-0">
         <Button variant="ghost" asChild className="text-green-700 hover:text-green-800 hover:bg-green-200">
-          <Link href="/sports-center/courts/categories" className="flex items-center gap-2">
+          <Link href={backUrl} className="flex items-center gap-2">
             <ArrowLeftIcon className="w-6 h-6" />
             <span className="underline text-md ">Back</span>
           </Link>
@@ -2257,12 +2334,12 @@ export default function Page({ params }: RegistrationPageProps) {
                                         <div className="flex items-center gap-1">
                                           <span
                                             className={`text-xs font-medium px-2 rounded ${minAge !== undefined &&
-                                                maxAge !== undefined &&
-                                                calculatedAge !== null &&
-                                                calculatedAge >= minAge &&
-                                                calculatedAge <= maxAge
-                                                ? "text-green-600 bg-green-50 border border-green-200"
-                                                : "text-red-600 bg-red-50 border border-red-200"
+                                              maxAge !== undefined &&
+                                              calculatedAge !== null &&
+                                              calculatedAge >= minAge &&
+                                              calculatedAge <= maxAge
+                                              ? "text-green-600 bg-green-50 border border-green-200"
+                                              : "text-red-600 bg-red-50 border border-red-200"
                                               }`}
                                           >
                                             Age: {calculatedAge}
@@ -2272,7 +2349,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                   </div>
 
                                   {name.includes("Gender") ? (
-                                    isMixed ? (
+                                    (isMixed || isNoGender) ? (
                                       <InputGroup>
                                         <InputGroupAddon className="mx-auto px-3">
                                           <VenusAndMarsIcon className="w-4 h-4" />
@@ -2281,8 +2358,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                         <Select
                                           name={field.name}
                                           value={
-                                            typeof field.state.value ===
-                                              "string"
+                                            typeof field.state.value === "string"
                                               ? field.state.value
                                               : ""
                                           }
@@ -2297,12 +2373,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                             <SelectValue placeholder="Select Gender" />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="MALE">
-                                              Male
-                                            </SelectItem>
-                                            <SelectItem value="FEMALE">
-                                              Female
-                                            </SelectItem>
+                                            <SelectItem value="MALE">Male</SelectItem>
+                                            <SelectItem value="FEMALE">Female</SelectItem>
                                           </SelectContent>
                                         </Select>
                                       </InputGroup>
@@ -2316,7 +2388,9 @@ export default function Page({ params }: RegistrationPageProps) {
                                           value={
                                             autoGender === "MALE"
                                               ? "Male"
-                                              : "Female"
+                                              : autoGender === "FEMALE"
+                                                ? "Female"
+                                                : ""
                                           }
                                           disabled
                                           className="!border-green-200 !bg-gray-100 !pl-3"
@@ -2480,10 +2554,21 @@ export default function Page({ params }: RegistrationPageProps) {
                                 ? selectedDocumentTypePlayer1
                                 : selectedDocumentTypePlayer2
 
+                            const hasSelectedDocumentType = selectedDocumentType !== null
+
+                            // Show error message if file is uploaded but no document type selected
+                            const showNoDocumentTypeError = file && !selectedDocumentType
+                            // Show error message if document type selected but no file uploaded
+                            const showNoFileError = selectedDocumentType && !file
+
+                            if (!hasSelectedDocumentType) {
+                              return null
+                            }
+
                             return (
                               <Field
                                 data-invalid={isInvalid}
-                                className="text-left"
+                                className="text-left mt-4"
                               >
                                 <div className="border-2 border-dashed border-green-300 rounded-2xl p-4 sm:p-6 bg-white flex flex-col items-center justify-center text-center gap-4">
                                   <div className="w-full flex flex-col text-left">
@@ -2611,8 +2696,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                   <label
                                     htmlFor={`player${playerNum}IdUpload`}
                                     className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed rounded-xl transition ${fieldErrors[`filePlayer${playerNum}`]
-                                        ? "border-red-300 bg-red-50 hover:bg-red-100"
-                                        : "border-green-300 bg-green-50 hover:bg-green-100"
+                                      ? "border-red-300 bg-red-50 hover:bg-red-100"
+                                      : "border-green-300 bg-green-50 hover:bg-green-100"
                                       } ${submitting || isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
                                   >
                                     {isUploading &&
@@ -2630,19 +2715,15 @@ export default function Page({ params }: RegistrationPageProps) {
                                     ) : (
                                       <>
                                         <UploadIcon
-                                          className={`w-6 h-6 mb-2 ${fieldErrors[
-                                              `filePlayer${playerNum}`
-                                            ]
-                                              ? "text-red-500"
-                                              : "text-green-600"
+                                          className={`w-6 h-6 mb-2 ${fieldErrors[`filePlayer${playerNum}`]
+                                            ? "text-red-500"
+                                            : "text-green-600"
                                             }`}
                                         />
                                         <span
-                                          className={`font-medium text-sm ${fieldErrors[
-                                              `filePlayer${playerNum}`
-                                            ]
-                                              ? "text-red-700"
-                                              : "text-green-700"
+                                          className={`font-medium text-sm ${fieldErrors[`filePlayer${playerNum}`]
+                                            ? "text-red-700"
+                                            : "text-green-700"
                                             }`}
                                         >
                                           Upload your files or{" "}
@@ -2669,6 +2750,17 @@ export default function Page({ params }: RegistrationPageProps) {
                                     />
                                   </label>
 
+                                  {/* Show validation error messages */}
+                                  {showNoDocumentTypeError && (
+                                    <p className="text-xs text-red-500 mt-2">
+                                      Please select a document type for Player {playerNum} before uploading.
+                                    </p>
+                                  )}
+                                  {showNoFileError && (
+                                    <p className="text-xs text-red-500 mt-2">
+                                      Please upload a document for Player {playerNum} after selecting document type.
+                                    </p>
+                                  )}
                                   {fieldErrors[`filePlayer${playerNum}`] && (
                                     <p className="text-xs text-red-500 mt-2">
                                       {fieldErrors[`filePlayer${playerNum}`]}
@@ -2737,8 +2829,8 @@ export default function Page({ params }: RegistrationPageProps) {
 
                           <span
                             className={`mt-1 text-xs font-semibold ${(playerNum === 1 ? syncPlayer1 : syncPlayer2)
-                                ? "text-green-700"
-                                : "text-gray-500"
+                              ? "text-green-700"
+                              : "text-gray-500"
                               }`}
                           >
                             {(playerNum === 1 ? syncPlayer1 : syncPlayer2)

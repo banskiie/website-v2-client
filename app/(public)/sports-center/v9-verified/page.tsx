@@ -417,6 +417,21 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { gql } from "@apollo/client"
+
+const GET_TOURNAMENT_NAME = gql`
+  query GetTournamentName($id: ID!) {
+    tournament(_id: $id) {
+      name
+    }
+  }
+`
+
+interface TournamentNameResponse {
+    tournament: {
+        name: string
+    }
+}
 
 interface VerifiedEntryEvent {
     eventId: string
@@ -447,14 +462,19 @@ function LoadingSpinner() {
     )
 }
 
-// Main content component that uses useSearchParams
 function VerifiedEntriesContent() {
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedEventFilter, setSelectedEventFilter] = useState<string>("all")
     const [accordionValue, setAccordionValue] = useState<string[]>([])
 
     const searchParams = useSearchParams()
-    const tournamentId = searchParams.get('tournament') || "68f89331ee08f676e59a469a"
+    const tournamentId = searchParams.get('tournament')
+
+    const { data: tournamentData, loading: tournamentLoading } = useQuery<TournamentNameResponse>(GET_TOURNAMENT_NAME, {
+        variables: { id: tournamentId },
+        fetchPolicy: "cache-first",
+        skip: !tournamentId
+    })
 
     const { data, loading, error, refetch } = useQuery<VerifiedEntriesResponse>(
         VERIFIED_ENTRIES_BY_TOURNAMENT,
@@ -464,7 +484,6 @@ function VerifiedEntriesContent() {
         }
     )
 
-    // Set all events to be open by default when data loads
     useEffect(() => {
         if (data?.verifiedEntriesByTournament) {
             const allEventIds = data.verifiedEntriesByTournament.map(event => event.eventId)
@@ -550,6 +569,7 @@ function VerifiedEntriesContent() {
         )
     }
 
+    const tournamentName = tournamentData?.tournament?.name || "Tournament"
     const filteredEvents = getFilteredEvents()
 
     return (
@@ -558,7 +578,7 @@ function VerifiedEntriesContent() {
 
             <div className="p-4 sm:p-6 pb-0 mt-20 mb-2 md:mb-0 lg:mb-0 xl:mb-0 2xl:mb-0">
                 <Button variant="ghost" asChild className="text-green-700 hover:text-green-800 hover:bg-green-200">
-                    <Link href="/sports-center/courts" className="flex items-center gap-2">
+                    <Link href="/sports-center/courts#tournament" className="flex items-center gap-2">
                         <ArrowLeftIcon className="w-6 h-6" />
                         <span className="underline text-md ">Back</span>
                     </Link>
@@ -568,8 +588,8 @@ function VerifiedEntriesContent() {
                 <div className="mb-8">
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">Verified Entries</h1>
-                            <p className="text-gray-600">View all verified tournament entries by event</p>
+                            <h1 className="text-3xl font-bold text-gray-900 mb-2">{tournamentName} Verified Entries</h1>
+                            <p className="text-gray-600">View all verified tournament entries for {tournamentName}</p>
                             {/* <div className="mt-2">
                                 <Badge variant="outline" className="text-blue-600 border-blue-300">
                                     Tournament ID: {tournamentId}

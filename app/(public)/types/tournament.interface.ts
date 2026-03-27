@@ -1,6 +1,7 @@
 export interface ITournamentSettings {
   hasEarlyBird: boolean
   hasFreeJersey: boolean
+  hasGuidelines: boolean
   ticket: string
   maxEntriesPerPlayer: number
 }

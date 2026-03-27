@@ -543,11 +543,11 @@ const Guidelines: React.FC<GuidelinesProps> = ({ isOpen, onClose, onAgree, categ
                                                                     <span className="mr-2">•</span>
                                                                     <span className="flex-1 text-sm">
                                                                         {note.content}
-                                                                        {note.subnote && (
+                                                                        {/* {note.subnote && (
                                                                             <span className="block text-sm text-gray-500 mt-1">
                                                                                 {note.subnote}
                                                                             </span>
-                                                                        )}
+                                                                        )} */}
                                                                     </span>
                                                                 </div>
 

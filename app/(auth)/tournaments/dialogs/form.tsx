@@ -39,6 +39,7 @@ const TOURNAMENT = gql`
         hasEarlyBird
         hasFreeJersey
         maxEntriesIfFreeJersey
+        hasGuidelines
         ticket
         maxEntriesPerPlayer
       }
@@ -96,7 +97,6 @@ const FormDialog = (props: Props) => {
     fetchPolicy: "no-cache",
   })
 
-
   // Mutation hook
   const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
   // Combined loading state
@@ -110,6 +110,7 @@ const FormDialog = (props: Props) => {
         hasEarlyBird: false,
         hasFreeJersey: false,
         maxEntriesIfFreeJersey: 1,
+        hasGuidelines: false,
         ticket: "",
         maxEntriesPerPlayer: 3,
       },
@@ -138,7 +139,7 @@ const FormDialog = (props: Props) => {
               ]?.instance?.setErrorMap({
                 onSubmit: { message },
               })
-            }
+            },
           )
         }
       },
@@ -164,7 +165,7 @@ const FormDialog = (props: Props) => {
                   ]?.instance?.setErrorMap({
                     onSubmit: { message },
                   })
-                }
+                },
               )
           }
         }
@@ -177,11 +178,15 @@ const FormDialog = (props: Props) => {
       form.setFieldValue("name", name)
       form.setFieldValue("settings.hasEarlyBird", settings.hasEarlyBird)
       form.setFieldValue("settings.hasFreeJersey", settings.hasFreeJersey)
-      form.setFieldValue("settings.maxEntriesIfFreeJersey", settings.maxEntriesIfFreeJersey)
+      form.setFieldValue(
+        "settings.maxEntriesIfFreeJersey",
+        settings.maxEntriesIfFreeJersey,
+      )
+      form.setFieldValue("settings.hasGuidelines", settings.hasGuidelines)
       form.setFieldValue("settings.ticket", settings.ticket)
       form.setFieldValue(
         "settings.maxEntriesPerPlayer",
-        settings.maxEntriesPerPlayer
+        settings.maxEntriesPerPlayer,
       )
       form.setFieldValue(
         "banks",
@@ -189,41 +194,41 @@ const FormDialog = (props: Props) => {
           name: bank.name,
           accountNumber: bank.accountNumber,
           imageURL: bank.imageURL,
-        }))
+        })),
       )
       form.setFieldValue(
         "dates.registrationStart",
-        dates.registrationStart ? new Date(dates.registrationStart) : undefined
+        dates.registrationStart ? new Date(dates.registrationStart) : undefined,
       )
       form.setFieldValue(
         "dates.registrationEnd",
-        dates.registrationEnd ? new Date(dates.registrationEnd) : undefined
+        dates.registrationEnd ? new Date(dates.registrationEnd) : undefined,
       )
       form.setFieldValue(
         "dates.earlyBirdRegistrationEnd",
         dates.earlyBirdRegistrationEnd
           ? new Date(dates.earlyBirdRegistrationEnd)
-          : undefined
+          : undefined,
       )
       form.setFieldValue(
         "dates.earlyBirdPaymentEnd",
         dates.earlyBirdPaymentEnd
           ? new Date(dates.earlyBirdPaymentEnd)
-          : undefined
+          : undefined,
       )
       form.setFieldValue(
         "dates.registrationPaymentEnd",
         dates.registrationPaymentEnd
           ? new Date(dates.registrationPaymentEnd)
-          : undefined
+          : undefined,
       )
       form.setFieldValue(
         "dates.tournamentStart",
-        dates.tournamentStart ? new Date(dates.tournamentStart) : undefined
+        dates.tournamentStart ? new Date(dates.tournamentStart) : undefined,
       )
       form.setFieldValue(
         "dates.tournamentEnd",
-        dates.tournamentEnd ? new Date(dates.tournamentEnd) : undefined
+        dates.tournamentEnd ? new Date(dates.tournamentEnd) : undefined,
       )
     }
   }, [isUpdate, data])
@@ -372,7 +377,7 @@ const FormDialog = (props: Props) => {
                                     onBlur={field.handleBlur}
                                     onChange={(e) =>
                                       field.handleChange(
-                                        parseInt(e.target.value)
+                                        parseInt(e.target.value),
                                       )
                                     }
                                     type="number"
@@ -411,11 +416,11 @@ const FormDialog = (props: Props) => {
                                         field.handleChange(val as boolean)
                                         form.setFieldValue(
                                           "dates.earlyBirdRegistrationEnd",
-                                          undefined
+                                          undefined,
                                         )
                                         form.setFieldValue(
                                           "dates.earlyBirdPaymentEnd",
-                                          undefined
+                                          undefined,
                                         )
                                       }}
                                       className="m-1"
@@ -499,7 +504,7 @@ const FormDialog = (props: Props) => {
                                     field.state.meta.isTouched &&
                                     !field.state.meta.isValid
                                   return (
-                                    <Field data-invalid={isInvalid} >
+                                    <Field data-invalid={isInvalid}>
                                       <FieldLabel htmlFor={field.name}>
                                         Max Entries Per Player with Free Jersey
                                       </FieldLabel>
@@ -514,7 +519,7 @@ const FormDialog = (props: Props) => {
                                             onBlur={field.handleBlur}
                                             onChange={(e) =>
                                               field.handleChange(
-                                                parseInt(e.target.value)
+                                                parseInt(e.target.value),
                                               )
                                             }
                                             type="number"
@@ -532,10 +537,54 @@ const FormDialog = (props: Props) => {
                                     </Field>
                                   )
                                 }}
-
                               />
                             </div>
                           )}
+                          <form.Field
+                            name="settings.hasGuidelines"
+                            children={(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <div className="flex items-start gap-1 px-1.5">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(val) => {
+                                        field.handleChange(val as boolean)
+                                      }}
+                                      className="m-1"
+                                      aria-invalid={isInvalid}
+                                      disabled={loading}
+                                    />
+                                    <div className="grid">
+                                      <FieldLabel htmlFor={field.name}>
+                                        Guidelines
+                                      </FieldLabel>
+                                      <span className="text-muted-foreground text-xs">
+                                        Tournament{" "}
+                                        <span className="font-medium underline">
+                                          {field.state.value
+                                            ? "has"
+                                            : "does not have"}{" "}
+                                          guidelines and rules.
+                                        </span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {isInvalid && (
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                    />
+                                  )}
+                                </Field>
+                              )
+                            }}
+                          />
                         </div>
                       </div>
                     </FieldSet>
@@ -959,7 +1008,7 @@ const FormDialog = (props: Props) => {
                                             onBlur={subField.handleBlur}
                                             onChange={(e) =>
                                               subField.handleChange(
-                                                e.target.value
+                                                e.target.value,
                                               )
                                             }
                                             aria-invalid={isInvalid}
@@ -995,7 +1044,7 @@ const FormDialog = (props: Props) => {
                                             onBlur={subField.handleBlur}
                                             onChange={(e) =>
                                               subField.handleChange(
-                                                e.target.value
+                                                e.target.value,
                                               )
                                             }
                                             aria-invalid={isInvalid}

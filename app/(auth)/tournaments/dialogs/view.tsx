@@ -38,6 +38,7 @@ const TOURNAMENT = gql`
       settings {
         hasEarlyBird
         hasFreeJersey
+        hasGuidelines
         ticket
         maxEntriesPerPlayer
       }
@@ -238,6 +239,7 @@ const ViewDialog = (props: Props) => {
                       </HoverCardContent>
                     </HoverCard>
                   </Label>
+
                   {loading ? (
                     <Skeleton className="my-1 w-20 h-4.25" />
                   ) : (
@@ -250,6 +252,29 @@ const ViewDialog = (props: Props) => {
                     <Skeleton className="my-1 w-20 h-4.25" />
                   ) : (
                     <ActiveBadge isActive={tournament?.isActive} />
+                  )}
+                </div>
+                <div>
+                  <Label>
+                    Guidelines
+                    <HoverCard>
+                      <HoverCardTrigger className="inline-block -ml-1 hover:cursor-pointer">
+                        <Info className="size-3.25" />
+                      </HoverCardTrigger>
+                      <HoverCardContent
+                        className="p-2 text-xs w-56"
+                        side="right"
+                      >
+                        This tournament{" "}
+                        {tournament?.settings?.hasGuidelines ? "has" : "does not have"}{" "}
+                        guidelines and rules.
+                      </HoverCardContent>
+                    </HoverCard>
+                  </Label>
+                  {loading ? (
+                    <Skeleton className="my-1 w-20 h-4.25" />
+                  ) : (
+                    <StatusBadge status={tournament?.settings?.hasGuidelines} />
                   )}
                 </div>
               </div>
@@ -284,7 +309,7 @@ const ViewDialog = (props: Props) => {
                             ),
                             new Date(
                               tournament?.dates?.earlyBirdRegistrationEnd ||
-                                new Date()
+                              new Date()
                             ),
                             {
                               includeTime: false,
@@ -302,11 +327,11 @@ const ViewDialog = (props: Props) => {
                           {formatDateRange(
                             new Date(
                               tournament?.dates?.earlyBirdPaymentEnd ||
-                                new Date()
+                              new Date()
                             ),
                             new Date(
                               tournament?.dates?.earlyBirdPaymentEnd ||
-                                new Date()
+                              new Date()
                             ),
                             {
                               includeTime: false,
@@ -346,11 +371,11 @@ const ViewDialog = (props: Props) => {
                       {formatDateRange(
                         new Date(
                           tournament?.dates?.registrationPaymentEnd ||
-                            new Date()
+                          new Date()
                         ),
                         new Date(
                           tournament?.dates?.registrationPaymentEnd ||
-                            new Date()
+                          new Date()
                         ),
                         {
                           includeTime: false,
