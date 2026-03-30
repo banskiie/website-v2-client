@@ -116,7 +116,8 @@ export default function Header() {
                             { href: "/steel", label: "Steel" },
                             { href: "/trucks", label: "Trucks & Equipment" },
                             { href: "/sports-center", label: "Sports Center" },
-                            { href: "/rentals", label: "Rentals" }
+                            { href: "/rentals", label: "Rentals" },
+                            { href: "/storage-rental", label: "Storage Rental" }
                         ].map((item, idx) => (
                             <Link
                                 key={idx}
@@ -190,7 +191,8 @@ export default function Header() {
                                 { href: "/steel", label: "Steel" },
                                 { href: "/trucks", label: "Trucks & Equipment" },
                                 { href: "/sports-center", label: "Sports Center" },
-                                { href: "/rentals", label: "Rentals" }
+                                { href: "/rentals", label: "Rentals" },
+                                { href: "/storage-rental", label: "Storage Rental" }
                             ].map((item, idx) => (
                                 <a
                                     key={idx}

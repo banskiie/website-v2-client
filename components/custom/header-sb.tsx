@@ -56,6 +56,7 @@ export default function Header() {
                             { href: "/trucks", label: "Trucks & Equipment" },
                             { href: "/sports-center", label: "Sports Center" },
                             { href: "/rentals", label: "Rentals" },
+                            { href: "/storage-rental", label: "Storage Rental" },
                         ].map((item, idx) => (
                             <Link
                                 key={idx}
@@ -113,6 +114,9 @@ export default function Header() {
                             </a>
                             <a href="/rentals" className="hover:text-green-600">
                                 Rentals
+                            </a>
+                            <a href="/storage-rental" className="hover:text-green-600">
+                                Storage Rental
                             </a>
                             <div>
                                 <button onClick={() => setIsCompanyOpen(!isCompanyOpen)} className="flex items-center justify-between w-full font-medium">
