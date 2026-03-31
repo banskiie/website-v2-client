@@ -189,6 +189,20 @@ export default function ShuttleBrewExperience() {
                     description="Enjoy seasonal drinks, promotions, and unique coffee blends only at ShuttleBrew."
                     delay={0.4}
                 />
+                <FloatingCard
+                    img={`${CLOUD}/v1774939214/Untitled_design_80_xzqul2.png`}
+                    title="Happy Valentines Day"
+                    description="From the warm lights to the romantic touches and cozy corners, ShuttleBrew was transformed into the perfect Valentine’s setting. ☕✨
+        A space made for good food, sweet moments, and memories worth keeping."
+                    delay={0.4}
+                />
+                <FloatingCard
+                    img={`${CLOUD}/v1774936160/Untitled_design_12_qocba7.png`}
+                    title="Happy Internationals Women's Day"
+                    description="From the warm lights to the romantic touches and cozy corners, ShuttleBrew was transformed into the perfect Valentine’s setting. ☕✨
+        A space made for good food, sweet moments, and memories worth keeping"
+                    delay={0.4}
+                />
             </div>
         </div>
     )

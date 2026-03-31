@@ -36,7 +36,7 @@ const locations = [
         img: `${CLOUD}/v1764120981/kauswagan_quoxl9.jpg`,
         hours: "10:00 AM - 12:00 AM",
         fields: 11,
-        phone: "0917-123-4567",
+        phone: "0917-134-4695",
         map: "C-ONE Trading Corporation, Zone 1, Rodolfo N. Pelaez St,. Kauswagan"
     },
     {
@@ -52,9 +52,8 @@ const locations = [
         img: `${CLOUD}/v1764120982/limketkai_p27fd9.jpg`,
         hours: "10:00 AM - 12:00 AM",
         fields: 4,
-        phone: "0917-134-4695",
+        phone: "0917-133-1069",
         map: "Limketkai Mall, Cinema 2"
-
     },
 ]
 
@@ -150,6 +149,30 @@ function page() {
         window.addEventListener("keydown", handleKeyDown)
         return () => window.removeEventListener("keydown", handleKeyDown)
     }, [lightboxIndex, handlePrev, handleNext])
+
+    useEffect(() => {
+        const handleKeyDown = (e: any) => {
+            if (selectedCourt !== null) {
+                if (e.key === 'ArrowLeft') {
+                    setSelectedCourt(
+                        (selectedCourt - 1 + badmintonCourts.length) % badmintonCourts.length
+                    );
+                } else if (e.key === 'ArrowRight') {
+                    setSelectedCourt(
+                        (selectedCourt + 1) % badmintonCourts.length
+                    );
+                } else if (e.key === 'Escape') {
+                    setSelectedCourt(null);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [selectedCourt, badmintonCourts.length]);
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-hidden">
@@ -293,8 +316,8 @@ function page() {
                 </div>
             </section>
 
-
-            <section className="relative py-12 px-4 sm:py-16 sm:px-8 md:py-20 md:px-12 lg:py-20 lg:px-16 mt-10 md:mt-16 lg:mt-20">
+            {/* Here */}
+            <section className="relative py-12 px-4 sm:py-16 sm:px-8 md:py-20 md:px-12 lg:py-20 lg:px-16 xl:py-20 xl:px-16 2xl:py-24 2xl:px-20 mt-10 md:mt-16 lg:mt-20 xl:mt-20 2xl:mt-24">
                 <div className="absolute inset-0 z-0">
                     <Image
                         src={`${CLOUD}/v1764210392/carousel-3_jctyuh.png`}
@@ -305,10 +328,10 @@ function page() {
                     <div className="absolute inset-0 bg-black/80"></div>
                 </div>
 
-                <div className="relative z-10 max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-8 md:gap-12 items-center">
-                    <div className="col-span-1 sm:col-span-2 md:col-span-2 lg:col-span-1">
+                <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6 md:gap-8 lg:gap-10 xl:gap-12 items-start lg:items-center">
+                    <div className="col-span-1 px-4 sm:px-6 lg:px-0">
                         <motion.h2
-                            className="text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-4 sm:mb-5 md:mb-6 text-center lg:text-left"
+                            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-5 md:mb-6 text-center lg:text-left xl:text-left"
                             initial={{ opacity: 0, x: -50 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
@@ -317,7 +340,7 @@ function page() {
                             Badminton Essentials
                         </motion.h2>
                         <motion.p
-                            className="text-xs sm:text-sm md:text-base text-white leading-relaxed text-center lg:text-left"
+                            className="text-xs sm:text-sm md:text-base text-white leading-relaxed text-center lg:text-left xl:text-left"
                             initial={{ opacity: 0, x: -50 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
@@ -327,17 +350,17 @@ function page() {
                         </motion.p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-x-6 sm:gap-x-10 md:gap-x-20 lg:gap-x-60 gap-y-8 sm:gap-y-10 col-span-1 sm:col-span-2 md:col-span-2 lg:col-span-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-10 xl:gap-12 col-span-1 px-4 sm:px-6 lg:px-0">
                         {performanceEnhancers.map((enhancer, index) => (
                             <motion.div
                                 key={index}
-                                className="relative w-[250px] sm:w-[280px] md:w-[370px] mx-auto"
+                                className="relative w-full max-w-[320px] sm:max-w-[340px] md:max-w-[380px] lg:max-w-[400px] xl:max-w-[450px] mx-auto"
                                 initial={{ opacity: 0, y: 60 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.8, delay: index * 0.2 }}
                             >
-                                <div className="relative w-full h-56 sm:h-68 md:h-90 overflow-hidden rounded-lg">
+                                <div className="relative w-full h-64 sm:h-72 md:h-80 lg:h-80! xl:h-90! overflow-hidden rounded-lg">
                                     <Image
                                         src={enhancer.image}
                                         alt={enhancer.title}
@@ -347,16 +370,16 @@ function page() {
                                 </div>
 
                                 <motion.div
-                                    className="relative mx-auto bg-[#002522] text-white px-3 sm:px-4 py-2 mt-[-20px] sm:mt-[-25px] cursor-pointer overflow-hidden h-10 lg:h-[50px]"
+                                    className="relative mx-auto bg-[#002522] text-white px-3 sm:px-4 py-2 mt-[-20px] sm:mt-[-25px] cursor-pointer overflow-hidden h-10 lg:h-[40px] xl:h-[40px]"
                                     style={{ width: "80%" }}
                                     whileHover={{ height: 180 }}
                                     transition={{ duration: 0.5, ease: "easeInOut" }}
                                 >
-                                    <h3 className="text-center text-sm sm:text-base md:text-xl mt-1 font-semibold">
+                                    <h3 className="text-center text-sm sm:text-base md:text-base lg:text-base xl:text-base mt-1 font-semibold">
                                         {enhancer.title}
                                     </h3>
                                     <motion.p
-                                        className="text-center text-xs sm:text-sm mt-2 opacity-0"
+                                        className="text-center text-xs mt-2 opacity-0"
                                         initial={{ opacity: 1 }}
                                         whileHover={{ opacity: 1 }}
                                         transition={{ duration: 0.5, delay: 0.2 }}
@@ -370,48 +393,49 @@ function page() {
                 </div>
             </section>
 
+            {/* Here */}
             <section className="relative py-16 px-6 md:px-16 bg-gray-100">
                 <div className="absolute -top-9 left-1/2 -translate-x-1/2 w-25 h-16 bg-gray-100 rounded-t-full flex items-center justify-center">
                     <MouseIcon className="w-8 h-8 text-gray-600 animate-bounce" />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 items-center max-w-8xl mx-auto">
+                <div className="grid grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 items-center max-w-8xl mx-auto">
                     <motion.div
-                        className="text-center sm:text-center sm:mt-6 md:text-left lg:text-left sm:ml-0 md:ml-10 lg:ml-60"
+                        className="text-center sm:text-center sm:mt-6 md:text-left lg:text-center xl:text-left sm:ml-0 md:ml-10! lg:ml-10! xl:ml-35 z-10 relative"
                         initial={{ opacity: 0, x: -100 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true, amount: 0.3 }}
                         transition={{ duration: 0.6 }}
                     >
-                        <h2 className="text-3xl md:text-4xl font-bold lg:text-start md:text-center text-center text-gray-800 mb-4">
+                        <h2 className="text-3xl md:text-4xl font-bold lg:text-center xl:text-start md:text-center text-center text-gray-800 mb-4">
                             C-ONE Badminton Courts
                         </h2>
-                        <p className="text-lg text-gray-600 font-medium md:text-center lg:text-start text-center">
+                        <p className="text-lg text-gray-600 font-medium md:text-center lg:text-center xl:text-start text-center">
                             C-ONE <span className="text-[#cfbe00]">Sports</span> Center
                         </p>
                     </motion.div>
 
                     <motion.div
-                        className="absolute lg:absolute sm:relative md:relative top-28 sm:top-0 md:top-0 right-0 h-[65%] sm:h-auto md:h-auto sm:w-full md:w-full lg:w-1/2 bg-[#002522]"
+                        className="absolute lg:absolute xl:absolute sm:relative md:relative top-28 sm:top-0 md:top-0 right-0 h-[65%] sm:h-auto md:h-auto sm:w-full md:w-full lg:w-full xl:w-1/2 bg-[#002522]"
                         initial={{ opacity: 0, x: 100 }}
                         whileInView={{ opacity: 0.9, x: 0 }}
                         viewport={{ once: true, amount: 0.3 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
                     />
 
-                    <div className="sm:ml-0 md:ml-4 lg:-ml-25">
+                    <div className="sm:ml-0 md:ml-4 lg:ml-0 xl:-ml-10 relative z-10 mt-8 lg:mt-8 xl:mt-0">
                         <Carousel opts={{ loop: true, align: "start" }}>
-                            <CarouselContent className="space-x-4 sm:space-x-6 md:space-x-10 lg:space-x-23">
+                            <CarouselContent className="space-x-4 sm:space-x-6 md:space-x-10 lg:space-x-8 xl:space-x-23">
                                 {badmintonCourts.map((court, index) => (
                                     <CarouselItem
                                         key={index}
-                                        className="pl-4 basis-1/1 sm:basis-1/2 md:basis-1/3"
+                                        className="pl-4 basis-1/1 sm:basis-1/2 md:basis-1/2 lg:basis-1/2 xl:basis-1/3"
                                     >
-                                        <div className="w-full sm:w-full md:w-[115%] lg:w-[130%]">
+                                        <div className="w-full sm:w-full md:w-full lg:w-[90%] xl:w-[130%] mx-auto">
                                             <motion.div
                                                 className="
       relative 
-      h-90 md:h-[28rem] lg:w-full lg:h-80 
+      h-90 md:h-[28rem] lg:h-80 xl:h-80 
       overflow-hidden cursor-pointer flex
     "
                                                 initial={{ opacity: 0, scale: 0.9 }}
@@ -470,12 +494,13 @@ function page() {
                             onClick={() => setSelectedCourt(null)}
                         >
                             <div
-                                className="relative rounded-lg p-0 inline-block flex items-center justify-center"
+                                className="relative rounded-lg p-0 inline-block flex items-center justify-center max-w-[95vw] max-h-[95vh]"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <button
-                                    className="absolute cursor-pointer left-[-60px] top-1/2 transform -translate-y-1/2 
-                     text-white text-3xl font-bold px-3 py-1 bg-black/50 rounded hover:bg-black/70"
+                                    className="absolute cursor-pointer left-[-40px] sm:left-[-50px] md:left-[-60px] top-1/2 transform -translate-y-1/2 
+                     text-white text-2xl sm:text-3xl font-bold px-2 sm:px-3 py-1 bg-black/50 rounded-full hover:bg-black/70 
+                     transition-all z-10"
                                     onClick={() =>
                                         setSelectedCourt(
                                             (selectedCourt - 1 + badmintonCourts.length) % badmintonCourts.length
@@ -485,20 +510,24 @@ function page() {
                                     ‹
                                 </button>
 
-                                <div className="relative">
-                                    <Image
-                                        src={badmintonCourts[selectedCourt].image}
-                                        alt={`Court ${selectedCourt + 1}`}
-                                        width={1600}
-                                        height={1080}
-                                        className="object-contain rounded-lg border-4 border-white"
-                                    />
-                                    <p className="mt-4 text-lg font-semibold text-white text-center">
+                                <div className="relative w-full h-full">
+                                    <div className="relative w-auto h-auto max-w-[85vw] max-h-[80vh] sm:max-w-[80vw] sm:max-h-[85vh] md:max-w-[85vw] md:max-h-[85vh]">
+                                        <Image
+                                            src={badmintonCourts[selectedCourt].image}
+                                            alt={`Court ${selectedCourt + 1}`}
+                                            width={1600}
+                                            height={1080}
+                                            className="object-contain rounded-lg border-2 sm:border-4 border-white w-full h-full"
+                                        />
+                                    </div>
+                                    <p className="mt-3 sm:mt-4 text-sm sm:text-base md:text-lg font-semibold text-white text-center px-2">
                                         C-ONE Badminton Court No. {selectedCourt + 1} ({selectedCourt + 1} /{" "}
                                         {badmintonCourts.length})
                                     </p>
                                     <button
-                                        className="absolute top-2 right-2 text-white text-2xl font-bold cursor-pointer"
+                                        className="absolute top-2 right-2 sm:top-3 sm:right-3 text-white text-2xl sm:text-3xl font-bold cursor-pointer 
+                                 hover:scale-110 transition-transform z-10 bg-black/50 rounded-full w-8 h-8 sm:w-10 sm:h-10 
+                                 flex items-center justify-center"
                                         onClick={() => setSelectedCourt(null)}
                                     >
                                         ×
@@ -506,8 +535,9 @@ function page() {
                                 </div>
 
                                 <button
-                                    className="absolute cursor-pointer right-[-60px] top-1/2 transform -translate-y-1/2 
-                     text-white text-3xl font-bold px-3 py-1 bg-black/50 rounded hover:bg-black/70"
+                                    className="absolute cursor-pointer right-[-40px] sm:right-[-50px] md:right-[-60px] top-1/2 transform -translate-y-1/2 
+                     text-white text-2xl sm:text-3xl font-bold px-2 sm:px-3 py-1 bg-black/50 rounded-full hover:bg-black/70 
+                     transition-all z-10"
                                     onClick={() =>
                                         setSelectedCourt((selectedCourt + 1) % badmintonCourts.length)
                                     }
@@ -518,7 +548,7 @@ function page() {
                         </div>
                     )
                 }
-            </section >
+            </section>
 
 
             <section
