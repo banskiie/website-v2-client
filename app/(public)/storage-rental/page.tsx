@@ -4,16 +4,16 @@ import React, { useEffect, useState } from "react"
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import Header from "@/components/custom/header-white"
-import { 
-  Warehouse, 
-  Lock, 
-  Truck, 
-  Clock, 
-  Camera, 
-  Shield, 
-  Phone, 
-  Mail, 
-  MapPin, 
+import {
+  Warehouse,
+  Lock,
+  Truck,
+  Clock,
+  Camera,
+  Shield,
+  Phone,
+  Mail,
+  MapPin,
   Calendar,
   CheckCircle2,
   ArrowRight,
@@ -41,52 +41,52 @@ const Page = () => {
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0])
 
   const galleryImages = [
-    { 
-      id: 1, 
-      src: `${CLOUD}/v1774873429/1_vtvq2t.png`, 
-      title: "Premium Storage Unit - Large", 
-      category: "Storage Units", 
+    {
+      id: 1,
+      src: `${CLOUD}/v1774873429/1_vtvq2t.png`,
+      title: "Premium Storage Unit - Large",
+      category: "Storage Units",
       height: "h-96",
       description: "Spacious 100 sqm unit perfect for business inventory"
     },
-    { 
-      id: 2, 
-      src: `${CLOUD}/v1774873429/2.2_rhlyl5.png`, 
-      title: "Secure Storage - Medium", 
-      category: "Storage Units", 
+    {
+      id: 2,
+      src: `${CLOUD}/v1774873429/2.2_rhlyl5.png`,
+      title: "Secure Storage - Medium",
+      category: "Storage Units",
       height: "h-80",
       description: "Climate-controlled medium unit for sensitive items"
     },
-    { 
-      id: 3, 
-      src: `${CLOUD}/v1774873429/5.5_lxql9d.png`, 
-      title: "Compact Storage - Small", 
-      category: "Storage Units", 
+    {
+      id: 3,
+      src: `${CLOUD}/v1774873429/5.5_lxql9d.png`,
+      title: "Compact Storage - Small",
+      category: "Storage Units",
       height: "h-64",
       description: "Perfect for personal belongings and documents"
     },
-    { 
-      id: 4, 
-      src: `${CLOUD}/v1774873429/6.5_fh7u6e.png`, 
-      title: "Extra Large Warehouse Space", 
-      category: "Commercial Storage", 
+    {
+      id: 4,
+      src: `${CLOUD}/v1774873429/6.5_fh7u6e.png`,
+      title: "Extra Large Warehouse Space",
+      category: "Commercial Storage",
       height: "h-96",
       description: "Industrial-grade storage for bulk inventory"
     },
-    { 
-      id: 5, 
-      src: `${CLOUD}/v1774873429/7.5_lg7uup.png`, 
-      title: "Drive-Up Access Units", 
-      category: "Convenience", 
+    {
+      id: 5,
+      src: `${CLOUD}/v1774873429/7.5_lg7uup.png`,
+      title: "Drive-Up Access Units",
+      category: "Convenience",
       height: "h-72",
       description: "Easy loading and unloading with vehicle access"
     },
-    { 
-     
-      id: 5, 
-      src: `${CLOUD}/v1774836543/bg_rqjach.png`, 
-      title: "Drive-Up Access Units", 
-      category: "Convenience", 
+    {
+
+      id: 5,
+      src: `${CLOUD}/v1774836543/bg_rqjach.png`,
+      title: "Drive-Up Access Units",
+      category: "Convenience",
       height: "h-72",
       description: "Easy loading and unloading with vehicle access"
     },
@@ -168,7 +168,7 @@ const Page = () => {
 
   const ChessboardPattern = () => (
     <div className="absolute inset-0 opacity-20 pointer-events-none">
-      <div 
+      <div
         className="absolute inset-0"
         style={{
           backgroundImage: `
@@ -186,7 +186,7 @@ const Page = () => {
 
   const GridPattern = () => (
     <div className="absolute inset-0 opacity-30 pointer-events-none">
-      <div 
+      <div
         className="absolute inset-0"
         style={{
           backgroundImage: `
@@ -232,7 +232,7 @@ const Page = () => {
                 <Sparkles className="w-4 h-4 text-yellow-500" />
                 <span className="text-yellow-500 text-sm">Premium Storage Solutions</span>
               </motion.div>
-              
+
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -250,7 +250,7 @@ const Page = () => {
                 transition={{ delay: 0.4 }}
                 className="text-gray-300 text-lg leading-relaxed"
               >
-                Located strategically in Kauswagan, our facilities offer a clean, secure, and highly 
+                Located strategically in Kauswagan, our facilities offer a clean, secure, and highly
                 accessible environment for your inventory, equipment, or personal belongings.
               </motion.p>
 
@@ -267,22 +267,22 @@ const Page = () => {
                   Inquire Now
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
-                
-                <button 
+
+                <button
                   onClick={openModal}
                   className="border-2 border-yellow-500 text-yellow-500 px-8 py-3 rounded-lg font-semibold hover:bg-yellow-500 hover:text-black transition-all duration-300"
                 >
                   View Facilities
                 </button>
               </motion.div>
-          
+
             </motion.div>
 
             <div className="relative" />
           </div>
         </div>
 
-        <motion.div 
+        <motion.div
           style={{ opacity }}
           className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10"
         >
@@ -303,7 +303,7 @@ const Page = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-lg p-4"
-            // onClick={closeModal}
+          // onClick={closeModal}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -371,7 +371,7 @@ const Page = () => {
                 >
                   <X className="w-8 h-8 text-white" />
                 </button>
-                
+
                 <button
                   onClick={(e) => { e.stopPropagation(); prevImage(); }}
                   disabled={selectedImage === 0}
@@ -379,7 +379,7 @@ const Page = () => {
                 >
                   <ChevronLeft className="w-8 h-8 text-white" />
                 </button>
-                
+
                 <motion.div
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -404,7 +404,7 @@ const Page = () => {
                     </p>
                   </div>
                 </motion.div>
-                
+
                 <button
                   onClick={(e) => { e.stopPropagation(); nextImage(); }}
                   disabled={selectedImage === galleryImages.length - 1}
@@ -421,7 +421,7 @@ const Page = () => {
       <div className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <ChessboardPattern />
         <DonutCircle className="top-0 -right-80" size="w-[550px] h-[550px]" />
-        
+
         <div className="relative max-w-7xl mx-auto z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -465,7 +465,7 @@ const Page = () => {
               { number: "5000+", label: "Sq Ft Available", icon: Building2 },
               { number: "24/7", label: "Security Monitoring", icon: Shield },
               { number: "100%", label: "Clean & Secure", icon: CheckCircle2 },
-              { number: "15+", label: "Years Experience", icon: Award },
+              { number: "3+", label: "Years Experience", icon: Award },
             ].map((stat, index) => (
               <motion.div
                 key={index}
@@ -486,7 +486,7 @@ const Page = () => {
 
       <div className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <DonutCircle className="top-20 -left-96" size="w-[700px] h-[700px]" />
-        
+
         <div className="relative max-w-7xl mx-auto z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
@@ -499,17 +499,17 @@ const Page = () => {
                 <Key className="w-4 h-4 text-yellow-500" />
                 <span className="text-yellow-500 text-sm">What We Offer</span>
               </div>
-              
+
               <h2 className="text-3xl lg:text-4xl font-bold text-white">
                 Everything You Need for Peace of Mind
               </h2>
-              
+
               <p className="text-gray-400">
-                Our storage facilities are designed to provide the perfect balance of security, 
-                accessibility, and convenience. Whether for business or personal use, we have the 
+                Our storage facilities are designed to provide the perfect balance of security,
+                accessibility, and convenience. Whether for business or personal use, we have the
                 right solution for you.
               </p>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                 {benefits.map((benefit, index) => (
                   <motion.div
@@ -549,7 +549,7 @@ const Page = () => {
 
       <div id="contact" className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <ChessboardPattern />
-        
+
         <div className="relative max-w-7xl mx-auto z-10">
           <div className="grid lg:grid-cols-2 gap-8">
             <motion.div
@@ -565,7 +565,7 @@ const Page = () => {
                 <h3 className="text-2xl font-bold text-white">Contact Us Today</h3>
                 <p className="text-gray-400 text-sm mt-1">For inquiries and reservations</p>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-yellow-500/10 transition-colors">
                   <Phone className="w-5 h-5 text-yellow-500" />
@@ -574,15 +574,15 @@ const Page = () => {
                     <p className="text-white font-semibold">0917-712-4665</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-yellow-500/10 transition-colors">
                   <Mail className="w-5 h-5 text-yellow-500" />
                   <div>
                     <p className="text-gray-500 text-xs">Email us</p>
-                    <p className="text-white font-semibold">storage@c-one.ph</p>
+                    <p className="text-white font-semibold">warehouse@c-one.ph</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-yellow-500/10 transition-colors">
                   <MapPin className="w-5 h-5 text-yellow-500" />
                   <div>
@@ -590,12 +590,12 @@ const Page = () => {
                     <p className="text-white font-semibold">Zone 1 Kauswagan, Rodolfo N. Pelaez Blvd, Cagayan De Oro City</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-yellow-500/10 transition-colors">
                   <Clock className="w-5 h-5 text-yellow-500" />
                   <div>
                     <p className="text-gray-500 text-xs">Access Hours</p>
-                    <p className="text-white font-semibold">Mon-Sat: 8AM - 6PM</p>
+                    <p className="text-white font-semibold">Mon-Sat: 8AM - 5PM</p>
                   </div>
                 </div>
               </div>
@@ -615,7 +615,7 @@ const Page = () => {
                   <p className="text-black/80 text-lg">
                     Reserve your unit today or schedule a facility tour. Our team is ready to assist you.
                   </p>
-                  
+
                   <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
                     <button className="bg-black text-yellow-500 px-8 py-3 rounded-lg font-semibold hover:bg-gray-900 transition-all duration-300 flex items-center justify-center gap-2">
                       <Phone className="w-5 h-5" />
@@ -630,7 +630,7 @@ const Page = () => {
                     <div className="flex flex-wrap justify-center gap-6 text-sm">
                       <div className="flex items-center gap-2 text-black/70">
                         <Mail className="w-4 h-4" />
-                        <span>storage@c-one.ph</span>
+                        <span>warehouse@c-one.ph</span>
                       </div>
                       <div className="flex items-center gap-2 text-black/70">
                         <MapPin className="w-4 h-4" />
@@ -638,7 +638,7 @@ const Page = () => {
                       </div>
                       <div className="flex items-center gap-2 text-black/70">
                         <Clock className="w-4 h-4" />
-                        <span>Mon-Sat: 8AM - 6PM</span>
+                        <span>Mon-Sat: 8AM - 5PM</span>
                       </div>
                     </div>
                   </div>
@@ -652,7 +652,7 @@ const Page = () => {
       <div className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <GridPattern />
         <DonutCircle className="bottom-0 -right-96" size="w-[600px] h-[600px]" />
-        
+
         <div className="relative max-w-7xl mx-auto z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -678,9 +678,9 @@ const Page = () => {
               referrerPolicy="no-referrer-when-downgrade"
             />
           </motion.div>
-          
+
           <div className="text-center mt-6">
-            <a 
+            <a
               href="https://www.google.com/maps/search/c-one+kauswagan/@8.5001386,124.6414118,18.75z"
               target="_blank"
               rel="noopener noreferrer"
