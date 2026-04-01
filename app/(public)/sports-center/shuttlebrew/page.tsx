@@ -217,7 +217,7 @@ const [heroLoaded, setHeroLoaded] = useState(false)
     >
       Where every sip is a{" "}
       <span className="text-[#FFBC52] font-bold text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
-        SMASH IT
+        SMASH HIT
       </span>
     </motion.p>
 
