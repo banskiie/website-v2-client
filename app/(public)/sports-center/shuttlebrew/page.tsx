@@ -378,11 +378,17 @@ const [heroLoaded, setHeroLoaded] = useState(false)
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 1, delay: 0.3 }}
     >
-      <p className="text-[#3e2b1b] text-sm sm:text-base md:text-lg leading-relaxed mb-6 sm:mb-8 lg:mb-10">
-        Experience the craftsmanship behind every cup — from the finest beans to
-        the perfect brew, enjoy the artistry that defines true coffee perfection.
-      </p>
-
+    <p className="text-[#3e2b1b] text-sm sm:text-base md:text-lg leading-relaxed mb-6 sm:mb-8 lg:mb-10">
+        {/* Experience the craftsmanship behind every cup — from the finest beans to
+        the perfect brew, enjoy the artistry that defines true coffee perfection. */}
+  Take a break from the intensity of the court and find your rhythm at ShuttleBrew. 
+  Nestled inside C-One Sports Center, we offer a cozy escape where you can enjoy 
+  artisanal coffee, refreshing beverages, and light snacks.
+  
+  <span className="block mt-4">
+    It’s the best seat in the house—where the thrill of the sport meets the warmth of a perfect brew.
+  </span>
+</p>
       <div className="flex flex-wrap justify-center xl:justify-end gap-6 sm:gap-12 lg:gap-18 text-center mb-6 sm:mb-8 lg:mb-10">
         <div>
           <h3 className="text-2xl sm:text-3xl font-bold text-[#20140c]">50+</h3>

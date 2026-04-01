@@ -542,26 +542,26 @@ export default function StoryCarousel() {
 
                     <div className="space-y-5 sm:space-y-6 md:space-y-6">
                         <p className="font-nunito-sans text-base sm:text-lg md:text-lg lg:text-xl text-[#5c3d1e]/90 leading-relaxed">
-                            Born from the fusion of{" "}
-                            <span className="font-semibold text-[#FDA12F]">sports energy</span> and{" "}
-                            <span className="font-semibold text-[#FDA12F]">coffee passion</span>,
-                            ShuttleBrew is more than just a café. It's where adrenaline meets aroma —
-                            a hub for champions, dreamers, and coffee lovers alike.
+                            Established in <span className="font-bold">2024.</span> {" "}
+                            <span className="font-semibold text-[#FDA12F]">ShuttleBrew</span> began{" "}
+                            as a modest coffee nook tucked inside the C-One Sports Center, serving as a quick caffeine fix for athletes and spectators alike. What started as a simple space for coffee lovers has quickly evolved into a destination of its own.
                         </p>
 
                         <p className="font-nunito-sans text-base sm:text-lg md:text-lg lg:text-xl text-[#5c3d1e]/90 leading-relaxed">
-                            Every cup we brew is a celebration of{" "}
-                            <span className="text-[#FDA12F] font-semibold">drive</span>,{" "}
-                            <span className="text-[#FDA12F] font-semibold">dedication</span>, and{" "}
-                            <span className="text-[#FDA12F] font-semibold">community</span>. From
-                            handpicked beans to crafted blends, each sip fuels ambition and sparks
-                            connection.
+                            Today, we are proud to announce our{" "}
+                            <span className="text-[#FDA12F] font-semibold">brand-new extension</span>,{" "}
+                            within the sports center. This expanded space allows us to go beyond the daily cup, offering a versatile venue that now caters to:
                         </p>
+                        <ul className="list-disc pl-6 space-y-1 font-nunito-sans text-base sm:text-lg md:text-lg lg:text-xl text-[#5c3d1e]/90">
+                            <li>Buffets</li>
+                            <li>Private Gatherings</li>
+                            <li>Corporate Events & Team Buildings</li>
+                            <li>Post-Game Celebrations</li>
+                        </ul>
 
                         <p className="font-nunito-sans text-base sm:text-lg md:text-lg lg:text-xl text-[#5c3d1e]/90 leading-relaxed">
-                            Whether you're cooling down after a match or seeking your daily
-                            inspiration, ShuttleBrew is where{" "}
-                            <span className="italic">your story</span> becomes part of ours.
+                            Whether you're here to cool down after a smash or to host a memorable event with a view of the action,{" "}
+                            <span className="italic">ShuttleBrew</span> is where the community comes together.
                         </p>
                     </div>
 
