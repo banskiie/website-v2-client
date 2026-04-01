@@ -83,8 +83,40 @@ const Page = () => {
     },
     {
 
-      id: 5,
+      id: 6,
       src: `${CLOUD}/v1774836543/bg_rqjach.png`,
+      title: "Drive-Up Access Units",
+      category: "Convenience",
+      height: "h-72",
+      description: "Easy loading and unloading with vehicle access"
+    },
+    {
+      id: 7,
+      src: `${CLOUD}/v1775015130/Untitled_design_-_2026-04-01T114509.259_gyuwbx.png`,
+      title: "Drive-Up Access Units",
+      category: "Convenience",
+      height: "h-72",
+      description: "Easy loading and unloading with vehicle access"
+    },
+    {
+      id: 8,
+      src: `${CLOUD}/v1775020112/Untitled_design_-_2026-04-01T114607.521_xzoi65.png`,
+      title: "Drive-Up Access Units",
+      category: "Convenience",
+      height: "h-72",
+      description: "Easy loading and unloading with vehicle access"
+    },
+    {
+      id: 9,
+      src: `${CLOUD}/v1775020113/Untitled_design_-_2026-04-01T114712.312_h91rez.png`,
+      title: "Drive-Up Access Units",
+      category: "Convenience",
+      height: "h-72",
+      description: "Easy loading and unloading with vehicle access"
+    },
+    {
+      id: 10,
+      src: `${CLOUD}/v1775020135/Untitled_design_-_2026-04-01T114716.373_oax8lt.png`,
       title: "Drive-Up Access Units",
       category: "Convenience",
       height: "h-72",
@@ -311,6 +343,7 @@ const Page = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               className="relative w-full max-w-7xl max-h-[90vh] bg-[#0a0a0a] rounded-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
+              onWheel={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center p-6 border-b border-white/10 sticky top-0 bg-[#0a0a0a] z-10">
                 <div>

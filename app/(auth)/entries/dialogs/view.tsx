@@ -27,12 +27,21 @@ import {
   CircleAlert,
   CircleQuestionMark,
   Copy,
+  Eye,
+  FileText,
+  Image as ImageIcon,
   MessageSquare,
+  X,
+  ZoomIn,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import PlayerViewDialog from "@/app/(auth)/players/dialogs/view"
 import PaymentViewDialog from "@/app/(auth)/payments/dialogs/view"
-import RefundViewDialog from "@/app/(auth)/refunds/dialogs/view"
+import {
+  Dialog as ImageDialog,
+  DialogContent as ImageDialogContent,
+} from "@/components/ui/dialog"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 const ENTRY = gql`
   query Entry($_id: ID!) {
@@ -72,6 +81,11 @@ const ENTRY = gql`
         email
         phoneNumber
         jerseySize
+        validDocuments {
+          documentURL
+          documentType
+          dateUploaded
+        }
       }
       connectedPlayer1 {
         _id
@@ -79,6 +93,11 @@ const ENTRY = gql`
         middleName
         lastName
         suffix
+        validDocuments {
+          documentURL
+          documentType
+          dateUploaded
+        }
       }
       player2Entry {
         firstName
@@ -90,6 +109,11 @@ const ENTRY = gql`
         email
         phoneNumber
         jerseySize
+        validDocuments {
+          documentURL
+          documentType
+          dateUploaded
+        }
       }
       connectedPlayer2 {
         _id
@@ -97,6 +121,11 @@ const ENTRY = gql`
         middleName
         lastName
         suffix
+        validDocuments {
+          documentURL
+          documentType
+          dateUploaded
+        }
       }
       transactions {
         transactionId
@@ -210,6 +239,189 @@ const isStatusEvent = (event: TimelineEvent): event is StatusEvent => {
   return event.isStatus
 }
 
+// Image Gallery Component for immediate display
+const ImageGallery = ({ images }: { images: any[] }) => {
+  const [selectedImage, setSelectedImage] = useState<any>(null)
+  const [isImageOpen, setIsImageOpen] = useState(false)
+
+  if (!images || images.length === 0) return null
+
+  return (
+    <>
+      <div className="grid grid-cols-3 gap-2 mt-2">
+        {images.map((img, idx) => (
+          <div
+            key={idx}
+            className="relative aspect-square cursor-pointer group rounded-lg overflow-hidden border"
+            onClick={() => {
+              setSelectedImage(img)
+              setIsImageOpen(true)
+            }}
+          >
+            <img
+              src={img.documentURL}
+              alt={img.documentType || `Document ${idx + 1}`}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+            />
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Eye className="h-6 w-6 text-white" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <ImageDialog open={isImageOpen} onOpenChange={setIsImageOpen}>
+        <ImageDialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <div className="relative h-full w-full">
+            <button
+              onClick={() => setIsImageOpen(false)}
+              className="absolute top-2 right-2 z-10 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            {selectedImage && (
+              <img
+                src={selectedImage.documentURL}
+                alt={selectedImage.documentType || "Document"}
+                className="max-w-full max-h-[90vh] object-contain mx-auto"
+              />
+            )}
+          </div>
+        </ImageDialogContent>
+      </ImageDialog>
+    </>
+  )
+}
+
+const DocumentViewer = ({ documents, title }: { documents: any[]; title: string }) => {
+  const [selectedDoc, setSelectedDoc] = useState<any>(null)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+
+  // Check if documents array is empty or undefined
+  if (!documents || documents.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground italic">
+        No documents uploaded
+      </div>
+    )
+  }
+
+  // Get the first image/document to display (similar to payment view)
+  const mainDocument = documents[0]
+
+  const getFileType = (url: string) => {
+    const extension = url.split('.').pop()?.toLowerCase()
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(extension || '')) {
+      return 'image'
+    }
+    if (['pdf'].includes(extension || '')) {
+      return 'pdf'
+    }
+    return 'other'
+  }
+
+  const isImage = getFileType(mainDocument.documentURL) === 'image'
+
+  const handleViewDocument = () => {
+    const fileType = getFileType(mainDocument.documentURL)
+    if (fileType === 'image') {
+      setSelectedDoc(mainDocument)
+      setIsSheetOpen(true)
+    } else {
+      window.open(mainDocument.documentURL, '_blank')
+    }
+  }
+
+  const hasMultipleDocuments = documents.length > 1
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="font-medium">{title}</Label>
+        {hasMultipleDocuments && (
+          <span className="text-xs text-muted-foreground">
+            +{documents.length - 1} more document(s)
+          </span>
+        )}
+      </div>
+
+      <Sheet open={isSheetOpen && selectedDoc?.documentURL === mainDocument.documentURL} onOpenChange={(open) => {
+        if (!open) setIsSheetOpen(false)
+      }}>
+        <SheetTrigger asChild>
+          <div
+            className="cursor-pointer w-full flex items-center justify-center relative group"
+            onClick={handleViewDocument}
+          >
+            {isImage ? (
+              <>
+                <img
+                  src={mainDocument.documentURL}
+                  alt={mainDocument.documentType || "Document"}
+                  className="object-contain bg-gray-50 max-h-[200px] w-full rounded-lg border group-hover:bg-gray-100 transition-all duration-200"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
+                    <ZoomIn className="w-4 h-4" />
+                    <span className="text-sm font-medium">Click to Expand</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center w-full p-8 border rounded-lg bg-gray-50 group-hover:bg-gray-100 transition-all duration-200">
+                <div className="text-center">
+                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">{mainDocument.documentType || 'Document'}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click to view</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </SheetTrigger>
+        <SheetContent className="h-screen p-[2%]" side="bottom">
+          <SheetHeader hidden>
+            <SheetTitle>Document Preview</SheetTitle>
+            <SheetDescription>{mainDocument.documentType || 'Document'}</SheetDescription>
+          </SheetHeader>
+          <div className="relative h-full w-full">
+            {isImage ? (
+              <img
+                src={mainDocument.documentURL}
+                alt={mainDocument.documentType || "Document"}
+                className="object-contain h-full w-full"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-lg font-medium mb-2">{mainDocument.documentType || 'Document'}</p>
+                  <Button
+                    onClick={() => window.open(mainDocument.documentURL, '_blank')}
+                    className="mt-4"
+                  >
+                    Open Document
+                  </Button>
+                </div>
+              </div>
+            )}
+            {mainDocument.documentType && (
+              <div className="absolute bottom-4 left-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-lg">
+                {mainDocument.documentType}
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* If there are multiple documents, show additional info */}
+      {hasMultipleDocuments && (
+        <div className="text-xs text-muted-foreground text-center mt-2">
+          {documents.length} document(s) total. Click to view the first one.
+        </div>
+      )}
+    </div>
+  )
+}
 const ViewDialog = (props: Props) => {
   // Dialog open state
   const [open, setOpen] = useState(false)
@@ -255,6 +467,18 @@ const ViewDialog = (props: Props) => {
     }
   }
 
+  const getPlayer1Documents = () => {
+    const entryDocs = entry?.player1Entry?.validDocuments || []
+    const connectedDocs = entry?.connectedPlayer1?.validDocuments || []
+    return [...entryDocs, ...connectedDocs]
+  }
+
+  const getPlayer2Documents = () => {
+    const entryDocs = entry?.player2Entry?.validDocuments || []
+    const connectedDocs = entry?.connectedPlayer2?.validDocuments || []
+    return [...entryDocs, ...connectedDocs]
+  }
+
   return (
     <Dialog modal open={isOpen} onOpenChange={setIsOpen}>
       <form>
@@ -278,6 +502,7 @@ const ViewDialog = (props: Props) => {
           onOpenAutoFocus={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
           showCloseButton={false}
+          className="max-w-5xl"
         >
           <DialogHeader>
             <DialogTitle className="flex items-center justify-start gap-1.5">
@@ -301,11 +526,12 @@ const ViewDialog = (props: Props) => {
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="details" className="">
-            <TabsList className="w-full grid grid-cols-4 -mt-2 mb-1">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="players">Players</TabsTrigger>
-              <TabsTrigger value="status">Status</TabsTrigger>
-              <TabsTrigger value="transactions">Trans.</TabsTrigger>
+            <TabsList className="flex flex-wrap w-full gap-1 -mt-2 mb-1">
+              <TabsTrigger value="details" className="flex-1 min-w-[80px]">Details</TabsTrigger>
+              <TabsTrigger value="players" className="flex-1 min-w-[80px]">Players</TabsTrigger>
+              <TabsTrigger value="documents" className="flex-1 min-w-[80px]">Documents</TabsTrigger>
+              <TabsTrigger value="status" className="flex-1 min-w-[80px]">Status</TabsTrigger>
+              <TabsTrigger value="transactions" className="flex-1 min-w-[80px]">Trans.</TabsTrigger>
             </TabsList>
             <TabsContent value="details">
               <div className="grid grid-cols-2 gap-2 h-[50vh] overflow-y-auto place-content-start">
@@ -586,6 +812,64 @@ const ViewDialog = (props: Props) => {
                 )}
               </div>
             </TabsContent>
+            <TabsContent value="documents">
+              <div className="flex flex-col gap-4 h-[50vh] overflow-y-auto p-2">
+                {entryLoading ? (
+                  <Skeleton className="w-full h-20" />
+                ) : (
+                  <>
+                    <div className="border rounded-lg p-3 bg-info/5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="h-4 w-4 text-info" />
+                        <Label className="font-semibold">Player 1 Documents</Label>
+                      </div>
+                      <DocumentViewer
+                        documents={getPlayer1Documents()}
+                        title="Document"
+                      />
+                    </div>
+
+                    {entry?.event?.type === "DOUBLES" && (
+                      <div className="border rounded-lg p-3 bg-destructive/5">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="h-4 w-4 text-destructive" />
+                          <Label className="font-semibold">Player 2 Documents</Label>
+                        </div>
+                        <DocumentViewer
+                          documents={getPlayer2Documents()}
+                          title="Document"
+                        />
+                      </div>
+                    )}
+
+                    {/* Connected Player Documents Info */}
+                    {/* {(entry?.connectedPlayer1?.validDocuments && entry.connectedPlayer1.validDocuments.length > 0) && (
+                      <div className="border rounded-lg p-3 bg-muted/5">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <Label className="font-semibold">Connected Player Documents</Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          These documents are from the connected player profile and may apply to multiple entries.
+                        </p>
+                        <DocumentViewer
+                          documents={entry?.connectedPlayer1?.validDocuments || []}
+                          title="Connected Player 1 Documents"
+                        />
+                        {(entry?.connectedPlayer2?.validDocuments && entry.connectedPlayer2.validDocuments.length > 0) && (
+                          <div className="mt-3">
+                            <DocumentViewer
+                              documents={entry?.connectedPlayer2?.validDocuments || []}
+                              title="Connected Player 2 Documents"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )} */}
+                  </>
+                )}
+              </div>
+            </TabsContent>
             <TabsContent value="status">
               <div className="flex flex-col gap-2 h-[50vh] overflow-y-auto place-content-start">
                 {entryLoading || paymentRemarksLoading ? (
@@ -821,24 +1105,6 @@ const ViewDialog = (props: Props) => {
                                   const isCancelled = entry?.statuses?.some(s => s.status === "CANCELLED");
                                   const isRefundPayment = transaction.transactionType === "REFUND_PAYMENT";
 
-                                  // mao ning naas view kay -635 ang gakakita
-                                  // if (isCancelled && isRefundPayment) {
-                                  //   const balancePayment = entry?.transactions?.find(
-                                  //     t => t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0
-                                  //   );
-                                  //   const totalPaid = balancePayment?.amountChanged || 0;
-
-                                  //   const totalRefunded = entry?.transactions
-                                  //     ?.filter(t => t.transactionType === "REFUND_PAYMENT")
-                                  //     .reduce((sum, t) => sum + Math.abs(t.amountChanged), 0) || 0;
-
-                                  //   const remainingPrincipal = totalPaid - totalRefunded;
-
-                                  //   if (transaction.amountChanged < 0) {
-                                  //     return `Remaining Balance: ₱${remainingPrincipal.toLocaleString()}`;
-                                  //   }
-                                  // }
-
                                   if (isCancelled && isRefundPayment) {
                                     const totalPaid = entry?.transactions
                                       ?.filter(t => t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0)
@@ -912,15 +1178,6 @@ const ViewDialog = (props: Props) => {
                                       titleClassName="block text-xs text-muted-foreground hover:text-foreground"
                                     />
                                   )}
-
-                                  {/* {transaction.transactionType === "REFUND_PAYMENT" && (
-                                    <RefundViewDialog
-                                      externalUse
-                                      _id={transaction.transactionId}
-                                      title="Click here to see Refund Details 🔍"
-                                      titleClassName="block text-xs text-muted-foreground hover:text-foreground"
-                                    />
-                                  )} */}
                                 </>
                               )}
 
