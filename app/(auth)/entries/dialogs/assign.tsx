@@ -2,7 +2,7 @@
 
 import { gql } from "@apollo/client";
 import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
@@ -1711,73 +1711,112 @@ const AssignDialog = (props: Props) => {
       }),
   });
 
-  const fetchPlayer1Suggestions = async () => {
-    if (!entry?.player1Entry) {
-      return;
-    }
+const fetchPlayer1Suggestions = useCallback(async () => {
+  const currentEntry = entry;
+  
+  if (!currentEntry?.player1Entry) {
+    console.log("No player1 entry data available");
+    return;
+  }
 
-    const { firstName, lastName, birthDate } = entry.player1Entry;
+  const { firstName, lastName, birthDate } = currentEntry.player1Entry;
 
-    if (!firstName || !lastName || !birthDate) {
-      return;
-    }
+  if (!firstName || !lastName || !birthDate) {
+    console.log("Missing required player1 data:", { firstName, lastName, birthDate });
+    setSuggestedPlayers1([]);
+    return;
+  }
 
-    setIsLoadingSuggestions1(true);
-    try {
-      const { data, error } = await fetchSuggestions1({
-        variables: {
-          input: {
-            firstName,
-            lastName,
-            birthDate:
-              birthDate instanceof Date ? birthDate.toISOString() : birthDate,
-          },
+  console.log("Fetching suggestions for Player 1 with:", { firstName, lastName, birthDate });
+
+  setIsLoadingSuggestions1(true);
+  try {
+    const { data, error } = await fetchSuggestions1({
+      variables: {
+        input: {
+          firstName,
+          lastName,
+          birthDate: birthDate instanceof Date ? birthDate.toISOString() : birthDate,
         },
-      });
+      },
+    });
 
-      setSuggestedPlayers1(data?.suggestPlayers || []);
-    } catch (error) {
-      console.error("Error fetching suggestions for Player 1:", error);
-    } finally {
-      setIsLoadingSuggestions1(false);
+    if (error) {
+      console.error("GraphQL error fetching suggestions:", error);
     }
-  };
 
-  const fetchPlayer2Suggestions = async () => {
-    if (!entry?.player2Entry) return;
+    const suggestions = data?.suggestPlayers || [];
+    console.log(`Received ${suggestions.length} suggestions for Player 1`);
+    setSuggestedPlayers1(suggestions);
+  } catch (error) {
+    console.error("Error fetching suggestions for Player 1:", error);
+    setSuggestedPlayers1([]);
+  } finally {
+    setIsLoadingSuggestions1(false);
+  }
+}, [entry, fetchSuggestions1]);
 
-    const { firstName, lastName, birthDate } = entry.player2Entry;
-    if (!firstName || !lastName || !birthDate) return;
+const fetchPlayer2Suggestions = useCallback(async () => {
+  const currentEntry = entry;
+  
+  if (!currentEntry?.player2Entry) {
+    console.log("No player2 entry data available");
+    return;
+  }
 
-    setIsLoadingSuggestions2(true);
-    try {
-      const { data } = await fetchSuggestions2({
-        variables: {
-          input: {
-            firstName,
-            lastName,
-            birthDate,
-          },
+  const { firstName, lastName, birthDate } = currentEntry.player2Entry;
+
+  if (!firstName || !lastName || !birthDate) {
+    console.log("Missing required player2 data:", { firstName, lastName, birthDate });
+    setSuggestedPlayers2([]);
+    return;
+  }
+
+  console.log("Fetching suggestions for Player 2 with:", { firstName, lastName, birthDate });
+
+  setIsLoadingSuggestions2(true);
+  try {
+    const { data, error } = await fetchSuggestions2({
+      variables: {
+        input: {
+          firstName,
+          lastName,
+          birthDate: birthDate instanceof Date ? birthDate.toISOString() : birthDate,
         },
-      });
-      setSuggestedPlayers2(data?.suggestPlayers || []);
-    } catch (error) {
-      console.error("Error fetching suggestions for Player 2:", error);
-    } finally {
-      setIsLoadingSuggestions2(false);
-    }
-  };
+      },
+    });
 
-  useEffect(() => {
-    if (open) {
+    if (error) {
+      console.error("GraphQL error fetching suggestions:", error);
+    }
+
+    const suggestions = data?.suggestPlayers || [];
+    console.log(`Received ${suggestions.length} suggestions for Player 2`);
+    setSuggestedPlayers2(suggestions);
+  } catch (error) {
+    console.error("Error fetching suggestions for Player 2:", error);
+    setSuggestedPlayers2([]);
+  } finally {
+    setIsLoadingSuggestions2(false);
+  }
+}, [entry, fetchSuggestions2]);
+
+useEffect(() => {
+  if (open && entry) {
+    const timer = setTimeout(() => {
       if (entry?.player1Entry) {
+        console.log("Fetching suggestion for Player 1 on dialog open");
         fetchPlayer1Suggestions();
       }
       if (entry?.player2Entry) {
+        console.log("Fetching suggestions for Player 2 on dialog open");
         fetchPlayer2Suggestions();
       }
-    }
-  }, [open, entry?.player1Entry, entry?.player2Entry]);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }
+}, [open, entry?.player1Entry, entry?.player2Entry]);
 
   const onClose = () => {
     form.reset();

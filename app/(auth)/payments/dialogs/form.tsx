@@ -1601,8 +1601,7 @@ const FormDialog = (props: Props) => {
       <Dialog modal open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           {isEditMode ? (
-            <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs w-full justify-start gap-2">
-              <Edit className="size-3" />
+            <Button variant="ghost" size="sm" className="h-7 px-2.5 font-normal! text-sm w-full justify-start gap-2">
               Edit
             </Button>
           ) : (

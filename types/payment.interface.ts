@@ -13,7 +13,8 @@ export enum PaymentStatus {
   VERIFIED = "VERIFIED",
   DUPLICATE = "DUPLICATE",
   REJECTED = "REJECTED",
-  REFUNDED = "REFUNDED"
+  REFUNDED = "REFUNDED",
+  CANCELLED = "CANCELLED",
 }
 
 export interface IPaymentStatusLog {
@@ -57,6 +58,20 @@ export interface IPaymentNode {
   paymentDate: Date
   currentStatus: PaymentStatus
   entries: String
+    entryList?: Array<{
+    isFullyPaid: boolean
+    entry: {
+      _id: string
+      entryNumber: string
+      entryKey: string
+      currentStatus: string
+      transactions?: Array<{
+        pendingAmount: number
+        amountChanged: number
+        transactionType: string
+      }>
+    }
+  }>
 }
 
 export interface IPaymentStatusLogInput {

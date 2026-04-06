@@ -1,16 +1,16 @@
-"use client"
-import ColumnFilter from "@/components/table/column-filter"
-import DataTable from "@/components/table/data-table"
-import SortHeader from "@/components/table/sort-header"
-import { Button } from "@/components/ui/button"
-import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group"
+"use client";
+import ColumnFilter from "@/components/table/column-filter";
+import DataTable from "@/components/table/data-table";
+import SortHeader from "@/components/table/sort-header";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
 import {
   InputGroup,
   InputGroupInput,
   InputGroupAddon,
   InputGroupButton,
-} from "@/components/ui/input-group"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/input-group";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -19,25 +19,31 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 import {
   IPayment,
   IPaymentInput,
   IPaymentNode,
   PaymentStatus,
-} from "@/types/payment.interface"
-import { gql } from "@apollo/client"
-import { useQuery } from "@apollo/client/react"
-import { ColumnDef } from "@tanstack/react-table"
-import { InfoIcon, Settings, Trash2Icon, PhilippinePeso } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import FormDialog from "./dialogs/form"
-import { toast } from "sonner"
+} from "@/types/payment.interface";
+import { gql } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
+import { ColumnDef } from "@tanstack/react-table";
+import {
+  InfoIcon,
+  Settings,
+  Trash2Icon,
+  PhilippinePeso,
+  AlertCircle,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import FormDialog from "./dialogs/form";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,14 +55,15 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import ViewDialog from "./dialogs/view"
-import { Checkbox } from "@/components/ui/checkbox"
-import BatchMenu from "./dialogs/batch"
-import PaymentStatusBadge from "@/components/badges/payment-status-badge"
-import VerifyDialog from "./dialogs/verify"
-import RejectDialog from "./dialogs/reject"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/dropdown-menu";
+import ViewDialog from "./dialogs/view";
+import { Checkbox } from "@/components/ui/checkbox";
+import BatchMenu from "./dialogs/batch";
+import PaymentStatusBadge from "@/components/badges/payment-status-badge";
+import VerifyDialog from "./dialogs/verify";
+import RejectDialog from "./dialogs/reject";
+import { Badge } from "@/components/ui/badge";
+import RevertDialog from "./dialogs/revert";
 
 const PAYMENTS = gql`
   query Payments(
@@ -114,13 +121,13 @@ const PAYMENTS = gql`
       }
     }
   }
-`
+`;
 
 const PAYMENT_CHANGED = gql`
   subscription PaymentChanged {
     paymentChanged {
       type
-       payment {
+      payment {
         _id
         payerName
         referenceNumber
@@ -182,66 +189,118 @@ const PAYMENT_CHANGED = gql`
       }
     }
   }
-`
+`;
 
 const ActionsColumn = ({ data }: { data?: IPaymentNode }) => {
-  const payment = useMemo(() => data, [data])
-  const [menuOpen, setMenuOpen] = useState(false)
-  const status = useMemo(() => payment?.currentStatus, [payment])
+  const payment = useMemo(() => data, [data]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showRevertDialog, setShowRevertDialog] = useState(false);
+  const status = useMemo(() => payment?.currentStatus, [payment]);
+
+  // Prepare payment data for revert dialog - convert types to match expected format
+  const revertPaymentData = useMemo(() => {
+    if (!payment) return undefined;
+    return {
+      payerName: payment.payerName,
+      referenceNumber: payment.referenceNumber,
+      amount: payment.amount,
+      method: payment.method as string, // Convert PaymentMethod enum to string
+      paymentDate:
+        typeof payment.paymentDate === "string"
+          ? payment.paymentDate
+          : payment.paymentDate?.toISOString?.() || String(payment.paymentDate), // Convert Date to string
+      entries: String(payment.entries || ""),
+      entryList: payment.entryList,
+    };
+  }, [payment]);
 
   return (
-    <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm">
-          <Settings />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent side="left" align="start">
-        <DropdownMenuLabel>Settings</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <ViewDialog _id={payment?._id} />
-          <FormDialog _id={payment?._id} onClose={() => setMenuOpen(false)} />
-          {status === "SENT" && (
-            <>
-              <DropdownMenuSeparator />
-              <VerifyDialog
-                _id={payment?._id}
-                onClose={() => setMenuOpen(false)}
-              />
-              <RejectDialog
-                _id={payment?._id}
-                onClose={() => setMenuOpen(false)}
-              />
-            </>
-          )}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
+    <>
+      <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-sm">
+            <Settings />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="left" align="start">
+          <DropdownMenuLabel>Settings</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <ViewDialog _id={payment?._id} />
+            <FormDialog _id={payment?._id} onClose={() => setMenuOpen(false)} />
+            {status === "SENT" && (
+              <>
+                <DropdownMenuSeparator />
+                <VerifyDialog
+                  _id={payment?._id}
+                  onClose={() => setMenuOpen(false)}
+                />
+                <RejectDialog
+                  _id={payment?._id}
+                  onClose={() => setMenuOpen(false)}
+                />
+              </>
+            )}
+            {(status === "SENT" ||
+              status === "VERIFIED" ||
+              status === "REJECTED" ||
+              status === "REFUNDED" ||
+              status === "CANCELLED") && (
+              <>
+                <DropdownMenuSeparator />
+                <div
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 text-red-600"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMenuOpen(false);
+                    setShowRevertDialog(true);
+                  }}
+                >
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  Revert Payment
+                </div>
+              </>
+            )}
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Revert Dialog */}
+      {showRevertDialog && (
+        <RevertDialog
+          _id={payment?._id || ""}
+          onClose={() => {
+            setShowRevertDialog(false);
+            setMenuOpen(false);
+          }}
+          paymentData={revertPaymentData}
+        />
+      )}
+    </>
+  );
+};
 
 const Page = () => {
-  const [rows, setRows] = useState<number>(10)
+  const [rows, setRows] = useState<number>(10);
   const [page, setPage] = useState<{
-    current: number
-    loaded: number
-    max: number
+    current: number;
+    loaded: number;
+    max: number;
   }>({
     current: 1,
     loaded: 1,
     max: 1,
-  })
-  const [search, setSearch] = useState<string>("")
-  const [searchTerm, setSearchTerm] = useState("")
+  });
+  const [search, setSearch] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [sort, setSort] = useState<{
-    key: string
-    order: "ASC" | "DESC"
-  } | null>(null)
+    key: string;
+    order: "ASC" | "DESC";
+  } | null>(null);
   const [filter, setFilter] = useState<
     { key: string; value: string; type: string }[]
-  >([])
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  >([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { data, loading, fetchMore, subscribeToMore, error }: any = useQuery(
     PAYMENTS,
     {
@@ -253,24 +312,27 @@ const Page = () => {
       },
       fetchPolicy: "network-only",
       notifyOnNetworkStatusChange: true,
-    }
-  )
+    },
+  );
 
   useEffect(() => {
     const unsubscribe = subscribeToMore({
       document: PAYMENT_CHANGED,
       updateQuery: (prev: any, { subscriptionData }: any) => {
-        if (!subscriptionData.data) return prev
-        const { type, payment, payments } = subscriptionData.data.paymentChanged
+        if (!subscriptionData.data) return prev;
+        const { type, payment, payments } =
+          subscriptionData.data.paymentChanged;
         switch (type) {
           case "CREATE":
-            const newPayment = payment
+            const newPayment = payment;
             const newPaymentExists = prev.payments.edges.find(
-              (edge: any) => edge.node._id === newPayment?._id
-            )
+              (edge: any) => edge.node._id === newPayment?._id,
+            );
             if (newPaymentExists || search || sort || filter.length > 0)
-              return prev
-            toast.success(`Payment (${newPayment?.payerName}) has been created.`)
+              return prev;
+            toast.success(
+              `Payment (${newPayment?.payerName}) has been created.`,
+            );
             return Object.assign({}, prev, {
               payments: {
                 ...prev.payments,
@@ -280,113 +342,115 @@ const Page = () => {
                   ...prev.payments.edges,
                 ],
               },
-            })
+            });
           case "UPDATE":
-            const updatedPayment = payment
-            if (search || sort || filter.length > 0) return prev
+            const updatedPayment = payment;
+            if (search || sort || filter.length > 0) return prev;
             toast.success(
-              `Payment (${updatedPayment?.payerName}) has been updated.`
-            )
+              `Payment (${updatedPayment?.payerName}) has been updated.`,
+            );
             return Object.assign({}, prev, {
               payments: {
                 ...prev.payments,
                 edges: prev.payments.edges.map((edge: any) =>
                   edge.node._id === updatedPayment._id
                     ? { ...edge, node: updatedPayment }
-                    : edge
+                    : edge,
                 ),
               },
-            })
+            });
           case "DELETE":
-            const deletedPayment = payment
-            if (search || sort || filter.length > 0) return prev
-            toast.success(`Payment (${deletedPayment?.name}) has been deleted.`)
+            const deletedPayment = payment;
+            if (search || sort || filter.length > 0) return prev;
+            toast.success(
+              `Payment (${deletedPayment?.name}) has been deleted.`,
+            );
             return Object.assign({}, prev, {
               payments: {
                 ...prev.payments,
                 total: prev.payments.total - 1,
                 edges: prev.payments.edges.filter(
-                  (edge: any) => edge.node._id !== deletedPayment._id
+                  (edge: any) => edge.node._id !== deletedPayment._id,
                 ),
               },
-            })
+            });
           case "BATCH_UPDATE":
-            const updatedPayments = payments
-            if (search || sort || filter.length > 0) return prev
+            const updatedPayments = payments;
+            if (search || sort || filter.length > 0) return prev;
             toast.success(
-              `Batch update successful for ${updatedPayments.length} payments.`
-            )
-            const updatedIds = new Set(updatedPayments.map((u: any) => u._id))
+              `Batch update successful for ${updatedPayments.length} payments.`,
+            );
+            const updatedIds = new Set(updatedPayments.map((u: any) => u._id));
             return Object.assign({}, prev, {
               payments: {
                 ...prev.payments,
                 edges: prev.payments.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...updatedPayments.find(
-                          (u: any) => u._id === edge.node._id
-                        ),
-                      },
-                    }
-                    : edge
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedPayments.find(
+                            (u: any) => u._id === edge.node._id,
+                          ),
+                        },
+                      }
+                    : edge,
                 ),
               },
-            })
+            });
           default:
-            return prev
+            return prev;
         }
       },
-    })
+    });
     return () => {
-    if (typeof unsubscribe === "function") {
-      unsubscribe()
-    }
-  }
-  }, [subscribeToMore, search, sort, filter])
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    };
+  }, [subscribeToMore, search, sort, filter]);
 
   const { total, nodes, pageInfo } = useMemo(() => {
-    const nodes = data?.payments.edges.map((edge: any) => edge.node) || []
-    const pageInfo = data?.payments.pageInfo
+    const nodes = data?.payments.edges.map((edge: any) => edge.node) || [];
+    const pageInfo = data?.payments.pageInfo;
 
     setPage((prev) => ({
       ...prev,
       max: data?.payments.pages || 1,
-    }))
+    }));
 
     return {
       total: data?.payments.total || 0,
       nodes,
       pageInfo,
-    }
-  }, [data])
+    };
+  }, [data]);
 
-  const resetPage = () => setPage({ current: 1, loaded: 1, max: 1 })
+  const resetPage = () => setPage({ current: 1, loaded: 1, max: 1 });
 
   const onSearch = (value: string) => {
-    setSearch(value)
-    resetPage()
-  }
+    setSearch(value);
+    resetPage();
+  };
 
   const existingPayments = useMemo(() => {
     return (data?.payments.edges || []).map((edge: any) => ({
       referenceNumber: edge.node.referenceNumber,
       payerName: edge.node.payerName,
-      entries: edge.node.entries || ""
-    }))
-  }, [data?.payments])
+      entries: edge.node.entries || "",
+    }));
+  }, [data?.payments]);
 
   const onFilter = useCallback((value: any) => {
-    setFilter(value)
-    resetPage()
-  }, [])
+    setFilter(value);
+    resetPage();
+  }, []);
 
   const onSort = useCallback((value: any) => {
-    setSort(value)
-    resetPage()
-  }, [])
+    setSort(value);
+    resetPage();
+  }, []);
 
   const getEntryBalance = (entry: any) => {
     if (!entry?.transactions) return 0;
@@ -409,35 +473,35 @@ const Page = () => {
               onCheckedChange={(value: boolean) => {
                 if (value) {
                   const allIds = new Set<string>(
-                    data?.payments.edges.map((edge: any) => edge.node._id)
-                  )
-                  setSelectedIds(allIds)
+                    data?.payments.edges.map((edge: any) => edge.node._id),
+                  );
+                  setSelectedIds(allIds);
                 } else {
-                  setSelectedIds(new Set())
+                  setSelectedIds(new Set());
                 }
               }}
             />
-          )
+          );
         },
         cell: ({ row }) => {
-          const isChecked = selectedIds.has((row.original as any)._id)
+          const isChecked = selectedIds.has((row.original as any)._id);
           return (
             <Checkbox
               checked={isChecked}
               className="hover:cursor-pointer"
               onCheckedChange={(value: boolean) => {
                 setSelectedIds((prev) => {
-                  const newSet = new Set(prev)
+                  const newSet = new Set(prev);
                   if (value) {
-                    newSet.add((row.original as any)._id)
+                    newSet.add((row.original as any)._id);
                   } else {
-                    newSet.delete((row.original as any)._id)
+                    newSet.delete((row.original as any)._id);
                   }
-                  return newSet
-                })
+                  return newSet;
+                });
               }}
             />
-          )
+          );
         },
         size: 10,
       },
@@ -461,9 +525,9 @@ const Page = () => {
           />
         ),
         cell: ({ row }) => {
-          const entries = (row.original as any).entries as string
-          const entryList = entries.split(",").map((e) => e.trim())
-          return <span>{entryList.join(", ")}</span>
+          const entries = (row.original as any).entries as string;
+          const entryList = entries.split(",").map((e) => e.trim());
+          return <span>{entryList.join(", ")}</span>;
         },
       },
       {
@@ -532,7 +596,8 @@ const Page = () => {
           return (
             <div className="flex flex-col gap-1">
               <span className="font-medium">
-                ₱{parseFloat(amount).toLocaleString("en-PH", {
+                ₱
+                {parseFloat(amount).toLocaleString("en-PH", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -566,7 +631,7 @@ const Page = () => {
             return {
               entryNumber: item.entry?.entryNumber,
               balance,
-              isFullyPaid: item.isFullyPaid
+              isFullyPaid: item.isFullyPaid,
             };
           });
 
@@ -574,13 +639,21 @@ const Page = () => {
             <div className="flex items-start gap-7 min-w-[140px]">
               <div className="flex flex-col items-start gap-1">
                 {entryBalances.map((item: any, idx: any) => (
-                  <div key={idx} className="flex items-center gap-2 text-[13px]">
-                    <span className="text-gray-600 font-mono">{item.entryNumber}:</span>
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2 text-[13px]"
+                  >
+                    <span className="text-gray-600 font-mono">
+                      {item.entryNumber}:
+                    </span>
                     {item.balance < 0 ? (
-                      <span className="text-red-600  text-[13px] flex gap-1"> Excess:
+                      <span className="text-red-600  text-[13px] flex gap-1">
+                        {" "}
+                        Excess:
                         <span className=" font-medium underline underline-offset-2">
                           ₱{Math.abs(item.balance).toLocaleString()}
-                        </span></span>
+                        </span>
+                      </span>
                     ) : item.balance === 0 ? (
                       <span className="text-green-600 font-medium">Paid</span>
                     ) : (
@@ -596,16 +669,20 @@ const Page = () => {
 
                 {hasExcess && excess > 0 && entryBalances.length === 0 && (
                   <span className=" text-[13px] gap2 flex">
-                    Excess:<span className="text-blue-600 font-medium underline underline-offset-2">₱{excess.toLocaleString()}
+                    Excess:
+                    <span className="text-blue-600 font-medium underline underline-offset-2">
+                      ₱{excess.toLocaleString()}
                     </span>
                   </span>
                 )}
                 {hasRefundsForThisPayment && refundAmount > 0 && (
                   <span className=" text-[13px] gap-2 flex text-gray-600">
-                    Refunded:<span className="text-green-600 font-medium underline underline-offset-2"> ₱{refundAmount.toLocaleString()}
+                    Refunded:
+                    <span className="text-green-600 font-medium underline underline-offset-2">
+                      {" "}
+                      ₱{refundAmount.toLocaleString()}
                     </span>
                   </span>
-
                 )}
               </div>
             </div>
@@ -620,21 +697,35 @@ const Page = () => {
           const payment = row.original as any;
           const entryList = payment.entryList || [];
 
-          if (entryList.length === 0) return <span className=" text-[13px] text-muted-foreground">Not distributed</span>;
+          if (entryList.length === 0)
+            return (
+              <span className=" text-[13px] text-muted-foreground">
+                Not distributed
+              </span>
+            );
 
           return (
             <div className="flex flex-col gap-1">
               {entryList.map((item: any, index: number) => (
-                <div key={index} className="flex items-center gap-2  text-[13px]">
+                <div
+                  key={index}
+                  className="flex items-center gap-2  text-[13px]"
+                >
                   <span className="font-mono text-gray-600">
                     {item.entry?.entryNumber}:
                   </span>
                   {item.isFullyPaid ? (
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[11px] px-1">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-50 text-green-700 border-green-200 text-[11px] px-1"
+                    >
                       Fully Paid
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[11px] px-1">
+                    <Badge
+                      variant="outline"
+                      className="bg-blue-50 text-blue-700 border-blue-200 text-[11px] px-1"
+                    >
                       Partial
                     </Badge>
                   )}
@@ -682,11 +773,11 @@ const Page = () => {
         size: 20,
       },
     ],
-    [sort, onSort, filter, onFilter, selectedIds, data?.payments]
+    [sort, onSort, filter, onFilter, selectedIds, data?.payments],
   );
 
   const goNext = async () => {
-    if (page.current === page.max) return
+    if (page.current === page.max) return;
     if (page.current === page.loaded) {
       await fetchMore({
         variables: {
@@ -697,35 +788,35 @@ const Page = () => {
           filter,
         },
         updateQuery: (prev: any, { fetchMoreResult: more }: any) => {
-          if (!more) return prev
+          if (!more) return prev;
           return {
             payments: {
               ...prev.payments,
               edges: [...prev.payments.edges, ...more.payments.edges],
               pageInfo: more.payments.pageInfo,
             },
-          }
+          };
         },
-      })
+      });
       setPage((prev) => ({
         ...prev,
         loaded: prev.loaded + 1,
-      }))
+      }));
     }
 
     setPage((prev) => ({
       ...prev,
       current: prev.current + 1,
-    }))
-  }
+    }));
+  };
 
   const goPrev = () => {
-    if (page.current === 1) return
+    if (page.current === 1) return;
     setPage((prev) => ({
       ...prev,
       current: prev.current - 1,
-    }))
-  }
+    }));
+  };
 
   return (
     <div className="w-full h-full flex-1 flex flex-col gap-2">
@@ -740,10 +831,10 @@ const Page = () => {
             onChange={(e) => setSearchTerm(e.currentTarget.value)}
             placeholder="Type to search..."
             onKeyDown={(e) => {
-              if (e.key === "Enter") onSearch(searchTerm)
+              if (e.key === "Enter") onSearch(searchTerm);
               if (e.key === "Escape") {
-                setSearchTerm("")
-                onSearch("")
+                setSearchTerm("");
+                onSearch("");
               }
             }}
           />
@@ -756,8 +847,8 @@ const Page = () => {
             <InputGroupAddon align="inline-end">
               <InputGroupButton
                 onClick={() => {
-                  onSearch("")
-                  setSearchTerm("")
+                  onSearch("");
+                  setSearchTerm("");
                 }}
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive hover:border-destructive"
                 variant="outline"
@@ -921,7 +1012,7 @@ const Page = () => {
         rowView={<ViewDialog row />}
       />
     </div>
-  )
-}
+  );
+};
 
-export default Page
+export default Page;
