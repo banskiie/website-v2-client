@@ -1416,24 +1416,28 @@ const AssignDialog = (props: Props) => {
     OPTIONS,
     {
       skip: !open,
-      fetchPolicy: "no-cache",
+      fetchPolicy: "network-only",
     },
   );
   const [fetchSuggestions1, { loading: suggestions1Loading }] =
-    useLazyQuery<SuggestPlayersResponse>(SUGGEST_PLAYERS);
+    useLazyQuery<SuggestPlayersResponse>(SUGGEST_PLAYERS, {
+      fetchPolicy: "network-only",
+    });
 
   const [fetchSuggestions2, { loading: suggestions2Loading }] =
-    useLazyQuery<SuggestPlayersResponse>(SUGGEST_PLAYERS);
+    useLazyQuery<SuggestPlayersResponse>(SUGGEST_PLAYERS, {
+      fetchPolicy: "network-only",
+    });
   const [openPlayers1, setOpenPlayers1] = useState(false);
   const [openPlayers2, setOpenPlayers2] = useState(false);
   const players = optionsData?.playerOptions || [];
   const [fetchPlayer1, { data: player1Data, loading: player1Loading }]: any =
     useLazyQuery(PLAYER_1, {
-      fetchPolicy: "no-cache",
+      fetchPolicy: "network-only",
     });
   const [fetchPlayer2, { data: player2Data, loading: player2Loading }]: any =
     useLazyQuery(PLAYER_2, {
-      fetchPolicy: "no-cache",
+      fetchPolicy: "network-only",
     });
   const player1 = player1Data?.player;
   const player2 = player2Data?.player;
