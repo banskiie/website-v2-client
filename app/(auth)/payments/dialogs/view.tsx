@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import {
   Dialog,
   DialogClose,
@@ -8,17 +8,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { gql } from "@apollo/client"
-import { useQuery } from "@apollo/client/react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
-import { format } from "date-fns"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Image from "next/image"
+} from "@/components/ui/dialog";
+import { gql } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
+import EntryViewDialog from "@/app/(auth)/entries/dialogs/view"
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Image from "next/image";
 import {
   Sheet,
   SheetContent,
@@ -26,9 +27,16 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
-import { CheckCircle, CheckCircle2, CircleAlert, Paperclip, ZoomIn, Wallet } from "lucide-react"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/sheet";
+import {
+  CheckCircle,
+  CheckCircle2,
+  CircleAlert,
+  Paperclip,
+  ZoomIn,
+  Wallet,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const PAYMENT = gql`
   query Payment($_id: ID!) {
@@ -58,50 +66,50 @@ const PAYMENT = gql`
       }
     }
   }
-`
+`;
 
 type Props = {
-  _id?: string
-  row?: boolean
-  openFromParent?: boolean
-  setOpenFromParent?: (open: boolean) => void
-  externalUse?: boolean
-  title?: string
-  titleClassName?: string
+  _id?: string;
+  row?: boolean;
+  openFromParent?: boolean;
+  setOpenFromParent?: (open: boolean) => void;
+  externalUse?: boolean;
+  title?: string;
+  titleClassName?: string;
   rowSettings?: {
-    clearId: () => void
-    open: boolean
-    onOpenChange: (open: boolean) => void
-  }
-}
+    clearId: () => void;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  };
+};
 
 const ViewDialog = (props: Props) => {
   // Dialog open state
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
   // Determine open state based on whether it's row view or not
-  const isOpen = props.row ? props.rowSettings?.open || false : open
+  const isOpen = props.row ? props.rowSettings?.open || false : open;
   const setIsOpen = (value: boolean) => {
     if (props.row) {
-      props.rowSettings?.onOpenChange(value)
+      props.rowSettings?.onOpenChange(value);
     } else {
-      setOpen(value)
+      setOpen(value);
     }
-  }
+  };
   const { data, loading, error }: any = useQuery(PAYMENT, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
-  })
+  });
 
-  if (error) console.error(error)
+  if (error) console.error(error);
 
   const onClose = () => {
     if (props.row) {
-      props.rowSettings?.clearId()
-      props.rowSettings?.onOpenChange(false)
+      props.rowSettings?.clearId();
+      props.rowSettings?.onOpenChange(false);
     } else {
-      setOpen(false)
+      setOpen(false);
     }
-  }
+  };
 
   return (
     <Dialog modal open={isOpen} onOpenChange={setIsOpen}>
@@ -111,7 +119,7 @@ const ViewDialog = (props: Props) => {
             <span
               className={cn(
                 "hover:underline hover:cursor-pointer",
-                props.titleClassName
+                props.titleClassName,
               )}
             >
               {props.title || "View"}
@@ -151,7 +159,9 @@ const ViewDialog = (props: Props) => {
 
                 <div className="border border-b-0 rounded-t-lg p-4 hover:bg-muted/80 transition-colors">
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Reference No.</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      Reference No.
+                    </Label>
                     {loading ? (
                       <Skeleton className="w-full my-1 h-3" />
                     ) : (
@@ -165,7 +175,9 @@ const ViewDialog = (props: Props) => {
                 <div className="border p-4 hover:bg-muted/80 transition-colors">
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Paid By</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        Paid By
+                      </Label>
                       {loading ? (
                         <Skeleton className="w-full my-1 h-3" />
                       ) : (
@@ -175,7 +187,9 @@ const ViewDialog = (props: Props) => {
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Amount</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        Amount
+                      </Label>
                       {loading ? (
                         <Skeleton className="w-full my-1 h-3" />
                       ) : (
@@ -183,9 +197,9 @@ const ViewDialog = (props: Props) => {
                           {loading
                             ? null
                             : new Intl.NumberFormat("en-US", {
-                              style: "currency",
-                              currency: "PHP",
-                            }).format(data?.payment?.amount)}
+                                style: "currency",
+                                currency: "PHP",
+                              }).format(data?.payment?.amount)}
                         </span>
                       )}
                     </div>
@@ -195,17 +209,23 @@ const ViewDialog = (props: Props) => {
                 <div className="border border-t-0 rounded-b-lg p-4 mb-4 hover:bg-muted/80 transition-colors">
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Payment Method</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        Payment Method
+                      </Label>
                       {loading ? (
                         <Skeleton className="w-full my-1 h-3" />
                       ) : (
                         <span className="block text-[13px] font-medium tracking-wide capitalize">
-                          {data?.payment?.method.toLowerCase().replaceAll("_", " ")}
+                          {data?.payment?.method
+                            .toLowerCase()
+                            .replaceAll("_", " ")}
                         </span>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Payment Date</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        Payment Date
+                      </Label>
                       {loading ? (
                         <Skeleton className="my-1 w-20 h-4.25" />
                       ) : (
@@ -231,22 +251,33 @@ const ViewDialog = (props: Props) => {
                       <Skeleton className="my-1 w-20 h-4.25" />
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {data?.payment?.entryList.map((s: any, index: number) => (
-                          <Button
-                            key={index}
-                            variant="outline"
-                            size="sm"
-                            className={cn(
-                              "h-7 px-2 text-xs cursor-default",
-                              s.isFullyPaid
-                                ? "text-green-600 bg-green-50 border-green-200"
-                                : "text-blue-600"
-                            )}
-                          >
-                            <span className="text-black">{s.entry.entryNumber}</span>
-                            {s.isFullyPaid && <span className="-ml-1">(Fully Paid)</span>}
-                          </Button>
-                        ))}
+                        {data?.payment?.entryList.map(
+                          (s: any, index: number) => (
+                            <EntryViewDialog
+                              key={index}
+                              externalUse
+                              _id={s.entry._id}
+                              title={
+                                <div
+                                  className={cn(
+                                    "h-7 px-2 text-xs flex items-center gap-1 rounded-md border",
+                                    s.isFullyPaid
+                                      ? "text-green-600 bg-green-50 border-green-200"
+                                      : "text-blue-600 bg-white border-gray-300",
+                                  )}
+                                >
+                                  <span className="text-black">
+                                    {s.entry.entryNumber}
+                                  </span>
+                                  {s.isFullyPaid && (
+                                    <span className="-ml-1">(Fully Paid)</span>
+                                  )}
+                                </div>
+                              }
+                              titleClassName="cursor-pointer hover:opacity-80 transition-opacity"
+                            />
+                          ),
+                        )}
                       </div>
                     )}
                   </div>
@@ -275,7 +306,9 @@ const ViewDialog = (props: Props) => {
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                             <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
                               <ZoomIn className="w-4 h-4" />
-                              <span className="text-sm font-medium">Click to Expand Image</span>
+                              <span className="text-sm font-medium">
+                                Click to Expand Image
+                              </span>
                             </div>
                           </div>
                         </>
@@ -308,7 +341,8 @@ const ViewDialog = (props: Props) => {
               <div className="flex flex-col gap-2 h-[60vh] overflow-y-auto place-content-start">
                 {loading ? (
                   <Skeleton className="w-full my-1 h-3" />
-                ) : data?.payment?.statuses && data?.payment?.statuses.length ? (
+                ) : data?.payment?.statuses &&
+                  data?.payment?.statuses.length ? (
                   <div className="h-full">
                     {data?.payment.statuses
                       .slice()
@@ -322,16 +356,16 @@ const ViewDialog = (props: Props) => {
                                   case "SENT":
                                     return (
                                       <CheckCircle2 className="size-4 my-2 text-success" />
-                                    )
+                                    );
                                   case "DUPLICATE":
                                   case "REJECTED":
                                     return (
                                       <CircleAlert className="size-4 my-2 text-destructive" />
-                                    )
+                                    );
                                   case "VERIFIED":
                                     return (
                                       <CheckCircle className="size-4 my-2 text-success" />
-                                    )
+                                    );
                                 }
                                 return (
                                   <CircleAlert
@@ -339,10 +373,10 @@ const ViewDialog = (props: Props) => {
                                       "size-4 my-2",
                                       index > 0
                                         ? "text-muted-foreground/50"
-                                        : "text-info"
+                                        : "text-info",
                                     )}
                                   />
-                                )
+                                );
                               } else {
                                 return (
                                   <CheckCircle
@@ -350,10 +384,10 @@ const ViewDialog = (props: Props) => {
                                       "size-4 my-2",
                                       index > 0
                                         ? "text-muted-foreground/50"
-                                        : "text-success"
+                                        : "text-success",
                                     )}
                                   />
-                                )
+                                );
                               }
                             })()}
 
@@ -367,7 +401,7 @@ const ViewDialog = (props: Props) => {
                                 "capitalize block -mb-0.5",
                                 index === 0
                                   ? "font-mono"
-                                  : "text-muted-foreground"
+                                  : "text-muted-foreground",
                               )}
                             >
                               {status.status
@@ -397,7 +431,9 @@ const ViewDialog = (props: Props) => {
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center">
                       <Wallet className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">No status history available.</p>
+                      <p className="text-sm text-muted-foreground">
+                        No status history available.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -407,7 +443,11 @@ const ViewDialog = (props: Props) => {
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button className="w-20 cursor-pointer" onClick={onClose} variant="outline">
+              <Button
+                className="w-20 cursor-pointer"
+                onClick={onClose}
+                variant="outline"
+              >
                 Cancel
               </Button>
             </DialogClose>
@@ -415,7 +455,7 @@ const ViewDialog = (props: Props) => {
         </DialogContent>
       </form>
     </Dialog>
-  )
-}
+  );
+};
 
-export default ViewDialog
+export default ViewDialog;
