@@ -160,7 +160,7 @@ type Props = {
   openFromParent?: boolean
   setOpenFromParent?: (open: boolean) => void
   externalUse?: boolean
-  title?: string
+  title?: string | React.ReactNode 
   titleClassName?: string
   rowSettings?: {
     clearId: () => void
