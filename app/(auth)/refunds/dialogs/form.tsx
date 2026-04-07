@@ -190,6 +190,7 @@ interface EntryWithPaymentInfo {
     totalPaid: number;
     currentPendingAmount: number;
     refundableAmount: number;
+    totalRefunded?: number;
     latestPayment?: {
       amount: number;
       referenceNumber: string;
@@ -803,72 +804,83 @@ const FormDialog = (props: Props) => {
 
   // Replace the validateRefundAmount function with this updated version:
 
-  const validateRefundAmount = (
-    refundAmount: number,
-    selectedEntryNumbers: string[],
-  ): {
-    isValid: boolean;
-    totalRefundable: number;
-    isUnderpaid: boolean;
-    isOverpaid: boolean;
-    excessByEntry?: Array<{
-      entryNumber: string;
-      refundableAmount: number;
-      attemptedAmount?: number;
-    }>;
-  } => {
-    if (!entryOptions || selectedEntryNumbers.length === 0) {
-      return {
-        isValid: true,
-        totalRefundable: 0,
-        isUnderpaid: false,
-        isOverpaid: false,
-      };
+ const validateRefundAmount = (
+  refundAmount: number,
+  selectedEntryNumbers: string[],
+): {
+  isValid: boolean;
+  totalRefundable: number;
+  isUnderpaid: boolean;
+  isOverpaid: boolean;
+  excessByEntry?: Array<{
+    entryNumber: string;
+    refundableAmount: number;
+    attemptedAmount?: number;
+  }>;
+} => {
+  if (!entryOptions || selectedEntryNumbers.length === 0) {
+    return {
+      isValid: true,
+      totalRefundable: 0,
+      isUnderpaid: false,
+      isOverpaid: false,
+    };
+  }
+
+  // Filter the selected entries with their payment info
+  const selectedEntries = entryOptions.filter((entry: EntryWithPaymentInfo) =>
+    selectedEntryNumbers.includes(entry.entryNumber),
+  );
+
+  // Calculate total refundable amount from all selected entries
+  let totalRefundable = 0;
+  const excessByEntry: Array<{
+    entryNumber: string;
+    refundableAmount: number;
+    attemptedAmount?: number;
+  }> = [];
+
+  selectedEntries.forEach((entry: EntryWithPaymentInfo) => {
+    let refundableAmount = 0;
+    
+    // Check if the entry is cancelled
+    const isCancelled = entry.currentStatus === "CANCELLED";
+    
+    if (isCancelled) {
+      // For cancelled entries, use the refundableAmount from paymentInfo
+      // which should be the total paid amount from the backend
+      refundableAmount = entry.paymentInfo?.refundableAmount || 0;
+      console.log(`Cancelled entry ${entry.entryNumber}: refundableAmount = ${refundableAmount}, totalPaid = ${entry.paymentInfo?.totalPaid}`);
+    } else if (entry.paymentInfo?.currentPendingAmount < 0) {
+      // If pendingAmount is negative (overpayment), refundableAmount is the absolute value
+      refundableAmount = Math.abs(entry.paymentInfo.currentPendingAmount);
+    } else {
+      refundableAmount = 0;
     }
 
-    // Filter the selected entries with their payment info
-    const selectedEntries = entryOptions.filter((entry: EntryWithPaymentInfo) =>
-      selectedEntryNumbers.includes(entry.entryNumber),
-    );
-
-    // Calculate total refundable amount from all selected entries
-    let totalRefundable = 0;
-    const excessByEntry: Array<{
-      entryNumber: string;
-      refundableAmount: number;
-      attemptedAmount?: number;
-    }> = [];
-
-    selectedEntries.forEach((entry: EntryWithPaymentInfo) => {
-      let refundableAmount = 0;
-
-      // If pendingAmount is negative (overpayment), refundableAmount is the absolute value
-      if (entry.paymentInfo?.currentPendingAmount < 0) {
-        refundableAmount = Math.abs(entry.paymentInfo.currentPendingAmount);
-      } else {
-        refundableAmount = 0;
-      }
-
-      totalRefundable += refundableAmount;
-      excessByEntry.push({
-        entryNumber: entry.entryNumber,
-        refundableAmount,
-      });
+    totalRefundable += refundableAmount;
+    excessByEntry.push({
+      entryNumber: entry.entryNumber,
+      refundableAmount,
+      attemptedAmount: refundAmount,
     });
+  });
 
-    // Check if refund amount matches exactly
-    const isExactMatch = refundAmount === totalRefundable;
-    const isUnderpaid = refundAmount < totalRefundable;
-    const isOverpaid = refundAmount > totalRefundable;
+  // Check if refund amount matches exactly
+  const isExactMatch = refundAmount === totalRefundable;
+  const isUnderpaid = refundAmount < totalRefundable;
+  const isOverpaid = refundAmount > totalRefundable;
 
-    return {
-      isValid: isExactMatch,
-      totalRefundable,
-      isUnderpaid,
-      isOverpaid,
-      excessByEntry: !isExactMatch ? excessByEntry : undefined,
-    };
+  console.log('Refund validation:', { refundAmount, totalRefundable, isExactMatch, isUnderpaid, isOverpaid });
+
+  return {
+    isValid: isExactMatch,
+    totalRefundable,
+    isUnderpaid,
+    isOverpaid,
+    excessByEntry: !isExactMatch ? excessByEntry : undefined,
   };
+};
 
   const handleOpenDuplicateDialog = async (referenceNumber: string) => {
     setDuplicateReferenceNumber(referenceNumber);
@@ -1395,7 +1407,7 @@ const FormDialog = (props: Props) => {
     };
     setFormValues(initialValues);
 
-    const unsubscribe = form.store.subscribe(() => {
+    const unsubscribe = (form as any)?.store?.subscribe?.(() => {
       const newValues = {
         payerName: form.getFieldValue("payerName") || "",
         referenceNumber: form.getFieldValue("referenceNumber") || "",
@@ -1419,7 +1431,7 @@ const FormDialog = (props: Props) => {
     });
 
     return () => {
-      if (typeof unsubscribe === "function") {
+      if (unsubscribe && typeof unsubscribe === "function") {
         unsubscribe();
       }
     };

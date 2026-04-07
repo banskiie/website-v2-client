@@ -2175,115 +2175,407 @@ const FormDialog = (props: Props) => {
     }
   }
 
-  const handleSubmit = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+const handleSubmit = async (e: React.MouseEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
 
-    const activeTab = document.querySelector('[data-state="active"]')?.getAttribute('value') || 'unknown'
-    const formValues = form.state.values
+  const activeTab = document.querySelector('[data-state="active"]')?.getAttribute('value') || 'unknown'
+  const formValues = form.state.values
 
-    if (isSubmittingRef.current) {
-      toast.warning('Submission already in progress. Please wait.')
-      return
-    }
+  if (isSubmittingRef.current) {
+    toast.warning('Submission already in progress. Please wait.')
+    return
+  }
 
-    const eventId = form.getFieldValue("event");
-    if (eventId) {
-      const event = events.find(e => e.value === eventId);
-      if (event) {
-        const isDoubles = event.type === EventType.DOUBLES;
-        const player1Gender = form.getFieldValue("player1Entry.gender");
-        const player2Gender = isDoubles ? form.getFieldValue("player2Entry.gender") : null;
+  // Check event max entries
+  const eventId = form.getFieldValue("event");
+  if (eventId) {
+    const event = events.find(e => e.value === eventId);
+    if (event) {
+      const isDoubles = event.type === EventType.DOUBLES;
+      const player1Gender = form.getFieldValue("player1Entry.gender");
+      const player2Gender = isDoubles ? form.getFieldValue("player2Entry.gender") : null;
 
-        if (isDoubles) {
-          const validation = validateEntryGenders(
-            event.gender,
-            true,
-            player1Gender,
-            player2Gender
-          );
+      if (isDoubles) {
+        const validation = validateEntryGenders(
+          event.gender,
+          true,
+          player1Gender,
+          player2Gender
+        );
 
-          if (!validation.valid) {
-            if (validation.errors.player1) {
-              form.setFieldMeta("player1Entry.gender", (prev: any) => ({
-                ...prev,
-                errors: [validation.errors.player1],
-                isTouched: true,
-                isValid: false,
-              }));
-
-              const field = form.getFieldInfo("player1Entry.gender")?.instance;
-              if (field) {
-                field.setErrorMap({ onSubmit: validation.errors.player1 });
-              }
-            }
-            if (validation.errors.player2) {
-              form.setFieldMeta("player2Entry.gender", (prev: any) => ({
-                ...prev,
-                errors: [validation.errors.player2],
-                isTouched: true,
-                isValid: false,
-              }));
-
-              const field = form.getFieldInfo("player2Entry.gender")?.instance;
-              if (field) {
-                field.setErrorMap({ onSubmit: validation.errors.player2 });
-              }
-            }
-            toast.error("Please fix gender validation errors");
-            return;
-          }
-        } else {
-          if (event.gender === EventGender.MALE && player1Gender !== Gender.MALE) {
+        if (!validation.valid) {
+          if (validation.errors.player1) {
             form.setFieldMeta("player1Entry.gender", (prev: any) => ({
               ...prev,
-              errors: ["Player must be Male for Men's Singles"],
+              errors: [validation.errors.player1],
               isTouched: true,
               isValid: false,
             }));
 
             const field = form.getFieldInfo("player1Entry.gender")?.instance;
             if (field) {
-              field.setErrorMap({ onSubmit: "Player must be Male for Men's Singles" });
+              field.setErrorMap({ onSubmit: validation.errors.player1 });
             }
-
-            toast.error("Player must be Male for Men's Singles");
-            return;
           }
-          if (event.gender === EventGender.FEMALE && player1Gender !== Gender.FEMALE) {
-            form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+          if (validation.errors.player2) {
+            form.setFieldMeta("player2Entry.gender", (prev: any) => ({
               ...prev,
-              errors: ["Player must be Female for Women's Singles"],
+              errors: [validation.errors.player2],
               isTouched: true,
               isValid: false,
             }));
 
-            const field = form.getFieldInfo("player1Entry.gender")?.instance;
+            const field = form.getFieldInfo("player2Entry.gender")?.instance;
             if (field) {
-              field.setErrorMap({ onSubmit: "Player must be Female for Women's Singles" });
+              field.setErrorMap({ onSubmit: validation.errors.player2 });
             }
-
-            toast.error("Player must be Female for Women's Singles");
-            return;
           }
+          toast.error(validation.errors.player1 || validation.errors.player2 || "Please fix gender validation errors");
+          return;
+        }
+      } else {
+        if (event.gender === EventGender.MALE && player1Gender !== Gender.MALE) {
+          const errorMsg = "Player must be Male for Men's Singles";
+          form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+            ...prev,
+            errors: [errorMsg],
+            isTouched: true,
+            isValid: false,
+          }));
+
+          const field = form.getFieldInfo("player1Entry.gender")?.instance;
+          if (field) {
+            field.setErrorMap({ onSubmit: errorMsg });
+          }
+
+          toast.error(errorMsg);
+          return;
+        }
+        if (event.gender === EventGender.FEMALE && player1Gender !== Gender.FEMALE) {
+          const errorMsg = "Player must be Female for Women's Singles";
+          form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+            ...prev,
+            errors: [errorMsg],
+            isTouched: true,
+            isValid: false,
+          }));
+
+          const field = form.getFieldInfo("player1Entry.gender")?.instance;
+          if (field) {
+            field.setErrorMap({ onSubmit: errorMsg });
+          }
+
+          toast.error(errorMsg);
+          return;
         }
       }
     }
+  }
 
-    if (!isFormValid()) {
-      toast.error("Please fill in all required fields correctly");
-      return;
-    }
+  // Collect all validation errors
+  const validationErrors: string[] = [];
+  const values = form.state.values;
 
-    try {
-      startTransition(async () => {
-        await form.handleSubmit()
-      })
-    } catch (error) {
-      console.error('Form submission error in handleSubmit:', error)
-      isSubmittingRef.current = false
+  // Check tournament
+  if (!values.tournament) {
+    validationErrors.push("Tournament is required");
+    form.setFieldMeta("tournament", (prev: any) => ({
+      ...prev,
+      errors: ["Tournament is required"],
+      isTouched: true,
+      isValid: false,
+    }));
+  }
+
+  // Check event
+  if (!values.event) {
+    validationErrors.push("Event is required");
+    form.setFieldMeta("event", (prev: any) => ({
+      ...prev,
+      errors: ["Event is required"],
+      isTouched: true,
+      isValid: false,
+    }));
+  }
+
+  // Check club
+  if (!values.club) {
+    validationErrors.push("Club name is required");
+    form.setFieldMeta("club", (prev: any) => ({
+      ...prev,
+      errors: ["Club name is required"],
+      isTouched: true,
+      isValid: false,
+    }));
+  }
+
+  // Get event to check if doubles
+  const selectedEvent = events.find(e => e.value === values.event);
+  const isDoubles = selectedEvent?.type === EventType.DOUBLES;
+
+  // Player 1 validations
+  if (!values.player1Entry.firstName) {
+    validationErrors.push("Player 1 First Name is required");
+    form.setFieldMeta("player1Entry.firstName", (prev: any) => ({
+      ...prev,
+      errors: ["First name is required"],
+      isTouched: true,
+      isValid: false,
+    }));
+  }
+
+  if (!values.player1Entry.lastName) {
+    validationErrors.push("Player 1 Last Name is required");
+    form.setFieldMeta("player1Entry.lastName", (prev: any) => ({
+      ...prev,
+      errors: ["Last name is required"],
+      isTouched: true,
+      isValid: false,
+    }));
+  }
+
+  if (!values.player1Entry.birthDate) {
+    validationErrors.push("Player 1 Birth Date is required");
+    form.setFieldMeta("player1Entry.birthDate", (prev: any) => ({
+      ...prev,
+      errors: ["Birth date is required"],
+      isTouched: true,
+      isValid: false,
+    }));
+  }
+
+  if (!values.player1Entry.gender) {
+    validationErrors.push("Player 1 Gender is required");
+    form.setFieldMeta("player1Entry.gender", (prev: any) => ({
+      ...prev,
+      errors: ["Gender is required"],
+      isTouched: true,
+      isValid: false,
+    }));
+  }
+
+  if (!values.player1Entry.phoneNumber) {
+    validationErrors.push("Player 1 Phone Number is required");
+    form.setFieldMeta("player1Entry.phoneNumber", (prev: any) => ({
+      ...prev,
+      errors: ["Phone number is required"],
+      isTouched: true,
+      isValid: false,
+    }));
+  } else {
+    const phoneRegex = /^9\d{9}$/;
+    if (!phoneRegex.test(values.player1Entry.phoneNumber)) {
+      validationErrors.push("Player 1 Phone Number must be 10 digits starting with 9 (e.g., 9123456789)");
+      form.setFieldMeta("player1Entry.phoneNumber", (prev: any) => ({
+        ...prev,
+        errors: ["Phone number must be 10 digits starting with 9"],
+        isTouched: true,
+        isValid: false,
+      }));
     }
   }
+
+  if (!values.player1Entry.email) {
+    validationErrors.push("Player 1 Email is required");
+    form.setFieldMeta("player1Entry.email", (prev: any) => ({
+      ...prev,
+      errors: ["Email is required"],
+      isTouched: true,
+      isValid: false,
+    }));
+  } else {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(values.player1Entry.email)) {
+      validationErrors.push("Player 1 Email is invalid");
+      form.setFieldMeta("player1Entry.email", (prev: any) => ({
+        ...prev,
+        errors: ["Invalid email format"],
+        isTouched: true,
+        isValid: false,
+      }));
+    }
+  }
+
+  // Document validation for Player 1
+  const hasPlayer1Doc = filePlayer1 !== null || initialDocumentUrlPlayer1;
+  if (!hasPlayer1Doc) {
+    validationErrors.push("Player 1 Document is required");
+    setFieldErrors(prev => ({ ...prev, filePlayer1: "Document is required" }));
+  } else {
+    setFieldErrors(prev => ({ ...prev, filePlayer1: "" }));
+  }
+
+  if (!selectedDocumentTypePlayer1) {
+    validationErrors.push("Player 1 Document Type is required");
+  }
+
+  // Player 2 validations (for doubles)
+  if (isDoubles) {
+    if (!values.player2Entry?.firstName) {
+      validationErrors.push("Player 2 First Name is required");
+      form.setFieldMeta("player2Entry.firstName", (prev: any) => ({
+        ...prev,
+        errors: ["First name is required"],
+        isTouched: true,
+        isValid: false,
+      }));
+    }
+
+    if (!values.player2Entry?.lastName) {
+      validationErrors.push("Player 2 Last Name is required");
+      form.setFieldMeta("player2Entry.lastName", (prev: any) => ({
+        ...prev,
+        errors: ["Last name is required"],
+        isTouched: true,
+        isValid: false,
+      }));
+    }
+
+    if (!values.player2Entry?.birthDate) {
+      validationErrors.push("Player 2 Birth Date is required");
+      form.setFieldMeta("player2Entry.birthDate", (prev: any) => ({
+        ...prev,
+        errors: ["Birth date is required"],
+        isTouched: true,
+        isValid: false,
+      }));
+    }
+
+    if (!values.player2Entry?.gender) {
+      validationErrors.push("Player 2 Gender is required");
+      form.setFieldMeta("player2Entry.gender", (prev: any) => ({
+        ...prev,
+        errors: ["Gender is required"],
+        isTouched: true,
+        isValid: false,
+      }));
+    }
+
+    if (!values.player2Entry?.phoneNumber) {
+      validationErrors.push("Player 2 Phone Number is required");
+      form.setFieldMeta("player2Entry.phoneNumber", (prev: any) => ({
+        ...prev,
+        errors: ["Phone number is required"],
+        isTouched: true,
+        isValid: false,
+      }));
+    } else {
+      const phoneRegex = /^9\d{9}$/;
+      if (!phoneRegex.test(values.player2Entry.phoneNumber)) {
+        validationErrors.push("Player 2 Phone Number must be 10 digits starting with 9 (e.g., 9123456789)");
+        form.setFieldMeta("player2Entry.phoneNumber", (prev: any) => ({
+          ...prev,
+          errors: ["Phone number must be 10 digits starting with 9"],
+          isTouched: true,
+          isValid: false,
+        }));
+      }
+    }
+
+    if (!values.player2Entry?.email) {
+      validationErrors.push("Player 2 Email is required");
+      form.setFieldMeta("player2Entry.email", (prev: any) => ({
+        ...prev,
+        errors: ["Email is required"],
+        isTouched: true,
+        isValid: false,
+      }));
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(values.player2Entry.email)) {
+        validationErrors.push("Player 2 Email is invalid");
+        form.setFieldMeta("player2Entry.email", (prev: any) => ({
+          ...prev,
+          errors: ["Invalid email format"],
+          isTouched: true,
+          isValid: false,
+        }));
+      }
+    }
+
+    // Document validation for Player 2
+    const hasPlayer2Doc = filePlayer2 !== null || initialDocumentUrlPlayer2;
+    if (!hasPlayer2Doc) {
+      validationErrors.push("Player 2 Document is required");
+      setFieldErrors(prev => ({ ...prev, filePlayer2: "Document is required" }));
+    } else {
+      setFieldErrors(prev => ({ ...prev, filePlayer2: "" }));
+    }
+
+    if (!selectedDocumentTypePlayer2) {
+      validationErrors.push("Player 2 Document Type is required");
+    }
+  }
+
+  // Check if event is full
+  if (!isUpdate && maxEntriesReached) {
+    validationErrors.push(`Cannot create entry. Event has reached its maximum capacity of ${maxEntriesLimit} entries.`);
+  }
+
+  // If there are validation errors, show them all
+  if (validationErrors.length > 0) {
+    // Group errors by category for better UX
+    const errorGroups = {
+      basic: validationErrors.filter(e => 
+        e.includes("Tournament") || e.includes("Event") || e.includes("Club") || e.includes("capacity")
+      ),
+      player1: validationErrors.filter(e => e.includes("Player 1")),
+      player2: validationErrors.filter(e => e.includes("Player 2")),
+    };
+
+    // Show a summary toast
+    toast.error(
+      <div>
+        <p className="font-bold mb-1">Please fix the following errors:</p>
+        <ul className="list-disc list-inside text-sm space-y-0.5">
+          {validationErrors.slice(0, 5).map((error, idx) => (
+            <li key={idx}>{error}</li>
+          ))}
+          {validationErrors.length > 5 && (
+            <li>... and {validationErrors.length - 5} more errors</li>
+          )}
+        </ul>
+      </div>,
+      { duration: 5000 }
+    );
+
+    // Also show individual toasts for critical errors
+    if (errorGroups.basic.length > 0) {
+      toast.error(errorGroups.basic[0]);
+    } else if (errorGroups.player1.length > 0) {
+      toast.error(errorGroups.player1[0]);
+    } else if (errorGroups.player2.length > 0) {
+      toast.error(errorGroups.player2[0]);
+    }
+
+    // Focus on the first tab with errors
+    if (errorGroups.player1.length > 0 || errorGroups.player2.length > 0) {
+      // Switch to the appropriate tab
+      if (errorGroups.player1.length > 0) {
+        setCurrentTab("player1");
+      }
+      if (errorGroups.player2.length > 0) {
+        setCurrentTab("player2");
+      }
+      if (errorGroups.basic.length > 0) {
+        setCurrentTab("details");
+      }
+    }
+
+    return;
+  }
+
+  // If no validation errors, proceed with submission
+  try {
+    startTransition(async () => {
+      await form.handleSubmit()
+    })
+  } catch (error) {
+    console.error('Form submission error in handleSubmit:', error)
+    isSubmittingRef.current = false
+  }
+}
 
   // Add a warning message when event is full
   const EventFullWarning = () => {
@@ -4353,7 +4645,7 @@ const FormDialog = (props: Props) => {
             loading={isLoading || isUploading || isSubmittingRef.current}
             type="button"
             onClick={handleSubmit}
-            disabled={!isFormValid() || isSubmittingRef.current || maxEntriesReached}
+            disabled={maxEntriesReached}
           >
             Submit
           </Button>

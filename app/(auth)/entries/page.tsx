@@ -282,7 +282,10 @@ const Page = () => {
   const [sort, setSort] = useState<{
     key: string
     order: "ASC" | "DESC"
-  } | null>(null)
+  } | null>({
+    key: "dateUpdated",
+    order: "DESC",
+  })
   // Column Filtering
   const [filter, setFilter] = useState<
     { key: string; value: string; type: string }[]
@@ -296,10 +299,7 @@ const Page = () => {
       variables: {
         first: rows,
         search,
-        sort: sort || {
-          key: "dateUpdated",
-          order: "DESC",
-        },
+        sort,
         filter,
       },
       fetchPolicy: "network-only",
@@ -325,11 +325,11 @@ const Page = () => {
         return prev
       },
     })
- return () => {
-    if (typeof unsubscribeRefund === "function") {
-      unsubscribeRefund()
+    return () => {
+      if (typeof unsubscribeRefund === "function") {
+        unsubscribeRefund()
+      }
     }
-  }
   }, [subscribeToMore])
 
   useEffect(() => {
@@ -486,23 +486,23 @@ const Page = () => {
             const cancelledEdges = prev.entries.edges.map((edge: any) =>
               edge.node._id === cancelledEntry._id
                 ? {
-                  ...edge,
-                  node: {
-                    ...edge.node,
-                    ...cancelledEntry,
-                    currentStatus: "CANCELLED",
-                    hasOverpayment: cancelledEntry.hasOverpayment,
-                    totalExcess: cancelledEntry.totalExcess,
-                    pendingAmount: cancelledEntry.pendingAmount,
-                    totalRefundAmount:
-                      cancelledEntry.totalRefundAmount ||
-                      edge.node.totalRefundAmount,
-                    hasRefunds:
-                      cancelledEntry.hasRefunds || edge.node.hasRefunds,
-                    totalPaid:
-                      cancelledEntry.totalPaid || edge.node.totalPaid,
-                  },
-                }
+                    ...edge,
+                    node: {
+                      ...edge.node,
+                      ...cancelledEntry,
+                      currentStatus: "CANCELLED",
+                      hasOverpayment: cancelledEntry.hasOverpayment,
+                      totalExcess: cancelledEntry.totalExcess,
+                      pendingAmount: cancelledEntry.pendingAmount,
+                      totalRefundAmount:
+                        cancelledEntry.totalRefundAmount ||
+                        edge.node.totalRefundAmount,
+                      hasRefunds:
+                        cancelledEntry.hasRefunds || edge.node.hasRefunds,
+                      totalPaid:
+                        cancelledEntry.totalPaid || edge.node.totalPaid,
+                    },
+                  }
                 : edge,
             )
 
@@ -580,7 +580,7 @@ const Page = () => {
               if (!search && !sort && filter.length === 0) {
                 toast.info(
                   `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
-                  `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
+                    `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
                 )
               }
             }
@@ -726,14 +726,14 @@ const Page = () => {
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...updatedEntries.find(
-                          (u: any) => u._id === edge.node._id,
-                        ),
-                      },
-                    }
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedEntries.find(
+                            (u: any) => u._id === edge.node._id,
+                          ),
+                        },
+                      }
                     : edge,
                 ),
               },
@@ -746,10 +746,10 @@ const Page = () => {
     })
 
     return () => {
-    if (typeof unsubscribe === "function") {
-      unsubscribe()
+      if (typeof unsubscribe === "function") {
+        unsubscribe()
+      }
     }
-  }
   }, [subscribeToMore, search, sort, filter])
 
   // Memoized Data Processing
@@ -790,7 +790,6 @@ const Page = () => {
     resetPage()
   }, [])
 
-  // Table Columns
   // Table Columns
   const columns: ColumnDef<IEntryNode>[] = useMemo(
     () => [
@@ -890,7 +889,7 @@ const Page = () => {
         header: () => (
           <SortHeader
             label="Entry No."
-            sortKey="entryDetails"
+            sortKey="entryNumber"
             sortState={sort}
             onSortChange={onSort}
           />
@@ -898,7 +897,7 @@ const Page = () => {
         footer: () => (
           <ColumnFilter
             label="Entry No."
-            filterKey="entryDetails"
+            filterKey="entryNumber"
             filterType="TEXT"
             filterValue={filter}
             onFilterChange={onFilter}
@@ -928,7 +927,7 @@ const Page = () => {
         header: () => (
           <SortHeader
             label="Event"
-            sortKey="event"
+            sortKey="eventName"
             sortState={sort}
             onSortChange={onSort}
           />
@@ -936,7 +935,7 @@ const Page = () => {
         footer: () => (
           <ColumnFilter
             label="Event"
-            filterKey="event"
+            filterKey="eventName"
             filterType="TEXT"
             filterValue={filter}
             onFilterChange={onFilter}
