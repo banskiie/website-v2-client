@@ -160,7 +160,7 @@ type Props = {
   openFromParent?: boolean
   setOpenFromParent?: (open: boolean) => void
   externalUse?: boolean
-  title?: string | React.ReactNode 
+  title?: string | React.ReactNode
   titleClassName?: string
   rowSettings?: {
     clearId: () => void
@@ -306,8 +306,15 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
     )
   }
 
-  // Get the first image/document to display (similar to payment view)
-  const mainDocument = documents[0]
+  // Group documents by type
+  const documentsByType = documents.reduce((acc, doc) => {
+    const docType = doc.documentType?.replaceAll("_", " ") || "Document"
+    if (!acc[docType]) {
+      acc[docType] = []
+    }
+    acc[docType].push(doc)
+    return acc
+  }, {} as Record<string, any[]>)
 
   const getFileType = (url: string) => {
     const extension = url.split('.').pop()?.toLowerCase()
@@ -320,105 +327,205 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
     return 'other'
   }
 
-  const isImage = getFileType(mainDocument.documentURL) === 'image'
+  const isImage = (url: string) => getFileType(url) === 'image'
 
-  const handleViewDocument = () => {
-    const fileType = getFileType(mainDocument.documentURL)
+  const handleViewDocument = (doc: any) => {
+    const fileType = getFileType(doc.documentURL)
     if (fileType === 'image') {
-      setSelectedDoc(mainDocument)
+      setSelectedDoc(doc)
       setIsSheetOpen(true)
     } else {
-      window.open(mainDocument.documentURL, '_blank')
+      window.open(doc.documentURL, '_blank')
     }
   }
 
-  const hasMultipleDocuments = documents.length > 1
+  // If only one document type, show simple view
+  const documentTypes = Object.keys(documentsByType)
 
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Label className="font-medium">{title}</Label>
-        {hasMultipleDocuments && (
-          <span className="text-xs text-muted-foreground">
-            +{documents.length - 1} more document(s)
-          </span>
-        )}
-      </div>
+  if (documentTypes.length === 1) {
+    const docs = documentsByType[documentTypes[0]]
+    const mainDocument = docs[0]
+    const hasMultipleDocs = docs.length > 1
 
-      <Sheet open={isSheetOpen && selectedDoc?.documentURL === mainDocument.documentURL} onOpenChange={(open) => {
-        if (!open) setIsSheetOpen(false)
-      }}>
-        <SheetTrigger asChild>
-          <div
-            className="cursor-pointer w-full flex items-center justify-center relative group"
-            onClick={handleViewDocument}
-          >
-            {isImage ? (
-              <>
-                <img
-                  src={mainDocument.documentURL}
-                  alt={mainDocument.documentType || "Document"}
-                  className="object-contain bg-gray-50 max-h-[200px] w-full rounded-lg border group-hover:bg-gray-100 transition-all duration-200"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
-                    <ZoomIn className="w-4 h-4" />
-                    <span className="text-sm font-medium">Click to Expand</span>
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="font-medium">{documentTypes[0]}</Label>
+          {hasMultipleDocs && (
+            <span className="text-xs text-muted-foreground">
+              +{docs.length - 1} more
+            </span>
+          )}
+        </div>
+
+        <Sheet open={isSheetOpen && selectedDoc?.documentURL === mainDocument.documentURL} onOpenChange={(open) => {
+          if (!open) setIsSheetOpen(false)
+        }}>
+          <SheetTrigger asChild>
+            <div
+              className="cursor-pointer w-full flex items-center justify-center relative group"
+              onClick={() => handleViewDocument(mainDocument)}
+            >
+              {isImage(mainDocument.documentURL) ? (
+                <>
+                  <img
+                    src={mainDocument.documentURL}
+                    alt={mainDocument.documentType || documentTypes[0]}
+                    className="object-contain bg-gray-50 max-h-[200px] w-full rounded-lg border group-hover:bg-gray-100 transition-all duration-200"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
+                      <ZoomIn className="w-4 h-4" />
+                      <span className="text-sm font-medium">Click to Expand</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center w-full p-8 border rounded-lg bg-gray-50 group-hover:bg-gray-100 transition-all duration-200">
+                  <div className="text-center">
+                    <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">{documentTypes[0]}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Click to view</p>
                   </div>
                 </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center w-full p-8 border rounded-lg bg-gray-50 group-hover:bg-gray-100 transition-all duration-200">
-                <div className="text-center">
-                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">{mainDocument.documentType || 'Document'}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Click to view</p>
+              )}
+            </div>
+          </SheetTrigger>
+          <SheetContent className="h-screen p-[2%]" side="bottom">
+            <SheetHeader hidden>
+              <SheetTitle>Document Preview</SheetTitle>
+              <SheetDescription>{documentTypes[0]}</SheetDescription>
+            </SheetHeader>
+            <div className="relative h-full w-full">
+              {isImage(mainDocument.documentURL) ? (
+                <img
+                  src={mainDocument.documentURL}
+                  alt={documentTypes[0]}
+                  className="object-contain h-full w-full"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-lg font-medium mb-2">{documentTypes[0]}</p>
+                    <Button
+                      onClick={() => window.open(mainDocument.documentURL, '_blank')}
+                      className="mt-4"
+                    >
+                      Open Document
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </SheetTrigger>
-        <SheetContent className="h-screen p-[2%]" side="bottom">
-          <SheetHeader hidden>
-            <SheetTitle>Document Preview</SheetTitle>
-            <SheetDescription>{mainDocument.documentType || 'Document'}</SheetDescription>
-          </SheetHeader>
-          <div className="relative h-full w-full">
-            {isImage ? (
-              <img
-                src={mainDocument.documentURL}
-                alt={mainDocument.documentType || "Document"}
-                className="object-contain h-full w-full"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-lg font-medium mb-2">{mainDocument.documentType || 'Document'}</p>
-                  <Button
-                    onClick={() => window.open(mainDocument.documentURL, '_blank')}
-                    className="mt-4"
-                  >
-                    Open Document
-                  </Button>
-                </div>
-              </div>
-            )}
-            {mainDocument.documentType && (
+              )}
               <div className="absolute bottom-4 left-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-lg">
-                {mainDocument.documentType}
+                {documentTypes[0]}
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {hasMultipleDocs && (
+          <div className="text-xs text-muted-foreground text-center mt-2">
+            {docs.length} document(s) total. Click to view the first one.
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Multiple document types - show each type separately
+  return (
+    <div className="space-y-6">
+      {documentTypes.map(docType => {
+        const docs = documentsByType[docType]
+        const mainDocument = docs[0]
+        const hasMultipleDocs = docs.length > 1
+
+        return (
+          <div key={docType} className="space-y-3 border-b pb-4 last:border-b-0">
+            <div className="flex items-center justify-between">
+              <Label className="font-medium">{docType}</Label>
+              {hasMultipleDocs && (
+                <span className="text-xs text-muted-foreground">
+                  +{docs.length - 1} more
+                </span>
+              )}
+            </div>
+
+            <Sheet open={isSheetOpen && selectedDoc?.documentURL === mainDocument.documentURL} onOpenChange={(open) => {
+              if (!open) setIsSheetOpen(false)
+            }}>
+              <SheetTrigger asChild>
+                <div
+                  className="cursor-pointer w-full flex items-center justify-center relative group"
+                  onClick={() => handleViewDocument(mainDocument)}
+                >
+                  {isImage(mainDocument.documentURL) ? (
+                    <>
+                      <img
+                        src={mainDocument.documentURL}
+                        alt={docType}
+                        className="object-contain bg-gray-50 max-h-[200px] w-full rounded-lg border group-hover:bg-gray-100 transition-all duration-200"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
+                          <ZoomIn className="w-4 h-4" />
+                          <span className="text-sm font-medium">Click to Expand</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center w-full p-8 border rounded-lg bg-gray-50 group-hover:bg-gray-100 transition-all duration-200">
+                      <div className="text-center">
+                        <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">{docType}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Click to view</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </SheetTrigger>
+              <SheetContent className="h-screen p-[2%]" side="bottom">
+                <SheetHeader hidden>
+                  <SheetTitle>Document Preview</SheetTitle>
+                  <SheetDescription>{docType}</SheetDescription>
+                </SheetHeader>
+                <div className="relative h-full w-full">
+                  {isImage(mainDocument.documentURL) ? (
+                    <img
+                      src={mainDocument.documentURL}
+                      alt={docType}
+                      className="object-contain h-full w-full"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-lg font-medium mb-2">{docType}</p>
+                        <Button
+                          onClick={() => window.open(mainDocument.documentURL, '_blank')}
+                          className="mt-4"
+                        >
+                          Open Document
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute bottom-4 left-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-lg">
+                    {docType}
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {hasMultipleDocs && (
+              <div className="text-xs text-muted-foreground text-center mt-2">
+                {docs.length} document(s) total. Click to view the first one.
               </div>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* If there are multiple documents, show additional info */}
-      {hasMultipleDocuments && (
-        <div className="text-xs text-muted-foreground text-center mt-2">
-          {documents.length} document(s) total. Click to view the first one.
-        </div>
-      )}
+        )
+      })}
     </div>
   )
 }
@@ -825,7 +932,7 @@ const ViewDialog = (props: Props) => {
                       </div>
                       <DocumentViewer
                         documents={getPlayer1Documents()}
-                        title="Document"
+                        title="Player 1 Documents"
                       />
                     </div>
 
@@ -837,7 +944,7 @@ const ViewDialog = (props: Props) => {
                         </div>
                         <DocumentViewer
                           documents={getPlayer2Documents()}
-                          title="Document"
+                          title="Player 2 Documents"
                         />
                       </div>
                     )}
