@@ -246,21 +246,21 @@ const ActionsColumn = ({ data }: { data?: IPaymentNode }) => {
               status === "REJECTED" ||
               status === "REFUNDED" ||
               status === "CANCELLED") && (
-              <>
-                <DropdownMenuSeparator />
-                <div
-                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 text-red-600"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setMenuOpen(false);
-                    setShowRevertDialog(true);
-                  }}
-                >
-                  <AlertCircle className="mr-2 h-4 w-4" />
-                  Revert Payment
-                </div>
-              </>
-            )}
+                <>
+                  <DropdownMenuSeparator />
+                  <div
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 text-red-600"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setMenuOpen(false);
+                      setShowRevertDialog(true);
+                    }}
+                  >
+                    <AlertCircle className="mr-2 h-4 w-4" />
+                    Revert Payment
+                  </div>
+                </>
+              )}
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -387,14 +387,14 @@ const Page = () => {
                 edges: prev.payments.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                        ...edge,
-                        node: {
-                          ...edge.node,
-                          ...updatedPayments.find(
-                            (u: any) => u._id === edge.node._id,
-                          ),
-                        },
-                      }
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...updatedPayments.find(
+                          (u: any) => u._id === edge.node._id,
+                        ),
+                      },
+                    }
                     : edge,
                 ),
               },

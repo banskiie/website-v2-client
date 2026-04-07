@@ -17,6 +17,8 @@ export enum EntryStatus {
   VERIFIED = "VERIFIED",
   REJECTED = "REJECTED",
   CANCELLED = "CANCELLED",
+  PAYMENT_REFUNDED = "PAYMENT_REFUNDED",
+  FULLY_REFUNDED = "FULLY_REFUNDED",
 }
 
 export enum TransactionType {

@@ -19,7 +19,6 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useMutation } from "@apollo/client/react"
 
-// Add type definitions for the mutation response
 interface RevertPaymentResponse {
   revertPayment: {
     ok: boolean
@@ -64,7 +63,6 @@ const RevertDialog = ({ _id, onClose, paymentData }: RevertDialogProps) => {
   const [open, setOpen] = useState(true)
   const [revertPayment, { loading }] = useMutation<RevertPaymentResponse, RevertPaymentVariables>(REVERT_PAYMENT)
 
-  // Reset open state when dialog receives a new payment ID
   useEffect(() => {
     setOpen(true)
   }, [_id])
@@ -112,7 +110,7 @@ const RevertDialog = ({ _id, onClose, paymentData }: RevertDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent 
+      <DialogContent
         className="max-w-md!"
         onPointerDownOutside={(e) => {
           e.preventDefault()
@@ -135,32 +133,32 @@ const RevertDialog = ({ _id, onClose, paymentData }: RevertDialogProps) => {
           {paymentData && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
               <h4 className="font-medium text-red-800">Payment Details:</h4>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Payer:</span>
                   <span className="text-sm font-medium">{paymentData.payerName}</span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Reference:</span>
                   <span className="text-sm font-medium">{paymentData.referenceNumber}</span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Amount:</span>
                   <span className="text-sm font-bold text-red-600">
                     ₱{formatAmount(paymentData.amount)}
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Method:</span>
                   <Badge variant="outline" className="capitalize">
                     {paymentData.method?.replace("_", " ")}
                   </Badge>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Date:</span>
                   <span className="text-sm">{formatDate(paymentData.paymentDate)}</span>
@@ -180,7 +178,7 @@ const RevertDialog = ({ _id, onClose, paymentData }: RevertDialogProps) => {
                             <span className="font-medium">{item.entry.entryNumber}</span>
                             <Badge
                               variant="outline"
-                              className={item.isFullyPaid 
+                              className={item.isFullyPaid
                                 ? "bg-green-50 text-green-700 border-green-200"
                                 : "bg-blue-50 text-blue-700 border-blue-200"
                               }

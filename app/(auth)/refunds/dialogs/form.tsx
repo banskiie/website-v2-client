@@ -740,19 +740,34 @@ const FormDialog = (props: Props) => {
       attemptedAmount?: number;
     }>;
   } | null>(null);
-  const { data: entryOptionsData, loading: optionsLoading } = useQuery(
+  const { data: entryOptionsData, loading: optionsLoading, refetch: refetchEntryOptions } = useQuery(
     ALL_ACTIVE_ENTRIES,
     {
-      fetchPolicy: "no-cache",
+      fetchPolicy: "network-only",
     },
   );
   const [openFilteredEntries, setOpenFilteredEntries] = useState(false);
-  const entryOptions = (
-    (entryOptionsData as any)?.activeRefundEntryOptions || []
-  ).sort(
-    (a: any, b: any) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
+
+  // Create a safe copy of the array before sorting to avoid read-only issues
+  const rawEntryOptions = (entryOptionsData as any)?.activeRefundEntryOptions || [];
+  const entryOptions = React.useMemo(() => {
+    if (!Array.isArray(rawEntryOptions) || rawEntryOptions.length === 0) {
+      return [];
+    }
+    // Create a new array copy to avoid mutating the read-only original
+    return [...rawEntryOptions].sort((a: any, b: any) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  }, [rawEntryOptions]);
+
+  // Add this useEffect to refetch when dialog opens
+  useEffect(() => {
+    if (open) {
+      refetchEntryOptions();
+    }
+  }, [open, refetchEntryOptions]);
   const Methods = Object.values(PaymentMethod).map((method) => ({
     label: method.toLocaleLowerCase().replaceAll("_", " "),
     value: method,
@@ -773,6 +788,7 @@ const FormDialog = (props: Props) => {
       skip: !duplicateReferenceNumber || !showDuplicateDialog,
       fetchPolicy: "network-only",
     });
+
 
   useEffect(() => {
     if (
@@ -804,83 +820,83 @@ const FormDialog = (props: Props) => {
 
   // Replace the validateRefundAmount function with this updated version:
 
- const validateRefundAmount = (
-  refundAmount: number,
-  selectedEntryNumbers: string[],
-): {
-  isValid: boolean;
-  totalRefundable: number;
-  isUnderpaid: boolean;
-  isOverpaid: boolean;
-  excessByEntry?: Array<{
-    entryNumber: string;
-    refundableAmount: number;
-    attemptedAmount?: number;
-  }>;
-} => {
-  if (!entryOptions || selectedEntryNumbers.length === 0) {
-    return {
-      isValid: true,
-      totalRefundable: 0,
-      isUnderpaid: false,
-      isOverpaid: false,
-    };
-  }
-
-  // Filter the selected entries with their payment info
-  const selectedEntries = entryOptions.filter((entry: EntryWithPaymentInfo) =>
-    selectedEntryNumbers.includes(entry.entryNumber),
-  );
-
-  // Calculate total refundable amount from all selected entries
-  let totalRefundable = 0;
-  const excessByEntry: Array<{
-    entryNumber: string;
-    refundableAmount: number;
-    attemptedAmount?: number;
-  }> = [];
-
-  selectedEntries.forEach((entry: EntryWithPaymentInfo) => {
-    let refundableAmount = 0;
-    
-    // Check if the entry is cancelled
-    const isCancelled = entry.currentStatus === "CANCELLED";
-    
-    if (isCancelled) {
-      // For cancelled entries, use the refundableAmount from paymentInfo
-      // which should be the total paid amount from the backend
-      refundableAmount = entry.paymentInfo?.refundableAmount || 0;
-      console.log(`Cancelled entry ${entry.entryNumber}: refundableAmount = ${refundableAmount}, totalPaid = ${entry.paymentInfo?.totalPaid}`);
-    } else if (entry.paymentInfo?.currentPendingAmount < 0) {
-      // If pendingAmount is negative (overpayment), refundableAmount is the absolute value
-      refundableAmount = Math.abs(entry.paymentInfo.currentPendingAmount);
-    } else {
-      refundableAmount = 0;
+  const validateRefundAmount = (
+    refundAmount: number,
+    selectedEntryNumbers: string[],
+  ): {
+    isValid: boolean;
+    totalRefundable: number;
+    isUnderpaid: boolean;
+    isOverpaid: boolean;
+    excessByEntry?: Array<{
+      entryNumber: string;
+      refundableAmount: number;
+      attemptedAmount?: number;
+    }>;
+  } => {
+    if (!entryOptions || selectedEntryNumbers.length === 0) {
+      return {
+        isValid: true,
+        totalRefundable: 0,
+        isUnderpaid: false,
+        isOverpaid: false,
+      };
     }
 
-    totalRefundable += refundableAmount;
-    excessByEntry.push({
-      entryNumber: entry.entryNumber,
-      refundableAmount,
-      attemptedAmount: refundAmount,
+    // Filter the selected entries with their payment info
+    const selectedEntries = entryOptions.filter((entry: EntryWithPaymentInfo) =>
+      selectedEntryNumbers.includes(entry.entryNumber),
+    );
+
+    // Calculate total refundable amount from all selected entries
+    let totalRefundable = 0;
+    const excessByEntry: Array<{
+      entryNumber: string;
+      refundableAmount: number;
+      attemptedAmount?: number;
+    }> = [];
+
+    selectedEntries.forEach((entry: EntryWithPaymentInfo) => {
+      let refundableAmount = 0;
+
+      // Check if the entry is cancelled
+      const isCancelled = entry.currentStatus === "CANCELLED";
+
+      if (isCancelled) {
+        // For cancelled entries, use the refundableAmount from paymentInfo
+        // which should be the total paid amount from the backend
+        refundableAmount = entry.paymentInfo?.refundableAmount || 0;
+        console.log(`Cancelled entry ${entry.entryNumber}: refundableAmount = ${refundableAmount}, totalPaid = ${entry.paymentInfo?.totalPaid}`);
+      } else if (entry.paymentInfo?.currentPendingAmount < 0) {
+        // If pendingAmount is negative (overpayment), refundableAmount is the absolute value
+        refundableAmount = Math.abs(entry.paymentInfo.currentPendingAmount);
+      } else {
+        refundableAmount = 0;
+      }
+
+      totalRefundable += refundableAmount;
+      excessByEntry.push({
+        entryNumber: entry.entryNumber,
+        refundableAmount,
+        attemptedAmount: refundAmount,
+      });
     });
-  });
 
-  // Check if refund amount matches exactly
-  const isExactMatch = refundAmount === totalRefundable;
-  const isUnderpaid = refundAmount < totalRefundable;
-  const isOverpaid = refundAmount > totalRefundable;
+    // Check if refund amount matches exactly
+    const isExactMatch = refundAmount === totalRefundable;
+    const isUnderpaid = refundAmount < totalRefundable;
+    const isOverpaid = refundAmount > totalRefundable;
 
-  console.log('Refund validation:', { refundAmount, totalRefundable, isExactMatch, isUnderpaid, isOverpaid });
+    console.log('Refund validation:', { refundAmount, totalRefundable, isExactMatch, isUnderpaid, isOverpaid });
 
-  return {
-    isValid: isExactMatch,
-    totalRefundable,
-    isUnderpaid,
-    isOverpaid,
-    excessByEntry: !isExactMatch ? excessByEntry : undefined,
+    return {
+      isValid: isExactMatch,
+      totalRefundable,
+      isUnderpaid,
+      isOverpaid,
+      excessByEntry: !isExactMatch ? excessByEntry : undefined,
+    };
   };
-};
 
   const handleOpenDuplicateDialog = async (referenceNumber: string) => {
     setDuplicateReferenceNumber(referenceNumber);
@@ -1839,15 +1855,15 @@ const FormDialog = (props: Props) => {
                         const totalRefundableSelected =
                           entryList.length > 0
                             ? entryOptions
-                                .filter((e: EntryWithPaymentInfo) =>
-                                  entryList.includes(e.entryNumber),
-                                )
-                                .reduce(
-                                  (sum: number, e: EntryWithPaymentInfo) =>
-                                    sum +
-                                    (e.paymentInfo?.refundableAmount || 0),
-                                  0,
-                                )
+                              .filter((e: EntryWithPaymentInfo) =>
+                                entryList.includes(e.entryNumber),
+                              )
+                              .reduce(
+                                (sum: number, e: EntryWithPaymentInfo) =>
+                                  sum +
+                                  (e.paymentInfo?.refundableAmount || 0),
+                                0,
+                              )
                             : 0;
 
                         return (
@@ -1899,7 +1915,7 @@ const FormDialog = (props: Props) => {
                                     className={cn(
                                       "w-full justify-between font-normal capitalize h-fit",
                                       !entryList.length &&
-                                        "text-muted-foreground",
+                                      "text-muted-foreground",
                                     )}
                                     type="button"
                                     disabled={isLoading}
@@ -2401,9 +2417,8 @@ const FormDialog = (props: Props) => {
                                 ? "Uploaded receipt"
                                 : "Existing proof of refund"
                             }
-                            className={`w-full rounded-lg border shadow transition-opacity duration-300 ${
-                              imageLoading ? "opacity-0" : "opacity-100"
-                            }`}
+                            className={`w-full rounded-lg border shadow transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"
+                              }`}
                             width={300}
                             height={300}
                             onLoad={() => setImageLoading(false)}
@@ -2445,11 +2460,10 @@ const FormDialog = (props: Props) => {
 
                     <div
                       {...getRootProps()}
-                      className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${
-                        files.length > 0
-                          ? "border-green-400 hover:bg-green-50"
-                          : "border-green-400 hover:bg-green-50"
-                      }`}
+                      className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${files.length > 0
+                        ? "border-green-400 hover:bg-green-50"
+                        : "border-green-400 hover:bg-green-50"
+                        }`}
                     >
                       {isUploading ? (
                         <div className="flex flex-col items-center">
@@ -2519,11 +2533,22 @@ const FormDialog = (props: Props) => {
             </Button>
           </DialogFooter>
 
-          <AnimatePresence>
+          {/* <AnimatePresence>
             {success && <SuccessModal />}
             {showConfirmationDialog && <ConfirmationDialog />}
             {(isUploading || loading) && (
               <UploadingOverlay
+                message={loading ? "Scanning receipt..." : "Uploading..."}
+                progress={isUploading ? uploadProgress : undefined}
+              />
+            )}
+          </AnimatePresence> */}
+          <AnimatePresence mode="wait">
+            {success && <SuccessModal key="success-modal" />}
+            {showConfirmationDialog && <ConfirmationDialog key="confirmation-dialog" />}
+            {(isUploading || loading) && (
+              <UploadingOverlay
+                key="uploading-overlay"
                 message={loading ? "Scanning receipt..." : "Uploading..."}
                 progress={isUploading ? uploadProgress : undefined}
               />
