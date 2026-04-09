@@ -3250,6 +3250,7 @@ export function CheckEntryModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onWheel={(e) => e.stopPropagation()}
           >
             <motion.div
               className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative overflow-y-auto max-h-[85vh]"
@@ -3298,6 +3299,7 @@ export function CheckEntryModal({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
+                      onWheel={(e) => e.stopPropagation()}
                     >
                       {getStatusIcon(statusItem.status)}
                       <div>

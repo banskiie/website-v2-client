@@ -1806,7 +1806,7 @@ const AssignDialog = (props: Props) => {
       return (
         <div className="flex gap-6">
           <div className="w-3/4!">
-            <FieldSet className="flex flex-col gap-2.5 h-[75vh] overflow-y-auto pr-2">
+            <FieldSet className="flex flex-col gap-2.5 h-[67vh] overflow-y-auto pr-2">
               <form.Field
                 name={`is${tab === "player1" ? "Player1" : "Player2"}New`}
                 children={(field) => {
@@ -2832,18 +2832,18 @@ const AssignDialog = (props: Props) => {
           </div>
 
           <div className="w-1/3 border-l pl-6">
-            <div className="mb-6">
+            <div className="mb-3">
               <h3 className="text-lg font-semibold mb-2">Suggested Players</h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Based on name and birthday match from your database
               </p>
             </div>
 
-            <div className="space-y-3 max-h-[52vh] overflow-y-auto pr-2">
+            <div className="space-y-2 max-h-[52vh] overflow-y-auto pr-2">
               {suggestions.map((player) => (
                 <div
                   key={player._id}
-                  className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors bg-white shadow-sm"
+                  className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors bg-white shadow-sm"
                   onClick={() => {
                     form.setFieldValue(
                       `connected${tab === "player1" ? "Player1" : "Player2"}`,
@@ -2854,7 +2854,7 @@ const AssignDialog = (props: Props) => {
                       : fetchPlayer2({ variables: { _id: player._id } });
                   }}
                 >
-                  <div className="flex justify-between items-start mb-3">
+                  <div className="flex justify-between items-start mb-2">
                     <div>
                       <h4 className="font-medium">{player.fullName}</h4>
                       <div className="flex items-center gap-2 mt-1">
@@ -2913,7 +2913,7 @@ const AssignDialog = (props: Props) => {
               ))}
             </div>
 
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            {/* <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
                 <div className="text-sm text-blue-800">
@@ -2925,14 +2925,14 @@ const AssignDialog = (props: Props) => {
                   </p>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       );
     }
 
     return (
-      <FieldSet className="flex flex-col gap-2.5 h-[52vh] overflow-y-auto">
+      <FieldSet className="flex flex-col gap-2.5 h-[67vh] overflow-y-auto">
         <form.Field
           name={`is${tab === "player1" ? "Player1" : "Player2"}New`}
           children={(field) => {
@@ -4067,7 +4067,7 @@ const AssignDialog = (props: Props) => {
           >
             <DialogHeader>
               <DialogTitle>Player Assignment: {entry?.entryNumber}</DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs">
                 Assign players to this entry for streamlined data management.
               </DialogDescription>
             </DialogHeader>

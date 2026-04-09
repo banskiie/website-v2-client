@@ -1374,7 +1374,7 @@ const FormDialog = (props: Props) => {
     children: string;
   }) => (
     <div className="flex items-center gap-1">
-      <FieldLabel htmlFor={htmlFor}>{children}</FieldLabel>
+      <FieldLabel htmlFor={htmlFor} className="text-[14px]">{children}</FieldLabel>
       <span className="text-red-500">*</span>
     </div>
   );
@@ -1687,161 +1687,168 @@ const FormDialog = (props: Props) => {
           onOpenAutoFocus={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
           showCloseButton={false}
-          className="max-w-4xl"
+          className="max-w-2xl! h-[85vh] p-0 sm:p-6 overflow-hidden flex flex-col"
         >
-          <DialogHeader>
-            <DialogTitle>
-              {isUpdate ? "Edit Refund" : "Create Refund"}
-            </DialogTitle>
-            <DialogDescription className="space-y-2">
-              {isUpdate
-                ? "Update existing refund details."
-                : "Create a new refund in the system."}
-            </DialogDescription>
-          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-0">
+            <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
+              <DialogTitle>
+                {isUpdate ? "Edit Refund" : "Create Refund"}
+              </DialogTitle>
+              <DialogDescription className="space-y-2">
+                {isUpdate
+                  ? "Update existing refund details."
+                  : "Create a new refund in the system."}
+              </DialogDescription>
+            </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="refund-details">Refund Details</TabsTrigger>
-              <TabsTrigger value="refund-reference">Upload Receipt</TabsTrigger>
-            </TabsList>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="flex w-full gap-2 mb-4 sticky top-[62px] bg-gray-100 dark:bg-gray-800 z-10 p-1 rounded-none overflow-x-auto">
+                <TabsTrigger value="refund-details" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                  Refund Details
+                </TabsTrigger>
+                <TabsTrigger value="refund-reference" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                  Upload Receipt
+                </TabsTrigger>
+              </TabsList>
 
-            <form
-              className="-mt-2 mb-2"
-              id="refund-form"
-              onSubmit={handleFormSubmit}
-            >
-              <div className="min-h-[580px] max-h-[60vh] overflow-y-auto pr-2">
-                <TabsContent value="refund-details" className="space-y-4 mt-4">
-                  <FieldSet className="grid grid-cols-2 gap-4">
-                    <form.Field
-                      name="payerName"
-                      children={(field: any) => {
-                        const isInvalid =
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid;
-                        return (
-                          <Field
-                            data-invalid={isInvalid}
-                            className="col-span-2"
-                          >
-                            <RequiredLabel htmlFor={field.name}>
-                              Payer Name
-                            </RequiredLabel>
-                            <InputGroup className="-my-1">
-                              <InputGroupInput
-                                required
-                                placeholder="Payer Name"
-                                disabled={isLoading}
-                                id={field.name}
-                                name={field.name}
-                                value={field.state.value}
-                                onBlur={field.handleBlur}
-                                onChange={(e) =>
-                                  field.handleChange(e.target.value)
-                                }
-                                aria-invalid={isInvalid}
-                              />
-                            </InputGroup>
-                            {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                            )}
-                          </Field>
-                        );
-                      }}
-                    />
-
-                    <form.Field
-                      name="method"
-                      children={(field) => {
-                        const isInvalid =
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid;
-                        return (
-                          <Field data-invalid={isInvalid}>
-                            <RequiredLabel htmlFor={field.name}>
-                              Payment Method
-                            </RequiredLabel>
-                            <Select
-                              value={field.state.value}
-                              onValueChange={(value: PaymentMethod) =>
-                                field.handleChange(value)
-                              }
-                              disabled={isLoading}
+              <form
+                className="space-y-4"
+                id="refund-form"
+                onSubmit={handleFormSubmit}
+              >
+                <TabsContent value="refund-details" className="space-y-4">
+                  <FieldSet className="space-y-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <form.Field
+                        name="payerName"
+                        children={(field: any) => {
+                          const isInvalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid;
+                          return (
+                            <Field
+                              data-invalid={isInvalid}
+                              className="col-span-1 sm:col-span-2"
                             >
-                              <SelectTrigger className="w-full uppercase">
-                                <SelectValue placeholder="Select method" />
-                              </SelectTrigger>
-                              <SelectContent className="uppercase">
-                                {Methods.map((method) => (
-                                  <SelectItem
-                                    key={method.value}
-                                    value={method.value}
-                                  >
-                                    {method.label.toUpperCase()}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            {isInvalid && (
-                              <FieldError
-                                errors={field.state.meta.errors.map((err) =>
-                                  typeof err === "string"
-                                    ? { message: err }
-                                    : err,
-                                )}
-                              />
-                            )}
-                          </Field>
-                        );
-                      }}
-                    />
-
-                    <form.Field
-                      name="refundDate"
-                      children={(field: any) => {
-                        const isInvalid =
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid;
-                        return (
-                          <Field data-invalid={isInvalid}>
-                            <RequiredLabel htmlFor="refund-date">
-                              Refund Date
-                            </RequiredLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  id="refund-date"
-                                  name="refund-date"
-                                  variant="outline"
-                                  data-empty={!field.state.value}
-                                  className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex"
+                              <RequiredLabel htmlFor={field.name}>
+                                Payer Name
+                              </RequiredLabel>
+                              <InputGroup className="-my-1">
+                                <InputGroupInput
+                                  required
+                                  placeholder="Payer Name"
                                   disabled={isLoading}
-                                >
-                                  <CalendarIcon className="size-3.5 mr-2" />
-                                  {field.state.value ? (
-                                    format(field.state.value, "PPP")
-                                  ) : (
-                                    <span>Select Refund Date</span>
-                                  )}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                  mode="single"
-                                  required={true}
-                                  selected={field.state.value}
-                                  onSelect={field.handleChange}
+                                  id={field.name}
+                                  name={field.name}
+                                  value={field.state.value}
+                                  onBlur={field.handleBlur}
+                                  onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                  }
+                                  aria-invalid={isInvalid}
+                                  className="text-sm"
                                 />
-                              </PopoverContent>
-                            </Popover>
-                            {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                            )}
-                          </Field>
-                        );
-                      }}
-                    />
+                              </InputGroup>
+                              {isInvalid && (
+                                <FieldError errors={field.state.meta.errors} />
+                              )}
+                            </Field>
+                          );
+                        }}
+                      />
+
+                      <form.Field
+                        name="method"
+                        children={(field) => {
+                          const isInvalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid;
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <RequiredLabel htmlFor={field.name}>
+                                Payment Method
+                              </RequiredLabel>
+                              <Select
+                                value={field.state.value}
+                                onValueChange={(value: PaymentMethod) =>
+                                  field.handleChange(value)
+                                }
+                                disabled={isLoading}
+                              >
+                                <SelectTrigger className="w-full uppercase text-sm">
+                                  <SelectValue placeholder="Select method" />
+                                </SelectTrigger>
+                                <SelectContent className="uppercase">
+                                  {Methods.map((method) => (
+                                    <SelectItem
+                                      key={method.value}
+                                      value={method.value}
+                                    >
+                                      {method.label.toUpperCase()}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {isInvalid && (
+                                <FieldError
+                                  errors={field.state.meta.errors.map((err) =>
+                                    typeof err === "string"
+                                      ? { message: err }
+                                      : err,
+                                  )}
+                                />
+                              )}
+                            </Field>
+                          );
+                        }}
+                      />
+
+                      <form.Field
+                        name="refundDate"
+                        children={(field: any) => {
+                          const isInvalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid;
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <RequiredLabel htmlFor="refund-date">
+                                Refund Date
+                              </RequiredLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    id="refund-date"
+                                    name="refund-date"
+                                    variant="outline"
+                                    data-empty={!field.state.value}
+                                    className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex text-sm"
+                                    disabled={isLoading}
+                                  >
+                                    <CalendarIcon className="size-3.5 mr-2" />
+                                    {field.state.value ? (
+                                      format(field.state.value, "PPP")
+                                    ) : (
+                                      <span>Select Refund Date</span>
+                                    )}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                  <Calendar
+                                    mode="single"
+                                    required={true}
+                                    selected={field.state.value}
+                                    onSelect={field.handleChange}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              {isInvalid && (
+                                <FieldError errors={field.state.meta.errors} />
+                              )}
+                            </Field>
+                          );
+                        }}
+                      />
+                    </div>
 
                     <form.Field
                       name="entryList"
@@ -1851,7 +1858,7 @@ const FormDialog = (props: Props) => {
                           !field.state.meta.isValid;
                         const entryList = field.state.value || [];
 
-                        // NEW: Calculate total refundable amount for selected entries
+                        // Calculate total refundable amount for selected entries
                         const totalRefundableSelected =
                           entryList.length > 0
                             ? entryOptions
@@ -1913,7 +1920,7 @@ const FormDialog = (props: Props) => {
                                     role="combobox"
                                     aria-invalid={isInvalid}
                                     className={cn(
-                                      "w-full justify-between font-normal capitalize h-fit",
+                                      "w-full justify-between font-normal capitalize h-fit text-sm",
                                       !entryList.length &&
                                       "text-muted-foreground",
                                     )}
@@ -1923,11 +1930,11 @@ const FormDialog = (props: Props) => {
                                     <span className="truncate text-left">
                                       {getSelectedEntriesText()}
                                     </span>
-                                    <ChevronsUpDown className="opacity-50" />
+                                    <ChevronsUpDown className="opacity-50 h-4 w-4" />
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent
-                                  className="w-(--radix-popover-trigger-width) p-0 max-h-80"
+                                  className="w-[calc(100vw-2rem)] sm:w-(--radix-popover-trigger-width) p-0 max-h-80"
                                   onWheel={(e) => e.stopPropagation()}
                                 >
                                   <Command>
@@ -2038,7 +2045,7 @@ const FormDialog = (props: Props) => {
                                                     </Badge>
                                                   )}
                                                   {isSelected && (
-                                                    <Check className="h-3.5 w-3.5 text-primary" />
+                                                    <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                                                   )}
                                                 </div>
                                               </div>
@@ -2064,6 +2071,7 @@ const FormDialog = (props: Props) => {
                                       size="sm"
                                       onClick={() => field.handleChange([])}
                                       disabled={isLoading}
+                                      className="text-xs"
                                     >
                                       Clear All
                                     </Button>
@@ -2088,9 +2096,9 @@ const FormDialog = (props: Props) => {
                                             key={entryNumber}
                                             className="p-3 border rounded-lg space-y-2 hover:bg-gray-50 transition-colors"
                                           >
-                                            <div className="flex items-start justify-between">
-                                              <div className="flex-1">
-                                                <div className="flex items-center gap-2 flex-wrap">
+                                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                              <div className="flex-1 min-w-0">
+                                                <div className="flex flex-wrap items-center gap-2 mb-2">
                                                   <span className="font-medium text-sm">
                                                     {selectedEntry.entryNumber}
                                                   </span>
@@ -2115,7 +2123,7 @@ const FormDialog = (props: Props) => {
                                                   )}
                                                 </div>
 
-                                                <div className="text-[11px] text-muted-foreground truncate mt-1">
+                                                <div className="text-[11px] text-muted-foreground truncate">
                                                   {selectedEntry.players
                                                     .map(
                                                       (p: any) =>
@@ -2149,7 +2157,7 @@ const FormDialog = (props: Props) => {
                                                 </div>
 
                                                 {paymentInfo?.latestPayment && (
-                                                  <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                                                  <div className="text-[10px] text-gray-400 mt-1 flex flex-wrap items-center gap-1">
                                                     <span>Latest:</span>
                                                     <span className="text-green-600">
                                                       ₱
@@ -2183,7 +2191,7 @@ const FormDialog = (props: Props) => {
                                                 onClick={() =>
                                                   handleRemoveEntry(entryNumber)
                                                 }
-                                                className="h-8 w-8 p-0 ml-2 flex-shrink-0"
+                                                className="h-8 w-8 p-0 flex-shrink-0 self-start"
                                                 disabled={isLoading}
                                               >
                                                 <XIcon className="h-4 w-4" />
@@ -2207,321 +2215,308 @@ const FormDialog = (props: Props) => {
                   </FieldSet>
                 </TabsContent>
 
-                <TabsContent
-                  value="refund-reference"
-                  className="space-y-4 mt-4"
-                >
-                  <FieldSet className="grid grid-cols-2 gap-4">
-                    <form.Field
-                      name="amount"
-                      children={(field: any) => {
-                        const isInvalid =
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid;
-                        return (
-                          <Field data-invalid={isInvalid}>
-                            <RequiredLabel htmlFor={field.name}>
-                              Amount
-                            </RequiredLabel>
-                            <div className="space-y-2">
-                              <InputGroup>
-                                <InputGroupAddon>
-                                  <span className="font-thin">₱</span>
-                                </InputGroupAddon>
-                                <InputGroupInput
-                                  placeholder="Amount"
-                                  disabled={isLoading}
-                                  id={field.name}
-                                  name={field.name}
-                                  value={field.state.value}
-                                  onBlur={field.handleBlur}
-                                  onChange={(e) =>
-                                    field.handleChange(
-                                      parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  aria-invalid={isInvalid}
-                                  type="number"
-                                  step={0.01}
-                                  min={0}
-                                />
-                              </InputGroup>
-                              {scannedAmount && (
-                                <p className="text-xs text-green-600">
-                                  {scannedAmount === "Not found"
-                                    ? "No amount detected in receipt"
-                                    : `Scanned amount: ${scannedAmount}`}
-                                </p>
+                <TabsContent value="refund-reference" className="space-y-4">
+                  <FieldSet className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <form.Field
+                        name="amount"
+                        children={(field: any) => {
+                          const isInvalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid;
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <RequiredLabel htmlFor={field.name}>
+                                Amount
+                              </RequiredLabel>
+                              <div className="space-y-2">
+                                <InputGroup>
+                                  <InputGroupAddon>
+                                    <span className="font-thin">₱</span>
+                                  </InputGroupAddon>
+                                  <InputGroupInput
+                                    placeholder="Amount"
+                                    disabled={isLoading}
+                                    id={field.name}
+                                    name={field.name}
+                                    value={field.state.value}
+                                    onBlur={field.handleBlur}
+                                    onChange={(e) =>
+                                      field.handleChange(
+                                        parseFloat(e.target.value) || 0,
+                                      )
+                                    }
+                                    aria-invalid={isInvalid}
+                                    type="number"
+                                    step={0.01}
+                                    min={0}
+                                    className="text-sm"
+                                  />
+                                </InputGroup>
+                                {scannedAmount && (
+                                  <p className="text-xs text-green-600">
+                                    {scannedAmount === "Not found"
+                                      ? "No amount detected in receipt"
+                                      : `Scanned amount: ${scannedAmount}`}
+                                  </p>
+                                )}
+                              </div>
+                              {isInvalid && (
+                                <FieldError errors={field.state.meta.errors} />
                               )}
-                            </div>
-                            {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                            )}
-                          </Field>
-                        );
-                      }}
-                    />
+                            </Field>
+                          );
+                        }}
+                      />
 
-                    <form.Field
-                      name="referenceNumber"
-                      children={(field: any) => {
-                        const isInvalid =
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid;
-                        const fieldError = field.state.meta.errors?.[0];
+                      <form.Field
+                        name="referenceNumber"
+                        children={(field: any) => {
+                          const isInvalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid;
+                          const fieldError = field.state.meta.errors?.[0];
 
-                        return (
-                          <Field data-invalid={isInvalid}>
-                            <div className="flex items-center gap-1">
-                              <Label className="text-sm font-medium">
-                                Reference No.
-                              </Label>
-                              <span className="text-red-500">*</span>
-                              {referenceLoading && (
-                                <span className="text-xs font-normal text-blue-500 animate-pulse ml-2">
-                                  Scanning...
-                                </span>
-                              )}
-                            </div>
-                            <div className="space-y-2">
-                              {referenceLoading ? (
-                                <div className="flex items-center gap-3 p-2 border border-gray-200 rounded bg-gray-50">
-                                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-                                  <span className="text-gray-600">
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <Label className="text-sm font-medium">
+                                  Reference No.
+                                </Label>
+                                <span className="text-red-500">*</span>
+                                {referenceLoading && (
+                                  <span className="text-xs font-normal text-blue-500 animate-pulse ml-2">
                                     Scanning...
                                   </span>
-                                </div>
-                              ) : (
-                                <div className="space-y-1">
-                                  <InputGroup>
-                                    <InputGroupInput
-                                      placeholder="Reference No."
-                                      disabled={isLoading}
-                                      id={field.name}
-                                      name={field.name}
-                                      value={field.state.value}
-                                      onBlur={field.handleBlur}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        field.handleChange(value);
-                                      }}
-                                      aria-invalid={isInvalid}
-                                    />
-                                  </InputGroup>
+                                )}
+                              </div>
+                              <div className="space-y-2">
+                                {referenceLoading ? (
+                                  <div className="flex items-center gap-3 p-2 border border-gray-200 rounded bg-gray-50">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                                    <span className="text-gray-600 text-sm">
+                                      Scanning...
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1">
+                                    <InputGroup>
+                                      <InputGroupInput
+                                        placeholder="Reference No."
+                                        disabled={isLoading}
+                                        id={field.name}
+                                        name={field.name}
+                                        value={field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          field.handleChange(value);
+                                        }}
+                                        aria-invalid={isInvalid}
+                                        className="text-sm"
+                                      />
+                                    </InputGroup>
 
-                                  {scannedReference &&
-                                    scannedReference !== "Not found" && (
-                                      <p className="text-xs text-green-600">
-                                        ✓ Scanned reference auto-filled
+                                    {scannedReference &&
+                                      scannedReference !== "Not found" && (
+                                        <p className="text-xs text-green-600">
+                                          ✓ Scanned reference auto-filled
+                                        </p>
+                                      )}
+
+                                    {(!scannedReference ||
+                                      scannedReference === "Not found") &&
+                                      files.length > 0 && (
+                                        <p className="text-xs text-gray-500">
+                                          No reference detected in receipt
+                                        </p>
+                                      )}
+
+                                    {isInvalid && fieldError && (
+                                      <p className="text-xs text-red-500 flex items-center">
+                                        <AlertCircle className="h-3 w-3 mr-1" />
+                                        {fieldError}
                                       </p>
                                     )}
-
-                                  {(!scannedReference ||
-                                    scannedReference === "Not found") &&
-                                    files.length > 0 && (
-                                      <p className="text-xs text-gray-500">
-                                        No reference detected in receipt
-                                      </p>
-                                    )}
-
-                                  {isInvalid && fieldError && (
-                                    <p className="text-xs text-red-500 flex items-center">
-                                      <AlertCircle className="h-3 w-3 mr-1" />
-                                      {fieldError}
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </Field>
-                        );
-                      }}
-                    />
-                  </FieldSet>
-
-                  <div className="border-2 border-dashed border-green-300 rounded-xl p-4 bg-green-50 flex flex-col items-center">
-                    <div className="w-full text-left mb-3">
-                      <div className="text-green-800 font-bold text-sm mb-1">
-                        Upload Proof of Refund{" "}
-                        <span className="text-red-500">*</span>
-                      </div>
-                      <p className="text-gray-600 text-xs">
-                        Upload your refund receipt to automatically scan the
-                        amount and reference number.
-                      </p>
+                                  </div>
+                                )}
+                              </div>
+                            </Field>
+                          );
+                        }}
+                      />
                     </div>
 
-                    {files.length > 0 && (
-                      <div className="w-full mb-4 p-3 bg-white border rounded-lg">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Paperclip className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <div className="flex-1 max-w-xs">
-                            <p className="text-sm font-medium truncate w-full">
-                              {files[0].name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {(files[0].size / 1024).toFixed(2)} KB
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            onClick={handleRemoveFile}
-                            disabled={isUploading}
-                            className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer flex-shrink-0"
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </Button>
+                    <div className="border-2 border-dashed border-green-300 rounded-xl p-4 bg-green-50">
+                      <div className="w-full text-left mb-3">
+                        <div className="text-green-800 font-bold text-sm mb-1">
+                          Upload Proof of Refund{" "}
+                          <span className="text-red-500">*</span>
                         </div>
-                        {isUploading && (
-                          <div className="mt-2">
-                            <div className="w-full bg-gray-200 rounded-full h-1">
-                              <div className="bg-green-600 h-1 rounded-full animate-pulse"></div>
+                        <p className="text-gray-600 text-xs">
+                          Upload your refund receipt to automatically scan the
+                          amount and reference number.
+                        </p>
+                      </div>
+
+                      {files.length > 0 && (
+                        <div className="w-full mb-4 p-3 bg-white border rounded-lg">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Paperclip className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate" title={files[0].name}>
+                                {files[0].name.length > 30 ? `${files[0].name.substring(0, 27)}...` : files[0].name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {(files[0].size / 1024).toFixed(2)} KB
+                              </p>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Uploading...
-                            </p>
+                            <Button
+                              type="button"
+                              onClick={handleRemoveFile}
+                              disabled={isUploading}
+                              className="text-gray-500 hover:text-red-500 hover:bg-gray-200! bg-transparent transition-colors cursor-pointer flex-shrink-0"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          {isUploading && (
+                            <div className="mt-2">
+                              <div className="w-full bg-gray-200 rounded-full h-1">
+                                <div className="bg-green-600 h-1 rounded-full animate-pulse"></div>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Uploading...
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {isUpdate && refund?.proofOfRefundURL && !files.length && (
+                        <div className="w-full mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Paperclip className="w-4 h-4 text-blue-500" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-700">
+                                Existing proof of refund is already uploaded
+                              </p>
+                              <p className="text-xs text-blue-500">
+                                Upload a new file to replace the existing one
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="w-full flex justify-center mb-4">
+                        {preview || refund?.proofOfRefundURL ? (
+                          <div className="w-full max-w-[250px] sm:max-w-[300px] relative">
+                            {imageLoading && (
+                              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border bg-gray-100">
+                                <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-green-500" />
+                              </div>
+                            )}
+
+                            <Image
+                              src={preview || refund?.proofOfRefundURL || ""}
+                              alt={
+                                preview
+                                  ? "Uploaded receipt"
+                                  : "Existing proof of refund"
+                              }
+                              className={`w-full rounded-lg border shadow transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"
+                                }`}
+                              width={300}
+                              height={300}
+                              onLoad={() => setImageLoading(false)}
+                              onError={(e) => {
+                                console.error(
+                                  "Failed to load image:",
+                                  e.currentTarget.src,
+                                );
+                                setImageLoading(false);
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full max-w-[250px] sm:max-w-[300px] h-[150px] sm:h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                            <div className="text-center p-4">
+                              <UploadIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                Receipt preview will appear here
+                              </p>
+                            </div>
                           </div>
                         )}
                       </div>
-                    )}
 
-                    {isUpdate && refund?.proofOfRefundURL && !files.length && (
-                      <div className="w-full mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <Paperclip className="w-4 h-4 text-blue-500" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-blue-700">
-                              Existing proof of refund is already uploaded
-                            </p>
-                            <p className="text-xs text-blue-500">
-                              Upload a new file to replace the existing one
-                            </p>
+                      <div
+                        {...getRootProps()}
+                        className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${files.length > 0
+                          ? "border-green-400 hover:bg-green-50"
+                          : "border-green-400 hover:bg-green-50"
+                          }`}
+                      >
+                        {isUploading ? (
+                          <div className="flex flex-col items-center">
+                            <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
+                            <span className="font-medium text-sm text-green-700">
+                              Uploading...
+                            </span>
+                            <span className="text-xs text-gray-500 mt-1">
+                              Please wait
+                            </span>
                           </div>
-                        </div>
+                        ) : loading ? (
+                          <div className="flex flex-col items-center">
+                            <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
+                            <span className="font-medium text-sm text-green-700">
+                              Scanning receipt...
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <UploadIcon className="w-6 h-6 mb-2 text-green-600" />
+                            <span className="font-medium text-sm text-green-700 text-center">
+                              {files.length > 0
+                                ? "Upload new file or click to replace"
+                                : "Upload your receipt or click to browse"}
+                            </span>
+                            <input {...getInputProps()} />
+                          </>
+                        )}
                       </div>
-                    )}
 
-                    <div className="w-full flex justify-center mb-4">
-                      {preview || refund?.proofOfRefundURL ? (
-                        <div className="w-full max-w-[300px] relative">
-                          {imageLoading && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border bg-gray-100">
-                              <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-green-500" />
-                            </div>
-                          )}
-
-                          <Image
-                            src={preview || refund?.proofOfRefundURL || ""}
-                            alt={
-                              preview
-                                ? "Uploaded receipt"
-                                : "Existing proof of refund"
-                            }
-                            className={`w-full rounded-lg border shadow transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"
-                              }`}
-                            width={300}
-                            height={300}
-                            onLoad={() => setImageLoading(false)}
-                            onError={(e) => {
-                              console.error(
-                                "Failed to load image:",
-                                e.currentTarget.src,
-                              );
-                              setImageLoading(false);
-                              e.currentTarget.style.display = "none";
-                              const fallbackDiv = document.createElement("div");
-                              fallbackDiv.className =
-                                "w-full max-w-[300px] h-[200px] rounded-lg border bg-gray-50 flex items-center justify-center";
-                              fallbackDiv.innerHTML = `
-                                <div class="text-center">
-                                  <svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                                  </svg>
-                                  <p class="text-sm text-gray-500">Failed to load image</p>
-                                </div>
-                              `;
-                              e.currentTarget.parentNode?.appendChild(
-                                fallbackDiv,
-                              );
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                          <div className="text-center">
-                            <UploadIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500">
-                              Receipt preview will appear here
-                            </p>
+                      {isUploading && (
+                        <div className="w-full mt-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent"></div>
+                            <span className="text-sm text-gray-600">
+                              Uploading file to server...
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                            <div className="bg-green-600 h-1.5 rounded-full animate-pulse w-3/4"></div>
                           </div>
                         </div>
                       )}
                     </div>
-
-                    <div
-                      {...getRootProps()}
-                      className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${files.length > 0
-                        ? "border-green-400 hover:bg-green-50"
-                        : "border-green-400 hover:bg-green-50"
-                        }`}
-                    >
-                      {isUploading ? (
-                        <div className="flex flex-col items-center">
-                          <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
-                          <span className="font-medium text-sm text-green-700">
-                            Uploading...
-                          </span>
-                          <span className="text-xs text-gray-500 mt-1">
-                            Please wait
-                          </span>
-                        </div>
-                      ) : loading ? (
-                        <div className="flex flex-col items-center">
-                          <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
-                          <span className="font-medium text-sm text-green-700">
-                            Scanning receipt...
-                          </span>
-                        </div>
-                      ) : (
-                        <>
-                          <UploadIcon className="w-6 h-6 mb-2 text-green-600" />
-                          <span className="font-medium text-sm text-green-700">
-                            {files.length > 0
-                              ? "Upload new file or click to replace"
-                              : "Upload your receipt or click to browse"}
-                          </span>
-                          <input {...getInputProps()} />
-                        </>
-                      )}
-                    </div>
-
-                    {isUploading && (
-                      <div className="w-full mt-3">
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent"></div>
-                          <span className="text-sm text-gray-600">
-                            Uploading file to server...
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-                          <div className="bg-green-600 h-1.5 rounded-full animate-pulse w-3/4"></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  </FieldSet>
                 </TabsContent>
-              </div>
-            </form>
-          </Tabs>
+              </form>
+            </Tabs>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 border-t mt-2">
             <DialogClose asChild>
-              <Button className="w-20" onClick={onClose} variant="outline">
+              <Button className="w-full sm:w-20" onClick={onClose} variant="outline">
                 Cancel
               </Button>
             </DialogClose>
             <Button
-              className="w-20"
+              className="w-full sm:w-20"
               loading={formLoading || isCheckingDuplicate}
               type="submit"
               form="refund-form"
@@ -2533,16 +2528,6 @@ const FormDialog = (props: Props) => {
             </Button>
           </DialogFooter>
 
-          {/* <AnimatePresence>
-            {success && <SuccessModal />}
-            {showConfirmationDialog && <ConfirmationDialog />}
-            {(isUploading || loading) && (
-              <UploadingOverlay
-                message={loading ? "Scanning receipt..." : "Uploading..."}
-                progress={isUploading ? uploadProgress : undefined}
-              />
-            )}
-          </AnimatePresence> */}
           <AnimatePresence mode="wait">
             {success && <SuccessModal key="success-modal" />}
             {showConfirmationDialog && <ConfirmationDialog key="confirmation-dialog" />}

@@ -628,67 +628,138 @@ const Page = () => {
 
           const entryBalances = (entryList || []).map((item: any) => {
             const balance = getEntryBalance(item.entry);
+            const isEntryCancelled = item.entry?.currentStatus === "CANCELLED";
+
+            // Calculate total paid for this entry from BALANCE_PAYMENT transactions
+            const totalPaidForEntry = item.entry?.transactions
+              ?.filter((t: any) => t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0)
+              .reduce((sum: number, t: any) => sum + (t.amountChanged || 0), 0) || 0;
+
+            // Calculate total refunded for this entry from REFUND_PAYMENT transactions
+            const totalRefundedForEntry = item.entry?.transactions
+              ?.filter((t: any) => t.transactionType === "REFUND_PAYMENT")
+              .reduce((sum: number, t: any) => sum + Math.abs(t.amountChanged), 0) || 0;
+
+            // For cancelled entries, refundable amount is total paid minus total refunded
+            const refundableAmount = totalPaidForEntry - totalRefundedForEntry;
+
+            // Check if this entry-payment is fully refunded (same logic as entry page)
+            const isEntryPaymentFullyRefunded = isEntryCancelled && totalPaidForEntry > 0 && totalRefundedForEntry >= totalPaidForEntry;
+
+            // For non-cancelled entries with negative balance, that's excess/overpayment
+            const hasExcessAmount = !isEntryCancelled && balance < 0;
+
             return {
               entryNumber: item.entry?.entryNumber,
               balance,
               isFullyPaid: item.isFullyPaid,
+              entryStatus: item.entry?.currentStatus,
+              isEntryCancelled,
+              refundableAmount,
+              totalPaidForEntry,
+              totalRefundedForEntry,
+              hasExcessAmount,
+              isEntryPaymentFullyRefunded,
             };
           });
 
-          return (
-            <div className="flex items-start gap-7 min-w-[140px]">
-              <div className="flex flex-col items-start gap-1">
-                {entryBalances.map((item: any, idx: any) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-2 text-[13px]"
-                  >
-                    <span className="text-gray-600 font-mono">
-                      {item.entryNumber}:
-                    </span>
-                    {item.balance < 0 ? (
-                      <span className="text-red-600  text-[13px] flex gap-1">
-                        {" "}
-                        Excess:
-                        <span className=" font-medium underline underline-offset-2">
-                          ₱{Math.abs(item.balance).toLocaleString()}
-                        </span>
-                      </span>
-                    ) : item.balance === 0 ? (
-                      <span className="text-green-600 font-medium">Paid</span>
-                    ) : (
-                      <span className="flex gap-1 text-orange-600 text-[13px]">
-                        Balance Due:
-                        <span className=" font-medium underline underline-offset-2">
-                          ₱{item.balance.toLocaleString()}
-                        </span>
-                      </span>
-                    )}
-                  </div>
-                ))}
+          // Check if there's any meaningful data to display
+          const hasAnyData = entryBalances.length > 0 || (hasExcess && excess > 0);
 
-                {hasExcess && excess > 0 && entryBalances.length === 0 && (
-                  <span className=" text-[13px] gap2 flex">
+          if (!hasAnyData) {
+            return <span className="text-muted-foreground text-[13px]">-</span>;
+          }
+
+          return (
+            <div className="flex flex-col gap-2 min-w-[160px]">
+              <div className="flex flex-col items-start gap-1">
+                {entryBalances.length === 0 && hasExcess && excess > 0 ? (
+                  <span className="text-[13px] gap-2 flex">
                     Excess:
                     <span className="text-blue-600 font-medium underline underline-offset-2">
                       ₱{excess.toLocaleString()}
                     </span>
                   </span>
-                )}
-                {hasRefundsForThisPayment && refundAmount > 0 && (
-                  <span className=" text-[13px] gap-2 flex text-gray-600">
-                    Refunded:
-                    <span className="text-green-600 font-medium underline underline-offset-2">
-                      {" "}
-                      ₱{refundAmount.toLocaleString()}
-                    </span>
-                  </span>
+                ) : (
+                  entryBalances.map((item: any, idx: any) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 text-[13px]"
+                    >
+                      {item.isEntryCancelled ? (
+                        // For cancelled entries - show refund status (SAME LOGIC AS ENTRY PAGE)
+                        item.isEntryPaymentFullyRefunded ? (
+                          // Fully refunded
+                          <span className="text-purple-600 font-medium text-[13px]">
+                            Fully Refunded
+                          </span>
+                        ) : item.totalRefundedForEntry > 0 && item.refundableAmount === 0 ? (
+                          // Fully refunded (alternative check)
+                          <span className="text-purple-600 font-medium text-[13px]">
+                            Fully Refunded
+                          </span>
+                        ) : item.refundableAmount > 0 ? (
+                          // Has refundable amount that hasn't been fully refunded yet
+                          <div className="flex items-center gap-1">
+                            <span className="text-yellow-600 text-[13px] flex gap-1">
+                              Refund pending:
+                              <span className="font-medium underline underline-offset-2">
+                                ₱{item.refundableAmount.toLocaleString()}
+                              </span>
+                            </span>
+                            {item.totalRefundedForEntry > 0 && (
+                              <>
+                                <span className="text-gray-400">•</span>
+                                <span className="text-green-600 text-[11px]">
+                                  Refunded: ₱{item.totalRefundedForEntry.toLocaleString()}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        ) : item.totalPaidForEntry > 0 && item.totalRefundedForEntry === 0 ? (
+                          // Has payments but no refunds processed yet
+                          <span className="text-yellow-600 text-[13px] flex gap-1">
+                            Refund pending:
+                            <span className="font-medium underline underline-offset-2">
+                              ₱{item.totalPaidForEntry.toLocaleString()}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )
+                      ) : item.hasExcessAmount ? (
+                        <span className="text-blue-600 text-[13px] flex gap-1">
+                          Excess:
+                          <span className="font-medium underline underline-offset-2">
+                            ₱{Math.abs(item.balance).toLocaleString()}
+                          </span>
+                        </span>
+                      ) : item.balance === 0 ? (
+                        currentStatus === "CANCELLED" ? (
+                          <span className="text-purple-600 font-medium text-[13px]">
+                            Fully Refunded
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )
+                      ) : item.balance > 0 ? (
+                        <span className="flex gap-1 text-orange-600 text-[13px]">
+                          Balance Due:
+                          <span className="font-medium underline underline-offset-2">
+                            ₱{item.balance.toLocaleString()}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </div>
+                  ))
                 )}
               </div>
             </div>
           );
         },
-        size: 280,
+        size: 300,
       },
       {
         id: "distribution",

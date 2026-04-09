@@ -197,9 +197,9 @@ const ViewDialog = (props: Props) => {
                           {loading
                             ? null
                             : new Intl.NumberFormat("en-US", {
-                                style: "currency",
-                                currency: "PHP",
-                              }).format(data?.payment?.amount)}
+                              style: "currency",
+                              currency: "PHP",
+                            }).format(data?.payment?.amount)}
                         </span>
                       )}
                     </div>
@@ -444,7 +444,7 @@ const ViewDialog = (props: Props) => {
           <DialogFooter>
             <DialogClose asChild>
               <Button
-                className="w-20 cursor-pointer"
+                className="w-full sm:w-20 cursor-pointer"
                 onClick={onClose}
                 variant="outline"
               >

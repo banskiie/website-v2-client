@@ -227,12 +227,24 @@ const EntryDetailsDialog = ({ entryId, entryNumber, children }: {
     return name || "—"
   }
 
-  // Check if there are players
   const hasPlayer1 = entry?.player1Entry || entry?.connectedPlayer1
   const hasPlayer2 = entry?.player2Entry || entry?.connectedPlayer2
   const hasBothPlayers = hasPlayer1 && hasPlayer2
   const totalPlayers = (hasPlayer1 ? 1 : 0) + (hasPlayer2 ? 1 : 0)
+  const getJerseySizeLabel = (size: string): string => {
+    const sizeMap: Record<string, string> = {
+      'xxs': 'Double Extra Small',
+      'xs': 'Extra Small',
+      'sm': 'Small',
+      'm': 'Medium',
+      'lg': 'Large',
+      'xl': 'Extra Large',
+      'xxl': 'Double Extra Large',
+      'xxxl': 'Triple Extra Large'
+    };
 
+    return sizeMap[size?.toLowerCase()] || size || 'N/A';
+  };
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
@@ -515,13 +527,12 @@ const EntryDetailsDialog = ({ entryId, entryNumber, children }: {
                               {entry?.player1Entry?.jerseySize && (
                                 <div className="space-y-1">
                                   <Label className="text-xs text-muted-foreground">Jersey Size</Label>
-                                  <p className="text-sm">{entry.player1Entry.jerseySize}</p>
+                                  <p className="text-sm">{getJerseySizeLabel(entry.player1Entry.jerseySize)}</p>
                                 </div>
                               )}
                             </>
                           )}
 
-                          {/* Player 2 (if only player 2 exists) */}
                           {hasPlayer2 && !hasPlayer1 && (
                             <>
                               <div className="space-y-1">
@@ -569,7 +580,7 @@ const EntryDetailsDialog = ({ entryId, entryNumber, children }: {
                               {entry?.player2Entry?.jerseySize && (
                                 <div className="space-y-1">
                                   <Label className="text-xs text-muted-foreground">Jersey Size</Label>
-                                  <p className="text-sm">{entry.player2Entry.jerseySize}</p>
+                                  <p className="text-sm">{getJerseySizeLabel(entry.player2Entry.jerseySize)}</p>
                                 </div>
                               )}
                             </>
@@ -631,7 +642,7 @@ const EntryDetailsDialog = ({ entryId, entryNumber, children }: {
                             {entry?.player1Entry?.jerseySize && (
                               <div>
                                 <Label className="text-xs text-muted-foreground">Jersey Size</Label>
-                                <p className="text-sm">{entry.player1Entry.jerseySize}</p>
+                                <p className="text-sm">{getJerseySizeLabel(entry.player1Entry.jerseySize)}</p>
                               </div>
                             )}
                           </div>
@@ -687,7 +698,7 @@ const EntryDetailsDialog = ({ entryId, entryNumber, children }: {
                             {entry?.player2Entry?.jerseySize && (
                               <div>
                                 <Label className="text-xs text-muted-foreground">Jersey Size</Label>
-                                <p className="text-sm">{entry.player2Entry.jerseySize}</p>
+                                <p className="text-sm">{getJerseySizeLabel(entry.player2Entry.jerseySize)}</p>
                               </div>
                             )}
                           </div>
