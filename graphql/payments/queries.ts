@@ -52,3 +52,55 @@ export const CHECK_DUPLICATE_REFERENCE = gql`
     }
   }
 `
+export const CHECK_DUPLICATE_REFERENCE_IN_PUBLIC = gql`
+  query CheckDuplicateReference($referenceNumber: String!) {
+    checkDuplicateReferenceInPublic(referenceNumber: $referenceNumber) {
+      _id
+      payerName
+      referenceNumber
+      amount
+      method
+      paymentDate
+      proofOfPaymentURL
+      statuses {
+        status
+        date
+        reason
+        by {
+          _id
+          name
+          email
+          contactNumber
+          username
+          role
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+      entryList {
+        isFullyPaid
+        entry {
+          _id
+          entryNumber
+          entryKey
+        }
+      }
+      remarks {
+        remark
+        date
+        by {
+          _id
+          name
+          email
+          contactNumber
+          username
+          role
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+    }
+  }
+`

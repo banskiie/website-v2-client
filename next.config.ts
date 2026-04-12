@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  allowedDevOrigins: ["192.168.6.56", "192.168.6.64", "192.168.1.95"],
+  allowedDevOrigins: ["192.168.6.56", "192.168.6.64", "192.168.1.5"],
   images: {
     remotePatterns: [
       {
@@ -35,13 +35,13 @@ const nextConfig = {
     // Disable type checking during build
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  // Disable Turbopack for build
-  experimental: {
-    turbo: undefined,
-  },
+  // eslint: {
+  //   ignoreDuringBuilds: true,
+  // },
+  // // Disable Turbopack for build
+  // experimental: {
+  //   turbo: undefined,
+  // },
 
 }
 

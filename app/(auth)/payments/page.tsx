@@ -197,18 +197,17 @@ const ActionsColumn = ({ data }: { data?: IPaymentNode }) => {
   const [showRevertDialog, setShowRevertDialog] = useState(false);
   const status = useMemo(() => payment?.currentStatus, [payment]);
 
-  // Prepare payment data for revert dialog - convert types to match expected format
   const revertPaymentData = useMemo(() => {
     if (!payment) return undefined;
     return {
       payerName: payment.payerName,
       referenceNumber: payment.referenceNumber,
       amount: payment.amount,
-      method: payment.method as string, // Convert PaymentMethod enum to string
+      method: payment.method as string,
       paymentDate:
         typeof payment.paymentDate === "string"
           ? payment.paymentDate
-          : payment.paymentDate?.toISOString?.() || String(payment.paymentDate), // Convert Date to string
+          : payment.paymentDate?.toISOString?.() || String(payment.paymentDate),
       entries: String(payment.entries || ""),
       entryList: payment.entryList,
     };
@@ -246,26 +245,25 @@ const ActionsColumn = ({ data }: { data?: IPaymentNode }) => {
               status === "REJECTED" ||
               status === "REFUNDED" ||
               status === "CANCELLED") && (
-                <>
-                  <DropdownMenuSeparator />
-                  <div
-                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 text-red-600"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setMenuOpen(false);
-                      setShowRevertDialog(true);
-                    }}
-                  >
-                    <AlertCircle className="mr-2 h-4 w-4" />
-                    Revert Payment
-                  </div>
-                </>
-              )}
+              <>
+                <DropdownMenuSeparator />
+                <div
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 text-red-600"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMenuOpen(false);
+                    setShowRevertDialog(true);
+                  }}
+                >
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  Revert Payment
+                </div>
+              </>
+            )}
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Revert Dialog */}
       {showRevertDialog && (
         <RevertDialog
           _id={payment?._id || ""}
@@ -301,19 +299,113 @@ const Page = () => {
     { key: string; value: string; type: string }[]
   >([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const { data, loading, fetchMore, subscribeToMore, error }: any = useQuery(
-    PAYMENTS,
-    {
+  const { data, loading, fetchMore, subscribeToMore, refetch, error }: any =
+    useQuery(PAYMENTS, {
       variables: {
         first: rows,
         search,
         sort,
         filter,
       },
-      fetchPolicy: "network-only",
+      fetchPolicy: "cache-and-network",
       notifyOnNetworkStatusChange: true,
-    },
-  );
+    });
+
+  // useEffect(() => {
+  //   const unsubscribe = subscribeToMore({
+  //     document: PAYMENT_CHANGED,
+  //     updateQuery: (prev: any, { subscriptionData }: any) => {
+  //       if (!subscriptionData.data) return prev;
+  //       const { type, payment, payments } =
+  //         subscriptionData.data.paymentChanged;
+  //       switch (type) {
+  //         case "CREATE":
+  //           const newPayment = payment;
+  //           const newPaymentExists = prev.payments.edges.find(
+  //             (edge: any) => edge.node._id === newPayment?._id,
+  //           );
+  //           if (newPaymentExists || search || sort || filter.length > 0)
+  //             return prev;
+  //           toast.success(
+  //             `Payment (${newPayment?.payerName}) has been created.`,
+  //           );
+  //           return Object.assign({}, prev, {
+  //             payments: {
+  //               ...prev.payments,
+  //               total: prev.payments.total + 1,
+  //               edges: [
+  //                 { cursor: newPayment?._id, node: newPayment },
+  //                 ...prev.payments.edges,
+  //               ],
+  //             },
+  //           });
+  //         case "UPDATE":
+  //           const updatedPayment = payment;
+  //           if (search || sort || filter.length > 0) return prev;
+  //           toast.success(
+  //             `Payment (${updatedPayment?.payerName}) has been updated.`,
+  //           );
+  //           return Object.assign({}, prev, {
+  //             payments: {
+  //               ...prev.payments,
+  //               edges: prev.payments.edges.map((edge: any) =>
+  //                 edge.node._id === updatedPayment._id
+  //                   ? { ...edge, node: updatedPayment }
+  //                   : edge,
+  //               ),
+  //             },
+  //           });
+  //         case "DELETE":
+  //           const deletedPayment = payment;
+  //           if (search || sort || filter.length > 0) return prev;
+  //           toast.success(
+  //             `Payment (${deletedPayment?.name}) has been deleted.`,
+  //           );
+  //           return Object.assign({}, prev, {
+  //             payments: {
+  //               ...prev.payments,
+  //               total: prev.payments.total - 1,
+  //               edges: prev.payments.edges.filter(
+  //                 (edge: any) => edge.node._id !== deletedPayment._id,
+  //               ),
+  //             },
+  //           });
+  //         case "BATCH_UPDATE":
+  //           const updatedPayments = payments;
+  //           if (search || sort || filter.length > 0) return prev;
+  //           toast.success(
+  //             `Batch update successful for ${updatedPayments.length} payments.`,
+  //           );
+  //           const updatedIds = new Set(updatedPayments.map((u: any) => u._id));
+  //           return Object.assign({}, prev, {
+  //             payments: {
+  //               ...prev.payments,
+  //               edges: prev.payments.edges.map((edge: any) =>
+  //                 updatedIds.has(edge.node._id)
+  //                   ? {
+  //                       ...edge,
+  //                       node: {
+  //                         ...edge.node,
+  //                         ...updatedPayments.find(
+  //                           (u: any) => u._id === edge.node._id,
+  //                         ),
+  //                       },
+  //                     }
+  //                   : edge,
+  //               ),
+  //             },
+  //           });
+  //         default:
+  //           return prev;
+  //       }
+  //     },
+  //   });
+  //   return () => {
+  //     if (typeof unsubscribe === "function") {
+  //       unsubscribe();
+  //     }
+  //   };
+  // }, [subscribeToMore, search, sort, filter]);
 
   useEffect(() => {
     const unsubscribe = subscribeToMore({
@@ -322,17 +414,28 @@ const Page = () => {
         if (!subscriptionData.data) return prev;
         const { type, payment, payments } =
           subscriptionData.data.paymentChanged;
+
         switch (type) {
           case "CREATE":
             const newPayment = payment;
+
             const newPaymentExists = prev.payments.edges.find(
               (edge: any) => edge.node._id === newPayment?._id,
             );
-            if (newPaymentExists || search || sort || filter.length > 0)
+
+            if (newPaymentExists) return prev;
+
+            if (search || sort || filter.length > 0) {
+              toast.success(
+                `Payment (${newPayment?.referenceNumber}) has been created. Refresh to see it.`,
+              );
               return prev;
+            }
+
             toast.success(
-              `Payment (${newPayment?.payerName}) has been created.`,
+              `Payment ${newPayment?.referenceNumber} (${newPayment?.payerName}) has been created.`,
             );
+
             return Object.assign({}, prev, {
               payments: {
                 ...prev.payments,
@@ -343,11 +446,54 @@ const Page = () => {
                 ],
               },
             });
+
+          case "BATCH_CREATE":
+            const newPayments = payments || [];
+            if (newPayments.length === 0) return prev;
+
+            refetch();
+
+            const existingIds = new Set(
+              prev.payments.edges.map((edge: any) => edge.node._id),
+            );
+            const uniqueNewPayments = newPayments.filter(
+              (p: any) => !existingIds.has(p._id),
+            );
+
+            if (uniqueNewPayments.length === 0) return prev;
+
+            if (search || sort || filter.length > 0) {
+              toast.success(
+                `${uniqueNewPayments.length} new payment(s) created. Refresh to see them.`,
+              );
+              return prev;
+            }
+
+            toast.success(
+              `${uniqueNewPayments.length} payment(s) created successfully.`,
+            );
+
+            const newEdges = [
+              ...uniqueNewPayments.map((p: any) => ({
+                cursor: p._id,
+                node: p,
+              })),
+              ...prev.payments.edges,
+            ];
+
+            return Object.assign({}, prev, {
+              payments: {
+                ...prev.payments,
+                total: prev.payments.total + uniqueNewPayments.length,
+                edges: newEdges,
+              },
+            });
+
           case "UPDATE":
             const updatedPayment = payment;
             if (search || sort || filter.length > 0) return prev;
             toast.success(
-              `Payment (${updatedPayment?.payerName}) has been updated.`,
+              `Payment (${updatedPayment?.referenceNumber}) has been updated.`,
             );
             return Object.assign({}, prev, {
               payments: {
@@ -359,11 +505,12 @@ const Page = () => {
                 ),
               },
             });
+
           case "DELETE":
             const deletedPayment = payment;
             if (search || sort || filter.length > 0) return prev;
             toast.success(
-              `Payment (${deletedPayment?.name}) has been deleted.`,
+              `Payment (${deletedPayment?.referenceNumber}) has been deleted.`,
             );
             return Object.assign({}, prev, {
               payments: {
@@ -374,6 +521,7 @@ const Page = () => {
                 ),
               },
             });
+
           case "BATCH_UPDATE":
             const updatedPayments = payments;
             if (search || sort || filter.length > 0) return prev;
@@ -387,23 +535,25 @@ const Page = () => {
                 edges: prev.payments.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...updatedPayments.find(
-                          (u: any) => u._id === edge.node._id,
-                        ),
-                      },
-                    }
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...updatedPayments.find(
+                            (u: any) => u._id === edge.node._id,
+                          ),
+                        },
+                      }
                     : edge,
                 ),
               },
             });
+
           default:
             return prev;
         }
       },
     });
+
     return () => {
       if (typeof unsubscribe === "function") {
         unsubscribe();
@@ -452,10 +602,163 @@ const Page = () => {
     resetPage();
   }, []);
 
+  // const getEntryBalance = (entry: any) => {
+  //   if (!entry?.transactions) return 0;
+  //   const lastTransaction = entry.transactions[entry.transactions.length - 1];
+  //   return lastTransaction?.pendingAmount || 0;
+  // };
+
+  //  const getEntryBalance = (entry: any) => {
+  //   if (!entry?.transactions) return 0;
+
+  //   // Get all BALANCE_PAYMENT transactions
+  //   const balanceTransactions = entry.transactions.filter(
+  //     (t: any) => t.transactionType === "BALANCE_PAYMENT"
+  //   );
+
+  //   if (balanceTransactions.length === 0) return 0;
+
+  //   // Get the most recent BALANCE_PAYMENT transaction
+  //   const sortedBalance = [...balanceTransactions].sort(
+  //     (a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()
+  //   );
+  //   const lastBalanceTransaction = sortedBalance[0];
+  //   let pendingAmount = lastBalanceTransaction?.pendingAmount || 0;
+
+  //   // Calculate total refunds for this entry
+  //   const totalRefunded = entry.transactions
+  //     .filter((t: any) => t.transactionType === "REFUND_PAYMENT")
+  //     .reduce((sum: number, t: any) => sum + Math.abs(t.amountChanged), 0);
+
+  //   // If there are refunds, adjust the pending amount
+  //   if (totalRefunded > 0) {
+  //     // Get total paid from BALANCE_PAYMENT transactions
+  //     const totalPaid = entry.transactions
+  //       .filter((t: any) => t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0)
+  //       .reduce((sum: number, t: any) => sum + (t.amountChanged || 0), 0);
+
+  //     // Calculate net position: total paid - total refunded
+  //     const netPosition = totalPaid - totalRefunded;
+
+  //     // Get the original entry fee
+  //     const initialFeeTransaction = entry.transactions?.find(
+  //       (t: any) => t.transactionType === "INITIAL_FEE"
+  //     );
+  //     const entryFee = initialFeeTransaction?.pendingAmount || 0;
+
+  //     // Calculate pending amount correctly
+  //     pendingAmount = Math.max(0, entryFee - netPosition);
+
+  //     // If there's overpayment (excess) that hasn't been refunded
+  //     if (netPosition > entryFee && (netPosition - entryFee) > 0) {
+  //       pendingAmount = -(netPosition - entryFee);
+  //     }
+  //   }
+
+  //   return pendingAmount;
+  // };
+
   const getEntryBalance = (entry: any) => {
     if (!entry?.transactions) return 0;
-    const lastTransaction = entry.transactions[entry.transactions.length - 1];
-    return lastTransaction?.pendingAmount || 0;
+
+    // Get all BALANCE_PAYMENT transactions
+    const balanceTransactions = entry.transactions.filter(
+      (t: any) => t.transactionType === "BALANCE_PAYMENT",
+    );
+
+    if (balanceTransactions.length === 0) return 0;
+
+    // Get the most recent BALANCE_PAYMENT transaction
+    const sortedBalance = [...balanceTransactions].sort(
+      (a, b) =>
+        new Date(b.transactionDate).getTime() -
+        new Date(a.transactionDate).getTime(),
+    );
+    const lastBalanceTransaction = sortedBalance[0];
+
+    // Get the pending amount from the last balance transaction
+    let pendingAmount = lastBalanceTransaction?.pendingAmount || 0;
+
+    // Get total refunds for this entry
+    const totalRefunded = entry.transactions
+      .filter((t: any) => t.transactionType === "REFUND_PAYMENT")
+      .reduce((sum: number, t: any) => sum + Math.abs(t.amountChanged), 0);
+
+    // If there are refunds, recalculate the balance
+    if (totalRefunded > 0) {
+      const totalPaid = entry.transactions
+        .filter(
+          (t: any) =>
+            t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0,
+        )
+        .reduce((sum: number, t: any) => sum + (t.amountChanged || 0), 0);
+
+      const netPaid = totalPaid - totalRefunded;
+
+      // Get the entry fee from INITIAL_FEE transaction
+      const initialFeeTransaction = entry.transactions?.find(
+        (t: any) => t.transactionType === "INITIAL_FEE",
+      );
+      const entryFee = initialFeeTransaction?.pendingAmount || 0;
+
+      // Calculate remaining balance
+      const remainingBalance = entryFee - netPaid;
+
+      // If remaining balance is negative, that means overpayment (excess)
+      if (remainingBalance < 0) {
+        return remainingBalance; // Return negative for excess
+      }
+
+      // If the last balance transaction's pending amount is 0 and remainingBalance is 0, return 0
+      if (pendingAmount === 0 && remainingBalance <= 0) {
+        return 0;
+      }
+
+      return Math.max(0, remainingBalance);
+    }
+
+    // If no refunds, return the pending amount from the last balance transaction
+    // But if it's 0, it means fully paid
+    if (pendingAmount === 0) {
+      return 0;
+    }
+
+    return pendingAmount;
+  };
+  const getTotalRefundedForEntry = (entry: any, paymentId?: string) => {
+    if (!entry?.transactions) return 0;
+
+    // Calculate total refund amount for this entry
+    const refundTransactions = entry.transactions.filter(
+      (t: any) => t.transactionType === "REFUND_PAYMENT",
+    );
+
+    // If paymentId is provided, filter for that specific payment
+    if (paymentId) {
+      const specificRefunds = refundTransactions.filter(
+        (t: any) => t.transactionId === paymentId,
+      );
+      return specificRefunds.reduce(
+        (sum: number, t: any) => sum + Math.abs(t.amountChanged),
+        0,
+      );
+    }
+
+    return refundTransactions.reduce(
+      (sum: number, t: any) => sum + Math.abs(t.amountChanged),
+      0,
+    );
+  };
+
+  const getTotalPaidForEntry = (entry: any) => {
+    if (!entry?.transactions) return 0;
+
+    return entry.transactions
+      .filter(
+        (t: any) =>
+          t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0,
+      )
+      .reduce((sum: number, t: any) => sum + (t.amountChanged || 0), 0);
   };
 
   const columns: ColumnDef<IPayment>[] = useMemo(
@@ -606,6 +909,7 @@ const Page = () => {
           );
         },
       },
+      // In your columns definition, update the paymentFinancials cell
       {
         id: "paymentFinancials",
         header: "Payment Details",
@@ -626,28 +930,27 @@ const Page = () => {
           const excess = parseFloat(excessAmount) || 0;
           const refundAmount = parseFloat(refundAmountForThisPayment) || 0;
 
+          // Calculate net excess after refunds
+          const netExcess = Math.max(0, excess - refundAmount);
+          const hasNetExcess = netExcess > 0;
+
           const entryBalances = (entryList || []).map((item: any) => {
             const balance = getEntryBalance(item.entry);
             const isEntryCancelled = item.entry?.currentStatus === "CANCELLED";
 
-            // Calculate total paid for this entry from BALANCE_PAYMENT transactions
-            const totalPaidForEntry = item.entry?.transactions
-              ?.filter((t: any) => t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0)
-              .reduce((sum: number, t: any) => sum + (t.amountChanged || 0), 0) || 0;
-
-            // Calculate total refunded for this entry from REFUND_PAYMENT transactions
-            const totalRefundedForEntry = item.entry?.transactions
-              ?.filter((t: any) => t.transactionType === "REFUND_PAYMENT")
-              .reduce((sum: number, t: any) => sum + Math.abs(t.amountChanged), 0) || 0;
-
-            // For cancelled entries, refundable amount is total paid minus total refunded
+            const totalPaidForEntry = getTotalPaidForEntry(item.entry);
+            const totalRefundedForEntry = getTotalRefundedForEntry(item.entry);
             const refundableAmount = totalPaidForEntry - totalRefundedForEntry;
-
-            // Check if this entry-payment is fully refunded (same logic as entry page)
-            const isEntryPaymentFullyRefunded = isEntryCancelled && totalPaidForEntry > 0 && totalRefundedForEntry >= totalPaidForEntry;
-
-            // For non-cancelled entries with negative balance, that's excess/overpayment
+            const isEntryPaymentFullyRefunded =
+              isEntryCancelled &&
+              totalPaidForEntry > 0 &&
+              totalRefundedForEntry >= totalPaidForEntry;
             const hasExcessAmount = !isEntryCancelled && balance < 0;
+            console.log("Entry:", item.entry?.entryNumber);
+            console.log("isEntryCancelled:", isEntryCancelled);
+            console.log("totalPaidForEntry:", totalPaidForEntry);
+            console.log("totalRefundedForEntry:", totalRefundedForEntry);
+            console.log("refundableAmount:", refundableAmount);
 
             return {
               entryNumber: item.entry?.entryNumber,
@@ -663,8 +966,8 @@ const Page = () => {
             };
           });
 
-          // Check if there's any meaningful data to display
-          const hasAnyData = entryBalances.length > 0 || (hasExcess && excess > 0);
+          const hasAnyData =
+            entryBalances.length > 0 || (hasNetExcess && netExcess > 0);
 
           if (!hasAnyData) {
             return <span className="text-muted-foreground text-[13px]">-</span>;
@@ -673,11 +976,11 @@ const Page = () => {
           return (
             <div className="flex flex-col gap-2 min-w-[160px]">
               <div className="flex flex-col items-start gap-1">
-                {entryBalances.length === 0 && hasExcess && excess > 0 ? (
+                {entryBalances.length === 0 && hasNetExcess && netExcess > 0 ? (
                   <span className="text-[13px] gap-2 flex">
                     Excess:
                     <span className="text-blue-600 font-medium underline underline-offset-2">
-                      ₱{excess.toLocaleString()}
+                      ₱{netExcess.toLocaleString()}
                     </span>
                   </span>
                 ) : (
@@ -686,20 +989,17 @@ const Page = () => {
                       key={idx}
                       className="flex items-center gap-2 text-[13px]"
                     >
-                      {item.isEntryCancelled ? (
-                        // For cancelled entries - show refund status (SAME LOGIC AS ENTRY PAGE)
+                      {currentStatus === "REFUNDED" || currentStatus !== "REJECTED" &&
+                      (hasRefundsForThisPayment && refundAmount >= amount) ? (
+                        <span className="text-purple-600 font-medium text-[13px]">
+                          Fully Refunded
+                        </span>
+                      ) : item.isEntryCancelled ? (
                         item.isEntryPaymentFullyRefunded ? (
-                          // Fully refunded
-                          <span className="text-purple-600 font-medium text-[13px]">
-                            Fully Refunded
-                          </span>
-                        ) : item.totalRefundedForEntry > 0 && item.refundableAmount === 0 ? (
-                          // Fully refunded (alternative check)
                           <span className="text-purple-600 font-medium text-[13px]">
                             Fully Refunded
                           </span>
                         ) : item.refundableAmount > 0 ? (
-                          // Has refundable amount that hasn't been fully refunded yet
                           <div className="flex items-center gap-1">
                             <span className="text-yellow-600 text-[13px] flex gap-1">
                               Refund pending:
@@ -711,13 +1011,14 @@ const Page = () => {
                               <>
                                 <span className="text-gray-400">•</span>
                                 <span className="text-green-600 text-[11px]">
-                                  Refunded: ₱{item.totalRefundedForEntry.toLocaleString()}
+                                  Refunded: ₱
+                                  {item.totalRefundedForEntry.toLocaleString()}
                                 </span>
                               </>
                             )}
                           </div>
-                        ) : item.totalPaidForEntry > 0 && item.totalRefundedForEntry === 0 ? (
-                          // Has payments but no refunds processed yet
+                        ) : item.totalPaidForEntry > 0 &&
+                          item.totalRefundedForEntry === 0 ? (
                           <span className="text-yellow-600 text-[13px] flex gap-1">
                             Refund pending:
                             <span className="font-medium underline underline-offset-2">
@@ -735,14 +1036,11 @@ const Page = () => {
                           </span>
                         </span>
                       ) : item.balance === 0 ? (
-                        currentStatus === "CANCELLED" ? (
-                          <span className="text-purple-600 font-medium text-[13px]">
-                            Fully Refunded
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )
-                      ) : item.balance > 0 ? (
+                        <span className="text-gray-400">-</span>
+                      ) : item.balance > 0 &&
+                        !item.isFullyPaid &&
+                        currentStatus !== "VERIFIED" &&
+                        currentStatus !== "REFUNDED" ? (
                         <span className="flex gap-1 text-orange-600 text-[13px]">
                           Balance Due:
                           <span className="font-medium underline underline-offset-2">
@@ -759,7 +1057,6 @@ const Page = () => {
             </div>
           );
         },
-        size: 300,
       },
       {
         id: "distribution",
@@ -782,7 +1079,7 @@ const Page = () => {
                   key={index}
                   className="flex items-center gap-2  text-[13px]"
                 >
-                  <span className="font-mono text-gray-600">
+                  <span className="text-md font-semibold underline underline-offset-2 text-black">
                     {item.entry?.entryNumber}:
                   </span>
                   {item.isFullyPaid ? (

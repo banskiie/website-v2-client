@@ -1768,122 +1768,143 @@ const Page = () => {
             />
           );
         },
-        cell: ({ row }) => {
-          const {
-            currentStatus,
-            pendingAmount,
-            totalRefundAmount,
-            hasRefunds,
-            totalPaid,
-          } = row.original as any
+      cell: ({ row }) => {
+  const {
+    currentStatus,
+    pendingAmount,
+    totalRefundAmount,
+    hasRefunds,
+    totalPaid,
+  } = row.original as any
 
-          const remainingPrincipal = totalPaid
-            ? totalPaid - (totalRefundAmount || 0)
-            : 0
-          // An entry is fully refunded when:
-          // 1. It's cancelled AND
-          // 2. Total refund amount equals total paid (and total paid > 0) OR no remaining principal
-          const isFullyRefunded = currentStatus === "CANCELLED" &&
-            ((totalPaid > 0 && totalRefundAmount >= totalPaid) || remainingPrincipal === 0)
-          const isPartiallyRefunded = currentStatus === "CANCELLED" && hasRefunds && !isFullyRefunded
+  // Calculate remaining principal correctly
+  // totalPaid should be the sum of ALL payments for this entry
+  // totalRefundAmount should be the sum of ALL refunds for this entry
+  const remainingPrincipal = totalPaid ? totalPaid - (totalRefundAmount || 0) : 0
+  
+  // An entry is fully refunded when:
+  // 1. It's cancelled AND
+  // 2. Total refund amount >= total paid (and total paid > 0)
+  const isFullyRefunded = currentStatus === "CANCELLED" &&
+    totalPaid > 0 && 
+    (totalRefundAmount || 0) >= totalPaid
+  
+  const isPartiallyRefunded = currentStatus === "CANCELLED" && hasRefunds && !isFullyRefunded
 
-          return (
-            <div className="flex flex-col justify-center gap-1">
-              <EntryStatusBadge status={currentStatus as EntryStatus} />
+  // Calculate refund percentage for display
+  const refundPercentage = totalPaid > 0 && totalRefundAmount
+    ? Math.round((totalRefundAmount / totalPaid) * 100)
+    : 0
 
-              {/* Show refund information for CANCELLED entries */}
-              {currentStatus === "CANCELLED" && (
-                <div className="flex flex-col gap-0.5 mt-1">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {/* Show Refunded amount if any refunds have been processed */}
-                    {hasRefunds && totalRefundAmount > 0 && (
-                      <span className="text-[11px] font-medium text-green-600">
-                        Refunded: ₱{totalRefundAmount.toLocaleString()}
-                      </span>
-                    )}
+  return (
+    <div className="flex flex-col justify-center gap-1">
+      <EntryStatusBadge status={currentStatus as EntryStatus} />
 
-                    {/* Show remaining amount ONLY if NOT fully refunded and there's remaining principal */}
-                    {!isFullyRefunded && remainingPrincipal > 0 && (
-                      <>
-                        {hasRefunds && (
-                          <span className="text-[11px] text-gray-400">•</span>
-                        )}
-                        <span className="text-[11px] font-medium text-orange-600">
-                          Remaining: ₱{remainingPrincipal.toLocaleString()}
-                        </span>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <InfoIcon className="size-3 text-muted-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">
-                              Total paid: ₱{totalPaid.toLocaleString()} |
-                              Refunded: ₱{totalRefundAmount.toLocaleString()} |
-                              Remaining: ₱{remainingPrincipal.toLocaleString()}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </>
-                    )}
+      {/* Show refund information for CANCELLED entries */}
+      {currentStatus === "CANCELLED" && (
+        <div className="flex flex-col gap-0.5 mt-1">
+          <div className="flex items-center gap-1 flex-wrap">
+            {/* Show total paid amount */}
+            {totalPaid > 0 && (
+              <span className="text-[11px] font-medium text-gray-600">
+                Paid: ₱{totalPaid.toLocaleString()}
+              </span>
+            )}
 
-                    {/* Show "Fully refunded" message when fully refunded */}
-                    {isFullyRefunded && (
-                      <span className="text-[11px] font-medium text-gray-500">
-                        Fully refunded
-                      </span>
-                    )}
-
-                    {/* Show "Refund pending" when cancelled with payments but no refunds yet */}
-                    {!hasRefunds && totalPaid > 0 && !isFullyRefunded && (
-                      <span className="text-[11px] font-medium text-yellow-600">
-                        Refund pending: ₱{totalPaid.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* DON'T show any balance information for REJECTED status */}
-              {currentStatus === "REJECTED" && (
-                <div className="flex items-center gap-1 mt-1">
-                  {/* No balance or excess information shown for rejected entries */}
-                </div>
-              )}
-
-              {/* Only show excess and balance for non-cancelled, non-rejected entries */}
-              {currentStatus !== "CANCELLED" &&
-                currentStatus !== "REJECTED" &&
-                pendingAmount < 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="text-[11px] font-medium text-blue-600">
-                      Excess: ₱{Math.abs(pendingAmount).toLocaleString()}
-                    </span>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <InfoIcon className="size-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">
-                          This entry has an overpayment of ₱
-                          {Math.abs(pendingAmount).toLocaleString()}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+            {/* Show Refunded amount if any refunds have been processed */}
+            {hasRefunds && totalRefundAmount > 0 && (
+              <>
+                {totalPaid > 0 && (
+                  <span className="text-[11px] text-gray-400">•</span>
                 )}
+                <span className="text-[11px] font-medium text-green-600">
+                  Refunded: ₱{totalRefundAmount.toLocaleString()}
+                </span>
+              </>
+            )}
 
-              {currentStatus !== "CANCELLED" &&
-                currentStatus !== "REJECTED" &&
-                pendingAmount > 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="text-[11px] font-medium text-orange-600">
-                      Balance Due: ₱{pendingAmount.toLocaleString()}
-                    </span>
-                  </div>
+            {/* Show remaining amount ONLY if NOT fully refunded and there's remaining principal */}
+            {!isFullyRefunded && remainingPrincipal > 0 && (
+              <>
+                {(hasRefunds || totalPaid > 0) && (
+                  <span className="text-[11px] text-gray-400">•</span>
                 )}
-            </div>
-          )
-        },
+                <span className="text-[11px] font-medium text-orange-600">
+                  Remaining: ₱{remainingPrincipal.toLocaleString()}
+                </span>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoIcon className="size-3 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">
+                      Total paid: ₱{totalPaid?.toLocaleString() || 0} |
+                      Refunded: ₱{totalRefundAmount?.toLocaleString() || 0} |
+                      Remaining: ₱{remainingPrincipal.toLocaleString()}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
+
+            {/* Show "Fully refunded" message when fully refunded */}
+            {isFullyRefunded && (
+              <span className="text-[11px] font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                Fully Refunded ✓
+              </span>
+            )}
+
+            {/* Show "Refund pending" when cancelled with payments but no refunds yet */}
+            {!hasRefunds && totalPaid > 0 && !isFullyRefunded && (
+              <span className="text-[11px] font-medium text-yellow-600">
+                Refund pending: ₱{totalPaid.toLocaleString()}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* DON'T show any balance information for REJECTED status */}
+      {currentStatus === "REJECTED" && (
+        <div className="flex items-center gap-1 mt-1">
+          {/* No balance or excess information shown for rejected entries */}
+        </div>
+      )}
+
+      {/* Only show excess and balance for non-cancelled, non-rejected entries */}
+      {currentStatus !== "CANCELLED" &&
+        currentStatus !== "REJECTED" &&
+        pendingAmount < 0 && (
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-[11px] font-medium text-blue-600">
+              Excess: ₱{Math.abs(pendingAmount).toLocaleString()}
+            </span>
+            <Tooltip>
+              <TooltipTrigger>
+                <InfoIcon className="size-3 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">
+                  This entry has an overpayment of ₱
+                  {Math.abs(pendingAmount).toLocaleString()}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+
+      {currentStatus !== "CANCELLED" &&
+        currentStatus !== "REJECTED" &&
+        pendingAmount > 0 && (
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-[11px] font-medium text-orange-600">
+              Balance Due: ₱{pendingAmount.toLocaleString()}
+            </span>
+          </div>
+        )}
+    </div>
+  )
+},
         size: 20,
       },
       // {

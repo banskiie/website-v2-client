@@ -72,7 +72,7 @@ import {
   DuplicateCheckResponse,
 } from "@/app/(public)/types/payment.interface"
 import { CREATE_PAYMENT } from "@/graphql/payments/mutation"
-import { CHECK_DUPLICATE_REFERENCE } from "@/graphql/payments/queries"
+import { CHECK_DUPLICATE_REFERENCE, CHECK_DUPLICATE_REFERENCE_IN_PUBLIC } from "@/graphql/payments/queries"
 import { toast } from "sonner"
 import { Input } from "../ui/input"
 import { format } from "date-fns"
@@ -749,7 +749,7 @@ export function UploadProofMergedModal({
   const [
     checkDuplicate,
     { data: duplicatePaymentQueryData, loading: duplicatePaymentLoading },
-  ] = useLazyQuery<DuplicateCheckResponse>(CHECK_DUPLICATE_REFERENCE, {
+  ] = useLazyQuery<DuplicateCheckResponse>(CHECK_DUPLICATE_REFERENCE_IN_PUBLIC, {
     fetchPolicy: "network-only",
   })
 
