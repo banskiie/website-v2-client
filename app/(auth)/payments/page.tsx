@@ -946,11 +946,11 @@ const Page = () => {
               totalPaidForEntry > 0 &&
               totalRefundedForEntry >= totalPaidForEntry;
             const hasExcessAmount = !isEntryCancelled && balance < 0;
-            console.log("Entry:", item.entry?.entryNumber);
-            console.log("isEntryCancelled:", isEntryCancelled);
-            console.log("totalPaidForEntry:", totalPaidForEntry);
-            console.log("totalRefundedForEntry:", totalRefundedForEntry);
-            console.log("refundableAmount:", refundableAmount);
+            // console.log("Entry:", item.entry?.entryNumber);
+            // console.log("isEntryCancelled:", isEntryCancelled);
+            // console.log("totalPaidForEntry:", totalPaidForEntry);
+            // console.log("totalRefundedForEntry:", totalRefundedForEntry);
+            // console.log("refundableAmount:", refundableAmount);
 
             return {
               entryNumber: item.entry?.entryNumber,
