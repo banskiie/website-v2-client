@@ -72,7 +72,7 @@ import {
   DuplicateCheckResponse,
 } from "@/app/(public)/types/payment.interface"
 import { CREATE_PAYMENT } from "@/graphql/payments/mutation"
-import { CHECK_DUPLICATE_REFERENCE } from "@/graphql/payments/queries"
+import { CHECK_DUPLICATE_REFERENCE, CHECK_DUPLICATE_REFERENCE_IN_PUBLIC } from "@/graphql/payments/queries"
 import { toast } from "sonner"
 import { Input } from "../ui/input"
 import { format } from "date-fns"
@@ -749,7 +749,7 @@ export function UploadProofMergedModal({
   const [
     checkDuplicate,
     { data: duplicatePaymentQueryData, loading: duplicatePaymentLoading },
-  ] = useLazyQuery<DuplicateCheckResponse>(CHECK_DUPLICATE_REFERENCE, {
+  ] = useLazyQuery<DuplicateCheckResponse>(CHECK_DUPLICATE_REFERENCE_IN_PUBLIC, {
     fetchPolicy: "network-only",
   })
 
@@ -3250,6 +3250,7 @@ export function CheckEntryModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onWheel={(e) => e.stopPropagation()}
           >
             <motion.div
               className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative overflow-y-auto max-h-[85vh]"
@@ -3298,6 +3299,7 @@ export function CheckEntryModal({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
+                      onWheel={(e) => e.stopPropagation()}
                     >
                       {getStatusIcon(statusItem.status)}
                       <div>

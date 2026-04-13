@@ -795,7 +795,7 @@ const FormDialog = (props: Props) => {
 
   const UploadingOverlay = ({ message, progress }: { message?: string; progress?: number }) => (
     <motion.div
-      className="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-[100]"
+      className="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-[200]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -1396,7 +1396,7 @@ const FormDialog = (props: Props) => {
 
     return (
       <motion.div
-        className="fixed inset-0 bg-black/20 flex items-center justify-center"
+        className="fixed inset-0 bg-black/20 flex items-center justify-center z-[200]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -1575,7 +1575,7 @@ const FormDialog = (props: Props) => {
 
   const RequiredLabel = ({ htmlFor, children }: { htmlFor: string; children: string }) => (
     <div className="flex items-center gap-1">
-      <FieldLabel htmlFor={htmlFor}>{children}</FieldLabel>
+      <FieldLabel htmlFor={htmlFor} className="text-[14px]">{children}</FieldLabel>
       <span className="text-red-500">*</span>
     </div>
   )
@@ -1601,8 +1601,7 @@ const FormDialog = (props: Props) => {
       <Dialog modal open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           {isEditMode ? (
-            <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs w-full justify-start gap-2">
-              <Edit className="size-3" />
+            <Button variant="ghost" size="sm" className="h-7 px-2.5 font-normal! text-sm w-full justify-start gap-2">
               Edit
             </Button>
           ) : (
@@ -1616,33 +1615,37 @@ const FormDialog = (props: Props) => {
           onOpenAutoFocus={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
           showCloseButton={false}
-          className="max-w-4xl"
+          className="max-w-2xl! h-[85vh] p-0 sm:p-6 overflow-hidden flex flex-col"
         >
-          <DialogHeader>
-            <DialogTitle>
-              {isEditMode ? "Edit Payment" : "Create Payment"}
-            </DialogTitle>
-            <DialogDescription className="space-y-2">
-              {isEditMode
-                ? "Update payment details for tournament entries"
-                : "Record a new payment for tournament entries"}
-            </DialogDescription>
-          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-0">
+            <DialogHeader className="sticky top-0 bg-white dark:bg-gray-900 z-10 pb-4">
+              <DialogTitle>
+                {isEditMode ? "Edit Payment" : "Create Payment"}
+              </DialogTitle>
+              <DialogDescription className="space-y-2">
+                {isEditMode
+                  ? "Update payment details for tournament entries"
+                  : "Record a new payment for tournament entries"}
+              </DialogDescription>
+            </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="payment-details">Payment Details</TabsTrigger>
-              <TabsTrigger value="payment-reference">Upload Receipt</TabsTrigger>
-            </TabsList>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="flex w-full gap-2 mb-4 sticky top-[62px] bg-gray-100 rounded-none dark:bg-gray-800 z-10 p-1 overflow-x-auto">
+                <TabsTrigger value="payment-details" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                  Payment Details
+                </TabsTrigger>
+                <TabsTrigger value="payment-reference" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                  Upload Receipt
+                </TabsTrigger>
+              </TabsList>
 
-            <form
-              className="space-y-4 mb-4"
-              id="payment-form"
-              onSubmit={handleFormSubmit}
-            >
-              <div className="min-h-[580px] max-h-[60vh] overflow-y-auto pr-2">
-                <TabsContent value="payment-details" className="space-y-4 mt-4">
-                  <FieldSet>
+              <form
+                className="space-y-4"
+                id="payment-form"
+                onSubmit={handleFormSubmit}
+              >
+                <TabsContent value="payment-details" className="space-y-4">
+                  <FieldSet className="space-y-1">
                     <form.Field
                       name="payerName"
                       children={(field) => {
@@ -1663,13 +1666,17 @@ const FormDialog = (props: Props) => {
                                 setFieldErrors(prev => ({ ...prev, payerName: error }))
                               }}
                               aria-invalid={!!isInvalid}
+                              className="text-sm"
                             />
+                            {isInvalid && (
+                              <p className="text-xs text-red-500 mt-1">{fieldErrors.payerName}</p>
+                            )}
                           </Field>
                         )
                       }}
                     />
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <form.Field
                         name="method"
                         children={(field) => {
@@ -1697,6 +1704,9 @@ const FormDialog = (props: Props) => {
                                   ))}
                                 </SelectContent>
                               </Select>
+                              {isInvalid && (
+                                <p className="text-xs text-red-500 mt-1">{fieldErrors.paymentMethod}</p>
+                              )}
                             </Field>
                           )
                         }}
@@ -1769,8 +1779,8 @@ const FormDialog = (props: Props) => {
                           <PopoverContent
                             className="p-0"
                             align="start"
-                            style={{ width: popoverWidth ? `${popoverWidth}px` : '100%' }
-                            } onWheel={(e) => e.stopPropagation()}
+                            style={{ width: popoverWidth ? `${popoverWidth}px` : '100%' }}
+                            onWheel={(e) => e.stopPropagation()}
                           >
                             <div className="p-2 border-b">
                               <Input
@@ -1931,15 +1941,15 @@ const FormDialog = (props: Props) => {
                   </FieldSet>
                 </TabsContent>
 
-                <TabsContent value="payment-reference" className="space-y-4 mt-4">
-                  <FieldSet>
-                    <div className="grid grid-cols-2 gap-4">
+                <TabsContent value="payment-reference" className="space-y-4">
+                  <FieldSet className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <form.Field
                         name="amount"
                         children={(field) => {
                           const isInvalid = fieldErrors.amount
                           return (
-                            <Field data-invalid={isInvalid}>
+                            <Field data-invalid={!!isInvalid}>
                               <RequiredLabel htmlFor={field.name}>Amount</RequiredLabel>
                               <div className="space-y-2">
                                 <div className="relative">
@@ -1961,7 +1971,6 @@ const FormDialog = (props: Props) => {
                                       field.handleChange(value)
                                       const error = validateAmount(e.target.value)
                                       setFieldErrors(prev => ({ ...prev, amount: error }))
-                                      setFieldErrors(prev => ({ ...prev }))
                                     }}
                                     aria-invalid={!!isInvalid}
                                     className="pl-7"
@@ -1975,6 +1984,9 @@ const FormDialog = (props: Props) => {
                                   </p>
                                 )}
                               </div>
+                              {isInvalid && (
+                                <p className="text-xs text-red-500 mt-1">{fieldErrors.amount}</p>
+                              )}
                             </Field>
                           )
                         }}
@@ -2019,7 +2031,6 @@ const FormDialog = (props: Props) => {
                                           setReference(null)
                                           setConfirmationNumber("")
                                         }
-                                        setFieldErrors(prev => ({ ...prev }))
                                       }}
                                     />
 
@@ -2108,13 +2119,11 @@ const FormDialog = (props: Props) => {
                       <div className="w-full flex justify-center mb-4">
                         {preview || existingPaymentData?.proofOfPaymentURL ? (
                           <div className="w-full max-w-[300px] relative">
-
                             {imageLoading && (
                               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border bg-gray-100">
                                 <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-green-500" />
                               </div>
                             )}
-
                             <Image
                               src={preview || existingPaymentData?.proofOfPaymentURL || ''}
                               alt={preview ? "Uploaded receipt" : "Existing proof of payment"}
@@ -2127,17 +2136,6 @@ const FormDialog = (props: Props) => {
                                 console.error("Failed to load image:", e.currentTarget.src);
                                 setImageLoading(false)
                                 e.currentTarget.style.display = 'none';
-                                const fallbackDiv = document.createElement('div');
-                                fallbackDiv.className = 'w-full max-w-[300px] h-[200px] rounded-lg border bg-gray-50 flex items-center justify-center';
-                                fallbackDiv.innerHTML = `
-            <div class="text-center">
-              <svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-              </svg>
-              <p class="text-sm text-gray-500">Failed to load image</p>
-            </div>
-          `;
-                                e.currentTarget.parentNode?.appendChild(fallbackDiv);
                               }}
                             />
                           </div>
@@ -2185,6 +2183,10 @@ const FormDialog = (props: Props) => {
                         />
                       </label>
 
+                      {fieldErrors.file && (
+                        <p className="text-xs text-red-500 mt-2">{fieldErrors.file}</p>
+                      )}
+
                       {isUploading && (
                         <div className="w-full mt-3">
                           <div className="flex items-center justify-center gap-2">
@@ -2199,18 +2201,18 @@ const FormDialog = (props: Props) => {
                     </div>
                   </FieldSet>
                 </TabsContent>
-              </div>
-            </form>
-          </Tabs>
+              </form>
+            </Tabs>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 border-t mt-2">
             <DialogClose asChild>
-              <Button className="w-20" onClick={onClose} variant="outline">
+              <Button className="w-full sm:w-20" onClick={onClose} variant="outline">
                 Cancel
               </Button>
             </DialogClose>
             <Button
-              className="w-20"
+              className="w-full sm:w-20"
               loading={isLoading || isUploading || isCheckingDuplicate}
               type="submit"
               form="payment-form"

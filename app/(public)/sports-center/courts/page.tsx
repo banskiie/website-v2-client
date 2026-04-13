@@ -650,6 +650,7 @@ function Page() {
                     <div
                       key={tournament.value}
                       className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:border-green-300 hover:shadow-sm transition-all bg-white"
+                      onWheel={(e) => e.stopPropagation()}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
                         <div className="flex-1 min-w-0">

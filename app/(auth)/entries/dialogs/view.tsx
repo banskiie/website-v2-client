@@ -42,6 +42,8 @@ import {
   DialogContent as ImageDialogContent,
 } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import ApproveDialog from "./approve"
+import RejectDialog from "./reject"
 
 const ENTRY = gql`
   query Entry($_id: ID!) {
@@ -160,7 +162,7 @@ type Props = {
   openFromParent?: boolean
   setOpenFromParent?: (open: boolean) => void
   externalUse?: boolean
-  title?: string | React.ReactNode 
+  title?: string | React.ReactNode
   titleClassName?: string
   rowSettings?: {
     clearId: () => void
@@ -197,8 +199,21 @@ type PaymentRemarkEvent = {
 }
 
 type TimelineEvent = StatusEvent | PaymentRemarkEvent
+const getJerseySizeLabel = (size: string | undefined | null): string => {
+  const sizeMap: Record<string, string> = {
+    'xxs': 'Double Extra Small',
+    'xs': 'Extra Small',
+    'sm': 'Small',
+    'm': 'Medium',
+    'lg': 'Large',
+    'xl': 'Extra Large',
+    'xxl': 'Double Extra Large',
+    'xxxl': 'Triple Extra Large'
+  };
 
-// Helper function to combine and sort events
+  if (!size) return 'N/A';
+  return sizeMap[size.toLowerCase()] || size;
+};
 const combineEvents = (statuses: any[], paymentRemarks: any[]): TimelineEvent[] => {
   const statusEvents: StatusEvent[] = (statuses || []).map((status, index) => ({
     type: 'status',
@@ -306,8 +321,15 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
     )
   }
 
-  // Get the first image/document to display (similar to payment view)
-  const mainDocument = documents[0]
+  // Group documents by type
+  const documentsByType = documents.reduce((acc, doc) => {
+    const docType = doc.documentType?.replaceAll("_", " ") || "Document"
+    if (!acc[docType]) {
+      acc[docType] = []
+    }
+    acc[docType].push(doc)
+    return acc
+  }, {} as Record<string, any[]>)
 
   const getFileType = (url: string) => {
     const extension = url.split('.').pop()?.toLowerCase()
@@ -320,108 +342,209 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
     return 'other'
   }
 
-  const isImage = getFileType(mainDocument.documentURL) === 'image'
+  const isImage = (url: string) => getFileType(url) === 'image'
 
-  const handleViewDocument = () => {
-    const fileType = getFileType(mainDocument.documentURL)
+  const handleViewDocument = (doc: any) => {
+    const fileType = getFileType(doc.documentURL)
     if (fileType === 'image') {
-      setSelectedDoc(mainDocument)
+      setSelectedDoc(doc)
       setIsSheetOpen(true)
     } else {
-      window.open(mainDocument.documentURL, '_blank')
+      window.open(doc.documentURL, '_blank')
     }
   }
 
-  const hasMultipleDocuments = documents.length > 1
+  // If only one document type, show simple view
+  const documentTypes = Object.keys(documentsByType)
 
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Label className="font-medium">{title}</Label>
-        {hasMultipleDocuments && (
-          <span className="text-xs text-muted-foreground">
-            +{documents.length - 1} more document(s)
-          </span>
-        )}
-      </div>
+  if (documentTypes.length === 1) {
+    const docs = documentsByType[documentTypes[0]]
+    const mainDocument = docs[0]
+    const hasMultipleDocs = docs.length > 1
 
-      <Sheet open={isSheetOpen && selectedDoc?.documentURL === mainDocument.documentURL} onOpenChange={(open) => {
-        if (!open) setIsSheetOpen(false)
-      }}>
-        <SheetTrigger asChild>
-          <div
-            className="cursor-pointer w-full flex items-center justify-center relative group"
-            onClick={handleViewDocument}
-          >
-            {isImage ? (
-              <>
-                <img
-                  src={mainDocument.documentURL}
-                  alt={mainDocument.documentType || "Document"}
-                  className="object-contain bg-gray-50 max-h-[200px] w-full rounded-lg border group-hover:bg-gray-100 transition-all duration-200"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
-                    <ZoomIn className="w-4 h-4" />
-                    <span className="text-sm font-medium">Click to Expand</span>
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="font-medium">{documentTypes[0]}</Label>
+          {hasMultipleDocs && (
+            <span className="text-xs text-muted-foreground">
+              +{docs.length - 1} more
+            </span>
+          )}
+        </div>
+
+        <Sheet open={isSheetOpen && selectedDoc?.documentURL === mainDocument.documentURL} onOpenChange={(open) => {
+          if (!open) setIsSheetOpen(false)
+        }}>
+          <SheetTrigger asChild>
+            <div
+              className="cursor-pointer w-full flex items-center justify-center relative group"
+              onClick={() => handleViewDocument(mainDocument)}
+            >
+              {isImage(mainDocument.documentURL) ? (
+                <>
+                  <img
+                    src={mainDocument.documentURL}
+                    alt={mainDocument.documentType || documentTypes[0]}
+                    className="object-contain bg-gray-50 max-h-[200px] w-full rounded-lg border group-hover:bg-gray-100 transition-all duration-200"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
+                      <ZoomIn className="w-4 h-4" />
+                      <span className="text-sm font-medium">Click to Expand</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center w-full p-8 border rounded-lg bg-gray-50 group-hover:bg-gray-100 transition-all duration-200">
+                  <div className="text-center">
+                    <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">{documentTypes[0]}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Click to view</p>
                   </div>
                 </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center w-full p-8 border rounded-lg bg-gray-50 group-hover:bg-gray-100 transition-all duration-200">
-                <div className="text-center">
-                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">{mainDocument.documentType || 'Document'}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Click to view</p>
+              )}
+            </div>
+          </SheetTrigger>
+          <SheetContent className="h-screen p-[2%]" side="bottom">
+            <SheetHeader hidden>
+              <SheetTitle>Document Preview</SheetTitle>
+              <SheetDescription>{documentTypes[0]}</SheetDescription>
+            </SheetHeader>
+            <div className="relative h-full w-full">
+              {isImage(mainDocument.documentURL) ? (
+                <img
+                  src={mainDocument.documentURL}
+                  alt={documentTypes[0]}
+                  className="object-contain h-full w-full"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-lg font-medium mb-2">{documentTypes[0]}</p>
+                    <Button
+                      onClick={() => window.open(mainDocument.documentURL, '_blank')}
+                      className="mt-4"
+                    >
+                      Open Document
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </SheetTrigger>
-        <SheetContent className="h-screen p-[2%]" side="bottom">
-          <SheetHeader hidden>
-            <SheetTitle>Document Preview</SheetTitle>
-            <SheetDescription>{mainDocument.documentType || 'Document'}</SheetDescription>
-          </SheetHeader>
-          <div className="relative h-full w-full">
-            {isImage ? (
-              <img
-                src={mainDocument.documentURL}
-                alt={mainDocument.documentType || "Document"}
-                className="object-contain h-full w-full"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-lg font-medium mb-2">{mainDocument.documentType || 'Document'}</p>
-                  <Button
-                    onClick={() => window.open(mainDocument.documentURL, '_blank')}
-                    className="mt-4"
-                  >
-                    Open Document
-                  </Button>
-                </div>
-              </div>
-            )}
-            {mainDocument.documentType && (
+              )}
               <div className="absolute bottom-4 left-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-lg">
-                {mainDocument.documentType}
+                {documentTypes[0]}
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {hasMultipleDocs && (
+          <div className="text-xs text-muted-foreground text-center mt-2">
+            {docs.length} document(s) total. Click to view the first one.
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Multiple document types - show each type separately
+  return (
+    <div className="space-y-6">
+      {documentTypes.map(docType => {
+        const docs = documentsByType[docType]
+        const mainDocument = docs[0]
+        const hasMultipleDocs = docs.length > 1
+
+        return (
+          <div key={docType} className="space-y-3 border-b pb-4 last:border-b-0">
+            <div className="flex items-center justify-between">
+              <Label className="font-medium">{docType}</Label>
+              {hasMultipleDocs && (
+                <span className="text-xs text-muted-foreground">
+                  +{docs.length - 1} more
+                </span>
+              )}
+            </div>
+
+            <Sheet open={isSheetOpen && selectedDoc?.documentURL === mainDocument.documentURL} onOpenChange={(open) => {
+              if (!open) setIsSheetOpen(false)
+            }}>
+              <SheetTrigger asChild>
+                <div
+                  className="cursor-pointer w-full flex items-center justify-center relative group"
+                  onClick={() => handleViewDocument(mainDocument)}
+                >
+                  {isImage(mainDocument.documentURL) ? (
+                    <>
+                      <img
+                        src={mainDocument.documentURL}
+                        alt={docType}
+                        className="object-contain bg-gray-50 max-h-[200px] w-full rounded-lg border group-hover:bg-gray-100 transition-all duration-200"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
+                          <ZoomIn className="w-4 h-4" />
+                          <span className="text-sm font-medium">Click to Expand</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center w-full p-8 border rounded-lg bg-gray-50 group-hover:bg-gray-100 transition-all duration-200">
+                      <div className="text-center">
+                        <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">{docType}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Click to view</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </SheetTrigger>
+              <SheetContent className="h-screen p-[2%]" side="bottom">
+                <SheetHeader hidden>
+                  <SheetTitle>Document Preview</SheetTitle>
+                  <SheetDescription>{docType}</SheetDescription>
+                </SheetHeader>
+                <div className="relative h-full w-full">
+                  {isImage(mainDocument.documentURL) ? (
+                    <img
+                      src={mainDocument.documentURL}
+                      alt={docType}
+                      className="object-contain h-full w-full"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-lg font-medium mb-2">{docType}</p>
+                        <Button
+                          onClick={() => window.open(mainDocument.documentURL, '_blank')}
+                          className="mt-4"
+                        >
+                          Open Document
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute bottom-4 left-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-lg">
+                    {docType}
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {hasMultipleDocs && (
+              <div className="text-xs text-muted-foreground text-center mt-2">
+                {docs.length} document(s) total. Click to view the first one.
               </div>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* If there are multiple documents, show additional info */}
-      {hasMultipleDocuments && (
-        <div className="text-xs text-muted-foreground text-center mt-2">
-          {documents.length} document(s) total. Click to view the first one.
-        </div>
-      )}
+        )
+      })}
     </div>
   )
 }
+
 const ViewDialog = (props: Props) => {
   // Dialog open state
   const [open, setOpen] = useState(false)
@@ -451,6 +574,9 @@ const ViewDialog = (props: Props) => {
 
   const entry = entryData?.entry as IEntry
   const paymentRemarks = paymentRemarksData?.paymentRemarksByEntryId || []
+
+  // Get current status
+  const currentStatus = entry?.statuses?.[entry.statuses.length - 1]?.status
 
   // Combine all events
   const allEvents = combineEvents(entry?.statuses || [], paymentRemarks)
@@ -502,523 +628,145 @@ const ViewDialog = (props: Props) => {
           onOpenAutoFocus={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
           showCloseButton={false}
-          className="max-w-5xl"
+          className="max-w-2xl! h-[85vh] p-0 sm:p-6 overflow-hidden flex flex-col"
         >
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-start gap-1.5">
-              <span>Entry: {entry?.entryNumber} </span>
-              {entry?.isEarlyBird && (
-                <Badge variant="outline-info" className="text-xs py-px -my-px">
-                  Early Bird
-                </Badge>
-              )}
-              {entry?.isInSoftware && (
-                <Badge
-                  variant="outline-warning"
-                  className="text-xs py-px -my-px"
-                >
-                  In Software
-                </Badge>
-              )}
-            </DialogTitle>
-            <DialogDescription>
-              View the details of this entry below.
-            </DialogDescription>
-          </DialogHeader>
-          <Tabs defaultValue="details" className="">
-            <TabsList className="flex flex-wrap w-full gap-1 -mt-2 mb-1">
-              <TabsTrigger value="details" className="flex-1 min-w-[80px]">Details</TabsTrigger>
-              <TabsTrigger value="players" className="flex-1 min-w-[80px]">Players</TabsTrigger>
-              <TabsTrigger value="documents" className="flex-1 min-w-[80px]">Documents</TabsTrigger>
-              <TabsTrigger value="status" className="flex-1 min-w-[80px]">Status</TabsTrigger>
-              <TabsTrigger value="transactions" className="flex-1 min-w-[80px]">Trans.</TabsTrigger>
-            </TabsList>
-            <TabsContent value="details">
-              <div className="grid grid-cols-2 gap-2 h-[50vh] overflow-y-auto place-content-start">
-                <div
-                  className="col-span-2 hover:cursor-pointer"
-                  onClick={(e) => {
-                    toast.success(
-                      `${entry?.entryNumber}_${entry?.entryKey}` +
-                      " copied to clipboard!"
-                    )
-                    e.stopPropagation()
-                    navigator.clipboard.writeText(
-                      `${entry?.entryNumber}_${entry?.entryKey}`
-                    )
-                  }}
-                  title="Click to copy to clipboard"
-                >
-                  <Label>
-                    Reference No. <Copy className="size-3 -ml-1" />
-                  </Label>
-                  {entryLoading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span className="block text-sm">
-                      {entry?.entryNumber}_{entry?.entryKey}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <Label>Entry Number</Label>
-                  {entryLoading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span className="block text-sm">{entry?.entryNumber}</span>
-                  )}
-                </div>
-                <div>
-                  <Label>Entry Key</Label>
-                  {entryLoading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span className="block text-sm">{entry?.entryKey}</span>
-                  )}
-                </div>
-                <div className="col-span-2">
-                  <Label>Event</Label>
-                  {entryLoading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span className="block text-sm">
-                      <span
-                        className={cn(
-                          entry?.event?.isClosed && "line-through"
-                        )}
-                      >
-                        {entry?.event?.name} (
-                        <span className="capitalize">
-                          {entry?.event?.type.toLocaleLowerCase()}
-                        </span>
-                        )
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-0">
+            <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
+              <DialogTitle className="flex items-center justify-start gap-1.5 flex-wrap">
+                <span>Entry: {entry?.entryNumber} </span>
+                {entry?.isEarlyBird && (
+                  <Badge variant="outline-info" className="text-xs py-px -my-px">
+                    Early Bird
+                  </Badge>
+                )}
+                {entry?.isInSoftware && (
+                  <Badge
+                    variant="outline-warning"
+                    className="text-xs py-px -my-px"
+                  >
+                    In Software
+                  </Badge>
+                )}
+              </DialogTitle>
+              <DialogDescription>
+                View the details of this entry below.
+              </DialogDescription>
+            </DialogHeader>
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="flex w-full gap-2 mb-4 sticky top-[72px] bg-gray-100 dark:bg-gray-800 z-10 p-1 rounded-lg overflow-x-auto">
+                <TabsTrigger value="details" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                  Details
+                </TabsTrigger>
+                <TabsTrigger value="players" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                  Players
+                </TabsTrigger>
+                <TabsTrigger value="documents" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                  Documents
+                </TabsTrigger>
+                <TabsTrigger value="status" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                  Status
+                </TabsTrigger>
+                <TabsTrigger value="transactions" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                  Transactions
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="details">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-4">
+                  <div
+                    className="col-span-1 sm:col-span-2 hover:cursor-pointer"
+                    onClick={(e) => {
+                      toast.success(
+                        `${entry?.entryNumber}_${entry?.entryKey}` +
+                        " copied to clipboard!"
+                      )
+                      e.stopPropagation()
+                      navigator.clipboard.writeText(
+                        `${entry?.entryNumber}_${entry?.entryKey}`
+                      )
+                    }}
+                    title="Click to copy to clipboard"
+                  >
+                    <Label>
+                      Reference No. <Copy className="size-3 -ml-1 inline" />
+                    </Label>
+                    {entryLoading ? (
+                      <Skeleton className="w-full my-1 h-3" />
+                    ) : (
+                      <span className="block text-sm break-all">
+                        {entry?.entryNumber}_{entry?.entryKey}
                       </span>
-                      {entry?.event?.isClosed && (
-                        <span className="text-destructive ml-1">
-                          (Closed)
-                        </span>
-                      )}
-                    </span>
-                  )}
-                </div>
-                <div className="col-span-2">
-                  <Label>Tournament</Label>
-                  {entryLoading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span className="block text-sm">
-                      {entry?.event?.tournament.name}
-                    </span>
-                  )}
-                </div>
-                <div className="col-span-2">
-                  <Label>Total Event Fee</Label>
-                  {entryLoading ? (
-                    <Skeleton className="w-full my-1 h-3" />
-                  ) : (
-                    <span className="block text-sm">
-                      {(
-                        ((entry?.isEarlyBird
-                          ? entry?.event?.earlyBirdPricePerPlayer
-                          : entry?.event?.pricePerPlayer) || 0) *
-                        (entry?.event?.type === "DOUBLES" ? 2 : 1)
-                      )?.toLocaleString("en-PH", {
-                        style: "currency",
-                        currency: entry?.event?.currency || "PHP",
-                        minimumFractionDigits: 2,
-                      })}{" "}
-                      {entry?.event?.type === "DOUBLES" ? (
-                        <span className="text-muted-foreground">
-                          (
-                          {(entry?.isEarlyBird
-                            ? entry?.event?.earlyBirdPricePerPlayer
-                            : entry?.event?.pricePerPlayer
-                          )?.toLocaleString("en-PH", {
-                            style: "currency",
-                            currency: entry?.event?.currency || "PHP",
-                            minimumFractionDigits: 2,
-                          })}{" "}
-                          per player)
-                        </span>
-                      ) : (
-                        ""
-                      )}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-            <TabsContent value="players">
-              <div className="grid grid-cols-2 gap-2 h-[50vh] overflow-y-auto place-content-start">
-                {entry?.player1Entry && (
-                  <div className="col-span-2 grid grid-cols-2 gap-2 bg-info/10 p-2">
-                    <Label className="font-medium col-span-2">Player 1</Label>
-                    {entry?.connectedPlayer1 && (
-                      <div className="col-span-2">
-                        <Label>Connected Player</Label>
-                        {entryLoading ? (
-                          <Skeleton className="w-full my-1 h-3" />
-                        ) : (
-                          <PlayerViewDialog
-                            externalUse
-                            _id={entry?.connectedPlayer1?._id}
-                            title={`${entry?.connectedPlayer1.firstName} ${entry?.connectedPlayer1.middleName} ${entry?.connectedPlayer1.lastName} ${entry?.connectedPlayer1.suffix}`}
-                            titleClassName="block text-sm text-blue-600"
-                          />
-                        )}
-                      </div>
                     )}
-                    <div className="col-span-2">
-                      <Label>Entry Name</Label>
-                      {entryLoading ? (
-                        <Skeleton className="w-full my-1 h-3" />
-                      ) : (
-                        <span className="block text-sm">
-                          {entry?.player1Entry.firstName}{" "}
-                          {entry?.player1Entry.middleName}{" "}
-                          {entry?.player1Entry.lastName}{" "}
-                          {entry?.player1Entry.suffix}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <Label>Jersey Size</Label>
-                      {entryLoading ? (
-                        <Skeleton className="w-full my-1 h-3" />
-                      ) : (
-                        <span className="block text-sm">
-                          {entry?.player1Entry.jerseySize || "N/A"}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <Label>Email</Label>
-                      {entryLoading ? (
-                        <Skeleton className="w-full my-1 h-3" />
-                      ) : (
-                        <span className="block text-sm">
-                          {entry?.player1Entry.email || "N/A"}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <Label>Contact No.</Label>
-                      {entryLoading ? (
-                        <Skeleton className="w-full my-1 h-3" />
-                      ) : (
-                        <span className="block text-sm">
-                          {entry?.player1Entry.phoneNumber
-                            ? `${entry.player1Entry.phoneNumber}`
-                            : "N/A"}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <Label>Birthday (Age)</Label>
-                      {entryLoading ? (
-                        <Skeleton className="w-full my-1 h-3" />
-                      ) : (
-                        <span className="block text-sm">
-                          {format(entry?.player1Entry.birthDate, "PP")} (
-                          {`${formatDistanceToNowStrict(
-                            entry?.player1Entry.birthDate
-                          )} old`}
+                  </div>
+                  <div>
+                    <Label>Entry Number</Label>
+                    {entryLoading ? (
+                      <Skeleton className="w-full my-1 h-3" />
+                    ) : (
+                      <span className="block text-sm">{entry?.entryNumber}</span>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Entry Key</Label>
+                    {entryLoading ? (
+                      <Skeleton className="w-full my-1 h-3" />
+                    ) : (
+                      <span className="block text-sm">{entry?.entryKey}</span>
+                    )}
+                  </div>
+                  <div className="col-span-1 sm:col-span-2">
+                    <Label>Event</Label>
+                    {entryLoading ? (
+                      <Skeleton className="w-full my-1 h-3" />
+                    ) : (
+                      <span className="block text-sm">
+                        <span
+                          className={cn(
+                            entry?.event?.isClosed && "line-through"
+                          )}
+                        >
+                          {entry?.event?.name} (
+                          <span className="capitalize">
+                            {entry?.event?.type.toLocaleLowerCase()}
+                          </span>
                           )
                         </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {entry?.event?.type === "DOUBLES" && (
-                  <div className="col-span-2 grid grid-cols-2 gap-2 bg-destructive/10 p-2">
-                    <Label className="font-medium col-span-2">Player 2</Label>
-                    {entry?.player2Entry && (
-                      <>
-                        {entry?.connectedPlayer2 && (
-                          <div className="col-span-2">
-                            <Label>Connected Player</Label>
-                            {entryLoading ? (
-                              <Skeleton className="w-full my-1 h-3" />
-                            ) : (
-                              <PlayerViewDialog
-                                externalUse
-                                _id={entry?.connectedPlayer2?._id}
-                                title={`${entry?.connectedPlayer2.firstName} ${entry?.connectedPlayer2.middleName} ${entry?.connectedPlayer2.lastName} ${entry?.connectedPlayer2.suffix}`}
-                                titleClassName="block text-sm text-blue-600"
-                              />
-                            )}
-                          </div>
+                        {entry?.event?.isClosed && (
+                          <span className="text-destructive ml-1">
+                            (Closed)
+                          </span>
                         )}
-                        <div className="col-span-2">
-                          <Label>Entry Name</Label>
-                          {entryLoading ? (
-                            <Skeleton className="w-full my-1 h-3" />
-                          ) : (
-                            <span className="block text-sm">
-                              {entry?.player2Entry.firstName}{" "}
-                              {entry?.player2Entry.middleName}{" "}
-                              {entry?.player2Entry.lastName}{" "}
-                              {entry?.player2Entry.suffix}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <Label>Jersey Size</Label>
-                          {entryLoading ? (
-                            <Skeleton className="w-full my-1 h-3" />
-                          ) : (
-                            <span className="block text-sm">
-                              {entry?.player2Entry.jerseySize || "N/A"}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <Label>Email</Label>
-                          {entryLoading ? (
-                            <Skeleton className="w-full my-1 h-3" />
-                          ) : (
-                            <span className="block text-sm">
-                              {entry?.player2Entry.email || "N/A"}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <Label>Contact No.</Label>
-                          {entryLoading ? (
-                            <Skeleton className="w-full my-1 h-3" />
-                          ) : (
-                            <span className="block text-sm">
-                              {entry?.player2Entry.phoneNumber || "N/A"}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <Label>Birthday (Age)</Label>
-                          {entryLoading ? (
-                            <Skeleton className="w-full my-1 h-3" />
-                          ) : (
-                            <span className="block text-sm">
-                              {format(entry?.player2Entry.birthDate, "PP")} (
-                              {`${formatDistanceToNowStrict(
-                                entry?.player2Entry.birthDate
-                              )} old`}
-                              )
-                            </span>
-                          )}
-                        </div>
-                      </>
+                      </span>
                     )}
                   </div>
-                )}
-              </div>
-            </TabsContent>
-            <TabsContent value="documents">
-              <div className="flex flex-col gap-4 h-[50vh] overflow-y-auto p-2">
-                {entryLoading ? (
-                  <Skeleton className="w-full h-20" />
-                ) : (
-                  <>
-                    <div className="border rounded-lg p-3 bg-info/5">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="h-4 w-4 text-info" />
-                        <Label className="font-semibold">Player 1 Documents</Label>
-                      </div>
-                      <DocumentViewer
-                        documents={getPlayer1Documents()}
-                        title="Document"
-                      />
-                    </div>
-
-                    {entry?.event?.type === "DOUBLES" && (
-                      <div className="border rounded-lg p-3 bg-destructive/5">
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="h-4 w-4 text-destructive" />
-                          <Label className="font-semibold">Player 2 Documents</Label>
-                        </div>
-                        <DocumentViewer
-                          documents={getPlayer2Documents()}
-                          title="Document"
-                        />
-                      </div>
+                  <div className="col-span-1 sm:col-span-2">
+                    <Label>Tournament</Label>
+                    {entryLoading ? (
+                      <Skeleton className="w-full my-1 h-3" />
+                    ) : (
+                      <span className="block text-sm">
+                        {entry?.event?.tournament.name}
+                      </span>
                     )}
-
-                    {/* Connected Player Documents Info */}
-                    {/* {(entry?.connectedPlayer1?.validDocuments && entry.connectedPlayer1.validDocuments.length > 0) && (
-                      <div className="border rounded-lg p-3 bg-muted/5">
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <Label className="font-semibold">Connected Player Documents</Label>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          These documents are from the connected player profile and may apply to multiple entries.
-                        </p>
-                        <DocumentViewer
-                          documents={entry?.connectedPlayer1?.validDocuments || []}
-                          title="Connected Player 1 Documents"
-                        />
-                        {(entry?.connectedPlayer2?.validDocuments && entry.connectedPlayer2.validDocuments.length > 0) && (
-                          <div className="mt-3">
-                            <DocumentViewer
-                              documents={entry?.connectedPlayer2?.validDocuments || []}
-                              title="Connected Player 2 Documents"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )} */}
-                  </>
-                )}
-              </div>
-            </TabsContent>
-            <TabsContent value="status">
-              <div className="flex flex-col gap-2 h-[50vh] overflow-y-auto place-content-start">
-                {entryLoading || paymentRemarksLoading ? (
-                  <Skeleton className="w-full my-1 h-3" />
-                ) : allEvents.length > 0 ? (
-                  <div className="h-full">
-                    {allEvents.map((event, index) => (
-                      <div key={event.id} className="flex gap-2">
-                        <div className="flex flex-col justify-start items-center">
-                          {(() => {
-                            if (isPaymentRemarkEvent(event)) {
-                              return (
-                                <MessageSquare className="size-4 my-3 text-blue-500" />
-                              )
-                            }
-
-                            if (index === 0) {
-                              switch (event.status) {
-                                case "PENDING":
-                                  return (
-                                    <CheckCircle2 className="size-4 my-2 text-success" />
-                                  )
-                                case "CANCELLED":
-                                case "REJECTED":
-                                  return (
-                                    <CircleAlert className="size-4 my-2 text-destructive" />
-                                  )
-                                case "VERIFIED":
-                                  return (
-                                    <CheckCircle className="size-4 my-2 text-success" />
-                                  )
-                              }
-                              return (
-                                <CircleAlert
-                                  className={cn(
-                                    "size-4 my-2",
-                                    index > 0
-                                      ? "text-muted-foreground/50"
-                                      : "text-info"
-                                  )}
-                                />
-                              )
-                            } else {
-                              return (
-                                <CheckCircle
-                                  className={cn(
-                                    "size-4 my-2",
-                                    index > 0
-                                      ? "text-muted-foreground/50"
-                                      : "text-success"
-                                  )}
-                                />
-                              )
-                            }
-                          })()}
-
-                          {index < allEvents.length - 1 && (
-                            <div className="min-h-11 w-px bg-gray-200"></div>
-                          )}
-                        </div>
-                        <div className="mt-2">
-                          <span
-                            className={cn(
-                              "capitalize block -mb-0.5",
-                              index === 0
-                                ? "font-mono"
-                                : "text-muted-foreground",
-                              isPaymentRemarkEvent(event) && "text-muted-foreground font-medium"
-                            )}
-                          >
-                            {isPaymentRemarkEvent(event)
-                              ? 'Payment Remark'
-                              : event.status
-                                .split("_")
-                                .join(" ")
-                                .toLocaleLowerCase()}
-                          </span>
-                          <span className="text-xs text-muted-foreground block">
-                            {format(new Date(event.date), "PPpp")}
-                          </span>
-
-                          {isPaymentRemarkEvent(event) ? (
-                            <>
-                              <span className="text-xs text-muted-foreground block mt-0.5">
-                                <span className="">Remark:</span>{" "}
-                                <span className="italic font-medium">{event.remark}</span>
-                              </span>
-                              <div className="text-xs text-muted-foreground space-y-0.5">
-                                <div>Payment Ref: {event.paymentReferenceNumber}</div>
-                                <div>Payer: {event.payerName}</div>
-                                <div>Amount: <span className="font-medium">₱{event.amount?.toLocaleString()}</span></div>
-                              </div>
-                              <div className="-mt-1 underline underline-offset-2">
-                                <PaymentViewDialog
-                                  externalUse
-                                  _id={event.paymentId}
-                                  title={`View Payment Details`}
-                                  titleClassName="text-xs text-blue-600 hover:text-blue-800"
-                                />
-                              </div>
-                            </>
-                          ) : isStatusEvent(event) && event.reason && (
-                            <span className="text-xs text-muted-foreground block my-0.5">
-                              Note:{" "}
-                              <span className="italic underline">
-                                {event.reason}
-                              </span>
-                            </span>
-                          )}
-
-                          {event.by?.name && (
-                            <span className="text-xs text-muted-foreground block mt-0.5">
-                              By: <span className="underline underline-offset-2 ml-0.5"> {event.by.name} </span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
                   </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground">
-                    No status history available.
-                  </span>
-                )}
-              </div>
-            </TabsContent>
-            <TabsContent value="transactions">
-              <div className="flex flex-col h-[50vh]">
-                <div className="sticky top-0 z-10 bg-blue-50 border border-blue-200 rounded-md p-3 mb-3 shadow-sm">
-                  <div className="flex items-start gap-2">
-                    <CircleAlert className="h-5 w-5 text-blue-500 flex-shrink-0" />
-                    <div className="flex flex-row gap-1">
-                      <p className="text-sm font-medium text-blue-800">Total Entry Fee Required:</p>
-                      <p className="text-sm text-blue-800">
-                        <span className="font-medium">
-                          {(
-                            ((entry?.isEarlyBird
-                              ? entry?.event?.earlyBirdPricePerPlayer
-                              : entry?.event?.pricePerPlayer) || 0) *
-                            (entry?.event?.type === "DOUBLES" ? 2 : 1)
-                          )?.toLocaleString("en-PH", {
-                            style: "currency",
-                            currency: entry?.event?.currency || "PHP",
-                            minimumFractionDigits: 2,
-                          })}
-                        </span>
-                        {entry?.event?.type === "DOUBLES" && (
-                          <span className="text-blue-500 text-xs underline underline-offset-2">
-                            {' '}(
+                  <div className="col-span-1 sm:col-span-2">
+                    <Label>Total Event Fee</Label>
+                    {entryLoading ? (
+                      <Skeleton className="w-full my-1 h-3" />
+                    ) : (
+                      <span className="block text-sm">
+                        {(
+                          ((entry?.isEarlyBird
+                            ? entry?.event?.earlyBirdPricePerPlayer
+                            : entry?.event?.pricePerPlayer) || 0) *
+                          (entry?.event?.type === "DOUBLES" ? 2 : 1)
+                        )?.toLocaleString("en-PH", {
+                          style: "currency",
+                          currency: entry?.event?.currency || "PHP",
+                          minimumFractionDigits: 2,
+                        })}{" "}
+                        {entry?.event?.type === "DOUBLES" ? (
+                          <span className="text-muted-foreground">
+                            (
                             {(entry?.isEarlyBird
                               ? entry?.event?.earlyBirdPricePerPlayer
                               : entry?.event?.pricePerPlayer
@@ -1026,180 +774,554 @@ const ViewDialog = (props: Props) => {
                               style: "currency",
                               currency: entry?.event?.currency || "PHP",
                               minimumFractionDigits: 2,
-                            })} per player)
+                            })}{" "}
+                            per player)
                           </span>
+                        ) : (
+                          ""
                         )}
-                      </p>
-                    </div>
+                      </span>
+                    )}
                   </div>
                 </div>
-
-                <div className="flex-1 overflow-y-auto pr-1 space-y-2">
+              </TabsContent>
+              <TabsContent value="players">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-4">
+                  {entry?.player1Entry && (
+                    <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-info/10 p-3 rounded-lg">
+                      <Label className="font-medium col-span-1 sm:col-span-2">Player 1</Label>
+                      {entry?.connectedPlayer1 && (
+                        <div className="col-span-1 sm:col-span-2">
+                          <Label>Connected Player</Label>
+                          {entryLoading ? (
+                            <Skeleton className="w-full my-1 h-3" />
+                          ) : (
+                            <PlayerViewDialog
+                              externalUse
+                              _id={entry?.connectedPlayer1?._id}
+                              title={`${entry?.connectedPlayer1.firstName} ${entry?.connectedPlayer1.middleName} ${entry?.connectedPlayer1.lastName} ${entry?.connectedPlayer1.suffix}`}
+                              titleClassName="block text-sm text-blue-600 break-words"
+                            />
+                          )}
+                        </div>
+                      )}
+                      <div className="col-span-1 sm:col-span-2">
+                        <Label>Entry Name</Label>
+                        {entryLoading ? (
+                          <Skeleton className="w-full my-1 h-3" />
+                        ) : (
+                          <span className="block text-sm break-words">
+                            {entry?.player1Entry.firstName}{" "}
+                            {entry?.player1Entry.middleName}{" "}
+                            {entry?.player1Entry.lastName}{" "}
+                            {entry?.player1Entry.suffix}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Jersey Size</Label>
+                        {entryLoading ? (
+                          <Skeleton className="w-full my-1 h-3" />
+                        ) : (
+                          <span className="block text-sm">
+                            {getJerseySizeLabel(entry?.player1Entry.jerseySize)}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Email</Label>
+                        {entryLoading ? (
+                          <Skeleton className="w-full my-1 h-3" />
+                        ) : (
+                          <span className="block text-sm break-words">
+                            {entry?.player1Entry.email || "N/A"}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Contact No.</Label>
+                        {entryLoading ? (
+                          <Skeleton className="w-full my-1 h-3" />
+                        ) : (
+                          <span className="block text-sm">
+                            {entry?.player1Entry.phoneNumber
+                              ? `${entry.player1Entry.phoneNumber}`
+                              : "N/A"}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Birthday (Age)</Label>
+                        {entryLoading ? (
+                          <Skeleton className="w-full my-1 h-3" />
+                        ) : (
+                          <span className="block text-sm">
+                            {format(entry?.player1Entry.birthDate, "PP")} (
+                            {`${formatDistanceToNowStrict(
+                              entry?.player1Entry.birthDate
+                            )} old`}
+                            )
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {entry?.event?.type === "DOUBLES" && (
+                    <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-destructive/10 p-3 rounded-lg">
+                      <Label className="font-medium col-span-1 sm:col-span-2">Player 2</Label>
+                      {entry?.player2Entry && (
+                        <>
+                          {entry?.connectedPlayer2 && (
+                            <div className="col-span-1 sm:col-span-2">
+                              <Label>Connected Player</Label>
+                              {entryLoading ? (
+                                <Skeleton className="w-full my-1 h-3" />
+                              ) : (
+                                <PlayerViewDialog
+                                  externalUse
+                                  _id={entry?.connectedPlayer2?._id}
+                                  title={`${entry?.connectedPlayer2.firstName} ${entry?.connectedPlayer2.middleName} ${entry?.connectedPlayer2.lastName} ${entry?.connectedPlayer2.suffix}`}
+                                  titleClassName="block text-sm text-blue-600 break-words"
+                                />
+                              )}
+                            </div>
+                          )}
+                          <div className="col-span-1 sm:col-span-2">
+                            <Label>Entry Name</Label>
+                            {entryLoading ? (
+                              <Skeleton className="w-full my-1 h-3" />
+                            ) : (
+                              <span className="block text-sm break-words">
+                                {entry?.player2Entry.firstName}{" "}
+                                {entry?.player2Entry.middleName}{" "}
+                                {entry?.player2Entry.lastName}{" "}
+                                {entry?.player2Entry.suffix}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <Label>Jersey Size</Label>
+                            {entryLoading ? (
+                              <Skeleton className="w-full my-1 h-3" />
+                            ) : (
+                              <span className="block text-sm">
+                                {getJerseySizeLabel(entry?.player2Entry?.jerseySize)}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <Label>Email</Label>
+                            {entryLoading ? (
+                              <Skeleton className="w-full my-1 h-3" />
+                            ) : (
+                              <span className="block text-sm break-words">
+                                {entry?.player2Entry.email || "N/A"}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <Label>Contact No.</Label>
+                            {entryLoading ? (
+                              <Skeleton className="w-full my-1 h-3" />
+                            ) : (
+                              <span className="block text-sm">
+                                {entry?.player2Entry.phoneNumber || "N/A"}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <Label>Birthday (Age)</Label>
+                            {entryLoading ? (
+                              <Skeleton className="w-full my-1 h-3" />
+                            ) : (
+                              <span className="block text-sm">
+                                {format(entry?.player2Entry.birthDate, "PP")} (
+                                {`${formatDistanceToNowStrict(
+                                  entry?.player2Entry.birthDate
+                                )} old`}
+                                )
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              <TabsContent value="documents">
+                <div className="flex flex-col gap-4 pb-4">
                   {entryLoading ? (
+                    <Skeleton className="w-full h-20" />
+                  ) : (
+                    <>
+                      <div className="border rounded-lg p-3 bg-info/5">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="h-4 w-4 text-info" />
+                          <Label className="font-semibold">Player 1 Documents</Label>
+                        </div>
+                        <DocumentViewer
+                          documents={getPlayer1Documents()}
+                          title="Player 1 Documents"
+                        />
+                      </div>
+
+                      {entry?.event?.type === "DOUBLES" && (
+                        <div className="border rounded-lg p-3 bg-destructive/5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <FileText className="h-4 w-4 text-destructive" />
+                            <Label className="font-semibold">Player 2 Documents</Label>
+                          </div>
+                          <DocumentViewer
+                            documents={getPlayer2Documents()}
+                            title="Player 2 Documents"
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </TabsContent>
+              <TabsContent value="status">
+                <div className="flex flex-col gap-2 pb-4 max-h-[400px] overflow-y-auto">
+                  {entryLoading || paymentRemarksLoading ? (
                     <Skeleton className="w-full my-1 h-3" />
-                  ) : entry?.transactions && entry?.transactions.length ? (
-                    <div className="h-full">
-                      {entry.transactions
-                        .slice()
-                        .reverse()
-                        .map((transaction, index) => (
-                          <div key={index} className="flex gap-2">
-                            <div className="flex flex-col justify-start items-center">
-                              {(() => {
-                                switch (transaction.transactionType) {
-                                  case "INITIAL_FEE":
+                  ) : allEvents.length > 0 ? (
+                    <div>
+                      {allEvents.map((event, index) => (
+                        <div key={event.id} className="flex gap-2">
+                          <div className="flex flex-col justify-start items-center">
+                            {(() => {
+                              if (isPaymentRemarkEvent(event)) {
+                                return (
+                                  <MessageSquare className="size-4 my-3 text-blue-500" />
+                                )
+                              }
+
+                              if (index === 0) {
+                                switch (event.status) {
+                                  case "PENDING":
                                     return (
-                                      <CircleQuestionMark className="size-4 my-2 text-success" />
+                                      <CheckCircle2 className="size-4 my-2 text-success" />
                                     )
-                                  case "BALANCE_PAYMENT":
+                                  case "CANCELLED":
+                                  case "REJECTED":
                                     return (
-                                      <CheckCircle2 className="size-4 my-2 text-destructive" />
+                                      <CircleAlert className="size-4 my-2 text-destructive" />
                                     )
-                                  case "REVERT_TRANSACTION":
+                                  case "VERIFIED":
                                     return (
-                                      <CircleAlert className="size-4 my-2 text-muted-foreground" />
-                                    )
-                                  case "REFUND_PAYMENT":
-                                    return (
-                                      <CircleAlert className="size-4 my-2 text-muted-foreground" />
-                                    )
-                                  default:
-                                    return (
-                                      <CircleQuestionMark className="size-4 my-2 text-muted-foreground" />
+                                      <CheckCircle className="size-4 my-2 text-success" />
                                     )
                                 }
-                              })()}
+                                return (
+                                  <CircleAlert
+                                    className={cn(
+                                      "size-4 my-2",
+                                      index > 0
+                                        ? "text-muted-foreground/50"
+                                        : "text-info"
+                                    )}
+                                  />
+                                )
+                              } else {
+                                return (
+                                  <CheckCircle
+                                    className={cn(
+                                      "size-4 my-2",
+                                      index > 0
+                                        ? "text-muted-foreground/50"
+                                        : "text-success"
+                                    )}
+                                  />
+                                )
+                              }
+                            })()}
 
-                              {index < entry.transactions.length - 1 && (
-                                <div className="min-h-11 w-px bg-gray-200"></div>
-                              )}
-                            </div>
-                            <div className="mt-1">
-                              <span
-                                className={cn(
-                                  "capitalize block -mb-0.5",
-                                  index === 0
-                                    ? "font-mono"
-                                    : "text-muted-foreground"
-                                )}
-                              >
-                                {transaction.transactionType
-                                  .replaceAll("_", " ")
-                                  .toLocaleLowerCase()}
-                              </span>
-
-                              <span
-                                className={cn(
-                                  "capitalize block text-xs underline underline-offset-2 mb-0.5",
-                                  index === 0
-                                    ? "font-mono"
-                                    : "text-muted-foreground",
-                                  transaction.pendingAmount == 0
-                                    ? "text-destructive"
-                                    : transaction.pendingAmount > 0
-                                      ? "text-success"
-                                      : "text-info"
-                                )}
-                              >
-                                {(() => {
-                                  const isCancelled = entry?.statuses?.some(s => s.status === "CANCELLED");
-                                  const isRefundPayment = transaction.transactionType === "REFUND_PAYMENT";
-
-                                  if (isCancelled && isRefundPayment) {
-                                    const totalPaid = entry?.transactions
-                                      ?.filter(t => t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0)
-                                      .reduce((sum, t) => sum + (t.amountChanged || 0), 0) || 0;
-
-                                    const totalRefunded = entry?.transactions
-                                      ?.filter(t => t.transactionType === "REFUND_PAYMENT")
-                                      .reduce((sum, t) => sum + Math.abs(t.amountChanged), 0) || 0;
-
-                                    const remainingPrincipal = totalPaid - totalRefunded;
-
-                                    if (transaction.amountChanged < 0) {
-                                      return `Remaining Balance: ₱${remainingPrincipal.toLocaleString()}`;
-                                    }
-                                  }
-
-                                  if (isCancelled && transaction.transactionType === "BALANCE_PAYMENT") {
-                                    return "Exceeded Paid";
-                                  }
-
-                                  return transaction.pendingAmount >= 0
-                                    ? "Pending Amount"
-                                    : "Excess Amount";
-                                })()}
-
-                                {!(
-                                  entry?.statuses?.some(s => s.status === "CANCELLED") &&
-                                  transaction.transactionType === "REFUND_PAYMENT"
-                                ) && (
-                                    <>:{" "}
-                                      {Math.abs(transaction.pendingAmount).toLocaleString("en-PH", {
-                                        style: "currency",
-                                        currency: "PHP",
-                                        minimumFractionDigits: 2,
-                                      })}
-                                    </>
-                                  )}
-                              </span>
-                              {transaction.amountChanged !== null ? (
-                                <span
-                                  className={cn(
-                                    "capitalize block text-xs",
-                                    index === 0
-                                      ? "font-muted-foreground"
-                                      : "text-muted-foreground"
-                                  )}
-                                >
-                                  Amount{" "}
-                                  {transaction.transactionType ==
-                                    "BALANCE_PAYMENT"
-                                    ? "Paid"
-                                    : "Refunded"}
-                                  :{" "}
-                                  {`${transaction.amountChanged > 0 ? "+" : "-"
-                                    }${Math.abs(
-                                      transaction.amountChanged
-                                    ).toLocaleString("en-PH", {
-                                      style: "currency",
-                                      currency: "PHP",
-                                      minimumFractionDigits: 2,
-                                    })}`}
-                                </span>
-                              ) : null}
-                              {transaction.transactionId && (
-                                <>
-                                  {transaction.transactionType === "BALANCE_PAYMENT" && (
-                                    <PaymentViewDialog
-                                      externalUse
-                                      _id={transaction.transactionId}
-                                      title="Click here for more details 🔍"
-                                      titleClassName="block text-xs text-muted-foreground hover:text-foreground"
-                                    />
-                                  )}
-                                </>
-                              )}
-
-                              <span className="text-xs text-muted-foreground block">
-                                {format(transaction.transactionDate, "PPpp")}
-                              </span>
-                            </div>
+                            {index < allEvents.length - 1 && (
+                              <div className="min-h-11 w-px bg-gray-200"></div>
+                            )}
                           </div>
-                        ))}
+                          <div className="mt-2">
+                            <span
+                              className={cn(
+                                "capitalize block -mb-0.5",
+                                index === 0
+                                  ? "font-mono"
+                                  : "text-muted-foreground",
+                                isPaymentRemarkEvent(event) && "text-muted-foreground font-medium"
+                              )}
+                            >
+                              {isPaymentRemarkEvent(event)
+                                ? 'Payment Remark'
+                                : event.status
+                                  .split("_")
+                                  .join(" ")
+                                  .toLocaleLowerCase()}
+                            </span>
+                            <span className="text-xs text-muted-foreground block">
+                              {format(new Date(event.date), "PPpp")}
+                            </span>
+
+                            {isPaymentRemarkEvent(event) ? (
+                              <>
+                                <span className="text-xs text-muted-foreground block mt-0.5">
+                                  <span className="">Remark:</span>{" "}
+                                  <span className="italic font-medium">{event.remark}</span>
+                                </span>
+                                <div className="text-xs text-muted-foreground space-y-0.5">
+                                  <div>Payment Ref: {event.paymentReferenceNumber}</div>
+                                  <div>Payer: {event.payerName}</div>
+                                  <div>Amount: <span className="font-medium">₱{event.amount?.toLocaleString()}</span></div>
+                                </div>
+                                <div className="-mt-1 underline underline-offset-2">
+                                  <PaymentViewDialog
+                                    externalUse
+                                    _id={event.paymentId}
+                                    title={`View Payment Details`}
+                                    titleClassName="text-xs text-blue-600 hover:text-blue-800"
+                                  />
+                                </div>
+                              </>
+                            ) : isStatusEvent(event) && event.reason && (
+                              <span className="text-xs text-muted-foreground block my-0.5">
+                                Note:{" "}
+                                <span className="italic underline">
+                                  {event.reason}
+                                </span>
+                              </span>
+                            )}
+
+                            {event.by?.name && (
+                              <span className="text-xs text-muted-foreground block mt-0.5">
+                                By: <span className="underline underline-offset-2 ml-0.5"> {event.by.name} </span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <span className="text-sm text-muted-foreground">
-                      No transaction history available.
+                      No status history available.
                     </span>
                   )}
                 </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-          <DialogFooter>
+              </TabsContent>
+              <TabsContent value="transactions">
+                <div className="flex flex-col pb-4">
+                  <div className="sticky top-0 z-10 bg-blue-50 border border-blue-200 rounded-md p-3 mb-3 shadow-sm">
+                    <div className="flex items-start gap-2">
+                      <CircleAlert className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                      <div className="flex flex-row gap-1 flex-wrap">
+                        <p className="text-sm font-medium text-blue-800">Total Entry Fee Required:</p>
+                        <p className="text-sm text-blue-800">
+                          <span className="font-medium">
+                            {(
+                              ((entry?.isEarlyBird
+                                ? entry?.event?.earlyBirdPricePerPlayer
+                                : entry?.event?.pricePerPlayer) || 0) *
+                              (entry?.event?.type === "DOUBLES" ? 2 : 1)
+                            )?.toLocaleString("en-PH", {
+                              style: "currency",
+                              currency: entry?.event?.currency || "PHP",
+                              minimumFractionDigits: 2,
+                            })}
+                          </span>
+                          {entry?.event?.type === "DOUBLES" && (
+                            <span className="text-blue-500 text-xs underline underline-offset-2">
+                              {' '}(
+                              {(entry?.isEarlyBird
+                                ? entry?.event?.earlyBirdPricePerPlayer
+                                : entry?.event?.pricePerPlayer
+                              )?.toLocaleString("en-PH", {
+                                style: "currency",
+                                currency: entry?.event?.currency || "PHP",
+                                minimumFractionDigits: 2,
+                              })} per player)
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    {entryLoading ? (
+                      <Skeleton className="w-full my-1 h-3" />
+                    ) : entry?.transactions && entry?.transactions.length ? (
+                      <div>
+                        {entry.transactions
+                          .slice()
+                          .reverse()
+                          .map((transaction, index) => (
+                            <div key={index} className="flex gap-2">
+                              <div className="flex flex-col justify-start items-center">
+                                {(() => {
+                                  switch (transaction.transactionType) {
+                                    case "INITIAL_FEE":
+                                      return (
+                                        <CircleQuestionMark className="size-4 my-2 text-success" />
+                                      )
+                                    case "BALANCE_PAYMENT":
+                                      return (
+                                        <CheckCircle2 className="size-4 my-2 text-destructive" />
+                                      )
+                                    case "REVERT_TRANSACTION":
+                                      return (
+                                        <CircleAlert className="size-4 my-2 text-muted-foreground" />
+                                      )
+                                    case "REFUND_PAYMENT":
+                                      return (
+                                        <CircleAlert className="size-4 my-2 text-muted-foreground" />
+                                      )
+                                    default:
+                                      return (
+                                        <CircleQuestionMark className="size-4 my-2 text-muted-foreground" />
+                                      )
+                                  }
+                                })()}
+
+                                {index < entry.transactions.length - 1 && (
+                                  <div className="min-h-11 w-px bg-gray-200"></div>
+                                )}
+                              </div>
+                              <div className="mt-1">
+                                <span
+                                  className={cn(
+                                    "capitalize block -mb-0.5",
+                                    index === 0
+                                      ? "font-mono"
+                                      : "text-muted-foreground"
+                                  )}
+                                >
+                                  {transaction.transactionType
+                                    .replaceAll("_", " ")
+                                    .toLocaleLowerCase()}
+                                </span>
+
+                                <span
+                                  className={cn(
+                                    "capitalize block text-xs underline underline-offset-2 mb-0.5",
+                                    index === 0
+                                      ? "font-mono"
+                                      : "text-muted-foreground",
+                                    transaction.pendingAmount == 0
+                                      ? "text-destructive"
+                                      : transaction.pendingAmount > 0
+                                        ? "text-success"
+                                        : "text-info"
+                                  )}
+                                >
+                                  {(() => {
+                                    const isCancelled = entry?.statuses?.some(s => s.status === "CANCELLED");
+                                    const isRefundPayment = transaction.transactionType === "REFUND_PAYMENT";
+
+                                    if (isCancelled && isRefundPayment) {
+                                      const totalPaid = entry?.transactions
+                                        ?.filter(t => t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0)
+                                        .reduce((sum, t) => sum + (t.amountChanged || 0), 0) || 0;
+
+                                      const totalRefunded = entry?.transactions
+                                        ?.filter(t => t.transactionType === "REFUND_PAYMENT")
+                                        .reduce((sum, t) => sum + Math.abs(t.amountChanged), 0) || 0;
+
+                                      const remainingPrincipal = totalPaid - totalRefunded;
+
+                                      if (transaction.amountChanged < 0) {
+                                        return `Remaining Balance: ₱${remainingPrincipal.toLocaleString()}`;
+                                      }
+                                    }
+
+                                    if (isCancelled && transaction.transactionType === "BALANCE_PAYMENT") {
+                                      return "Exceeded Paid";
+                                    }
+
+                                    return transaction.pendingAmount >= 0
+                                      ? "Pending Amount"
+                                      : "Excess Amount";
+                                  })()}
+
+                                  {!(
+                                    entry?.statuses?.some(s => s.status === "CANCELLED") &&
+                                    transaction.transactionType === "REFUND_PAYMENT"
+                                  ) && (
+                                      <>:{" "}
+                                        {Math.abs(transaction.pendingAmount).toLocaleString("en-PH", {
+                                          style: "currency",
+                                          currency: "PHP",
+                                          minimumFractionDigits: 2,
+                                        })}
+                                      </>
+                                    )}
+                                </span>
+                                {transaction.amountChanged !== null ? (
+                                  <span
+                                    className={cn(
+                                      "capitalize block text-xs",
+                                      index === 0
+                                        ? "font-muted-foreground"
+                                        : "text-muted-foreground"
+                                    )}
+                                  >
+                                    Amount{" "}
+                                    {transaction.transactionType ==
+                                      "BALANCE_PAYMENT"
+                                      ? "Paid"
+                                      : "Refunded"}
+                                    :{" "}
+                                    {`${transaction.amountChanged > 0 ? "+" : "-"
+                                      }${Math.abs(
+                                        transaction.amountChanged
+                                      ).toLocaleString("en-PH", {
+                                        style: "currency",
+                                        currency: "PHP",
+                                        minimumFractionDigits: 2,
+                                      })}`}
+                                  </span>
+                                ) : null}
+                                {transaction.transactionId && (
+                                  <>
+                                    {transaction.transactionType === "BALANCE_PAYMENT" && (
+                                      <PaymentViewDialog
+                                        externalUse
+                                        _id={transaction.transactionId}
+                                        title="Click here for more details 🔍"
+                                        titleClassName="block text-xs text-muted-foreground hover:text-foreground"
+                                      />
+                                    )}
+                                  </>
+                                )}
+
+                                <span className="text-xs text-muted-foreground block">
+                                  {format(transaction.transactionDate, "PPpp")}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        No transaction history available.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 border-t mt-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              {currentStatus === "LEVEL_PENDING" && (
+                <>
+                  <ApproveDialog _id={entry?._id} onClose={onClose} />
+                  <RejectDialog _id={entry?._id} onClose={onClose} />
+                </>
+              )}
+            </div>
+            <div className="flex-1"></div>
             <DialogClose asChild>
-              <Button className="w-20" onClick={onClose} variant="outline">
+              <Button className="w-full sm:w-20 cursor-pointer" onClick={onClose} variant="outline">
                 Cancel
               </Button>
             </DialogClose>

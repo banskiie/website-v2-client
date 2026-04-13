@@ -227,14 +227,8 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
                 <DropdownMenuSubTrigger>Level</DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                    <ApproveDialog
-                      _id={entry?._id}
-                      onClose={() => setMenuOpen(false)}
-                    />
-                    <RejectDialog
-                      _id={entry?._id}
-                      onClose={() => setMenuOpen(false)}
-                    />
+                    <ApproveDialog _id={entry?._id} onClose={() => setMenuOpen(false)} variant="dropdown" />
+                    <RejectDialog _id={entry?._id} onClose={() => setMenuOpen(false)} variant="dropdown" />
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
@@ -325,13 +319,486 @@ const Page = () => {
         return prev
       },
     })
- return () => {
-    if (typeof unsubscribeRefund === "function") {
-      unsubscribeRefund()
+    return () => {
+      if (typeof unsubscribeRefund === "function") {
+        unsubscribeRefund()
+      }
     }
-  }
   }, [subscribeToMore])
 
+  // March 9
+  // useEffect(() => {
+  //   const unsubscribe = subscribeToMore({
+  //     document: ENTRY_CHANGED,
+  //     updateQuery: (prev: any, { subscriptionData }: any) => {
+  //       if (!subscriptionData.data) return prev
+  //       const { type, entry, entries } = subscriptionData.data.entryChanged
+
+  //       switch (type) {
+  //         case "CREATE":
+  //           const newEntry = entry
+  //           const newEntryExists = prev.entries.edges.find(
+  //             (edge: any) => edge.node._id === newEntry?._id,
+  //           )
+  //           if (newEntryExists) return prev
+
+  //           if (!search && !sort && filter.length === 0) {
+  //             toast.success(
+  //               `Entry (${newEntry?.entryNumber}) has been created.`,
+  //             )
+  //           }
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               total: prev.entries.total + 1,
+  //               edges: [
+  //                 { cursor: newEntry?._id, node: newEntry },
+  //                 ...prev.entries.edges,
+  //               ],
+  //             },
+  //           }
+
+  //         case "VERIFIED":
+  //           const verifiedEntry = entry
+
+  //           toast.success(
+  //             `Entry (${verifiedEntry?.entryNumber}) has been fully paid and verified! 🎉`,
+  //           )
+
+  //           const verifiedEdges = prev.entries.edges.map((edge: any) =>
+  //             edge.node._id === verifiedEntry._id
+  //               ? { ...edge, node: { ...verifiedEntry } }
+  //               : edge,
+  //           )
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: verifiedEdges,
+  //             },
+  //           }
+
+  //         case "PAYMENT_TRANSFERRED":
+  //           const paymentTransferredEntry = entry
+
+  //           // Only show the payment transferred toast for this specific type
+  //           toast.info(
+  //             `Payment transferred from entry (${paymentTransferredEntry?.entryNumber})`,
+  //             {
+  //               description: `New balance: ₱${paymentTransferredEntry?.pendingAmount?.toLocaleString()}`,
+  //               duration: 5000,
+  //             },
+  //           )
+
+  //           const paymentTransferredEdges = prev.entries.edges.map((edge: any) => {
+  //             if (edge.node._id === paymentTransferredEntry._id) {
+  //               const totalPaid =
+  //                 paymentTransferredEntry.totalPaid ?? edge.node.totalPaid ?? 0
+  //               const totalRefundAmount =
+  //                 paymentTransferredEntry.totalRefundAmount ??
+  //                 edge.node.totalRefundAmount ??
+  //                 0
+  //               const remainingPrincipal = totalPaid - totalRefundAmount
+
+  //               return {
+  //                 ...edge,
+  //                 node: {
+  //                   ...edge.node,
+  //                   ...paymentTransferredEntry,
+  //                   pendingAmount:
+  //                     paymentTransferredEntry.pendingAmount ?? edge.node.pendingAmount,
+  //                   totalPaid: totalPaid,
+  //                   totalRefundAmount: totalRefundAmount,
+  //                   hasRefunds:
+  //                     paymentTransferredEntry.hasRefunds ?? totalRefundAmount > 0,
+  //                   hasOverpayment:
+  //                     paymentTransferredEntry.hasOverpayment ??
+  //                     paymentTransferredEntry.pendingAmount < 0,
+  //                   totalExcess:
+  //                     paymentTransferredEntry.totalExcess ??
+  //                     (paymentTransferredEntry.pendingAmount < 0
+  //                       ? Math.abs(paymentTransferredEntry.pendingAmount)
+  //                       : 0),
+  //                   currentStatus:
+  //                     paymentTransferredEntry.currentStatus ?? edge.node.currentStatus,
+  //                 },
+  //               }
+  //             }
+  //             return edge
+  //           })
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: paymentTransferredEdges,
+  //             },
+  //           }
+
+  //         case "CANCEL":
+  //           const cancelledEntry = entry
+
+  //           if (
+  //             cancelledEntry?.hasOverpayment &&
+  //             cancelledEntry?.totalExcess > 0
+  //           ) {
+  //             toast.warning(
+  //               `Entry (${cancelledEntry?.entryNumber}) has been cancelled. Excess amount: ₱${cancelledEntry?.totalExcess?.toLocaleString()}`,
+  //               {
+  //                 description:
+  //                   "A refund may be required for the excess payment.",
+  //                 duration: 5000,
+  //               },
+  //             )
+  //           } else {
+  //             toast.warning(
+  //               `Entry (${cancelledEntry?.entryNumber}) has been cancelled.`,
+  //               {
+  //                 duration: 5000,
+  //               },
+  //             )
+  //           }
+
+  //           const cancelledEdges = prev.entries.edges.map((edge: any) =>
+  //             edge.node._id === cancelledEntry._id
+  //               ? {
+  //                 ...edge,
+  //                 node: {
+  //                   ...edge.node,
+  //                   ...cancelledEntry,
+  //                   currentStatus: "CANCELLED",
+  //                   hasOverpayment: cancelledEntry.hasOverpayment,
+  //                   totalExcess: cancelledEntry.totalExcess,
+  //                   pendingAmount: cancelledEntry.pendingAmount,
+  //                   totalRefundAmount:
+  //                     cancelledEntry.totalRefundAmount ||
+  //                     edge.node.totalRefundAmount,
+  //                   hasRefunds:
+  //                     cancelledEntry.hasRefunds || edge.node.hasRefunds,
+  //                   totalPaid:
+  //                     cancelledEntry.totalPaid || edge.node.totalPaid,
+  //                 },
+  //               }
+  //               : edge,
+  //           )
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: cancelledEdges,
+  //             },
+  //           }
+
+  //         case "REFUND":
+  //           const refundedEntry = entry
+
+  //           const refundMessage = refundedEntry?.isFullyRefunded
+  //             ? `Entry (${refundedEntry?.entryNumber}) has been fully refunded.`
+  //             : `Refund processed for entry (${refundedEntry?.entryNumber})`
+
+  //           toast.info(refundMessage)
+
+  //           const refundEdges = prev.entries.edges.map((edge: any) => {
+  //             if (edge.node._id === refundedEntry._id) {
+  //               return {
+  //                 ...edge,
+  //                 node: {
+  //                   ...edge.node,
+  //                   ...refundedEntry,
+  //                   hasOverpayment: refundedEntry.hasOverpayment,
+  //                   totalExcess: refundedEntry.totalExcess,
+  //                   pendingAmount: refundedEntry.pendingAmount,
+  //                   totalRefundAmount: refundedEntry.totalRefundAmount,
+  //                   hasRefunds: refundedEntry.hasRefunds,
+  //                   totalPaid: refundedEntry.totalPaid,
+  //                   latestPaymentAmount: refundedEntry.latestPaymentAmount,
+  //                   currentStatus: refundedEntry.currentStatus,
+  //                   remainingPrincipal: refundedEntry.remainingPrincipal,
+  //                   isFullyRefunded: refundedEntry.isFullyRefunded,
+  //                 },
+  //               }
+  //             }
+  //             return edge
+  //           })
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: refundEdges,
+  //             },
+  //           }
+
+  //         case "UPDATE":
+  //           const updatedEntry = entry
+
+  //           // Only show toast for regular updates (not payment related)
+  //           // Check if this is a regular update (changing player info, club, etc.)
+  //           const isRegularUpdate =
+  //             updatedEntry?.totalRefundAmount === undefined &&
+  //             updatedEntry?.pendingAmount === undefined &&
+  //             updatedEntry?.hasOverpayment === undefined
+
+  //           // Check if this is an early bird expiry (coming from a scheduled job)
+  //           // You need to add a flag in your resolver to indicate this is an automatic expiry
+  //           const isAutoEarlyBirdExpiry = updatedEntry?.isAutoEarlyBirdExpiry === true
+
+  //           if (isAutoEarlyBirdExpiry && updatedEntry?.isEarlyBird === false && updatedEntry?.pendingAmount > 0) {
+  //             if (!search && !sort && filter.length === 0) {
+  //               toast.info(
+  //                 `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
+  //                 `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
+  //               )
+  //             }
+  //           } else if (isRegularUpdate && !search && !sort && filter.length === 0) {
+  //             toast.success(
+  //               `Entry (${updatedEntry?.entryNumber}) has been updated.`,
+  //             )
+  //           }
+
+  //           const updatedEdges = prev.entries.edges.map((edge: any) => {
+  //             if (edge.node._id === updatedEntry._id) {
+  //               return {
+  //                 ...edge,
+  //                 node: {
+  //                   ...edge.node,
+  //                   ...updatedEntry,
+  //                   hasOverpayment:
+  //                     updatedEntry.hasOverpayment ?? edge.node.hasOverpayment,
+  //                   totalExcess:
+  //                     updatedEntry.totalExcess ?? edge.node.totalExcess,
+  //                   pendingAmount:
+  //                     updatedEntry.pendingAmount ?? edge.node.pendingAmount,
+  //                   totalRefundAmount:
+  //                     updatedEntry.totalRefundAmount ??
+  //                     edge.node.totalRefundAmount,
+  //                   hasRefunds: updatedEntry.hasRefunds ?? edge.node.hasRefunds,
+  //                   totalPaid: updatedEntry.totalPaid ?? edge.node.totalPaid,
+  //                   latestPaymentAmount:
+  //                     updatedEntry.latestPaymentAmount ??
+  //                     edge.node.latestPaymentAmount,
+  //                   currentStatus:
+  //                     updatedEntry.currentStatus ?? edge.node.currentStatus,
+  //                   isEarlyBird:
+  //                     updatedEntry.isEarlyBird ?? edge.node.isEarlyBird,
+  //                 },
+  //               }
+  //             }
+  //             return edge
+  //           })
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: updatedEdges,
+  //             },
+  //           }
+
+  //         case "ASSIGN":
+  //           const assignEntry = entry
+
+  //           if (!search && !sort && filter.length === 0) {
+  //             toast.info(
+  //               `Entry (${assignEntry?.entryNumber}) has been assigned.`,
+  //             )
+  //           }
+
+  //           const assignEdges = prev.entries.edges.map((edge: any) => {
+  //             if (edge.node._id === assignEntry._id) {
+  //               return {
+  //                 ...edge,
+  //                 node: {
+  //                   ...edge.node,
+  //                   ...assignEntry,
+  //                 },
+  //               }
+  //             }
+  //             return edge
+  //           })
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: assignEdges,
+  //             },
+  //           }
+
+  //         case "APPROVE":
+  //           const approveEntry = entry
+
+  //           if (!search && !sort && filter.length === 0) {
+  //             toast.success(
+  //               `Entry (${approveEntry?.entryNumber}) has been approved.`,
+  //             )
+  //           }
+
+  //           const approveEdges = prev.entries.edges.map((edge: any) => {
+  //             if (edge.node._id === approveEntry._id) {
+  //               return {
+  //                 ...edge,
+  //                 node: {
+  //                   ...edge.node,
+  //                   ...approveEntry,
+  //                 },
+  //               }
+  //             }
+  //             return edge
+  //           })
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: approveEdges,
+  //             },
+  //           }
+
+  //         case "PAID":
+  //           const paidEntry = entry
+
+  //           if (!search && !sort && filter.length === 0) {
+  //             toast.success(
+  //               `Entry (${paidEntry?.entryNumber}) has been paid.`,
+  //             )
+  //           }
+
+  //           const paidEdges = prev.entries.edges.map((edge: any) => {
+  //             if (edge.node._id === paidEntry._id) {
+  //               return {
+  //                 ...edge,
+  //                 node: {
+  //                   ...edge.node,
+  //                   ...paidEntry,
+  //                 },
+  //               }
+  //             }
+  //             return edge
+  //           })
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: paidEdges,
+  //             },
+  //           }
+
+  //         case "PARTIALLY_PAID":
+  //           const partiallyPaidEntry = entry
+
+  //           if (!search && !sort && filter.length === 0) {
+  //             toast.info(
+  //               `Entry (${partiallyPaidEntry?.entryNumber}) has been partially paid.`,
+  //             )
+  //           }
+
+  //           const partiallyPaidEdges = prev.entries.edges.map((edge: any) => {
+  //             if (edge.node._id === partiallyPaidEntry._id) {
+  //               return {
+  //                 ...edge,
+  //                 node: {
+  //                   ...edge.node,
+  //                   ...partiallyPaidEntry,
+  //                 },
+  //               }
+  //             }
+  //             return edge
+  //           })
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: partiallyPaidEdges,
+  //             },
+  //           }
+
+  //         case "REJECT":
+  //           const rejectEntry = entry
+
+  //           if (!search && !sort && filter.length === 0) {
+  //             toast.warning(
+  //               `Entry (${rejectEntry?.entryNumber}) has been rejected.`,
+  //             )
+  //           }
+
+  //           const rejectEdges = prev.entries.edges.map((edge: any) => {
+  //             if (edge.node._id === rejectEntry._id) {
+  //               return {
+  //                 ...edge,
+  //                 node: {
+  //                   ...edge.node,
+  //                   ...rejectEntry,
+  //                 },
+  //               }
+  //             }
+  //             return edge
+  //           })
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: rejectEdges,
+  //             },
+  //           }
+
+  //         case "DELETE":
+  //           const deletedEntry = entry
+
+  //           if (!search && !sort && filter.length === 0) {
+  //             toast.success(
+  //               `Entry (${deletedEntry?.entryNumber}) has been deleted.`,
+  //             )
+  //           }
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               total: prev.entries.total - 1,
+  //               edges: prev.entries.edges.filter(
+  //                 (edge: any) => edge.node._id !== deletedEntry._id,
+  //               ),
+  //             },
+  //           }
+
+  //         case "BATCH_UPDATE":
+  //           const updatedEntries = entries
+
+  //           if (!search && !sort && filter.length === 0) {
+  //             toast.success(
+  //               `Batch update successful for ${updatedEntries.length} entries.`,
+  //             )
+  //           }
+
+  //           const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
+
+  //           return {
+  //             entries: {
+  //               ...prev.entries,
+  //               edges: prev.entries.edges.map((edge: any) =>
+  //                 updatedIds.has(edge.node._id)
+  //                   ? {
+  //                     ...edge,
+  //                     node: {
+  //                       ...edge.node,
+  //                       ...updatedEntries.find(
+  //                         (u: any) => u._id === edge.node._id,
+  //                       ),
+  //                     },
+  //                   }
+  //                   : edge,
+  //               ),
+  //             },
+  //           }
+
+  //         default:
+  //           return prev
+  //       }
+  //     },
+  //   })
+
+  //   return () => {
+  //     if (typeof unsubscribe === "function") {
+  //       unsubscribe()
+  //     }
+  //   }
+  // }, [subscribeToMore, search, sort, filter])
   useEffect(() => {
     const unsubscribe = subscribeToMore({
       document: ENTRY_CHANGED,
@@ -339,9 +806,22 @@ const Page = () => {
         if (!subscriptionData.data) return prev
         const { type, entry, entries } = subscriptionData.data.entryChanged
 
+        // Get current user role (implement based on your auth system)
+        const userRole = localStorage.getItem('userRole'); // Replace with your actual auth method
+
+        // Helper function to check if entry should be shown for LEVELLER
+        const shouldShowForLeveller = (entryNode: any) => {
+          if (userRole !== "LEVELLER") return true;
+          return entryNode?.currentStatus === "LEVEL_PENDING";
+        };
+
         switch (type) {
           case "CREATE":
             const newEntry = entry
+
+            // Skip adding if LEVELLER and entry is not LEVEL_PENDING
+            if (!shouldShowForLeveller(newEntry)) return prev;
+
             const newEntryExists = prev.entries.edges.find(
               (edge: any) => edge.node._id === newEntry?._id,
             )
@@ -363,93 +843,182 @@ const Page = () => {
                 ],
               },
             }
+
           case "VERIFIED":
             const verifiedEntry = entry
+
+            // Skip if LEVELLER and entry is not LEVEL_PENDING
+            if (!shouldShowForLeveller(verifiedEntry)) {
+              // Remove from existing edges if present
+              const filteredEdges = prev.entries.edges.filter(
+                (edge: any) => edge.node._id !== verifiedEntry._id
+              );
+              return {
+                entries: {
+                  ...prev.entries,
+                  total: filteredEdges.length,
+                  edges: filteredEdges,
+                },
+              };
+            }
+
+            // Check if entry exists
+            const existingVerifiedEdge = prev.entries.edges.find(
+              (edge: any) => edge.node._id === verifiedEntry._id
+            );
+
+            let verifiedEdges;
+            if (existingVerifiedEdge) {
+              verifiedEdges = prev.entries.edges.map((edge: any) =>
+                edge.node._id === verifiedEntry._id
+                  ? { ...edge, node: { ...edge.node, ...verifiedEntry } }
+                  : edge
+              );
+            } else {
+              verifiedEdges = [{ cursor: verifiedEntry?._id, node: verifiedEntry }, ...prev.entries.edges];
+            }
 
             toast.success(
               `Entry (${verifiedEntry?.entryNumber}) has been fully paid and verified! 🎉`,
             )
 
-            const verifiedEdges = prev.entries.edges.map((edge: any) =>
-              edge.node._id === verifiedEntry._id
-                ? { ...edge, node: { ...verifiedEntry } }
-                : edge,
-            )
-
             return {
               entries: {
                 ...prev.entries,
+                total: existingVerifiedEdge ? prev.entries.total : prev.entries.total + 1,
                 edges: verifiedEdges,
               },
             }
 
           case "PAYMENT_TRANSFERRED":
-          case "UPDATE": // Also handle UPDATE since transfers might come as UPDATE type
-            const transferredEntry = entry
+            const paymentTransferredEntry = entry
 
-            // Check if this is a transfer by looking at the data
-            const isTransfer =
-              transferredEntry?.totalRefundAmount > 0 ||
-              transferredEntry?.pendingAmount !== undefined
-
-            if (isTransfer) {
-              toast.info(
-                `Payment transferred from entry (${transferredEntry?.entryNumber})`,
-                {
-                  description: `New balance: ₱${transferredEntry?.pendingAmount?.toLocaleString()}`,
-                  duration: 5000,
+            // Skip update if LEVELLER and entry is not LEVEL_PENDING
+            if (!shouldShowForLeveller(paymentTransferredEntry)) {
+              // Remove from existing edges if present
+              const filteredEdges = prev.entries.edges.filter(
+                (edge: any) => edge.node._id !== paymentTransferredEntry._id
+              );
+              return {
+                entries: {
+                  ...prev.entries,
+                  total: filteredEdges.length,
+                  edges: filteredEdges,
                 },
-              )
+              };
             }
 
-            const transferredEdges = prev.entries.edges.map((edge: any) => {
-              if (edge.node._id === transferredEntry._id) {
-                // Calculate remaining principal to ensure isFullyRefunded is correct
-                const totalPaid =
-                  transferredEntry.totalPaid ?? edge.node.totalPaid ?? 0
-                const totalRefundAmount =
-                  transferredEntry.totalRefundAmount ??
-                  edge.node.totalRefundAmount ??
-                  0
-                const remainingPrincipal = totalPaid - totalRefundAmount
+            const existingPaymentEdge = prev.entries.edges.find(
+              (edge: any) => edge.node._id === paymentTransferredEntry._id
+            );
 
-                return {
-                  ...edge,
-                  node: {
-                    ...edge.node,
-                    ...transferredEntry,
-                    // Ensure all financial fields are explicitly set
-                    pendingAmount:
-                      transferredEntry.pendingAmount ?? edge.node.pendingAmount,
-                    totalPaid: totalPaid,
-                    totalRefundAmount: totalRefundAmount,
-                    hasRefunds:
-                      transferredEntry.hasRefunds ?? totalRefundAmount > 0,
-                    hasOverpayment:
-                      transferredEntry.hasOverpayment ??
-                      transferredEntry.pendingAmount < 0,
-                    totalExcess:
-                      transferredEntry.totalExcess ??
-                      (transferredEntry.pendingAmount < 0
-                        ? Math.abs(transferredEntry.pendingAmount)
-                        : 0),
-                    currentStatus:
-                      transferredEntry.currentStatus ?? edge.node.currentStatus,
-                  },
+            let paymentTransferredEdges;
+            if (existingPaymentEdge) {
+              paymentTransferredEdges = prev.entries.edges.map((edge: any) => {
+                if (edge.node._id === paymentTransferredEntry._id) {
+                  const totalPaid =
+                    paymentTransferredEntry.totalPaid ?? edge.node.totalPaid ?? 0
+                  const totalRefundAmount =
+                    paymentTransferredEntry.totalRefundAmount ??
+                    edge.node.totalRefundAmount ??
+                    0
+                  const remainingPrincipal = totalPaid - totalRefundAmount
+
+                  return {
+                    ...edge,
+                    node: {
+                      ...edge.node,
+                      ...paymentTransferredEntry,
+                      pendingAmount:
+                        paymentTransferredEntry.pendingAmount ?? edge.node.pendingAmount,
+                      totalPaid: totalPaid,
+                      totalRefundAmount: totalRefundAmount,
+                      hasRefunds:
+                        paymentTransferredEntry.hasRefunds ?? totalRefundAmount > 0,
+                      hasOverpayment:
+                        paymentTransferredEntry.hasOverpayment ??
+                        paymentTransferredEntry.pendingAmount < 0,
+                      totalExcess:
+                        paymentTransferredEntry.totalExcess ??
+                        (paymentTransferredEntry.pendingAmount < 0
+                          ? Math.abs(paymentTransferredEntry.pendingAmount)
+                          : 0),
+                      currentStatus:
+                        paymentTransferredEntry.currentStatus ?? edge.node.currentStatus,
+                    },
+                  }
                 }
-              }
-              return edge
-            })
+                return edge
+              });
+            } else {
+              paymentTransferredEdges = [{ cursor: paymentTransferredEntry?._id, node: paymentTransferredEntry }, ...prev.entries.edges];
+            }
+
+            toast.info(
+              `Payment transferred from entry (${paymentTransferredEntry?.entryNumber})`,
+              {
+                description: `New balance: ₱${paymentTransferredEntry?.pendingAmount?.toLocaleString()}`,
+                duration: 5000,
+              },
+            )
 
             return {
               entries: {
                 ...prev.entries,
-                edges: transferredEdges,
+                total: existingPaymentEdge ? prev.entries.total : prev.entries.total + 1,
+                edges: paymentTransferredEdges,
               },
             }
 
           case "CANCEL":
             const cancelledEntry = entry
+
+            // Skip if LEVELLER and entry is not LEVEL_PENDING
+            if (!shouldShowForLeveller(cancelledEntry)) {
+              // Remove from existing edges if present
+              const filteredEdges = prev.entries.edges.filter(
+                (edge: any) => edge.node._id !== cancelledEntry._id
+              );
+              return {
+                entries: {
+                  ...prev.entries,
+                  total: filteredEdges.length,
+                  edges: filteredEdges,
+                },
+              };
+            }
+
+            const existingCancelEdge = prev.entries.edges.find(
+              (edge: any) => edge.node._id === cancelledEntry._id
+            );
+
+            let cancelledEdges;
+            if (existingCancelEdge) {
+              cancelledEdges = prev.entries.edges.map((edge: any) =>
+                edge.node._id === cancelledEntry._id
+                  ? {
+                    ...edge,
+                    node: {
+                      ...edge.node,
+                      ...cancelledEntry,
+                      currentStatus: "CANCELLED",
+                      hasOverpayment: cancelledEntry.hasOverpayment,
+                      totalExcess: cancelledEntry.totalExcess,
+                      pendingAmount: cancelledEntry.pendingAmount,
+                      totalRefundAmount:
+                        cancelledEntry.totalRefundAmount ||
+                        edge.node.totalRefundAmount,
+                      hasRefunds:
+                        cancelledEntry.hasRefunds || edge.node.hasRefunds,
+                      totalPaid:
+                        cancelledEntry.totalPaid || edge.node.totalPaid,
+                    },
+                  }
+                  : edge
+              );
+            } else {
+              cancelledEdges = [{ cursor: cancelledEntry?._id, node: cancelledEntry }, ...prev.entries.edges];
+            }
 
             if (
               cancelledEntry?.hasOverpayment &&
@@ -472,226 +1041,401 @@ const Page = () => {
               )
             }
 
-            // console.log('Entry cancelled:', {
-            //   entryNumber: cancelledEntry?.entryNumber,
-            //   hasOverpayment: cancelledEntry?.hasOverpayment,
-            //   totalExcess: cancelledEntry?.totalExcess,
-            //   pendingAmount: cancelledEntry?.pendingAmount,
-            //   totalRefundAmount: cancelledEntry?.totalRefundAmount,
-            //   hasRefunds: cancelledEntry?.hasRefunds,
-            //   totalPaid: cancelledEntry?.totalPaid,
-            //   currentStatus: cancelledEntry?.currentStatus
-            // })
-
-            const cancelledEdges = prev.entries.edges.map((edge: any) =>
-              edge.node._id === cancelledEntry._id
-                ? {
-                  ...edge,
-                  node: {
-                    ...edge.node,
-                    ...cancelledEntry,
-                    currentStatus: "CANCELLED",
-                    hasOverpayment: cancelledEntry.hasOverpayment,
-                    totalExcess: cancelledEntry.totalExcess,
-                    pendingAmount: cancelledEntry.pendingAmount,
-                    totalRefundAmount:
-                      cancelledEntry.totalRefundAmount ||
-                      edge.node.totalRefundAmount,
-                    hasRefunds:
-                      cancelledEntry.hasRefunds || edge.node.hasRefunds,
-                    totalPaid:
-                      cancelledEntry.totalPaid || edge.node.totalPaid,
-                  },
-                }
-                : edge,
-            )
-
             return {
               entries: {
                 ...prev.entries,
+                total: existingCancelEdge ? prev.entries.total : prev.entries.total + 1,
                 edges: cancelledEdges,
               },
             }
 
           case "REFUND":
-            // console.log('🟢 REFUND subscription received:', {
-            //   entryNumber: entry?.entryNumber,
-            //   totalRefundAmount: entry?.totalRefundAmount,
-            //   hasRefunds: entry?.hasRefunds,
-            //   totalPaid: entry?.totalPaid,
-            //   pendingAmount: entry?.pendingAmount
-            // });
-
             const refundedEntry = entry
 
-            const refundMessage = refundedEntry?.hasOverRefund
-              ? `Entry (${refundedEntry?.entryNumber}) has been over-refunded. Excess amount: ₱${refundedEntry?.totalOverRefund?.toLocaleString()}`
+            // Skip if LEVELLER and entry is not LEVEL_PENDING
+            if (!shouldShowForLeveller(refundedEntry)) {
+              const filteredEdges = prev.entries.edges.filter(
+                (edge: any) => edge.node._id !== refundedEntry._id
+              );
+              return {
+                entries: {
+                  ...prev.entries,
+                  total: filteredEdges.length,
+                  edges: filteredEdges,
+                },
+              };
+            }
+
+            const existingRefundEdge = prev.entries.edges.find(
+              (edge: any) => edge.node._id === refundedEntry._id
+            );
+
+            let refundEdges;
+            if (existingRefundEdge) {
+              refundEdges = prev.entries.edges.map((edge: any) => {
+                if (edge.node._id === refundedEntry._id) {
+                  return {
+                    ...edge,
+                    node: {
+                      ...edge.node,
+                      ...refundedEntry,
+                      hasOverpayment: refundedEntry.hasOverpayment,
+                      totalExcess: refundedEntry.totalExcess,
+                      pendingAmount: refundedEntry.pendingAmount,
+                      totalRefundAmount: refundedEntry.totalRefundAmount,
+                      hasRefunds: refundedEntry.hasRefunds,
+                      totalPaid: refundedEntry.totalPaid,
+                      latestPaymentAmount: refundedEntry.latestPaymentAmount,
+                      currentStatus: refundedEntry.currentStatus,
+                      remainingPrincipal: refundedEntry.remainingPrincipal,
+                      isFullyRefunded: refundedEntry.isFullyRefunded,
+                    },
+                  }
+                }
+                return edge
+              });
+            } else {
+              refundEdges = [{ cursor: refundedEntry?._id, node: refundedEntry }, ...prev.entries.edges];
+            }
+
+            const refundMessage = refundedEntry?.isFullyRefunded
+              ? `Entry (${refundedEntry?.entryNumber}) has been fully refunded.`
               : `Refund processed for entry (${refundedEntry?.entryNumber})`
 
             toast.info(refundMessage)
 
-            const refundEdges = prev.entries.edges.map((edge: any) => {
-              if (edge.node._id === refundedEntry._id) {
-                // console.log('🟢 Updating edge for entry:', refundedEntry.entryNumber, 'with data:', refundedEntry);
-                return {
-                  ...edge,
-                  node: {
-                    ...edge.node,
-                    ...refundedEntry,
-                    hasOverpayment: refundedEntry.hasOverpayment,
-                    totalExcess: refundedEntry.totalExcess,
-                    pendingAmount: refundedEntry.pendingAmount,
-                    totalRefundAmount: refundedEntry.totalRefundAmount,
-                    hasRefunds: refundedEntry.hasRefunds,
-                    totalPaid: refundedEntry.totalPaid,
-                    latestPaymentAmount: refundedEntry.latestPaymentAmount,
-                    currentStatus: refundedEntry.currentStatus,
-                  },
-                }
-              }
-              return edge
-            })
-
             return {
               entries: {
                 ...prev.entries,
+                total: existingRefundEdge ? prev.entries.total : prev.entries.total + 1,
                 edges: refundEdges,
               },
             }
 
           case "UPDATE":
-          case "ASSIGN":
-          case "APPROVE":
-          case "PAID":
-          case "PARTIALLY_PAID":
-          case "REJECT":
             const updatedEntry = entry
 
-            if (
-              type === "UPDATE" &&
-              updatedEntry?.isEarlyBird === false &&
-              updatedEntry?.pendingAmount > 0
-            ) {
-              // console.log('🕒 Early bird expired for entry:', {
-              //   entryNumber: updatedEntry.entryNumber,
-              //   newAmount: updatedEntry.pendingAmount
-              // });
+            // Skip update if LEVELLER and entry is not LEVEL_PENDING
+            if (!shouldShowForLeveller(updatedEntry)) {
+              // Remove from existing edges if present
+              const filteredEdges = prev.entries.edges.filter(
+                (edge: any) => edge.node._id !== updatedEntry._id
+              );
+              return {
+                entries: {
+                  ...prev.entries,
+                  total: filteredEdges.length,
+                  edges: filteredEdges,
+                },
+              };
+            }
 
+            const existingUpdateEdge = prev.entries.edges.find(
+              (edge: any) => edge.node._id === updatedEntry._id
+            );
+
+            let updatedEdges;
+            if (existingUpdateEdge) {
+              updatedEdges = prev.entries.edges.map((edge: any) => {
+                if (edge.node._id === updatedEntry._id) {
+                  return {
+                    ...edge,
+                    node: {
+                      ...edge.node,
+                      ...updatedEntry,
+                      hasOverpayment:
+                        updatedEntry.hasOverpayment ?? edge.node.hasOverpayment,
+                      totalExcess:
+                        updatedEntry.totalExcess ?? edge.node.totalExcess,
+                      pendingAmount:
+                        updatedEntry.pendingAmount ?? edge.node.pendingAmount,
+                      totalRefundAmount:
+                        updatedEntry.totalRefundAmount ??
+                        edge.node.totalRefundAmount,
+                      hasRefunds: updatedEntry.hasRefunds ?? edge.node.hasRefunds,
+                      totalPaid: updatedEntry.totalPaid ?? edge.node.totalPaid,
+                      latestPaymentAmount:
+                        updatedEntry.latestPaymentAmount ??
+                        edge.node.latestPaymentAmount,
+                      currentStatus:
+                        updatedEntry.currentStatus ?? edge.node.currentStatus,
+                      isEarlyBird:
+                        updatedEntry.isEarlyBird ?? edge.node.isEarlyBird,
+                    },
+                  }
+                }
+                return edge
+              });
+            } else {
+              updatedEdges = [{ cursor: updatedEntry?._id, node: updatedEntry }, ...prev.entries.edges];
+            }
+
+            // Only show toast for regular updates (not payment related)
+            const isRegularUpdate =
+              updatedEntry?.totalRefundAmount === undefined &&
+              updatedEntry?.pendingAmount === undefined &&
+              updatedEntry?.hasOverpayment === undefined
+
+            const isAutoEarlyBirdExpiry = updatedEntry?.isAutoEarlyBirdExpiry === true
+
+            if (isAutoEarlyBirdExpiry && updatedEntry?.isEarlyBird === false && updatedEntry?.pendingAmount > 0) {
               if (!search && !sort && filter.length === 0) {
                 toast.info(
                   `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
                   `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
                 )
               }
-            }
-            // Handle regular approve
-            else if (
-              type === "APPROVE" &&
-              !search &&
-              !sort &&
-              filter.length === 0
-            ) {
+            } else if (isRegularUpdate && !search && !sort && filter.length === 0) {
               toast.success(
-                `Entry (${updatedEntry?.entryNumber}) has been approved.`,
+                `Entry (${updatedEntry?.entryNumber}) has been updated.`,
               )
             }
-            // Handle paid
-            else if (
-              type === "PAID" &&
-              !search &&
-              !sort &&
-              filter.length === 0
-            ) {
-              toast.success(
-                `Entry (${updatedEntry?.entryNumber}) has been paid.`,
-              )
-            }
-            // Handle reject
-            else if (
-              type === "REJECT" &&
-              !search &&
-              !sort &&
-              filter.length === 0
-            ) {
-              toast.warning(
-                `Entry (${updatedEntry?.entryNumber}) has been rejected.`,
-              )
-            }
-            // Handle assign
-            else if (
-              type === "ASSIGN" &&
-              !search &&
-              !sort &&
-              filter.length === 0
-            ) {
-              toast.info(
-                `Entry (${updatedEntry?.entryNumber}) has been assigned.`,
-              )
-            }
-            // Handle regular updates (including refunds)
-            else if (
-              type === "UPDATE" &&
-              !search &&
-              !sort &&
-              filter.length === 0
-            ) {
-              if (
-                updatedEntry?.hasRefunds ||
-                updatedEntry?.totalRefundAmount > 0
-              ) {
-                const refundMessage = updatedEntry?.hasOverpayment
-                  ? `Entry (${updatedEntry?.entryNumber}) refund processed. Excess amount: ₱${updatedEntry?.totalExcess?.toLocaleString()}`
-                  : `Refund processed for entry (${updatedEntry?.entryNumber})`
-                toast.info(refundMessage)
-              } else {
-                toast.success(
-                  `Entry (${updatedEntry?.entryNumber}) has been updated.`,
-                )
-              }
-            }
-
-            const updatedEdges = prev.entries.edges.map((edge: any) => {
-              if (edge.node._id === updatedEntry._id) {
-                // Merge the updated data with existing data to ensure all fields are preserved
-                return {
-                  ...edge,
-                  node: {
-                    ...edge.node,
-                    ...updatedEntry,
-                    // Ensure these fields are properly updated
-                    hasOverpayment:
-                      updatedEntry.hasOverpayment ?? edge.node.hasOverpayment,
-                    totalExcess:
-                      updatedEntry.totalExcess ?? edge.node.totalExcess,
-                    pendingAmount:
-                      updatedEntry.pendingAmount ?? edge.node.pendingAmount,
-                    totalRefundAmount:
-                      updatedEntry.totalRefundAmount ??
-                      edge.node.totalRefundAmount,
-                    hasRefunds: updatedEntry.hasRefunds ?? edge.node.hasRefunds,
-                    totalPaid: updatedEntry.totalPaid ?? edge.node.totalPaid,
-                    latestPaymentAmount:
-                      updatedEntry.latestPaymentAmount ??
-                      edge.node.latestPaymentAmount,
-                    currentStatus:
-                      updatedEntry.currentStatus ?? edge.node.currentStatus,
-                    isEarlyBird:
-                      updatedEntry.isEarlyBird ?? edge.node.isEarlyBird,
-                  },
-                }
-              }
-              return edge
-            })
 
             return {
               entries: {
                 ...prev.entries,
+                total: existingUpdateEdge ? prev.entries.total : prev.entries.total + 1,
                 edges: updatedEdges,
+              },
+            }
+
+          case "ASSIGN":
+            const assignEntry = entry
+
+            // Check if this entry should be shown for LEVELLER
+            if (!shouldShowForLeveller(assignEntry)) {
+              // Remove from existing edges if present
+              const filteredEdges = prev.entries.edges.filter(
+                (edge: any) => edge.node._id !== assignEntry._id
+              );
+              return {
+                entries: {
+                  ...prev.entries,
+                  total: filteredEdges.length,
+                  edges: filteredEdges,
+                },
+              };
+            }
+
+            // Check if entry already exists in the list
+            const existingAssignEdge = prev.entries.edges.find(
+              (edge: any) => edge.node._id === assignEntry._id
+            );
+
+            let assignEdges;
+            if (existingAssignEdge) {
+              // Update existing entry
+              assignEdges = prev.entries.edges.map((edge: any) =>
+                edge.node._id === assignEntry._id
+                  ? { ...edge, node: { ...edge.node, ...assignEntry } }
+                  : edge
+              );
+            } else {
+              // Add new entry at the beginning
+              assignEdges = [{ cursor: assignEntry?._id, node: assignEntry }, ...prev.entries.edges];
+            }
+
+            if (!search && !sort && filter.length === 0) {
+              toast.info(
+                `Entry (${assignEntry?.entryNumber}) has been assigned.`,
+              )
+            }
+
+            return {
+              entries: {
+                ...prev.entries,
+                total: existingAssignEdge ? prev.entries.total : prev.entries.total + 1,
+                edges: assignEdges,
+              },
+            }
+
+          case "APPROVE":
+            const approveEntry = entry
+
+            if (!shouldShowForLeveller(approveEntry)) {
+              const filteredEdges = prev.entries.edges.filter(
+                (edge: any) => edge.node._id !== approveEntry._id
+              );
+              return {
+                entries: {
+                  ...prev.entries,
+                  total: filteredEdges.length,
+                  edges: filteredEdges,
+                },
+              };
+            }
+
+            const existingApproveEdge = prev.entries.edges.find(
+              (edge: any) => edge.node._id === approveEntry._id
+            );
+
+            let approveEdges;
+            if (existingApproveEdge) {
+              approveEdges = prev.entries.edges.map((edge: any) =>
+                edge.node._id === approveEntry._id
+                  ? { ...edge, node: { ...edge.node, ...approveEntry } }
+                  : edge
+              );
+            } else {
+              approveEdges = [{ cursor: approveEntry?._id, node: approveEntry }, ...prev.entries.edges];
+            }
+
+            if (!search && !sort && filter.length === 0) {
+              toast.success(
+                `Entry (${approveEntry?.entryNumber}) has been approved.`,
+              )
+            }
+
+            return {
+              entries: {
+                ...prev.entries,
+                total: existingApproveEdge ? prev.entries.total : prev.entries.total + 1,
+                edges: approveEdges,
+              },
+            }
+
+          case "PAID":
+            const paidEntry = entry
+
+            if (!shouldShowForLeveller(paidEntry)) {
+              const filteredEdges = prev.entries.edges.filter(
+                (edge: any) => edge.node._id !== paidEntry._id
+              );
+              return {
+                entries: {
+                  ...prev.entries,
+                  total: filteredEdges.length,
+                  edges: filteredEdges,
+                },
+              };
+            }
+
+            const existingPaidEdge = prev.entries.edges.find(
+              (edge: any) => edge.node._id === paidEntry._id
+            );
+
+            let paidEdges;
+            if (existingPaidEdge) {
+              paidEdges = prev.entries.edges.map((edge: any) =>
+                edge.node._id === paidEntry._id
+                  ? { ...edge, node: { ...edge.node, ...paidEntry } }
+                  : edge
+              );
+            } else {
+              paidEdges = [{ cursor: paidEntry?._id, node: paidEntry }, ...prev.entries.edges];
+            }
+
+            if (!search && !sort && filter.length === 0) {
+              toast.success(
+                `Entry (${paidEntry?.entryNumber}) has been paid.`,
+              )
+            }
+
+            return {
+              entries: {
+                ...prev.entries,
+                total: existingPaidEdge ? prev.entries.total : prev.entries.total + 1,
+                edges: paidEdges,
+              },
+            }
+
+          case "PARTIALLY_PAID":
+            const partiallyPaidEntry = entry
+
+            if (!shouldShowForLeveller(partiallyPaidEntry)) {
+              const filteredEdges = prev.entries.edges.filter(
+                (edge: any) => edge.node._id !== partiallyPaidEntry._id
+              );
+              return {
+                entries: {
+                  ...prev.entries,
+                  total: filteredEdges.length,
+                  edges: filteredEdges,
+                },
+              };
+            }
+
+            const existingPartialEdge = prev.entries.edges.find(
+              (edge: any) => edge.node._id === partiallyPaidEntry._id
+            );
+
+            let partialEdges;
+            if (existingPartialEdge) {
+              partialEdges = prev.entries.edges.map((edge: any) =>
+                edge.node._id === partiallyPaidEntry._id
+                  ? { ...edge, node: { ...edge.node, ...partiallyPaidEntry } }
+                  : edge
+              );
+            } else {
+              partialEdges = [{ cursor: partiallyPaidEntry?._id, node: partiallyPaidEntry }, ...prev.entries.edges];
+            }
+
+            if (!search && !sort && filter.length === 0) {
+              toast.info(
+                `Entry (${partiallyPaidEntry?.entryNumber}) has been partially paid.`,
+              )
+            }
+
+            return {
+              entries: {
+                ...prev.entries,
+                total: existingPartialEdge ? prev.entries.total : prev.entries.total + 1,
+                edges: partialEdges,
+              },
+            }
+
+          case "REJECT":
+            const rejectEntry = entry
+
+            if (!shouldShowForLeveller(rejectEntry)) {
+              const filteredEdges = prev.entries.edges.filter(
+                (edge: any) => edge.node._id !== rejectEntry._id
+              );
+              return {
+                entries: {
+                  ...prev.entries,
+                  total: filteredEdges.length,
+                  edges: filteredEdges,
+                },
+              };
+            }
+
+            const existingRejectEdge = prev.entries.edges.find(
+              (edge: any) => edge.node._id === rejectEntry._id
+            );
+
+            let rejectEdges;
+            if (existingRejectEdge) {
+              rejectEdges = prev.entries.edges.map((edge: any) =>
+                edge.node._id === rejectEntry._id
+                  ? { ...edge, node: { ...edge.node, ...rejectEntry } }
+                  : edge
+              );
+            } else {
+              rejectEdges = [{ cursor: rejectEntry?._id, node: rejectEntry }, ...prev.entries.edges];
+            }
+
+            if (!search && !sort && filter.length === 0) {
+              toast.warning(
+                `Entry (${rejectEntry?.entryNumber}) has been rejected.`,
+              )
+            }
+
+            return {
+              entries: {
+                ...prev.entries,
+                total: existingRejectEdge ? prev.entries.total : prev.entries.total + 1,
+                edges: rejectEdges,
               },
             }
 
           case "DELETE":
             const deletedEntry = entry
+
+            // For delete, just remove if exists
+            const afterDeleteEdges = prev.entries.edges.filter(
+              (edge: any) => edge.node._id !== deletedEntry._id,
+            )
 
             if (!search && !sort && filter.length === 0) {
               toast.success(
@@ -702,23 +1446,26 @@ const Page = () => {
             return {
               entries: {
                 ...prev.entries,
-                total: prev.entries.total - 1,
-                edges: prev.entries.edges.filter(
-                  (edge: any) => edge.node._id !== deletedEntry._id,
-                ),
+                total: afterDeleteEdges.length,
+                edges: afterDeleteEdges,
               },
             }
 
           case "BATCH_UPDATE":
             const updatedEntries = entries
 
+            // Filter batch updates for LEVELLER
+            const filteredBatchEntries = userRole === "LEVELLER"
+              ? updatedEntries.filter((e: any) => e.currentStatus === "LEVEL_PENDING")
+              : updatedEntries;
+
             if (!search && !sort && filter.length === 0) {
               toast.success(
-                `Batch update successful for ${updatedEntries.length} entries.`,
+                `Batch update successful for ${filteredBatchEntries.length} entries.`,
               )
             }
 
-            const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
+            const updatedIds = new Set(filteredBatchEntries.map((u: any) => u._id))
 
             return {
               entries: {
@@ -729,7 +1476,7 @@ const Page = () => {
                       ...edge,
                       node: {
                         ...edge.node,
-                        ...updatedEntries.find(
+                        ...filteredBatchEntries.find(
                           (u: any) => u._id === edge.node._id,
                         ),
                       },
@@ -746,13 +1493,12 @@ const Page = () => {
     })
 
     return () => {
-    if (typeof unsubscribe === "function") {
-      unsubscribe()
+      if (typeof unsubscribe === "function") {
+        unsubscribe()
+      }
     }
-  }
   }, [subscribeToMore, search, sort, filter])
 
-  // Memoized Data Processing
   const { total, nodes, pageInfo } = useMemo(() => {
     const nodes = data?.entries.edges.map((edge: any) => edge.node) || []
     const pageInfo = data?.entries.pageInfo
@@ -993,123 +1739,172 @@ const Page = () => {
             onSortChange={onSort}
           />
         ),
-        footer: () => (
-          <ColumnFilter
-            label="Status"
-            filterKey="currentStatus"
-            filterType="SELECT"
-            options={Object.values(EntryStatus).map((status) => ({
-              label: status.toLocaleLowerCase().replaceAll("_", " "),
-              value: status,
-            }))}
-            filterValue={filter}
-            onFilterChange={onFilter}
-          />
-        ),
-        cell: ({ row }) => {
-          const {
-            currentStatus,
-            pendingAmount,
-            totalRefundAmount,
-            hasRefunds,
-            totalPaid,
-          } = row.original as any
+        footer: () => {
+          // You need to get the user role from your auth context
+          // Add this at the top of the Page component:
+          // const { user } = useAuth(); // or however you get the current user
+          // const userRole = user?.role;
 
-          const remainingPrincipal = totalPaid
-            ? totalPaid - (totalRefundAmount || 0)
-            : 0
-          const isFullyRefunded = remainingPrincipal === 0
+          // For now, let's assume you have a way to get the role
+          // Replace this with your actual role retrieval method
+          const userRole = localStorage.getItem('userRole'); // Example, replace with your actual method
+
+          // Don't show filter for LEVELLER role
+          if (userRole === "LEVELLER") {
+            return null;
+          }
 
           return (
-            <div className="flex flex-col justify-center gap-1">
-              <EntryStatusBadge status={currentStatus as EntryStatus} />
-
-              {currentStatus === "CANCELLED" && (
-                <div className="flex flex-col gap-0.5 mt-1">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {/* Show Refunded amount only if NOT fully refunded */}
-                    {hasRefunds &&
-                      totalRefundAmount > 0 &&
-                      !isFullyRefunded && (
-                        <span className="text-[11px] font-medium text-green-600">
-                          Refunded: ₱{totalRefundAmount.toLocaleString()}
-                        </span>
-                      )}
-
-                    {remainingPrincipal > 0 && (
-                      <>
-                        {hasRefunds && !isFullyRefunded && (
-                          <span className="text-[11px] text-gray-400">•</span>
-                        )}
-                        <span className="text-[11px] font-medium text-orange-600">
-                          Remaining: ₱{remainingPrincipal.toLocaleString()}
-                        </span>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <InfoIcon className="size-3 text-muted-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">
-                              Total paid: ₱{totalPaid.toLocaleString()} |
-                              Refunded: ₱{totalRefundAmount.toLocaleString()} |
-                              Remaining: ₱{remainingPrincipal.toLocaleString()}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </>
-                    )}
-
-                    {/* Show nothing when fully refunded - just the CANCELLED badge */}
-                    {isFullyRefunded && !remainingPrincipal && (
-                      <span className="text-[11px] font-medium text-gray-500">
-                        Fully refunded
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* DON'T show any balance information for REJECTED status */}
-              {currentStatus === "REJECTED" && (
-                <div className="flex items-center gap-1 mt-1">
-                  {/* No balance or excess information shown for rejected entries */}
-                </div>
-              )}
-
-              {/* Only show excess and balance for non-cancelled, non-rejected entries */}
-              {currentStatus !== "CANCELLED" &&
-                currentStatus !== "REJECTED" &&
-                pendingAmount < 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="text-[11px] font-medium text-blue-600">
-                      Excess: ₱{Math.abs(pendingAmount).toLocaleString()}
-                    </span>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <InfoIcon className="size-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">
-                          This entry has an overpayment of ₱
-                          {Math.abs(pendingAmount).toLocaleString()}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                )}
-
-              {currentStatus !== "CANCELLED" &&
-                currentStatus !== "REJECTED" &&
-                pendingAmount > 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="text-[11px] font-medium text-orange-600">
-                      Balance Due: ₱{pendingAmount.toLocaleString()}
-                    </span>
-                  </div>
-                )}
-            </div>
-          )
+            <ColumnFilter
+              label="Status"
+              filterKey="currentStatus"
+              filterType="SELECT"
+              options={Object.values(EntryStatus).map((status) => ({
+                label: status.toLocaleLowerCase().replaceAll("_", " "),
+                value: status,
+              }))}
+              filterValue={filter}
+              onFilterChange={onFilter}
+            />
+          );
         },
+      cell: ({ row }) => {
+  const {
+    currentStatus,
+    pendingAmount,
+    totalRefundAmount,
+    hasRefunds,
+    totalPaid,
+  } = row.original as any
+
+  // Calculate remaining principal correctly
+  // totalPaid should be the sum of ALL payments for this entry
+  // totalRefundAmount should be the sum of ALL refunds for this entry
+  const remainingPrincipal = totalPaid ? totalPaid - (totalRefundAmount || 0) : 0
+  
+  // An entry is fully refunded when:
+  // 1. It's cancelled AND
+  // 2. Total refund amount >= total paid (and total paid > 0)
+  const isFullyRefunded = currentStatus === "CANCELLED" &&
+    totalPaid > 0 && 
+    (totalRefundAmount || 0) >= totalPaid
+  
+  const isPartiallyRefunded = currentStatus === "CANCELLED" && hasRefunds && !isFullyRefunded
+
+  // Calculate refund percentage for display
+  const refundPercentage = totalPaid > 0 && totalRefundAmount
+    ? Math.round((totalRefundAmount / totalPaid) * 100)
+    : 0
+
+  return (
+    <div className="flex flex-col justify-center gap-1">
+      <EntryStatusBadge status={currentStatus as EntryStatus} />
+
+      {/* Show refund information for CANCELLED entries */}
+      {currentStatus === "CANCELLED" && (
+        <div className="flex flex-col gap-0.5 mt-1">
+          <div className="flex items-center gap-1 flex-wrap">
+            {/* Show total paid amount */}
+            {totalPaid > 0 && (
+              <span className="text-[11px] font-medium text-gray-600">
+                Paid: ₱{totalPaid.toLocaleString()}
+              </span>
+            )}
+
+            {/* Show Refunded amount if any refunds have been processed */}
+            {hasRefunds && totalRefundAmount > 0 && (
+              <>
+                {totalPaid > 0 && (
+                  <span className="text-[11px] text-gray-400">•</span>
+                )}
+                <span className="text-[11px] font-medium text-green-600">
+                  Refunded: ₱{totalRefundAmount.toLocaleString()}
+                </span>
+              </>
+            )}
+
+            {/* Show remaining amount ONLY if NOT fully refunded and there's remaining principal */}
+            {!isFullyRefunded && remainingPrincipal > 0 && (
+              <>
+                {(hasRefunds || totalPaid > 0) && (
+                  <span className="text-[11px] text-gray-400">•</span>
+                )}
+                <span className="text-[11px] font-medium text-orange-600">
+                  Remaining: ₱{remainingPrincipal.toLocaleString()}
+                </span>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoIcon className="size-3 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">
+                      Total paid: ₱{totalPaid?.toLocaleString() || 0} |
+                      Refunded: ₱{totalRefundAmount?.toLocaleString() || 0} |
+                      Remaining: ₱{remainingPrincipal.toLocaleString()}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
+
+            {/* Show "Fully refunded" message when fully refunded */}
+            {isFullyRefunded && (
+              <span className="text-[11px] font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                Fully Refunded ✓
+              </span>
+            )}
+
+            {/* Show "Refund pending" when cancelled with payments but no refunds yet */}
+            {!hasRefunds && totalPaid > 0 && !isFullyRefunded && (
+              <span className="text-[11px] font-medium text-yellow-600">
+                Refund pending: ₱{totalPaid.toLocaleString()}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* DON'T show any balance information for REJECTED status */}
+      {currentStatus === "REJECTED" && (
+        <div className="flex items-center gap-1 mt-1">
+          {/* No balance or excess information shown for rejected entries */}
+        </div>
+      )}
+
+      {/* Only show excess and balance for non-cancelled, non-rejected entries */}
+      {currentStatus !== "CANCELLED" &&
+        currentStatus !== "REJECTED" &&
+        pendingAmount < 0 && (
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-[11px] font-medium text-blue-600">
+              Excess: ₱{Math.abs(pendingAmount).toLocaleString()}
+            </span>
+            <Tooltip>
+              <TooltipTrigger>
+                <InfoIcon className="size-3 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">
+                  This entry has an overpayment of ₱
+                  {Math.abs(pendingAmount).toLocaleString()}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+
+      {currentStatus !== "CANCELLED" &&
+        currentStatus !== "REJECTED" &&
+        pendingAmount > 0 && (
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-[11px] font-medium text-orange-600">
+              Balance Due: ₱{pendingAmount.toLocaleString()}
+            </span>
+          </div>
+        )}
+    </div>
+  )
+},
         size: 20,
       },
       // {
