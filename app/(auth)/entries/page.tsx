@@ -59,6 +59,7 @@ import RejectDialog from "./dialogs/reject"
 import TransferDialog from "./dialogs/transfer-payment"
 import ExportMenu from "./dialogs/export"
 import CancelDialog from "./dialogs/cancel"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const ENTRIES = gql`
   query Entries(
@@ -227,8 +228,16 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
                 <DropdownMenuSubTrigger>Level</DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                    <ApproveDialog _id={entry?._id} onClose={() => setMenuOpen(false)} variant="dropdown" />
-                    <RejectDialog _id={entry?._id} onClose={() => setMenuOpen(false)} variant="dropdown" />
+                    <ApproveDialog
+                      _id={entry?._id}
+                      onClose={() => setMenuOpen(false)}
+                      variant="dropdown"
+                    />
+                    <RejectDialog
+                      _id={entry?._id}
+                      onClose={() => setMenuOpen(false)}
+                      variant="dropdown"
+                    />
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
@@ -258,6 +267,7 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
 }
 
 const Page = () => {
+  const isMobile = useIsMobile()
   // Pagination
   const [rows, setRows] = useState<number>(10)
   const [page, setPage] = useState<{
@@ -807,20 +817,20 @@ const Page = () => {
         const { type, entry, entries } = subscriptionData.data.entryChanged
 
         // Get current user role (implement based on your auth system)
-        const userRole = localStorage.getItem('userRole'); // Replace with your actual auth method
+        const userRole = localStorage.getItem("userRole") // Replace with your actual auth method
 
         // Helper function to check if entry should be shown for LEVELLER
         const shouldShowForLeveller = (entryNode: any) => {
-          if (userRole !== "LEVELLER") return true;
-          return entryNode?.currentStatus === "LEVEL_PENDING";
-        };
+          if (userRole !== "LEVELLER") return true
+          return entryNode?.currentStatus === "LEVEL_PENDING"
+        }
 
         switch (type) {
           case "CREATE":
             const newEntry = entry
 
             // Skip adding if LEVELLER and entry is not LEVEL_PENDING
-            if (!shouldShowForLeveller(newEntry)) return prev;
+            if (!shouldShowForLeveller(newEntry)) return prev
 
             const newEntryExists = prev.entries.edges.find(
               (edge: any) => edge.node._id === newEntry?._id,
@@ -851,31 +861,34 @@ const Page = () => {
             if (!shouldShowForLeveller(verifiedEntry)) {
               // Remove from existing edges if present
               const filteredEdges = prev.entries.edges.filter(
-                (edge: any) => edge.node._id !== verifiedEntry._id
-              );
+                (edge: any) => edge.node._id !== verifiedEntry._id,
+              )
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              };
+              }
             }
 
             // Check if entry exists
             const existingVerifiedEdge = prev.entries.edges.find(
-              (edge: any) => edge.node._id === verifiedEntry._id
-            );
+              (edge: any) => edge.node._id === verifiedEntry._id,
+            )
 
-            let verifiedEdges;
+            let verifiedEdges
             if (existingVerifiedEdge) {
               verifiedEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === verifiedEntry._id
                   ? { ...edge, node: { ...edge.node, ...verifiedEntry } }
-                  : edge
-              );
+                  : edge,
+              )
             } else {
-              verifiedEdges = [{ cursor: verifiedEntry?._id, node: verifiedEntry }, ...prev.entries.edges];
+              verifiedEdges = [
+                { cursor: verifiedEntry?._id, node: verifiedEntry },
+                ...prev.entries.edges,
+              ]
             }
 
             toast.success(
@@ -885,7 +898,9 @@ const Page = () => {
             return {
               entries: {
                 ...prev.entries,
-                total: existingVerifiedEdge ? prev.entries.total : prev.entries.total + 1,
+                total: existingVerifiedEdge
+                  ? prev.entries.total
+                  : prev.entries.total + 1,
                 edges: verifiedEdges,
               },
             }
@@ -897,27 +912,29 @@ const Page = () => {
             if (!shouldShowForLeveller(paymentTransferredEntry)) {
               // Remove from existing edges if present
               const filteredEdges = prev.entries.edges.filter(
-                (edge: any) => edge.node._id !== paymentTransferredEntry._id
-              );
+                (edge: any) => edge.node._id !== paymentTransferredEntry._id,
+              )
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              };
+              }
             }
 
             const existingPaymentEdge = prev.entries.edges.find(
-              (edge: any) => edge.node._id === paymentTransferredEntry._id
-            );
+              (edge: any) => edge.node._id === paymentTransferredEntry._id,
+            )
 
-            let paymentTransferredEdges;
+            let paymentTransferredEdges
             if (existingPaymentEdge) {
               paymentTransferredEdges = prev.entries.edges.map((edge: any) => {
                 if (edge.node._id === paymentTransferredEntry._id) {
                   const totalPaid =
-                    paymentTransferredEntry.totalPaid ?? edge.node.totalPaid ?? 0
+                    paymentTransferredEntry.totalPaid ??
+                    edge.node.totalPaid ??
+                    0
                   const totalRefundAmount =
                     paymentTransferredEntry.totalRefundAmount ??
                     edge.node.totalRefundAmount ??
@@ -930,11 +947,13 @@ const Page = () => {
                       ...edge.node,
                       ...paymentTransferredEntry,
                       pendingAmount:
-                        paymentTransferredEntry.pendingAmount ?? edge.node.pendingAmount,
+                        paymentTransferredEntry.pendingAmount ??
+                        edge.node.pendingAmount,
                       totalPaid: totalPaid,
                       totalRefundAmount: totalRefundAmount,
                       hasRefunds:
-                        paymentTransferredEntry.hasRefunds ?? totalRefundAmount > 0,
+                        paymentTransferredEntry.hasRefunds ??
+                        totalRefundAmount > 0,
                       hasOverpayment:
                         paymentTransferredEntry.hasOverpayment ??
                         paymentTransferredEntry.pendingAmount < 0,
@@ -944,14 +963,21 @@ const Page = () => {
                           ? Math.abs(paymentTransferredEntry.pendingAmount)
                           : 0),
                       currentStatus:
-                        paymentTransferredEntry.currentStatus ?? edge.node.currentStatus,
+                        paymentTransferredEntry.currentStatus ??
+                        edge.node.currentStatus,
                     },
                   }
                 }
                 return edge
-              });
+              })
             } else {
-              paymentTransferredEdges = [{ cursor: paymentTransferredEntry?._id, node: paymentTransferredEntry }, ...prev.entries.edges];
+              paymentTransferredEdges = [
+                {
+                  cursor: paymentTransferredEntry?._id,
+                  node: paymentTransferredEntry,
+                },
+                ...prev.entries.edges,
+              ]
             }
 
             toast.info(
@@ -965,7 +991,9 @@ const Page = () => {
             return {
               entries: {
                 ...prev.entries,
-                total: existingPaymentEdge ? prev.entries.total : prev.entries.total + 1,
+                total: existingPaymentEdge
+                  ? prev.entries.total
+                  : prev.entries.total + 1,
                 edges: paymentTransferredEdges,
               },
             }
@@ -977,47 +1005,50 @@ const Page = () => {
             if (!shouldShowForLeveller(cancelledEntry)) {
               // Remove from existing edges if present
               const filteredEdges = prev.entries.edges.filter(
-                (edge: any) => edge.node._id !== cancelledEntry._id
-              );
+                (edge: any) => edge.node._id !== cancelledEntry._id,
+              )
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              };
+              }
             }
 
             const existingCancelEdge = prev.entries.edges.find(
-              (edge: any) => edge.node._id === cancelledEntry._id
-            );
+              (edge: any) => edge.node._id === cancelledEntry._id,
+            )
 
-            let cancelledEdges;
+            let cancelledEdges
             if (existingCancelEdge) {
               cancelledEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === cancelledEntry._id
                   ? {
-                    ...edge,
-                    node: {
-                      ...edge.node,
-                      ...cancelledEntry,
-                      currentStatus: "CANCELLED",
-                      hasOverpayment: cancelledEntry.hasOverpayment,
-                      totalExcess: cancelledEntry.totalExcess,
-                      pendingAmount: cancelledEntry.pendingAmount,
-                      totalRefundAmount:
-                        cancelledEntry.totalRefundAmount ||
-                        edge.node.totalRefundAmount,
-                      hasRefunds:
-                        cancelledEntry.hasRefunds || edge.node.hasRefunds,
-                      totalPaid:
-                        cancelledEntry.totalPaid || edge.node.totalPaid,
-                    },
-                  }
-                  : edge
-              );
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...cancelledEntry,
+                        currentStatus: "CANCELLED",
+                        hasOverpayment: cancelledEntry.hasOverpayment,
+                        totalExcess: cancelledEntry.totalExcess,
+                        pendingAmount: cancelledEntry.pendingAmount,
+                        totalRefundAmount:
+                          cancelledEntry.totalRefundAmount ||
+                          edge.node.totalRefundAmount,
+                        hasRefunds:
+                          cancelledEntry.hasRefunds || edge.node.hasRefunds,
+                        totalPaid:
+                          cancelledEntry.totalPaid || edge.node.totalPaid,
+                      },
+                    }
+                  : edge,
+              )
             } else {
-              cancelledEdges = [{ cursor: cancelledEntry?._id, node: cancelledEntry }, ...prev.entries.edges];
+              cancelledEdges = [
+                { cursor: cancelledEntry?._id, node: cancelledEntry },
+                ...prev.entries.edges,
+              ]
             }
 
             if (
@@ -1044,7 +1075,9 @@ const Page = () => {
             return {
               entries: {
                 ...prev.entries,
-                total: existingCancelEdge ? prev.entries.total : prev.entries.total + 1,
+                total: existingCancelEdge
+                  ? prev.entries.total
+                  : prev.entries.total + 1,
                 edges: cancelledEdges,
               },
             }
@@ -1055,22 +1088,22 @@ const Page = () => {
             // Skip if LEVELLER and entry is not LEVEL_PENDING
             if (!shouldShowForLeveller(refundedEntry)) {
               const filteredEdges = prev.entries.edges.filter(
-                (edge: any) => edge.node._id !== refundedEntry._id
-              );
+                (edge: any) => edge.node._id !== refundedEntry._id,
+              )
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              };
+              }
             }
 
             const existingRefundEdge = prev.entries.edges.find(
-              (edge: any) => edge.node._id === refundedEntry._id
-            );
+              (edge: any) => edge.node._id === refundedEntry._id,
+            )
 
-            let refundEdges;
+            let refundEdges
             if (existingRefundEdge) {
               refundEdges = prev.entries.edges.map((edge: any) => {
                 if (edge.node._id === refundedEntry._id) {
@@ -1093,9 +1126,12 @@ const Page = () => {
                   }
                 }
                 return edge
-              });
+              })
             } else {
-              refundEdges = [{ cursor: refundedEntry?._id, node: refundedEntry }, ...prev.entries.edges];
+              refundEdges = [
+                { cursor: refundedEntry?._id, node: refundedEntry },
+                ...prev.entries.edges,
+              ]
             }
 
             const refundMessage = refundedEntry?.isFullyRefunded
@@ -1107,7 +1143,9 @@ const Page = () => {
             return {
               entries: {
                 ...prev.entries,
-                total: existingRefundEdge ? prev.entries.total : prev.entries.total + 1,
+                total: existingRefundEdge
+                  ? prev.entries.total
+                  : prev.entries.total + 1,
                 edges: refundEdges,
               },
             }
@@ -1119,22 +1157,22 @@ const Page = () => {
             if (!shouldShowForLeveller(updatedEntry)) {
               // Remove from existing edges if present
               const filteredEdges = prev.entries.edges.filter(
-                (edge: any) => edge.node._id !== updatedEntry._id
-              );
+                (edge: any) => edge.node._id !== updatedEntry._id,
+              )
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              };
+              }
             }
 
             const existingUpdateEdge = prev.entries.edges.find(
-              (edge: any) => edge.node._id === updatedEntry._id
-            );
+              (edge: any) => edge.node._id === updatedEntry._id,
+            )
 
-            let updatedEdges;
+            let updatedEdges
             if (existingUpdateEdge) {
               updatedEdges = prev.entries.edges.map((edge: any) => {
                 if (edge.node._id === updatedEntry._id) {
@@ -1152,7 +1190,8 @@ const Page = () => {
                       totalRefundAmount:
                         updatedEntry.totalRefundAmount ??
                         edge.node.totalRefundAmount,
-                      hasRefunds: updatedEntry.hasRefunds ?? edge.node.hasRefunds,
+                      hasRefunds:
+                        updatedEntry.hasRefunds ?? edge.node.hasRefunds,
                       totalPaid: updatedEntry.totalPaid ?? edge.node.totalPaid,
                       latestPaymentAmount:
                         updatedEntry.latestPaymentAmount ??
@@ -1165,9 +1204,12 @@ const Page = () => {
                   }
                 }
                 return edge
-              });
+              })
             } else {
-              updatedEdges = [{ cursor: updatedEntry?._id, node: updatedEntry }, ...prev.entries.edges];
+              updatedEdges = [
+                { cursor: updatedEntry?._id, node: updatedEntry },
+                ...prev.entries.edges,
+              ]
             }
 
             // Only show toast for regular updates (not payment related)
@@ -1176,16 +1218,26 @@ const Page = () => {
               updatedEntry?.pendingAmount === undefined &&
               updatedEntry?.hasOverpayment === undefined
 
-            const isAutoEarlyBirdExpiry = updatedEntry?.isAutoEarlyBirdExpiry === true
+            const isAutoEarlyBirdExpiry =
+              updatedEntry?.isAutoEarlyBirdExpiry === true
 
-            if (isAutoEarlyBirdExpiry && updatedEntry?.isEarlyBird === false && updatedEntry?.pendingAmount > 0) {
+            if (
+              isAutoEarlyBirdExpiry &&
+              updatedEntry?.isEarlyBird === false &&
+              updatedEntry?.pendingAmount > 0
+            ) {
               if (!search && !sort && filter.length === 0) {
                 toast.info(
                   `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
-                  `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
+                    `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
                 )
               }
-            } else if (isRegularUpdate && !search && !sort && filter.length === 0) {
+            } else if (
+              isRegularUpdate &&
+              !search &&
+              !sort &&
+              filter.length === 0
+            ) {
               toast.success(
                 `Entry (${updatedEntry?.entryNumber}) has been updated.`,
               )
@@ -1194,7 +1246,9 @@ const Page = () => {
             return {
               entries: {
                 ...prev.entries,
-                total: existingUpdateEdge ? prev.entries.total : prev.entries.total + 1,
+                total: existingUpdateEdge
+                  ? prev.entries.total
+                  : prev.entries.total + 1,
                 edges: updatedEdges,
               },
             }
@@ -1206,33 +1260,36 @@ const Page = () => {
             if (!shouldShowForLeveller(assignEntry)) {
               // Remove from existing edges if present
               const filteredEdges = prev.entries.edges.filter(
-                (edge: any) => edge.node._id !== assignEntry._id
-              );
+                (edge: any) => edge.node._id !== assignEntry._id,
+              )
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              };
+              }
             }
 
             // Check if entry already exists in the list
             const existingAssignEdge = prev.entries.edges.find(
-              (edge: any) => edge.node._id === assignEntry._id
-            );
+              (edge: any) => edge.node._id === assignEntry._id,
+            )
 
-            let assignEdges;
+            let assignEdges
             if (existingAssignEdge) {
               // Update existing entry
               assignEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === assignEntry._id
                   ? { ...edge, node: { ...edge.node, ...assignEntry } }
-                  : edge
-              );
+                  : edge,
+              )
             } else {
               // Add new entry at the beginning
-              assignEdges = [{ cursor: assignEntry?._id, node: assignEntry }, ...prev.entries.edges];
+              assignEdges = [
+                { cursor: assignEntry?._id, node: assignEntry },
+                ...prev.entries.edges,
+              ]
             }
 
             if (!search && !sort && filter.length === 0) {
@@ -1244,7 +1301,9 @@ const Page = () => {
             return {
               entries: {
                 ...prev.entries,
-                total: existingAssignEdge ? prev.entries.total : prev.entries.total + 1,
+                total: existingAssignEdge
+                  ? prev.entries.total
+                  : prev.entries.total + 1,
                 edges: assignEdges,
               },
             }
@@ -1254,30 +1313,33 @@ const Page = () => {
 
             if (!shouldShowForLeveller(approveEntry)) {
               const filteredEdges = prev.entries.edges.filter(
-                (edge: any) => edge.node._id !== approveEntry._id
-              );
+                (edge: any) => edge.node._id !== approveEntry._id,
+              )
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              };
+              }
             }
 
             const existingApproveEdge = prev.entries.edges.find(
-              (edge: any) => edge.node._id === approveEntry._id
-            );
+              (edge: any) => edge.node._id === approveEntry._id,
+            )
 
-            let approveEdges;
+            let approveEdges
             if (existingApproveEdge) {
               approveEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === approveEntry._id
                   ? { ...edge, node: { ...edge.node, ...approveEntry } }
-                  : edge
-              );
+                  : edge,
+              )
             } else {
-              approveEdges = [{ cursor: approveEntry?._id, node: approveEntry }, ...prev.entries.edges];
+              approveEdges = [
+                { cursor: approveEntry?._id, node: approveEntry },
+                ...prev.entries.edges,
+              ]
             }
 
             if (!search && !sort && filter.length === 0) {
@@ -1289,7 +1351,9 @@ const Page = () => {
             return {
               entries: {
                 ...prev.entries,
-                total: existingApproveEdge ? prev.entries.total : prev.entries.total + 1,
+                total: existingApproveEdge
+                  ? prev.entries.total
+                  : prev.entries.total + 1,
                 edges: approveEdges,
               },
             }
@@ -1299,42 +1363,45 @@ const Page = () => {
 
             if (!shouldShowForLeveller(paidEntry)) {
               const filteredEdges = prev.entries.edges.filter(
-                (edge: any) => edge.node._id !== paidEntry._id
-              );
+                (edge: any) => edge.node._id !== paidEntry._id,
+              )
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              };
+              }
             }
 
             const existingPaidEdge = prev.entries.edges.find(
-              (edge: any) => edge.node._id === paidEntry._id
-            );
+              (edge: any) => edge.node._id === paidEntry._id,
+            )
 
-            let paidEdges;
+            let paidEdges
             if (existingPaidEdge) {
               paidEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === paidEntry._id
                   ? { ...edge, node: { ...edge.node, ...paidEntry } }
-                  : edge
-              );
+                  : edge,
+              )
             } else {
-              paidEdges = [{ cursor: paidEntry?._id, node: paidEntry }, ...prev.entries.edges];
+              paidEdges = [
+                { cursor: paidEntry?._id, node: paidEntry },
+                ...prev.entries.edges,
+              ]
             }
 
             if (!search && !sort && filter.length === 0) {
-              toast.success(
-                `Entry (${paidEntry?.entryNumber}) has been paid.`,
-              )
+              toast.success(`Entry (${paidEntry?.entryNumber}) has been paid.`)
             }
 
             return {
               entries: {
                 ...prev.entries,
-                total: existingPaidEdge ? prev.entries.total : prev.entries.total + 1,
+                total: existingPaidEdge
+                  ? prev.entries.total
+                  : prev.entries.total + 1,
                 edges: paidEdges,
               },
             }
@@ -1344,30 +1411,33 @@ const Page = () => {
 
             if (!shouldShowForLeveller(partiallyPaidEntry)) {
               const filteredEdges = prev.entries.edges.filter(
-                (edge: any) => edge.node._id !== partiallyPaidEntry._id
-              );
+                (edge: any) => edge.node._id !== partiallyPaidEntry._id,
+              )
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              };
+              }
             }
 
             const existingPartialEdge = prev.entries.edges.find(
-              (edge: any) => edge.node._id === partiallyPaidEntry._id
-            );
+              (edge: any) => edge.node._id === partiallyPaidEntry._id,
+            )
 
-            let partialEdges;
+            let partialEdges
             if (existingPartialEdge) {
               partialEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === partiallyPaidEntry._id
                   ? { ...edge, node: { ...edge.node, ...partiallyPaidEntry } }
-                  : edge
-              );
+                  : edge,
+              )
             } else {
-              partialEdges = [{ cursor: partiallyPaidEntry?._id, node: partiallyPaidEntry }, ...prev.entries.edges];
+              partialEdges = [
+                { cursor: partiallyPaidEntry?._id, node: partiallyPaidEntry },
+                ...prev.entries.edges,
+              ]
             }
 
             if (!search && !sort && filter.length === 0) {
@@ -1379,7 +1449,9 @@ const Page = () => {
             return {
               entries: {
                 ...prev.entries,
-                total: existingPartialEdge ? prev.entries.total : prev.entries.total + 1,
+                total: existingPartialEdge
+                  ? prev.entries.total
+                  : prev.entries.total + 1,
                 edges: partialEdges,
               },
             }
@@ -1389,30 +1461,33 @@ const Page = () => {
 
             if (!shouldShowForLeveller(rejectEntry)) {
               const filteredEdges = prev.entries.edges.filter(
-                (edge: any) => edge.node._id !== rejectEntry._id
-              );
+                (edge: any) => edge.node._id !== rejectEntry._id,
+              )
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              };
+              }
             }
 
             const existingRejectEdge = prev.entries.edges.find(
-              (edge: any) => edge.node._id === rejectEntry._id
-            );
+              (edge: any) => edge.node._id === rejectEntry._id,
+            )
 
-            let rejectEdges;
+            let rejectEdges
             if (existingRejectEdge) {
               rejectEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === rejectEntry._id
                   ? { ...edge, node: { ...edge.node, ...rejectEntry } }
-                  : edge
-              );
+                  : edge,
+              )
             } else {
-              rejectEdges = [{ cursor: rejectEntry?._id, node: rejectEntry }, ...prev.entries.edges];
+              rejectEdges = [
+                { cursor: rejectEntry?._id, node: rejectEntry },
+                ...prev.entries.edges,
+              ]
             }
 
             if (!search && !sort && filter.length === 0) {
@@ -1424,7 +1499,9 @@ const Page = () => {
             return {
               entries: {
                 ...prev.entries,
-                total: existingRejectEdge ? prev.entries.total : prev.entries.total + 1,
+                total: existingRejectEdge
+                  ? prev.entries.total
+                  : prev.entries.total + 1,
                 edges: rejectEdges,
               },
             }
@@ -1455,9 +1532,12 @@ const Page = () => {
             const updatedEntries = entries
 
             // Filter batch updates for LEVELLER
-            const filteredBatchEntries = userRole === "LEVELLER"
-              ? updatedEntries.filter((e: any) => e.currentStatus === "LEVEL_PENDING")
-              : updatedEntries;
+            const filteredBatchEntries =
+              userRole === "LEVELLER"
+                ? updatedEntries.filter(
+                    (e: any) => e.currentStatus === "LEVEL_PENDING",
+                  )
+                : updatedEntries
 
             if (!search && !sort && filter.length === 0) {
               toast.success(
@@ -1465,7 +1545,9 @@ const Page = () => {
               )
             }
 
-            const updatedIds = new Set(filteredBatchEntries.map((u: any) => u._id))
+            const updatedIds = new Set(
+              filteredBatchEntries.map((u: any) => u._id),
+            )
 
             return {
               entries: {
@@ -1473,14 +1555,14 @@ const Page = () => {
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...filteredBatchEntries.find(
-                          (u: any) => u._id === edge.node._id,
-                        ),
-                      },
-                    }
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...filteredBatchEntries.find(
+                            (u: any) => u._id === edge.node._id,
+                          ),
+                        },
+                      }
                     : edge,
                 ),
               },
@@ -1747,11 +1829,11 @@ const Page = () => {
 
           // For now, let's assume you have a way to get the role
           // Replace this with your actual role retrieval method
-          const userRole = localStorage.getItem('userRole'); // Example, replace with your actual method
+          const userRole = localStorage.getItem("userRole") // Example, replace with your actual method
 
           // Don't show filter for LEVELLER role
           if (userRole === "LEVELLER") {
-            return null;
+            return null
           }
 
           return (
@@ -1766,145 +1848,151 @@ const Page = () => {
               filterValue={filter}
               onFilterChange={onFilter}
             />
-          );
+          )
         },
-      cell: ({ row }) => {
-  const {
-    currentStatus,
-    pendingAmount,
-    totalRefundAmount,
-    hasRefunds,
-    totalPaid,
-  } = row.original as any
+        cell: ({ row }) => {
+          const {
+            currentStatus,
+            pendingAmount,
+            totalRefundAmount,
+            hasRefunds,
+            totalPaid,
+          } = row.original as any
 
-  // Calculate remaining principal correctly
-  // totalPaid should be the sum of ALL payments for this entry
-  // totalRefundAmount should be the sum of ALL refunds for this entry
-  const remainingPrincipal = totalPaid ? totalPaid - (totalRefundAmount || 0) : 0
-  
-  // An entry is fully refunded when:
-  // 1. It's cancelled AND
-  // 2. Total refund amount >= total paid (and total paid > 0)
-  const isFullyRefunded = currentStatus === "CANCELLED" &&
-    totalPaid > 0 && 
-    (totalRefundAmount || 0) >= totalPaid
-  
-  const isPartiallyRefunded = currentStatus === "CANCELLED" && hasRefunds && !isFullyRefunded
+          // Calculate remaining principal correctly
+          // totalPaid should be the sum of ALL payments for this entry
+          // totalRefundAmount should be the sum of ALL refunds for this entry
+          const remainingPrincipal = totalPaid
+            ? totalPaid - (totalRefundAmount || 0)
+            : 0
 
-  // Calculate refund percentage for display
-  const refundPercentage = totalPaid > 0 && totalRefundAmount
-    ? Math.round((totalRefundAmount / totalPaid) * 100)
-    : 0
+          // An entry is fully refunded when:
+          // 1. It's cancelled AND
+          // 2. Total refund amount >= total paid (and total paid > 0)
+          const isFullyRefunded =
+            currentStatus === "CANCELLED" &&
+            totalPaid > 0 &&
+            (totalRefundAmount || 0) >= totalPaid
 
-  return (
-    <div className="flex flex-col justify-center gap-1">
-      <EntryStatusBadge status={currentStatus as EntryStatus} />
+          const isPartiallyRefunded =
+            currentStatus === "CANCELLED" && hasRefunds && !isFullyRefunded
 
-      {/* Show refund information for CANCELLED entries */}
-      {currentStatus === "CANCELLED" && (
-        <div className="flex flex-col gap-0.5 mt-1">
-          <div className="flex items-center gap-1 flex-wrap">
-            {/* Show total paid amount */}
-            {totalPaid > 0 && (
-              <span className="text-[11px] font-medium text-gray-600">
-                Paid: ₱{totalPaid.toLocaleString()}
-              </span>
-            )}
+          // Calculate refund percentage for display
+          const refundPercentage =
+            totalPaid > 0 && totalRefundAmount
+              ? Math.round((totalRefundAmount / totalPaid) * 100)
+              : 0
 
-            {/* Show Refunded amount if any refunds have been processed */}
-            {hasRefunds && totalRefundAmount > 0 && (
-              <>
-                {totalPaid > 0 && (
-                  <span className="text-[11px] text-gray-400">•</span>
+          return (
+            <div className="flex flex-col justify-center gap-1">
+              <EntryStatusBadge status={currentStatus as EntryStatus} />
+
+              {/* Show refund information for CANCELLED entries */}
+              {currentStatus === "CANCELLED" && (
+                <div className="flex flex-col gap-0.5 mt-1">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {/* Show total paid amount */}
+                    {totalPaid > 0 && (
+                      <span className="text-[11px] font-medium text-gray-600">
+                        Paid: ₱{totalPaid.toLocaleString()}
+                      </span>
+                    )}
+
+                    {/* Show Refunded amount if any refunds have been processed */}
+                    {hasRefunds && totalRefundAmount > 0 && (
+                      <>
+                        {totalPaid > 0 && (
+                          <span className="text-[11px] text-gray-400">•</span>
+                        )}
+                        <span className="text-[11px] font-medium text-green-600">
+                          Refunded: ₱{totalRefundAmount.toLocaleString()}
+                        </span>
+                      </>
+                    )}
+
+                    {/* Show remaining amount ONLY if NOT fully refunded and there's remaining principal */}
+                    {!isFullyRefunded && remainingPrincipal > 0 && (
+                      <>
+                        {(hasRefunds || totalPaid > 0) && (
+                          <span className="text-[11px] text-gray-400">•</span>
+                        )}
+                        <span className="text-[11px] font-medium text-orange-600">
+                          Remaining: ₱{remainingPrincipal.toLocaleString()}
+                        </span>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <InfoIcon className="size-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">
+                              Total paid: ₱{totalPaid?.toLocaleString() || 0} |
+                              Refunded: ₱
+                              {totalRefundAmount?.toLocaleString() || 0} |
+                              Remaining: ₱{remainingPrincipal.toLocaleString()}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </>
+                    )}
+
+                    {/* Show "Fully refunded" message when fully refunded */}
+                    {isFullyRefunded && (
+                      <span className="text-[11px] font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                        Fully Refunded ✓
+                      </span>
+                    )}
+
+                    {/* Show "Refund pending" when cancelled with payments but no refunds yet */}
+                    {!hasRefunds && totalPaid > 0 && !isFullyRefunded && (
+                      <span className="text-[11px] font-medium text-yellow-600">
+                        Refund pending: ₱{totalPaid.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* DON'T show any balance information for REJECTED status */}
+              {currentStatus === "REJECTED" && (
+                <div className="flex items-center gap-1 mt-1">
+                  {/* No balance or excess information shown for rejected entries */}
+                </div>
+              )}
+
+              {/* Only show excess and balance for non-cancelled, non-rejected entries */}
+              {currentStatus !== "CANCELLED" &&
+                currentStatus !== "REJECTED" &&
+                pendingAmount < 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-[11px] font-medium text-blue-600">
+                      Excess: ₱{Math.abs(pendingAmount).toLocaleString()}
+                    </span>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <InfoIcon className="size-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">
+                          This entry has an overpayment of ₱
+                          {Math.abs(pendingAmount).toLocaleString()}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 )}
-                <span className="text-[11px] font-medium text-green-600">
-                  Refunded: ₱{totalRefundAmount.toLocaleString()}
-                </span>
-              </>
-            )}
 
-            {/* Show remaining amount ONLY if NOT fully refunded and there's remaining principal */}
-            {!isFullyRefunded && remainingPrincipal > 0 && (
-              <>
-                {(hasRefunds || totalPaid > 0) && (
-                  <span className="text-[11px] text-gray-400">•</span>
+              {currentStatus !== "CANCELLED" &&
+                currentStatus !== "REJECTED" &&
+                pendingAmount > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-[11px] font-medium text-orange-600">
+                      Balance Due: ₱{pendingAmount.toLocaleString()}
+                    </span>
+                  </div>
                 )}
-                <span className="text-[11px] font-medium text-orange-600">
-                  Remaining: ₱{remainingPrincipal.toLocaleString()}
-                </span>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <InfoIcon className="size-3 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">
-                      Total paid: ₱{totalPaid?.toLocaleString() || 0} |
-                      Refunded: ₱{totalRefundAmount?.toLocaleString() || 0} |
-                      Remaining: ₱{remainingPrincipal.toLocaleString()}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </>
-            )}
-
-            {/* Show "Fully refunded" message when fully refunded */}
-            {isFullyRefunded && (
-              <span className="text-[11px] font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
-                Fully Refunded ✓
-              </span>
-            )}
-
-            {/* Show "Refund pending" when cancelled with payments but no refunds yet */}
-            {!hasRefunds && totalPaid > 0 && !isFullyRefunded && (
-              <span className="text-[11px] font-medium text-yellow-600">
-                Refund pending: ₱{totalPaid.toLocaleString()}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* DON'T show any balance information for REJECTED status */}
-      {currentStatus === "REJECTED" && (
-        <div className="flex items-center gap-1 mt-1">
-          {/* No balance or excess information shown for rejected entries */}
-        </div>
-      )}
-
-      {/* Only show excess and balance for non-cancelled, non-rejected entries */}
-      {currentStatus !== "CANCELLED" &&
-        currentStatus !== "REJECTED" &&
-        pendingAmount < 0 && (
-          <div className="flex items-center gap-1 mt-1">
-            <span className="text-[11px] font-medium text-blue-600">
-              Excess: ₱{Math.abs(pendingAmount).toLocaleString()}
-            </span>
-            <Tooltip>
-              <TooltipTrigger>
-                <InfoIcon className="size-3 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">
-                  This entry has an overpayment of ₱
-                  {Math.abs(pendingAmount).toLocaleString()}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        )}
-
-      {currentStatus !== "CANCELLED" &&
-        currentStatus !== "REJECTED" &&
-        pendingAmount > 0 && (
-          <div className="flex items-center gap-1 mt-1">
-            <span className="text-[11px] font-medium text-orange-600">
-              Balance Due: ₱{pendingAmount.toLocaleString()}
-            </span>
-          </div>
-        )}
-    </div>
-  )
-},
+            </div>
+          )
+        },
         size: 20,
       },
       // {
@@ -2037,7 +2125,12 @@ const Page = () => {
         <Flag className="size-5" />
         <Label className="text-2xl">Entries</Label>
       </div>
-      <div className="w-full flex justify-between">
+      <div
+        className={cn(
+          "w-full flex justify-between",
+          isMobile && "flex-col gap-2",
+        )}
+      >
         <InputGroup className="w-[350px]">
           <InputGroupInput
             value={searchTerm}
@@ -2103,7 +2196,12 @@ const Page = () => {
           <FormDialog />
         </div>
       </div>
-      <div className="w-full flex justify-between">
+      <div
+        className={cn(
+          "w-full flex justify-between",
+          isMobile && "flex-col-reverse gap-2",
+        )}
+      >
         <div className="px-1.5 flex items-center justify-center">
           {loading ? (
             <span className="text-sm text-muted-foreground">Loading...</span>

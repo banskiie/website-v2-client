@@ -7,16 +7,19 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import { DownloadCloud, Group } from "lucide-react"
-import { useState } from "react"
+import { use, useState } from "react"
 import { Button } from "@/components/ui/button"
 import ExportStatusDialog from "./export/export-status"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { cn } from "@/lib/utils"
 
 const ExportMenu = () => {
+  const isMobile = useIsMobile()
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
   return (
     <DropdownMenu modal open={exportMenuOpen} onOpenChange={setExportMenuOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline-info">
+        <Button className={cn(isMobile && "w-fit")} variant="outline-info">
           <DownloadCloud /> Export
         </Button>
       </DropdownMenuTrigger>
