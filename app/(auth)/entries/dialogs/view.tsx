@@ -41,9 +41,17 @@ import {
   Dialog as ImageDialog,
   DialogContent as ImageDialogContent,
 } from "@/components/ui/dialog"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import ApproveDialog from "./approve"
 import RejectDialog from "./reject"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const ENTRY = gql`
   query Entry($_id: ID!) {
@@ -173,7 +181,7 @@ type Props = {
 
 // Define proper types for events
 type StatusEvent = {
-  type: 'status'
+  type: "status"
   id: string
   status: string
   date: Date | string
@@ -184,7 +192,7 @@ type StatusEvent = {
 }
 
 type PaymentRemarkEvent = {
-  type: 'paymentRemark'
+  type: "paymentRemark"
   id: string
   status: string
   date: Date | string
@@ -201,52 +209,60 @@ type PaymentRemarkEvent = {
 type TimelineEvent = StatusEvent | PaymentRemarkEvent
 const getJerseySizeLabel = (size: string | undefined | null): string => {
   const sizeMap: Record<string, string> = {
-    'xxs': 'Double Extra Small',
-    'xs': 'Extra Small',
-    'sm': 'Small',
-    'm': 'Medium',
-    'lg': 'Large',
-    'xl': 'Extra Large',
-    'xxl': 'Double Extra Large',
-    'xxxl': 'Triple Extra Large'
-  };
+    xxs: "Double Extra Small",
+    xs: "Extra Small",
+    sm: "Small",
+    m: "Medium",
+    lg: "Large",
+    xl: "Extra Large",
+    xxl: "Double Extra Large",
+    xxxl: "Triple Extra Large",
+  }
 
-  if (!size) return 'N/A';
-  return sizeMap[size.toLowerCase()] || size;
-};
-const combineEvents = (statuses: any[], paymentRemarks: any[]): TimelineEvent[] => {
+  if (!size) return "N/A"
+  return sizeMap[size.toLowerCase()] || size
+}
+const combineEvents = (
+  statuses: any[],
+  paymentRemarks: any[],
+): TimelineEvent[] => {
   const statusEvents: StatusEvent[] = (statuses || []).map((status, index) => ({
-    type: 'status',
+    type: "status",
     id: `status-${index}`,
     status: status.status,
     date: status.date,
     reason: status.reason,
     by: status.by,
     isStatus: true,
-    isPaymentRemark: false
+    isPaymentRemark: false,
   }))
 
-  const remarkEvents: PaymentRemarkEvent[] = (paymentRemarks || []).map((remark, index) => ({
-    type: 'paymentRemark',
-    id: `remark-${index}`,
-    status: 'PAYMENT_REMARK',
-    date: remark.date,
-    remark: remark.remark,
-    paymentId: remark.paymentId,
-    paymentReferenceNumber: remark.paymentReferenceNumber,
-    payerName: remark.payerName,
-    amount: remark.amount,
-    by: remark.by,
-    isStatus: false,
-    isPaymentRemark: true
-  }))
+  const remarkEvents: PaymentRemarkEvent[] = (paymentRemarks || []).map(
+    (remark, index) => ({
+      type: "paymentRemark",
+      id: `remark-${index}`,
+      status: "PAYMENT_REMARK",
+      date: remark.date,
+      remark: remark.remark,
+      paymentId: remark.paymentId,
+      paymentReferenceNumber: remark.paymentReferenceNumber,
+      payerName: remark.payerName,
+      amount: remark.amount,
+      by: remark.by,
+      isStatus: false,
+      isPaymentRemark: true,
+    }),
+  )
 
-  return [...statusEvents, ...remarkEvents]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  return [...statusEvents, ...remarkEvents].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  )
 }
 
 // Type guard functions
-const isPaymentRemarkEvent = (event: TimelineEvent): event is PaymentRemarkEvent => {
+const isPaymentRemarkEvent = (
+  event: TimelineEvent,
+): event is PaymentRemarkEvent => {
   return event.isPaymentRemark
 }
 
@@ -308,7 +324,13 @@ const ImageGallery = ({ images }: { images: any[] }) => {
   )
 }
 
-const DocumentViewer = ({ documents, title }: { documents: any[]; title: string }) => {
+const DocumentViewer = ({
+  documents,
+  title,
+}: {
+  documents: any[]
+  title: string
+}) => {
   const [selectedDoc, setSelectedDoc] = useState<any>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
@@ -322,35 +344,40 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
   }
 
   // Group documents by type
-  const documentsByType = documents.reduce((acc, doc) => {
-    const docType = doc.documentType?.replaceAll("_", " ") || "Document"
-    if (!acc[docType]) {
-      acc[docType] = []
-    }
-    acc[docType].push(doc)
-    return acc
-  }, {} as Record<string, any[]>)
+  const documentsByType = documents.reduce(
+    (acc, doc) => {
+      const docType = doc.documentType?.replaceAll("_", " ") || "Document"
+      if (!acc[docType]) {
+        acc[docType] = []
+      }
+      acc[docType].push(doc)
+      return acc
+    },
+    {} as Record<string, any[]>,
+  )
 
   const getFileType = (url: string) => {
-    const extension = url.split('.').pop()?.toLowerCase()
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(extension || '')) {
-      return 'image'
+    const extension = url.split(".").pop()?.toLowerCase()
+    if (
+      ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(extension || "")
+    ) {
+      return "image"
     }
-    if (['pdf'].includes(extension || '')) {
-      return 'pdf'
+    if (["pdf"].includes(extension || "")) {
+      return "pdf"
     }
-    return 'other'
+    return "other"
   }
 
-  const isImage = (url: string) => getFileType(url) === 'image'
+  const isImage = (url: string) => getFileType(url) === "image"
 
   const handleViewDocument = (doc: any) => {
     const fileType = getFileType(doc.documentURL)
-    if (fileType === 'image') {
+    if (fileType === "image") {
       setSelectedDoc(doc)
       setIsSheetOpen(true)
     } else {
-      window.open(doc.documentURL, '_blank')
+      window.open(doc.documentURL, "_blank")
     }
   }
 
@@ -373,9 +400,14 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
           )}
         </div>
 
-        <Sheet open={isSheetOpen && selectedDoc?.documentURL === mainDocument.documentURL} onOpenChange={(open) => {
-          if (!open) setIsSheetOpen(false)
-        }}>
+        <Sheet
+          open={
+            isSheetOpen && selectedDoc?.documentURL === mainDocument.documentURL
+          }
+          onOpenChange={(open) => {
+            if (!open) setIsSheetOpen(false)
+          }}
+        >
           <SheetTrigger asChild>
             <div
               className="cursor-pointer w-full flex items-center justify-center relative group"
@@ -391,7 +423,9 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
                       <ZoomIn className="w-4 h-4" />
-                      <span className="text-sm font-medium">Click to Expand</span>
+                      <span className="text-sm font-medium">
+                        Click to Expand
+                      </span>
                     </div>
                   </div>
                 </>
@@ -399,8 +433,12 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
                 <div className="flex items-center justify-center w-full p-8 border rounded-lg bg-gray-50 group-hover:bg-gray-100 transition-all duration-200">
                   <div className="text-center">
                     <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">{documentTypes[0]}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Click to view</p>
+                    <p className="text-sm text-muted-foreground">
+                      {documentTypes[0]}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Click to view
+                    </p>
                   </div>
                 </div>
               )}
@@ -422,9 +460,13 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-lg font-medium mb-2">{documentTypes[0]}</p>
+                    <p className="text-lg font-medium mb-2">
+                      {documentTypes[0]}
+                    </p>
                     <Button
-                      onClick={() => window.open(mainDocument.documentURL, '_blank')}
+                      onClick={() =>
+                        window.open(mainDocument.documentURL, "_blank")
+                      }
                       className="mt-4"
                     >
                       Open Document
@@ -451,13 +493,16 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
   // Multiple document types - show each type separately
   return (
     <div className="space-y-6">
-      {documentTypes.map(docType => {
+      {documentTypes.map((docType) => {
         const docs = documentsByType[docType]
         const mainDocument = docs[0]
         const hasMultipleDocs = docs.length > 1
 
         return (
-          <div key={docType} className="space-y-3 border-b pb-4 last:border-b-0">
+          <div
+            key={docType}
+            className="space-y-3 border-b pb-4 last:border-b-0"
+          >
             <div className="flex items-center justify-between">
               <Label className="font-medium">{docType}</Label>
               {hasMultipleDocs && (
@@ -467,9 +512,15 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
               )}
             </div>
 
-            <Sheet open={isSheetOpen && selectedDoc?.documentURL === mainDocument.documentURL} onOpenChange={(open) => {
-              if (!open) setIsSheetOpen(false)
-            }}>
+            <Sheet
+              open={
+                isSheetOpen &&
+                selectedDoc?.documentURL === mainDocument.documentURL
+              }
+              onOpenChange={(open) => {
+                if (!open) setIsSheetOpen(false)
+              }}
+            >
               <SheetTrigger asChild>
                 <div
                   className="cursor-pointer w-full flex items-center justify-center relative group"
@@ -485,7 +536,9 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
                           <ZoomIn className="w-4 h-4" />
-                          <span className="text-sm font-medium">Click to Expand</span>
+                          <span className="text-sm font-medium">
+                            Click to Expand
+                          </span>
                         </div>
                       </div>
                     </>
@@ -493,8 +546,12 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
                     <div className="flex items-center justify-center w-full p-8 border rounded-lg bg-gray-50 group-hover:bg-gray-100 transition-all duration-200">
                       <div className="text-center">
                         <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">{docType}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Click to view</p>
+                        <p className="text-sm text-muted-foreground">
+                          {docType}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Click to view
+                        </p>
                       </div>
                     </div>
                   )}
@@ -518,7 +575,9 @@ const DocumentViewer = ({ documents, title }: { documents: any[]; title: string 
                         <FileText className="w-24 h-24 text-muted-foreground mx-auto mb-4" />
                         <p className="text-lg font-medium mb-2">{docType}</p>
                         <Button
-                          onClick={() => window.open(mainDocument.documentURL, '_blank')}
+                          onClick={() =>
+                            window.open(mainDocument.documentURL, "_blank")
+                          }
                           className="mt-4"
                         >
                           Open Document
@@ -557,16 +616,25 @@ const ViewDialog = (props: Props) => {
       setOpen(value)
     }
   }
+  const isMobile = useIsMobile()
 
   // Entry query
-  const { data: entryData, loading: entryLoading, error: entryError }: any = useQuery(ENTRY, {
+  const {
+    data: entryData,
+    loading: entryLoading,
+    error: entryError,
+  }: any = useQuery(ENTRY, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
     fetchPolicy: "network-only",
   })
 
   // Payment remarks query
-  const { data: paymentRemarksData, loading: paymentRemarksLoading, error: paymentRemarksError }: any = useQuery(PAYMENT_REMARKS, {
+  const {
+    data: paymentRemarksData,
+    loading: paymentRemarksLoading,
+    error: paymentRemarksError,
+  }: any = useQuery(PAYMENT_REMARKS, {
     variables: { entryId: props._id },
     skip: !isOpen || !Boolean(props._id),
     fetchPolicy: "network-only",
@@ -613,7 +681,7 @@ const ViewDialog = (props: Props) => {
             <span
               className={cn(
                 "hover:underline hover:cursor-pointer",
-                props.titleClassName
+                props.titleClassName,
               )}
             >
               {props.title || "View"}
@@ -635,7 +703,10 @@ const ViewDialog = (props: Props) => {
               <DialogTitle className="flex items-center justify-start gap-1.5 flex-wrap">
                 <span>Entry: {entry?.entryNumber} </span>
                 {entry?.isEarlyBird && (
-                  <Badge variant="outline-info" className="text-xs py-px -my-px">
+                  <Badge
+                    variant="outline-info"
+                    className="text-xs py-px -my-px"
+                  >
                     Early Bird
                   </Badge>
                 )}
@@ -653,20 +724,40 @@ const ViewDialog = (props: Props) => {
               </DialogDescription>
             </DialogHeader>
             <Tabs defaultValue="details" className="w-full">
-              <TabsList className="flex w-full gap-2 mb-4 sticky top-[72px] bg-gray-100 dark:bg-gray-800 z-10 p-1 rounded-lg overflow-x-auto">
-                <TabsTrigger value="details" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+              <TabsList
+                className={cn(
+                  "flex w-full gap-2 mb-4 sticky top-18 bg-gray-100 dark:bg-gray-800 z-10 p-1 rounded-lg overflow-x-auto",
+                  isMobile && "grid grid-cols-3 h-fit",
+                )}
+              >
+                <TabsTrigger
+                  value="details"
+                  className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900"
+                >
                   Details
                 </TabsTrigger>
-                <TabsTrigger value="players" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                <TabsTrigger
+                  value="players"
+                  className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900"
+                >
                   Players
                 </TabsTrigger>
-                <TabsTrigger value="documents" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                <TabsTrigger
+                  value="documents"
+                  className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900"
+                >
                   Documents
                 </TabsTrigger>
-                <TabsTrigger value="status" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                <TabsTrigger
+                  value="status"
+                  className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900"
+                >
                   Status
                 </TabsTrigger>
-                <TabsTrigger value="transactions" className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900">
+                <TabsTrigger
+                  value="transactions"
+                  className="flex-1 min-w-[80px] py-2 text-[14px] whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900"
+                >
                   Transactions
                 </TabsTrigger>
               </TabsList>
@@ -677,11 +768,11 @@ const ViewDialog = (props: Props) => {
                     onClick={(e) => {
                       toast.success(
                         `${entry?.entryNumber}_${entry?.entryKey}` +
-                        " copied to clipboard!"
+                          " copied to clipboard!",
                       )
                       e.stopPropagation()
                       navigator.clipboard.writeText(
-                        `${entry?.entryNumber}_${entry?.entryKey}`
+                        `${entry?.entryNumber}_${entry?.entryKey}`,
                       )
                     }}
                     title="Click to copy to clipboard"
@@ -702,7 +793,9 @@ const ViewDialog = (props: Props) => {
                     {entryLoading ? (
                       <Skeleton className="w-full my-1 h-3" />
                     ) : (
-                      <span className="block text-sm">{entry?.entryNumber}</span>
+                      <span className="block text-sm">
+                        {entry?.entryNumber}
+                      </span>
                     )}
                   </div>
                   <div>
@@ -721,7 +814,7 @@ const ViewDialog = (props: Props) => {
                       <span className="block text-sm">
                         <span
                           className={cn(
-                            entry?.event?.isClosed && "line-through"
+                            entry?.event?.isClosed && "line-through",
                           )}
                         >
                           {entry?.event?.name} (
@@ -789,7 +882,9 @@ const ViewDialog = (props: Props) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-4">
                   {entry?.player1Entry && (
                     <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-info/10 p-3 rounded-lg">
-                      <Label className="font-medium col-span-1 sm:col-span-2">Player 1</Label>
+                      <Label className="font-medium col-span-1 sm:col-span-2">
+                        Player 1
+                      </Label>
                       {entry?.connectedPlayer1 && (
                         <div className="col-span-1 sm:col-span-2">
                           <Label>Connected Player</Label>
@@ -858,7 +953,7 @@ const ViewDialog = (props: Props) => {
                           <span className="block text-sm">
                             {format(entry?.player1Entry.birthDate, "PP")} (
                             {`${formatDistanceToNowStrict(
-                              entry?.player1Entry.birthDate
+                              entry?.player1Entry.birthDate,
                             )} old`}
                             )
                           </span>
@@ -868,7 +963,9 @@ const ViewDialog = (props: Props) => {
                   )}
                   {entry?.event?.type === "DOUBLES" && (
                     <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-destructive/10 p-3 rounded-lg">
-                      <Label className="font-medium col-span-1 sm:col-span-2">Player 2</Label>
+                      <Label className="font-medium col-span-1 sm:col-span-2">
+                        Player 2
+                      </Label>
                       {entry?.player2Entry && (
                         <>
                           {entry?.connectedPlayer2 && (
@@ -905,7 +1002,9 @@ const ViewDialog = (props: Props) => {
                               <Skeleton className="w-full my-1 h-3" />
                             ) : (
                               <span className="block text-sm">
-                                {getJerseySizeLabel(entry?.player2Entry?.jerseySize)}
+                                {getJerseySizeLabel(
+                                  entry?.player2Entry?.jerseySize,
+                                )}
                               </span>
                             )}
                           </div>
@@ -937,7 +1036,7 @@ const ViewDialog = (props: Props) => {
                               <span className="block text-sm">
                                 {format(entry?.player2Entry.birthDate, "PP")} (
                                 {`${formatDistanceToNowStrict(
-                                  entry?.player2Entry.birthDate
+                                  entry?.player2Entry.birthDate,
                                 )} old`}
                                 )
                               </span>
@@ -958,7 +1057,9 @@ const ViewDialog = (props: Props) => {
                       <div className="border rounded-lg p-3 bg-info/5">
                         <div className="flex items-center gap-2 mb-2">
                           <FileText className="h-4 w-4 text-info" />
-                          <Label className="font-semibold">Player 1 Documents</Label>
+                          <Label className="font-semibold">
+                            Player 1 Documents
+                          </Label>
                         </div>
                         <DocumentViewer
                           documents={getPlayer1Documents()}
@@ -970,7 +1071,9 @@ const ViewDialog = (props: Props) => {
                         <div className="border rounded-lg p-3 bg-destructive/5">
                           <div className="flex items-center gap-2 mb-2">
                             <FileText className="h-4 w-4 text-destructive" />
-                            <Label className="font-semibold">Player 2 Documents</Label>
+                            <Label className="font-semibold">
+                              Player 2 Documents
+                            </Label>
                           </div>
                           <DocumentViewer
                             documents={getPlayer2Documents()}
@@ -1020,7 +1123,7 @@ const ViewDialog = (props: Props) => {
                                       "size-4 my-2",
                                       index > 0
                                         ? "text-muted-foreground/50"
-                                        : "text-info"
+                                        : "text-info",
                                     )}
                                   />
                                 )
@@ -1031,7 +1134,7 @@ const ViewDialog = (props: Props) => {
                                       "size-4 my-2",
                                       index > 0
                                         ? "text-muted-foreground/50"
-                                        : "text-success"
+                                        : "text-success",
                                     )}
                                   />
                                 )
@@ -1049,15 +1152,16 @@ const ViewDialog = (props: Props) => {
                                 index === 0
                                   ? "font-mono"
                                   : "text-muted-foreground",
-                                isPaymentRemarkEvent(event) && "text-muted-foreground font-medium"
+                                isPaymentRemarkEvent(event) &&
+                                  "text-muted-foreground font-medium",
                               )}
                             >
                               {isPaymentRemarkEvent(event)
-                                ? 'Payment Remark'
+                                ? "Payment Remark"
                                 : event.status
-                                  .split("_")
-                                  .join(" ")
-                                  .toLocaleLowerCase()}
+                                    .split("_")
+                                    .join(" ")
+                                    .toLocaleLowerCase()}
                             </span>
                             <span className="text-xs text-muted-foreground block">
                               {format(new Date(event.date), "PPpp")}
@@ -1067,12 +1171,21 @@ const ViewDialog = (props: Props) => {
                               <>
                                 <span className="text-xs text-muted-foreground block mt-0.5">
                                   <span className="">Remark:</span>{" "}
-                                  <span className="italic font-medium">{event.remark}</span>
+                                  <span className="italic font-medium">
+                                    {event.remark}
+                                  </span>
                                 </span>
                                 <div className="text-xs text-muted-foreground space-y-0.5">
-                                  <div>Payment Ref: {event.paymentReferenceNumber}</div>
+                                  <div>
+                                    Payment Ref: {event.paymentReferenceNumber}
+                                  </div>
                                   <div>Payer: {event.payerName}</div>
-                                  <div>Amount: <span className="font-medium">₱{event.amount?.toLocaleString()}</span></div>
+                                  <div>
+                                    Amount:{" "}
+                                    <span className="font-medium">
+                                      ₱{event.amount?.toLocaleString()}
+                                    </span>
+                                  </div>
                                 </div>
                                 <div className="-mt-1 underline underline-offset-2">
                                   <PaymentViewDialog
@@ -1083,18 +1196,25 @@ const ViewDialog = (props: Props) => {
                                   />
                                 </div>
                               </>
-                            ) : isStatusEvent(event) && event.reason && (
-                              <span className="text-xs text-muted-foreground block my-0.5">
-                                Note:{" "}
-                                <span className="italic underline">
-                                  {event.reason}
+                            ) : (
+                              isStatusEvent(event) &&
+                              event.reason && (
+                                <span className="text-xs text-muted-foreground block my-0.5">
+                                  Note:{" "}
+                                  <span className="italic underline">
+                                    {event.reason}
+                                  </span>
                                 </span>
-                              </span>
+                              )
                             )}
 
                             {event.by?.name && (
                               <span className="text-xs text-muted-foreground block mt-0.5">
-                                By: <span className="underline underline-offset-2 ml-0.5"> {event.by.name} </span>
+                                By:{" "}
+                                <span className="underline underline-offset-2 ml-0.5">
+                                  {" "}
+                                  {event.by.name}{" "}
+                                </span>
                               </span>
                             )}
                           </div>
@@ -1114,7 +1234,9 @@ const ViewDialog = (props: Props) => {
                     <div className="flex items-start gap-2">
                       <CircleAlert className="h-5 w-5 text-blue-500 flex-shrink-0" />
                       <div className="flex flex-row gap-1 flex-wrap">
-                        <p className="text-sm font-medium text-blue-800">Total Entry Fee Required:</p>
+                        <p className="text-sm font-medium text-blue-800">
+                          Total Entry Fee Required:
+                        </p>
                         <p className="text-sm text-blue-800">
                           <span className="font-medium">
                             {(
@@ -1130,7 +1252,8 @@ const ViewDialog = (props: Props) => {
                           </span>
                           {entry?.event?.type === "DOUBLES" && (
                             <span className="text-blue-500 text-xs underline underline-offset-2">
-                              {' '}(
+                              {" "}
+                              (
                               {(entry?.isEarlyBird
                                 ? entry?.event?.earlyBirdPricePerPlayer
                                 : entry?.event?.pricePerPlayer
@@ -1138,7 +1261,8 @@ const ViewDialog = (props: Props) => {
                                 style: "currency",
                                 currency: entry?.event?.currency || "PHP",
                                 minimumFractionDigits: 2,
-                              })} per player)
+                              })}{" "}
+                              per player)
                             </span>
                           )}
                         </p>
@@ -1192,7 +1316,7 @@ const ViewDialog = (props: Props) => {
                                     "capitalize block -mb-0.5",
                                     index === 0
                                       ? "font-mono"
-                                      : "text-muted-foreground"
+                                      : "text-muted-foreground",
                                   )}
                                 >
                                   {transaction.transactionType
@@ -1210,50 +1334,84 @@ const ViewDialog = (props: Props) => {
                                       ? "text-destructive"
                                       : transaction.pendingAmount > 0
                                         ? "text-success"
-                                        : "text-info"
+                                        : "text-info",
                                   )}
                                 >
                                   {(() => {
-                                    const isCancelled = entry?.statuses?.some(s => s.status === "CANCELLED");
-                                    const isRefundPayment = transaction.transactionType === "REFUND_PAYMENT";
+                                    const isCancelled = entry?.statuses?.some(
+                                      (s) => s.status === "CANCELLED",
+                                    )
+                                    const isRefundPayment =
+                                      transaction.transactionType ===
+                                      "REFUND_PAYMENT"
 
                                     if (isCancelled && isRefundPayment) {
-                                      const totalPaid = entry?.transactions
-                                        ?.filter(t => t.transactionType === "BALANCE_PAYMENT" && t.amountChanged > 0)
-                                        .reduce((sum, t) => sum + (t.amountChanged || 0), 0) || 0;
+                                      const totalPaid =
+                                        entry?.transactions
+                                          ?.filter(
+                                            (t) =>
+                                              t.transactionType ===
+                                                "BALANCE_PAYMENT" &&
+                                              t.amountChanged > 0,
+                                          )
+                                          .reduce(
+                                            (sum, t) =>
+                                              sum + (t.amountChanged || 0),
+                                            0,
+                                          ) || 0
 
-                                      const totalRefunded = entry?.transactions
-                                        ?.filter(t => t.transactionType === "REFUND_PAYMENT")
-                                        .reduce((sum, t) => sum + Math.abs(t.amountChanged), 0) || 0;
+                                      const totalRefunded =
+                                        entry?.transactions
+                                          ?.filter(
+                                            (t) =>
+                                              t.transactionType ===
+                                              "REFUND_PAYMENT",
+                                          )
+                                          .reduce(
+                                            (sum, t) =>
+                                              sum + Math.abs(t.amountChanged),
+                                            0,
+                                          ) || 0
 
-                                      const remainingPrincipal = totalPaid - totalRefunded;
+                                      const remainingPrincipal =
+                                        totalPaid - totalRefunded
 
                                       if (transaction.amountChanged < 0) {
-                                        return `Remaining Balance: ₱${remainingPrincipal.toLocaleString()}`;
+                                        return `Remaining Balance: ₱${remainingPrincipal.toLocaleString()}`
                                       }
                                     }
 
-                                    if (isCancelled && transaction.transactionType === "BALANCE_PAYMENT") {
-                                      return "Exceeded Paid";
+                                    if (
+                                      isCancelled &&
+                                      transaction.transactionType ===
+                                        "BALANCE_PAYMENT"
+                                    ) {
+                                      return "Exceeded Paid"
                                     }
 
                                     return transaction.pendingAmount >= 0
                                       ? "Pending Amount"
-                                      : "Excess Amount";
+                                      : "Excess Amount"
                                   })()}
 
                                   {!(
-                                    entry?.statuses?.some(s => s.status === "CANCELLED") &&
-                                    transaction.transactionType === "REFUND_PAYMENT"
+                                    entry?.statuses?.some(
+                                      (s) => s.status === "CANCELLED",
+                                    ) &&
+                                    transaction.transactionType ===
+                                      "REFUND_PAYMENT"
                                   ) && (
-                                      <>:{" "}
-                                        {Math.abs(transaction.pendingAmount).toLocaleString("en-PH", {
-                                          style: "currency",
-                                          currency: "PHP",
-                                          minimumFractionDigits: 2,
-                                        })}
-                                      </>
-                                    )}
+                                    <>
+                                      :{" "}
+                                      {Math.abs(
+                                        transaction.pendingAmount,
+                                      ).toLocaleString("en-PH", {
+                                        style: "currency",
+                                        currency: "PHP",
+                                        minimumFractionDigits: 2,
+                                      })}
+                                    </>
+                                  )}
                                 </span>
                                 {transaction.amountChanged !== null ? (
                                   <span
@@ -1261,28 +1419,30 @@ const ViewDialog = (props: Props) => {
                                       "capitalize block text-xs",
                                       index === 0
                                         ? "font-muted-foreground"
-                                        : "text-muted-foreground"
+                                        : "text-muted-foreground",
                                     )}
                                   >
                                     Amount{" "}
                                     {transaction.transactionType ==
-                                      "BALANCE_PAYMENT"
+                                    "BALANCE_PAYMENT"
                                       ? "Paid"
                                       : "Refunded"}
                                     :{" "}
-                                    {`${transaction.amountChanged > 0 ? "+" : "-"
-                                      }${Math.abs(
-                                        transaction.amountChanged
-                                      ).toLocaleString("en-PH", {
-                                        style: "currency",
-                                        currency: "PHP",
-                                        minimumFractionDigits: 2,
-                                      })}`}
+                                    {`${
+                                      transaction.amountChanged > 0 ? "+" : "-"
+                                    }${Math.abs(
+                                      transaction.amountChanged,
+                                    ).toLocaleString("en-PH", {
+                                      style: "currency",
+                                      currency: "PHP",
+                                      minimumFractionDigits: 2,
+                                    })}`}
                                   </span>
                                 ) : null}
                                 {transaction.transactionId && (
                                   <>
-                                    {transaction.transactionType === "BALANCE_PAYMENT" && (
+                                    {transaction.transactionType ===
+                                      "BALANCE_PAYMENT" && (
                                       <PaymentViewDialog
                                         externalUse
                                         _id={transaction.transactionId}
@@ -1321,7 +1481,11 @@ const ViewDialog = (props: Props) => {
             </div>
             <div className="flex-1"></div>
             <DialogClose asChild>
-              <Button className="w-full sm:w-20 cursor-pointer" onClick={onClose} variant="outline">
+              <Button
+                className="w-full sm:w-20 cursor-pointer"
+                onClick={onClose}
+                variant="outline"
+              >
                 Cancel
               </Button>
             </DialogClose>
