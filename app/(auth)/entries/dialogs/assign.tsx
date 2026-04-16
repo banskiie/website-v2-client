@@ -308,180 +308,136 @@ const replaceDocumentsInDrive = async (
     }> = [];
 
     if (documentSelection) {
-      // Get all document types that have existing documents (the ones we want to keep)
-      const existingDocTypes = existingDocuments.map(d => d.documentType);
-      // Get all new document types (the ones that might need to be replaced)
-      const newDocTypes = newDocuments.map(d => d.documentType);
-
-      // For each selection
       for (const [documentType, selection] of Object.entries(documentSelection)) {
         const { selectedSource, existingDocs, newDocs } = selection;
-
-        // If selectedSource is empty, this document should be DELETED
-        if (!selectedSource || selectedSource === "") {
-          console.log(`🗑️ DELETING document type: ${documentType}`);
-
-          const docToDelete = existingDocs[0] || newDocs[0];
-          if (docToDelete?.documentURL) {
-            const fileId = extractFileIdFromUrl(docToDelete.documentURL);
-            if (fileId) {
-              try {
-                const deleteResponse = await fetch("/api/transfer/delete", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    fileId: fileId,
-                    documentType,
-                    playerType,
-                    reason: "not_selected_by_user",
-                  }),
-                });
-                if (deleteResponse.ok) {
-                  deletedDocuments.push({
-                    documentType,
-                    fileId: fileId,
-                    status: "deleted",
-                    player: playerType,
-                    message: "Document deleted (not selected by user)",
-                  });
-                  console.log(`✅ Deleted document for ${documentType}`);
-                }
-              } catch (err) {
-                console.warn(`Failed to delete document for ${documentType}:`, err);
-              }
-            }
-          }
-          continue;
-        }
 
         // Parse selectedSource
         const parts = selectedSource.split("-");
         const source = parts[1]; // 'existing' or 'new'
 
-        let selectedDoc: any;
-
         if (source === "existing" && existingDocs?.length) {
-          // User wants to KEEP existing document
-          selectedDoc = existingDocs[0];
+          // ✅ KEEP the existing document
+          const selectedDoc = existingDocs[0];
 
-          // IMPORTANT: When document types are different, we need to replace ANY new document
-          // with this existing document (regardless of type)
-          if (newDocuments.length > 0) {
-            // There are new documents - replace the first new document with this existing one
-            const newDocToReplace = newDocuments[0];
-            const oldFileId = extractFileIdFromUrl(newDocToReplace.documentURL) || "";
-            const newFileId = extractFileIdFromUrl(selectedDoc.documentURL) || "";
+          console.log(`📌 KEEPING existing document: ${documentType}`);
+          console.log(`   URL: ${selectedDoc.documentURL}`);
 
-            console.log(`📌 REPLACING new document (${newDocToReplace.documentType}) with existing (${selectedDoc.documentType})`);
-            console.log(`   Old (new doc): ${newDocToReplace.documentURL}`);
-            console.log(`   New (existing doc): ${selectedDoc.documentURL}`);
-
-            // Call the replace API
-            if (oldFileId && newFileId) {
+          // ✅ DELETE the new document (since it's different type and not selected)
+          const newDocToDelete = newDocs.find(doc => doc.documentType === documentType);
+          if (newDocToDelete?.documentURL) {
+            const fileIdToDelete = extractFileIdFromUrl(newDocToDelete.documentURL);
+            if (fileIdToDelete) {
               try {
-                const replaceResponse = await fetch("/api/transfer/replace", {
+                const deleteResponse = await fetch("/api/transfer/delete", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    oldFileId: oldFileId,
-                    newFileId: newFileId,
-                    documentType: selectedDoc.documentType,
+                    fileId: fileIdToDelete,
+                    documentType,
                     playerType,
+                    reason: "not_selected_user_chose_existing",
                   }),
                 });
 
-                if (replaceResponse.ok) {
-                  console.log(`✅ Successfully replaced document for ${selectedDoc.documentType}`);
-                  // Add URL update for tracking
-                  urlUpdates.push({
-                    oldUrl: newDocToReplace.documentURL,
-                    newUrl: selectedDoc.documentURL,
-                    documentType: selectedDoc.documentType,
+                if (deleteResponse.ok) {
+                  deletedDocuments.push({
+                    documentType,
+                    fileId: fileIdToDelete,
+                    status: "deleted",
                     player: playerType,
+                    message: "New document deleted (user chose to keep existing)",
                   });
-                } else {
-                  console.warn(`⚠️ Failed to replace document for ${selectedDoc.documentType}`);
+                  console.log(`✅ Deleted new document for ${documentType}`);
                 }
               } catch (err) {
-                console.warn(`Error calling replace API:`, err);
+                console.warn(`Failed to delete new document for ${documentType}:`, err);
               }
             }
-          } else {
-            console.log(`📌 Keeping existing ${selectedDoc.documentType} (no new document to replace)`);
           }
 
+          // Track that we're keeping the existing document
           replacedDocuments.push({
             documentType: selectedDoc.documentType,
             fileId: extractFileIdFromUrl(selectedDoc.documentURL) || "",
             status: "keep_existing",
             player: playerType,
-            message: `Keeping existing document`,
+            message: `Keeping existing document, deleted new document`,
             newUrl: selectedDoc.documentURL,
           });
 
+          // Add URL update (oldUrl empty means we're just keeping existing)
+          urlUpdates.push({
+            oldUrl: newDocToDelete?.documentURL || "",
+            newUrl: selectedDoc.documentURL,
+            documentType: selectedDoc.documentType,
+            player: playerType,
+          });
+
         } else if (source === "new" && newDocs?.length) {
-          // User wants to USE new document
-          selectedDoc = newDocs[0];
+          // ✅ KEEP the new document
+          const selectedDoc = newDocs[0];
 
-          // IMPORTANT: When document types are different, we need to replace ANY existing document
-          // with this new document (regardless of type)
-          if (existingDocuments.length > 0) {
-            // There are existing documents - replace the first existing document with this new one
-            const existingDocToReplace = existingDocuments[0];
-            const oldFileId = extractFileIdFromUrl(existingDocToReplace.documentURL) || "";
-            const newFileId = extractFileIdFromUrl(selectedDoc.documentURL) || "";
+          console.log(`📌 KEEPING new document: ${documentType}`);
+          console.log(`   URL: ${selectedDoc.documentURL}`);
 
-            console.log(`📌 REPLACING existing document (${existingDocToReplace.documentType}) with new (${selectedDoc.documentType})`);
-            console.log(`   Old (existing doc): ${existingDocToReplace.documentURL}`);
-            console.log(`   New (new doc): ${selectedDoc.documentURL}`);
-
-            // Call the replace API
-            if (oldFileId && newFileId) {
+          // ✅ DELETE the existing document (since it's different type and not selected)
+          const existingDocToDelete = existingDocs.find(doc => doc.documentType === documentType);
+          if (existingDocToDelete?.documentURL) {
+            const fileIdToDelete = extractFileIdFromUrl(existingDocToDelete.documentURL);
+            if (fileIdToDelete) {
               try {
-                const replaceResponse = await fetch("/api/transfer/replace", {
+                const deleteResponse = await fetch("/api/transfer/delete", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    oldFileId: oldFileId,
-                    newFileId: newFileId,
-                    documentType: selectedDoc.documentType,
+                    fileId: fileIdToDelete,
+                    documentType,
                     playerType,
+                    reason: "not_selected_user_chose_new",
                   }),
                 });
 
-                if (replaceResponse.ok) {
-                  console.log(`✅ Successfully replaced document for ${selectedDoc.documentType}`);
-                  urlUpdates.push({
-                    oldUrl: existingDocToReplace.documentURL,
-                    newUrl: selectedDoc.documentURL,
-                    documentType: selectedDoc.documentType,
+                if (deleteResponse.ok) {
+                  deletedDocuments.push({
+                    documentType,
+                    fileId: fileIdToDelete,
+                    status: "deleted",
                     player: playerType,
+                    message: "Existing document deleted (user chose to use new document)",
                   });
-                } else {
-                  console.warn(`⚠️ Failed to replace document`);
+                  console.log(`✅ Deleted existing document for ${documentType}`);
                 }
               } catch (err) {
-                console.warn(`Error calling replace API:`, err);
+                console.warn(`Failed to delete existing document for ${documentType}:`, err);
               }
             }
-          } else {
-            console.log(`📌 Adding new ${selectedDoc.documentType} (no existing to replace)`);
           }
 
+          // Track that we're keeping the new document
           replacedDocuments.push({
             documentType: selectedDoc.documentType,
             fileId: extractFileIdFromUrl(selectedDoc.documentURL) || "",
             status: "keep_new",
             player: playerType,
-            message: `Keeping new document`,
+            message: `Keeping new document, deleted existing document`,
             newUrl: selectedDoc.documentURL,
+          });
+
+          // Add URL update
+          urlUpdates.push({
+            oldUrl: existingDocToDelete?.documentURL || "",
+            newUrl: selectedDoc.documentURL,
+            documentType: selectedDoc.documentType,
+            player: playerType,
           });
         }
       }
     }
 
-    console.log(`URL updates:`, urlUpdates);
-    console.log(`Deleted documents:`, deletedDocuments);
+    console.log(`📊 Results:`);
+    console.log(`   - Kept documents: ${replacedDocuments.length}`);
+    console.log(`   - Deleted documents: ${deletedDocuments.length}`);
+    console.log(`   - URL updates: ${urlUpdates.length}`);
 
     return {
       replacedDocuments,
@@ -727,18 +683,15 @@ const DocumentSelectionDialog = ({
     source: "existing" | "new";
   } | null>(null);
 
-  // Group all documents together
   const allDocuments = [
     ...existingDocuments.map(doc => ({ ...doc, source: 'existing' as const })),
     ...newDocuments.map(doc => ({ ...doc, source: 'new' as const }))
   ];
 
-  // Get unique document types
   const documentTypes = [...new Set(allDocuments.map(doc => doc.documentType))];
 
   useEffect(() => {
     if (open) {
-      // Reset selection when dialog opens
       setGlobalSelection("");
     }
   }, [open]);
@@ -749,57 +702,48 @@ const DocumentSelectionDialog = ({
       return;
     }
 
-    // Create a SINGLE selection object that applies to ALL documents
     const selections: DocumentSelection = {};
 
     if (globalSelection === "global-existing") {
-      // User wants to keep ONLY existing documents
-      // For each existing document, keep it
-      // For each new document, mark it to be deleted (by not including it or by setting empty selectedSource)
-
-      // First, keep all existing documents
       existingDocuments.forEach(existingDoc => {
         const docType = existingDoc.documentType;
         selections[docType] = {
           selectedSource: `${docType}-existing-0`,
           existingDocs: [existingDoc],
-          newDocs: [], // No new docs to keep
+          newDocs: newDocuments.filter(doc => doc.documentType === docType), // Include matching new docs for deletion
         };
       });
 
-      // For new documents that don't have matching existing documents, mark them to be deleted
+      // Also handle new documents that don't have existing counterparts
       newDocuments.forEach(newDoc => {
         const docType = newDoc.documentType;
-        // If this document type doesn't already have a selection (meaning no existing doc of this type)
         if (!selections[docType]) {
-          // Create a selection with empty selectedSource to indicate this should be deleted
+          // No existing document of this type, so we need to delete this new document
           selections[docType] = {
-            selectedSource: "", // Empty means delete/discard
+            selectedSource: "", // Empty means delete
             existingDocs: [],
             newDocs: [newDoc],
           };
         }
       });
     } else {
-      // User wants to keep ONLY new documents
-      // First, keep all new documents
+      // "global-new" - Keep all new documents, delete all existing documents
       newDocuments.forEach(newDoc => {
         const docType = newDoc.documentType;
         selections[docType] = {
           selectedSource: `${docType}-new-0`,
-          existingDocs: [],
+          existingDocs: existingDocuments.filter(doc => doc.documentType === docType), // Include matching existing docs for deletion
           newDocs: [newDoc],
         };
       });
 
-      // For existing documents that don't have matching new documents, mark them to be deleted
+      // Also handle existing documents that don't have new counterparts
       existingDocuments.forEach(existingDoc => {
         const docType = existingDoc.documentType;
-        // If this document type doesn't already have a selection (meaning no new doc of this type)
         if (!selections[docType]) {
-          // Create a selection with empty selectedSource to indicate this should be deleted
+          // No new document of this type, so we need to delete this existing document
           selections[docType] = {
-            selectedSource: "", // Empty means delete/discard
+            selectedSource: "", // Empty means delete
             existingDocs: [existingDoc],
             newDocs: [],
           };
@@ -811,7 +755,6 @@ const DocumentSelectionDialog = ({
     onSave(selections);
     onOpenChange(false);
   };
-
   const getFileType = (url: string): string => {
     if (!url) return "unknown";
 

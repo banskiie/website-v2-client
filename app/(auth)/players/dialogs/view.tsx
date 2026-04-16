@@ -430,6 +430,7 @@ const ViewDialog = (props: Props) => {
                               {fileType === 'image' ? (
                                 <div className="relative w-full h-full">
                                   <Image
+                                    key={doc.documentURL}
                                     src={doc.documentURL}
                                     alt={doc.documentType}
                                     fill
