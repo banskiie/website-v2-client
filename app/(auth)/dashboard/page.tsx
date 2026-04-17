@@ -469,6 +469,7 @@ interface EventEntryCount {
   percentage: number
   earlyBirdCount: number
   verifiedCount: number
+  approvedCount: number
   pendingCount: number
   totalAmount: number
 }
@@ -1465,137 +1466,143 @@ const Page = () => {
     )
   }, [monthlyPayments])
 
-  const entrySummary = useMemo(() => {
-    if (!entriesData?.entries?.edges)
-      return {
-        total: 0,
-        byStatus: [],
+const entrySummary = useMemo(() => {
+  if (!entriesData?.entries?.edges)
+    return {
+      total: 0,
+      byStatus: [],
+      totalPendingAmount: 0,
+      totalPaidAmount: 0,
+      totalRefundAmount: 0,
+      totalExcess: 0,
+      earlyBirdCount: 0,
+      overpaymentCount: 0,
+    }
+
+  const entries = entriesData.entries.edges.map((edge) => edge.node)
+
+  const statusConfig: Record<string, { color: string; icon: any }> = {
+    PENDING: {
+      color:
+        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+      icon: AlertCircle,
+    },
+    ASSIGNED: {
+      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+      icon: Users,
+    },
+    LEVEL_PENDING: {
+      color:
+        "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+      icon: TrendingUp,
+    },
+    LEVEL_APPROVED: {
+      color:
+        "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
+      icon: CheckCircle,
+    },
+    // Replace PAYMENT_PENDING with LEVEL_APPROVED in display
+    PAYMENT_PENDING: {
+      color:
+        "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
+      icon: CheckCircle,
+    },
+    PAYMENT_PARTIALLY_PAID: {
+      color: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
+      icon: DollarSign,
+    },
+    PAYMENT_PAID: {
+      color:
+        "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
+      icon: DollarSign,
+    },
+    PAYMENT_VERIFIED: {
+      color: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
+      icon: CheckCircle,
+    },
+    VERIFIED: {
+      color:
+        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+      icon: CheckCircle,
+    },
+    REJECTED: {
+      color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+      icon: XCircle,
+    },
+    CANCELLED: {
+      color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+      icon: XCircle,
+    },
+  }
+
+  const statusMap = new Map<
+    string,
+    { count: number; totalPendingAmount: number; totalPaidAmount: number }
+  >()
+
+  let totalPendingAmount = 0
+  let totalPaidAmount = 0
+  let totalRefundAmount = 0
+  let totalExcess = 0
+  let earlyBirdCount = 0
+  let overpaymentCount = 0
+
+  entries.forEach((entry) => {
+    let status = entry.currentStatus
+    
+    if (status === "PAYMENT_PENDING") {
+      status = "LEVEL_APPROVED"
+    }
+    
+    const pending = entry.pendingAmount || 0
+    const paid = entry.totalPaid || 0
+    const refund = entry.totalRefundAmount || 0
+    const excess = entry.totalExcess || 0
+
+    if (!statusMap.has(status)) {
+      statusMap.set(status, {
+        count: 0,
         totalPendingAmount: 0,
         totalPaidAmount: 0,
-        totalRefundAmount: 0,
-        totalExcess: 0,
-        earlyBirdCount: 0,
-        overpaymentCount: 0,
-      }
-
-    const entries = entriesData.entries.edges.map((edge) => edge.node)
-
-    const statusConfig: Record<string, { color: string; icon: any }> = {
-      PENDING: {
-        color:
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-        icon: AlertCircle,
-      },
-      ASSIGNED: {
-        color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-        icon: Users,
-      },
-      LEVEL_PENDING: {
-        color:
-          "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-        icon: TrendingUp,
-      },
-      LEVEL_APPROVED: {
-        color:
-          "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
-        icon: CheckCircle,
-      },
-      PAYMENT_PENDING: {
-        color:
-          "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
-        icon: Clock,
-      },
-      PAYMENT_PARTIALLY_PAID: {
-        color: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
-        icon: DollarSign,
-      },
-      PAYMENT_PAID: {
-        color:
-          "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
-        icon: DollarSign,
-      },
-      PAYMENT_VERIFIED: {
-        color: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
-        icon: CheckCircle,
-      },
-      VERIFIED: {
-        color:
-          "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-        icon: CheckCircle,
-      },
-      REJECTED: {
-        color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-        icon: XCircle,
-      },
-      CANCELLED: {
-        color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-        icon: XCircle,
-      },
+      })
     }
 
-    const statusMap = new Map<
-      string,
-      { count: number; totalPendingAmount: number; totalPaidAmount: number }
-    >()
+    const current = statusMap.get(status)!
+    current.count++
+    current.totalPendingAmount += pending
+    current.totalPaidAmount += paid
 
-    let totalPendingAmount = 0
-    let totalPaidAmount = 0
-    let totalRefundAmount = 0
-    let totalExcess = 0
-    let earlyBirdCount = 0
-    let overpaymentCount = 0
+    totalPendingAmount += pending
+    totalPaidAmount += paid
+    totalRefundAmount += refund
+    totalExcess += excess
 
-    entries.forEach((entry) => {
-      const status = entry.currentStatus
-      const pending = entry.pendingAmount || 0
-      const paid = entry.totalPaid || 0
-      const refund = entry.totalRefundAmount || 0
-      const excess = entry.totalExcess || 0
+    if (entry.isEarlyBird) earlyBirdCount++
+    if (entry.hasOverpayment) overpaymentCount++
+  })
 
-      if (!statusMap.has(status)) {
-        statusMap.set(status, {
-          count: 0,
-          totalPendingAmount: 0,
-          totalPaidAmount: 0,
-        })
-      }
+  const byStatus: EntryStatusSummary[] = Array.from(statusMap.entries()).map(
+    ([status, data]) => ({
+      status,
+      count: data.count,
+      totalPendingAmount: data.totalPendingAmount,
+      totalPaidAmount: data.totalPaidAmount,
+      color: statusConfig[status]?.color || "bg-gray-100 text-gray-800",
+      icon: statusConfig[status]?.icon || Activity,
+    }),
+  )
 
-      const current = statusMap.get(status)!
-      current.count++
-      current.totalPendingAmount += pending
-      current.totalPaidAmount += paid
-
-      totalPendingAmount += pending
-      totalPaidAmount += paid
-      totalRefundAmount += refund
-      totalExcess += excess
-
-      if (entry.isEarlyBird) earlyBirdCount++
-      if (entry.hasOverpayment) overpaymentCount++
-    })
-
-    const byStatus: EntryStatusSummary[] = Array.from(statusMap.entries()).map(
-      ([status, data]) => ({
-        status,
-        count: data.count,
-        totalPendingAmount: data.totalPendingAmount,
-        totalPaidAmount: data.totalPaidAmount,
-        color: statusConfig[status]?.color || "bg-gray-100 text-gray-800",
-        icon: statusConfig[status]?.icon || Activity,
-      }),
-    )
-
-    return {
-      total: entries.length,
-      byStatus,
-      totalPendingAmount,
-      totalPaidAmount,
-      totalRefundAmount,
-      totalExcess,
-      earlyBirdCount,
-      overpaymentCount,
-    }
-  }, [entriesData])
+  return {
+    total: entries.length,
+    byStatus,
+    totalPendingAmount,
+    totalPaidAmount,
+    totalRefundAmount,
+    totalExcess,
+    earlyBirdCount,
+    overpaymentCount,
+  }
+}, [entriesData])
 
   const getEntriesByStatus = (status: string) => {
     if (!entriesData?.entries?.edges) return []
@@ -1634,62 +1641,72 @@ const Page = () => {
       }))
   }, [entriesData])
 
-  const entriesByEvent = useMemo(() => {
-    if (!entriesData?.entries?.edges) return []
+const entriesByEvent = useMemo(() => {
+  if (!entriesData?.entries?.edges) return []
 
-    const entries = entriesData.entries.edges.map((edge) => edge.node)
-    const eventMap = new Map<string, EventEntryCount>()
+  const entries = entriesData.entries.edges.map((edge) => edge.node)
+  const eventMap = new Map<string, EventEntryCount>()
 
-    let totalEntries = entries.length
+  let totalEntries = entries.length
 
-    entries.forEach((entry) => {
-      const eventName = entry.eventName || "Unknown Event"
-      const tournamentName = entry.tournamentName || "Unknown Tournament"
-      const key = `${tournamentName} - ${eventName}`
+  entries.forEach((entry) => {
+    const eventName = entry.eventName || "Unknown Event"
+    const tournamentName = entry.tournamentName || "Unknown Tournament"
+    const key = `${tournamentName} - ${eventName}`
 
-      if (!eventMap.has(key)) {
-        eventMap.set(key, {
-          eventName: eventName,
-          tournamentName: tournamentName,
-          count: 0,
-          percentage: 0,
-          earlyBirdCount: 0,
-          verifiedCount: 0,
-          pendingCount: 0,
-          totalAmount: 0,
-        })
-      }
+    if (!eventMap.has(key)) {
+      eventMap.set(key, {
+        eventName: eventName,
+        tournamentName: tournamentName,
+        count: 0,
+        percentage: 0,
+        earlyBirdCount: 0,
+        verifiedCount: 0,
+        approvedCount: 0,
+        pendingCount: 0,
+        totalAmount: 0,
+      })
+    }
 
-      const eventData = eventMap.get(key)!
-      eventData.count++
-      eventData.totalAmount += entry.pendingAmount || 0
+    const eventData = eventMap.get(key)!
+    eventData.count++
+    eventData.totalAmount += entry.pendingAmount || 0
 
-      if (entry.isEarlyBird) eventData.earlyBirdCount++
-      if (
-        entry.currentStatus === "VERIFIED" ||
-        entry.currentStatus === "PAYMENT_VERIFIED"
-      ) {
-        eventData.verifiedCount++
-      }
-      if (
-        entry.currentStatus === "PENDING" ||
-        entry.currentStatus === "PAYMENT_PENDING" ||
-        entry.currentStatus === "LEVEL_PENDING"
-      ) {
-        eventData.pendingCount++
-      }
-    })
+    if (entry.isEarlyBird) eventData.earlyBirdCount++
+    if (
+      entry.currentStatus === "VERIFIED" ||
+      entry.currentStatus === "PAYMENT_VERIFIED"
+    ) {
+      eventData.verifiedCount++
+    }
+    if (
+      entry.currentStatus === "PAYMENT_PENDING"
+    ) {
+      eventData.approvedCount++
+    }
+    if (
+      entry.currentStatus === "PENDING" ||
+      entry.currentStatus === "PAYMENT_PENDING" ||
+      entry.currentStatus === "LEVEL_PENDING"
+    ) {
+      eventData.pendingCount++
+    }
+  })
 
-    const result = Array.from(eventMap.values())
-    result.forEach((event) => {
-      event.percentage = (event.count / totalEntries) * 100
-    })
+  const result = Array.from(eventMap.values())
+  result.forEach((event) => {
+    event.percentage = (event.count / totalEntries) * 100
+  })
 
-    return result.sort((a, b) => b.count - a.count)
-  }, [entriesData])
+  return result.sort((a, b) => b.count - a.count)
+}, [entriesData])
 
   const handleStatusClick = (status: string) => {
-    setSelectedStatus(status)
+     let actualStatus = status
+  if (status === "LEVEL_APPROVED") {
+    actualStatus = "PAYMENT_PENDING"
+  }
+    setSelectedStatus(actualStatus)
     setIsModalOpen(true)
   }
 
@@ -2380,115 +2397,130 @@ const Page = () => {
             </DialogContent>
           </Dialog>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <LayoutGrid className="h-5 w-5 text-purple-500" />
-                Entries by Event
-              </CardTitle>
-              <CardDescription>
-                Number of registrations per event
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {entriesLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
-              ) : entriesByEvent.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No entries found
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {entriesByEvent.map((event, index) => {
-                    const earlyBirdPercentage =
-                      (event.earlyBirdCount / event.count) * 100
-                    const verifiedPercentage =
-                      (event.verifiedCount / event.count) * 100
-                    const pendingPercentage =
-                      (event.pendingCount / event.count) * 100
+    <Card>
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <LayoutGrid className="h-5 w-5 text-purple-500" />
+      Entries by Event
+    </CardTitle>
+    <CardDescription>
+      Number of registrations per event
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    {entriesLoading ? (
+      <div className="space-y-4">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    ) : entriesByEvent.length === 0 ? (
+      <div className="text-center py-8 text-muted-foreground">
+        No entries found
+      </div>
+    ) : (
+      <div className="space-y-4">
+        {entriesByEvent.map((event, index) => {
+          const earlyBirdPercentage =
+            (event.earlyBirdCount / event.count) * 100
+          const verifiedPercentage =
+            (event.verifiedCount / event.count) * 100
+          const approvedPercentage =
+            (event.approvedCount / event.count) * 100
+          const pendingPercentage =
+            (event.pendingCount / event.count) * 100
 
-                    return (
-                      <div
-                        key={`${event.tournamentName}-${event.eventName}`}
-                        className="space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium">
-                              {event.eventName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {event.tournamentName}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-lg font-bold">{event.count}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {event.percentage.toFixed(1)}% of total
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden flex">
-                          {event.earlyBirdCount > 0 && (
-                            <div
-                              className="h-full bg-green-500 transition-all duration-500 ease-in-out"
-                              style={{ width: `${earlyBirdPercentage}%` }}
-                              title={`Early Bird: ${event.earlyBirdCount} entries`}
-                            />
-                          )}
-                          {event.verifiedCount > 0 && (
-                            <div
-                              className="h-full bg-blue-500 transition-all duration-500 ease-in-out"
-                              style={{ width: `${verifiedPercentage}%` }}
-                              title={`Verified: ${event.verifiedCount} entries`}
-                            />
-                          )}
-                          {event.pendingCount > 0 && (
-                            <div
-                              className="h-full bg-yellow-500 transition-all duration-500 ease-in-out"
-                              style={{ width: `${pendingPercentage}%` }}
-                              title={`Pending: ${event.pendingCount} entries`}
-                            />
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs mt-1">
-                          <div className="flex items-center gap-3">
-                            <Badge
-                              variant="outline"
-                              className="bg-green-50 text-green-700 border-green-200"
-                            >
-                              Early Bird: {event.earlyBirdCount}
-                            </Badge>
-                            <Badge
-                              variant="outline"
-                              className="bg-blue-50 text-blue-700 border-blue-200"
-                            >
-                              Verified: {event.verifiedCount}
-                            </Badge>
-                            <Badge
-                              variant="outline"
-                              className="bg-yellow-50 text-yellow-700 border-yellow-200"
-                            >
-                              Pending: {event.pendingCount}
-                            </Badge>
-                          </div>
-                          <span className="font-medium text-muted-foreground">
-                            ₱{event.totalAmount.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
+          return (
+            <div
+              key={`${event.tournamentName}-${event.eventName}`}
+              className="space-y-2"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">
+                    {event.eventName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {event.tournamentName}
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <div className="text-right">
+                  <p className="text-lg font-bold">{event.count}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {event.percentage.toFixed(1)}% of total
+                  </p>
+                </div>
+              </div>
+
+              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden flex">
+                {event.earlyBirdCount > 0 && (
+                  <div
+                    className="h-full bg-green-500 transition-all duration-500 ease-in-out"
+                    style={{ width: `${earlyBirdPercentage}%` }}
+                    title={`Early Bird: ${event.earlyBirdCount} entries`}
+                  />
+                )}
+                {event.verifiedCount > 0 && (
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-500 ease-in-out"
+                    style={{ width: `${verifiedPercentage}%` }}
+                    title={`Verified: ${event.verifiedCount} entries`}
+                  />
+                )}
+                {event.approvedCount > 0 && (
+                  <div
+                    className="h-full bg-purple-500 transition-all duration-500 ease-in-out"
+                    style={{ width: `${approvedPercentage}%` }}
+                    title={`Approved: ${event.approvedCount} entries`}
+                  />
+                )}
+                {event.pendingCount > 0 && (
+                  <div
+                    className="h-full bg-yellow-500 transition-all duration-500 ease-in-out"
+                    style={{ width: `${pendingPercentage}%` }}
+                    title={`Pending: ${event.pendingCount} entries`}
+                  />
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-xs mt-1">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Badge
+                    variant="outline"
+                    className="bg-green-50 text-green-700 border-green-200"
+                  >
+                    Early Bird: {event.earlyBirdCount}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="bg-blue-50 text-blue-700 border-blue-200"
+                  >
+                    Verified: {event.verifiedCount}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="bg-purple-50 text-purple-700 border-purple-200"
+                  >
+                    Approved: {event.approvedCount}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="bg-yellow-50 text-yellow-700 border-yellow-200"
+                  >
+                    Pending: {event.pendingCount}
+                  </Badge>
+                </div>
+                <span className="font-medium text-muted-foreground">
+                  ₱{event.totalAmount.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )}
+  </CardContent>
+</Card>
 
           <Card>
             <CardHeader>
