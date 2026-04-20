@@ -2,6 +2,55 @@ import { z } from "zod"
 import { Gender } from "../types/shared.interface"
 import { PlayerLevel, ValidDocumentType } from "../types/player.interface"
 
+// PSGC Location Schemas
+const RegionSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  regionName: z.string(),
+  psgcCode: z.string(),
+})
+
+const ProvinceSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  regionCode: z.string(),
+  psgcCode: z.string(),
+})
+
+const CitySchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  provinceCode: z.string(),
+  regionCode: z.string(),
+  psgcCode: z.string(),
+  classification: z.string(),
+})
+
+const BarangaySchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  cityCode: z.string(),
+  provinceCode: z.string(),
+  regionCode: z.string(),
+  psgcCode: z.string(),
+})
+
+const CoordinatesSchema = z.object({
+  lat: z.number(),
+  lng: z.number(),
+})
+
+const PlayerAddressSchema = z.object({
+  region: RegionSchema.optional(),
+  province: ProvinceSchema.optional(),
+  city: CitySchema.optional(),
+  barangay: BarangaySchema.optional(),
+  street: z.string().optional(),
+  zipCode: z.string().optional(),
+  fullAddress: z.string(),
+  coordinates: CoordinatesSchema.optional(),
+})
+
 export const PlayerSchema = z.object({
   firstName: z
     .string()
@@ -43,6 +92,7 @@ export const PlayerSchema = z.object({
           "Phone number must be empty or start with '09' and be exactly 11 digits",
       }
     ),
+  achievements: z.array(z.string()).optional().default([]),
   levels: z
     .array(
       z.object({
@@ -60,4 +110,5 @@ export const PlayerSchema = z.object({
       })
     )
     .default([]),
+  address: PlayerAddressSchema.optional(),
 })

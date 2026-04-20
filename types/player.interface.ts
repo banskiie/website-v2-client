@@ -30,6 +30,55 @@ export enum ValidDocumentType {
   OTHERS = "OTHERS",
 }
 
+// Location interfaces
+export interface IRegion {
+  code: string
+  name: string
+  regionName: string
+  psgcCode: string
+}
+
+export interface IProvince {
+  code: string
+  name: string
+  regionCode: string
+  psgcCode: string
+}
+
+export interface ICity {
+  code: string
+  name: string
+  provinceCode: string
+  regionCode: string
+  psgcCode: string
+  classification: string
+}
+
+export interface IBarangay {
+  code: string
+  name: string
+  cityCode: string
+  provinceCode: string
+  regionCode: string
+  psgcCode: string
+}
+
+export interface ICoordinates {
+  lat: number
+  lng: number
+}
+
+export interface IPlayerAddress {
+  region?: IRegion
+  province?: IProvince
+  city?: ICity
+  barangay?: IBarangay
+  street?: string
+  zipCode?: string
+  fullAddress: string
+  coordinates?: ICoordinates
+}
+
 export interface ILevel {
   level: PlayerLevel
   dateLevelled: Date
@@ -51,9 +100,11 @@ export interface IPlayer extends Document {
   birthDate: Date
   email?: string
   phoneNumber?: string
+  achievements?: string[]
   videos?: IVideo[]
   levels: ILevel[]
   validDocuments: IValidDocument[]
+  address?: IPlayerAddress
   isActive: boolean
 }
 
@@ -65,9 +116,11 @@ export interface IPlayerInput extends Request {
   suffix?: string
   gender: Gender
   birthDate: Date
+  achievements?: string[]
   email?: string
   phoneNumber?: string
   levels: ILevel[]
   validDocuments: IValidDocument[]
+  address?: IPlayerAddress
   isActive: boolean
 }

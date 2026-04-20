@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
-import { ExternalLink, Calendar, CheckCircle, AlertCircle, Video, FileCheck, FileText, File, Download, Maximize2 } from "lucide-react"
+import { ExternalLink, Calendar, CheckCircle, AlertCircle, Video, FileCheck, FileText, File, Download, Maximize2, MapPin, Trophy } from "lucide-react"
 
 const PLAYER = gql`
   query Player($_id: ID!) {
@@ -37,6 +37,7 @@ const PLAYER = gql`
       birthDate
       email
       phoneNumber
+      achievements
       levels {
         level
         dateLevelled
@@ -51,6 +52,39 @@ const PLAYER = gql`
         title
         dateUploaded
         youtubeId
+      }
+      address {
+        region {
+          code
+          name
+          regionName
+          psgcCode
+        }
+        province {
+          code
+          name
+          regionCode
+          psgcCode
+        }
+        city {
+          code
+          name
+          provinceCode
+          regionCode
+          psgcCode
+          classification
+        }
+        barangay {
+          code
+          name
+          cityCode
+          provinceCode
+          regionCode
+          psgcCode
+        }
+        street
+        zipCode
+        fullAddress
       }
       isActive
     }
@@ -193,8 +227,9 @@ const ViewDialog = (props: Props) => {
           </DialogHeader>
 
           <Tabs defaultValue="details" className="">
-            <TabsList className="w-full grid grid-cols-4 -mt-2 mb-1">
+            <TabsList className="w-full grid grid-cols-5 -mt-2 mb-1">
               <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="address">Address</TabsTrigger>
               <TabsTrigger value="levels">Levels</TabsTrigger>
               <TabsTrigger value="requirements">Requirements</TabsTrigger>
               <TabsTrigger value="videos">Videos</TabsTrigger>
@@ -231,7 +266,7 @@ const ViewDialog = (props: Props) => {
                         <Skeleton className="w-full my-1 h-3" />
                       ) : (
                         <span className="block text-[13px] font-medium tracking-wide capitalize">
-                          {player?.gender.toLocaleLowerCase()}
+                          {player?.gender?.toLocaleLowerCase()}
                         </span>
                       )}
                     </div>
@@ -241,23 +276,19 @@ const ViewDialog = (props: Props) => {
                         <Skeleton className="w-full my-1 h-3" />
                       ) : (
                         <span className="block text-[13px] tracking-wide font-medium">
-                          {format(
-                            player?.birthDate
-                              ? new Date(player?.birthDate)
-                              : new Date(),
-                            "PP"
-                          )}{" "}
-                          <span className="text-muted-foreground lowercase">
-                            (
-                            {player?.birthDate
-                              ? `${Math.floor(
-                                (Date.now() -
-                                  new Date(player?.birthDate).getTime()) /
+                          {player?.birthDate
+                            ? format(new Date(player?.birthDate), "PP")
+                            : "N/A"}{" "}
+                          {player?.birthDate && (
+                            <span className="text-muted-foreground lowercase">
+                              (
+                              {Math.floor(
+                                (Date.now() - new Date(player?.birthDate).getTime()) /
                                 (1000 * 60 * 60 * 24 * 365.25)
-                              )} y.o.`
-                              : "N/A"}
-                            )
-                          </span>
+                              )}{" "}
+                              y.o.)
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
@@ -292,11 +323,11 @@ const ViewDialog = (props: Props) => {
                 <div className="flex items-center gap-1.5 mb-2">
                   <span className="h-4 w-1 bg-blue-600" />
                   <Label className="text-xs text-muted-foreground">
-                    Account User
+                    Account Status
                   </Label>
                 </div>
 
-                <div className="bg-white border rounded-lg p-4">
+                <div className="bg-white border rounded-lg p-4 mb-4">
                   {loading ? (
                     <Skeleton className="my-1 w-20 h-4.25" />
                   ) : (
@@ -318,6 +349,174 @@ const ViewDialog = (props: Props) => {
                       )}
                     </div>
                   )}
+                </div>
+
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="h-4 w-1 bg-blue-600" />
+                  <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                    <Trophy className="h-3 w-3" />
+                    Achievements
+                  </Label>
+                </div>
+
+                <div className="bg-white border rounded-lg p-4">
+                  {loading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="w-full h-10" />
+                      <Skeleton className="w-full h-10" />
+                    </div>
+                  ) : (
+                    <>
+                      {player?.achievements && player.achievements.length > 0 ? (
+                        <div className="space-y-2">
+                          {player.achievements.map((achievement: string, index: number) => (
+                            <div
+                              key={index}
+                              className="flex items-start gap-3 p-3 rounded-lg bg-green-50/50 border border-green-200 hover:bg-green-100 transition-colors"
+                            >
+                              <Trophy className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                              <span className="text-[13px] font-medium tracking-wide flex-1">
+                                {achievement}
+                              </span>
+                              <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                                #{index + 1}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6">
+                          <Trophy className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No achievements recorded.</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            This player hasn't added any achievements yet.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Address Tab */}
+            <TabsContent value="address">
+              <div className="h-[60vh] overflow-y-auto">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="h-4 w-1 bg-blue-600" />
+                  <Label className="text-xs text-muted-foreground">
+                    Address Information
+                  </Label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="border rounded-lg p-4 hover:bg-muted/80 transition-colors">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Region</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-[13px] font-medium tracking-wide">
+                          {player?.address?.region?.name || "N/A"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4 hover:bg-muted/80 transition-colors">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Province</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-[13px] font-medium tracking-wide">
+                          {player?.address?.province?.name || "N/A"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4 hover:bg-muted/80 transition-colors">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">City/Municipality</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <div>
+                          <span className="block text-[13px] font-medium tracking-wide">
+                            {player?.address?.city?.name || "N/A"}
+                          </span>
+                          {player?.address?.city?.classification && (
+                            <span className="text-[11px] text-muted-foreground capitalize">
+                              ({player?.address?.city?.classification})
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4 hover:bg-muted/80 transition-colors">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Barangay</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-[13px] font-medium tracking-wide">
+                          {player?.address?.barangay?.name || "N/A"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4 hover:bg-muted/80 transition-colors">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Street Address</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-[13px] font-medium tracking-wide">
+                          {player?.address?.street || "N/A"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4 hover:bg-muted/80 transition-colors">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">ZIP Code</Label>
+                      {loading ? (
+                        <Skeleton className="w-full my-1 h-3" />
+                      ) : (
+                        <span className="block text-[13px] font-medium tracking-wide">
+                          {player?.address?.zipCode || "N/A"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4 mt-3 hover:bg-muted/80 transition-colors bg-blue-50/30">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      Full Address
+                    </Label>
+                    {loading ? (
+                      <Skeleton className="w-full my-1 h-3" />
+                    ) : (
+                      <div className="space-y-1">
+                        <span className="block text-[13px] font-medium tracking-wide">
+                          {player?.address?.fullAddress || "No address provided"}
+                        </span>
+                        {!player?.address?.fullAddress && (
+                          <p className="text-xs text-muted-foreground italic">
+                            No address information has been added for this player.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -373,7 +572,7 @@ const ViewDialog = (props: Props) => {
                 </div>
 
                 {player?.validDocuments && player.validDocuments.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4"> {/* Changed to single column for bigger previews */}
+                  <div className="grid grid-cols-1 gap-4">
                     {player.validDocuments.map((doc: any, index: number) => {
                       const fileType = getFileType(doc.documentURL);
                       const isGoogleDrive = fileType === 'googleDrive';
@@ -388,9 +587,6 @@ const ViewDialog = (props: Props) => {
                                 <h3 className="text-sm font-medium">
                                   {doc.documentType.replaceAll("_", " ")}
                                 </h3>
-                                {/* <p className="text-xs text-muted-foreground">
-                                  Uploaded on {format(new Date(doc.dateUploaded), "PP")}
-                                </p> */}
                               </div>
                               <div className="flex items-center gap-2">
                                 <Button
@@ -426,7 +622,7 @@ const ViewDialog = (props: Props) => {
                               </div>
                             </div>
 
-                            <div className="relative w-full h-[500px] border rounded-lg overflow-hidden bg-gray-50"> {/* Much bigger preview area */}
+                            <div className="relative w-full h-[500px] border rounded-lg overflow-hidden bg-gray-50">
                               {fileType === 'image' ? (
                                 <div className="relative w-full h-full">
                                   <Image
@@ -540,9 +736,6 @@ const ViewDialog = (props: Props) => {
                                 {index + 1}. {video.title}
                               </span>
                             </div>
-                            {/* <p className="text-xs text-muted-foreground">
-                              Uploaded on {format(new Date(video.dateUploaded), "PP")}
-                            </p> */}
                           </div>
                           <Button
                             size="sm"
