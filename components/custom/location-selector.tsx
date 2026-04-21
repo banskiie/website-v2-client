@@ -422,7 +422,7 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <div className="mb-2">
           <Label className="text-sm font-medium">Region</Label>
           <Select 
