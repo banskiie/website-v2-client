@@ -561,12 +561,70 @@ const DocumentUploadTab = ({
   )
 }
 
+const MaxEntriesModal = ({
+  isOpen,
+  onClose,
+  eventName,
+  maxEntries,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  eventName: string;
+  maxEntries: number | null;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+      <div className="animate-in fade-in-90 zoom-in-90 duration-300 w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-2xl p-6 text-center transform transition-all duration-300 scale-100 border border-red-200">
+          <div className="flex items-center justify-center mb-6">
+            <div className="p-3 bg-red-100 rounded-full">
+              <AlertCircle className="w-12 h-12 text-red-600" />
+            </div>
+          </div>
+
+          <h3 className="text-xl font-bold text-red-800 mb-3">
+            Event is Full!
+          </h3>
+
+          <p className="text-gray-700 mb-2">
+            The event <strong className="text-red-700">{eventName}</strong> has
+            reached its maximum capacity.
+          </p>
+
+          {maxEntries && (
+            <p className="text-gray-600 text-sm mb-4">
+              Maximum entries: <strong>{maxEntries}</strong> entries
+            </p>
+          )}
+
+          <p className="text-gray-600 mb-6">
+            No more entries can be registered for this event. Please select
+            another category or tournament.
+          </p>
+
+          <Button
+            onClick={onClose}
+            className="mt-3 text-sm text-white hover:cursor-pointer transition-colors w-full text-center"
+          >
+            Dismiss
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const FormDialog = (props: Props) => {
   const [open, setOpen] = useState(false)
   const isUpdate = Boolean(props._id)
   const [isPending, startTransition] = useTransition()
   const [currentTab, setCurrentTab] = useState('details')
   const [isInitializing, setIsInitializing] = useState(false)
+  const [showMaxEntriesModal, setShowMaxEntriesModal] = useState(false)
+  const [fullEventName, setFullEventName] = useState("")
+  const [fullEventMaxEntries, setFullEventMaxEntries] = useState<number | null>(null)
 
   const { data, loading: fetchLoading, refetch }: any = useQuery(ENTRY, {
     variables: { _id: props._id },
@@ -652,7 +710,10 @@ const FormDialog = (props: Props) => {
         setMaxEntriesReached(isFull)
 
         if (isFull) {
-          toast.error(`This event has reached its maximum capacity of ${data.event.maxEntries} entries.`)
+          const event = events.find(e => e.value === eventId)
+          setFullEventName(event?.label || "This event")
+          setFullEventMaxEntries(data.event.maxEntries)
+          setShowMaxEntriesModal(true)
         }
 
         return isFull
@@ -663,7 +724,7 @@ const FormDialog = (props: Props) => {
       setCheckingMaxEntries(false)
     }
     return false
-  }, [checkEventEntries])
+  }, [checkEventEntries, events])
 
   const autoSetGendersBasedOnEvent = useCallback((eventId: string, form: any) => {
     const event = events.find(e => e.value === eventId);
@@ -1157,7 +1218,10 @@ const FormDialog = (props: Props) => {
       if (!isUpdate && payload.event) {
         const isFull = await checkEventMaxEntries(payload.event)
         if (isFull) {
-          toast.error(`Cannot create entry. Event has reached its maximum capacity of ${maxEntriesLimit} entries.`)
+          const event = events.find(e => e.value === payload.event)
+          setFullEventName(event?.label || "This event")
+          setFullEventMaxEntries(maxEntriesLimit)
+          setShowMaxEntriesModal(true)
           return
         }
       }
@@ -2582,7 +2646,6 @@ const FormDialog = (props: Props) => {
     }
   }
 
-  // Add a warning message when event is full
   const EventFullWarning = () => {
     if (!maxEntriesReached || !selectedEvent) return null
 
@@ -4655,6 +4718,18 @@ const FormDialog = (props: Props) => {
             Submit
           </Button>
         </DialogFooter>
+
+        <MaxEntriesModal
+          isOpen={showMaxEntriesModal}
+          onClose={() => {
+            setShowMaxEntriesModal(false)
+            // Optional: Also clear the selected event if needed
+            form.setFieldValue("event", "")
+            setSelectedEvent(null)
+          }}
+          eventName={fullEventName}
+          maxEntries={fullEventMaxEntries}
+        />
 
         <AnimatePresence>
           {isUploading && <UploadingOverlay />}

@@ -933,6 +933,7 @@ function CategoriesContent() {
           currency: event.currency,
           isClosed: event.isClosed,
           tournamentId: activeTournament._id,
+          maxEntries: event.maxEntries,
         }
       })
       setLocalEvents(mappedEvents)

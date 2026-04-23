@@ -96,10 +96,43 @@ import {
   SelectValue,
 } from "../ui/select"
 import { useSearchParams } from "next/navigation"
+import { gql } from "@apollo/client"
 // const tournament = tournaments.find(t => t.isActive)
+
+const GET_ENTRY_COUNT = gql`
+  query GetEntryCount($eventId: ID!) {
+    entryCountByEvent(eventId: $eventId)
+  }
+`
+
+const GET_EVENT_DETAILS = gql`
+  query GetEventDetails($eventId: ID!) {
+    event(_id: $eventId) {
+      _id
+      name
+      maxEntries
+    }
+  }
+`
+
+interface EntryCountResponse {
+  entryCountByEvent: number;
+}
+
+interface EventDetailsResponse {
+  event: {
+    _id: string;
+    name: string;
+    maxEntries: number;
+  };
+}
 
 export type PublicTournamentsData = {
   publicTournaments: ITournament[]
+}
+
+interface ApprovedEntryCountResponse {
+  approvedEntryCountByEvent: number;
 }
 
 const getCategoryPrice = (category: string, type?: string) => {
@@ -139,12 +172,14 @@ export function CategoryCard({
   type,
   level,
   gender,
+  maxEntries,
   onClick,
 }: {
   name: string
   type: "Doubles" | "Singles"
   level: string
   gender: Gender
+  maxEntries?: number
   onClick: () => void
 }) {
   const levelColor =
@@ -183,12 +218,578 @@ export function CategoryCard({
         >
           {gender}
         </Badge>
+
+
       </div>
       <span className="font-medium text-gray-800 text-base">{name}</span>
       <div className="text-xs text-gray-500">{type}</div>
     </button>
   )
 }
+
+// Naay warning zone if full na ang event na style
+// export function CategoryModal({
+//   isOpen,
+//   onClose,
+//   category,
+// }: {
+//   isOpen: boolean
+//   onClose: () => void
+//   category: {
+//     id: string
+//     name: string
+//     type: "Doubles" | "Singles"
+//     level?: string
+//     gender?: string
+//     pricePerPlayer?: number
+//     earlyBirdPricePerPlayer?: number
+//     hasEarlyBird?: boolean
+//     currency?: string
+//     isClosed?: boolean
+//     tournamentId?: string
+//     maxEntries?: number
+//   } | null
+// }) {
+//   const [showGuidelines, setShowGuidelines] = useState(false)
+//   const [entryCount, setEntryCount] = useState<number | null>(null)
+//   const [isCheckingCapacity, setIsCheckingCapacity] = useState(false)
+//   const [isFull, setIsFull] = useState(false)
+//   const [eventDetails, setEventDetails] = useState<{ name: string; maxEntries: number } | null>(null)
+
+//   const { data, loading, error } =
+//     useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
+
+//   const [getEntryCount] = useLazyQuery<EntryCountResponse>(GET_ENTRY_COUNT, {
+//     fetchPolicy: "network-only",
+//   })
+
+//   const [getEventDetails] = useLazyQuery<EventDetailsResponse>(GET_EVENT_DETAILS, {
+//     fetchPolicy: "network-only",
+//   })
+
+//   // Fetch event details and entry count when modal opens
+//   useEffect(() => {
+//     const checkEventCapacity = async () => {
+//       if (isOpen && category?.id) {
+//         setIsCheckingCapacity(true)
+//         try {
+//           // Get event details (name and maxEntries)
+//           const eventResult = await getEventDetails({
+//             variables: { eventId: category.id }
+//           })
+
+//           const event = eventResult.data?.event
+//           if (event) {
+//             setEventDetails({
+//               name: event.name,
+//               maxEntries: event.maxEntries
+//             })
+
+//             // Get total entry count (ALL entries, not just approved)
+//             const countResult = await getEntryCount({
+//               variables: { eventId: category.id }
+//             })
+
+//             const count = countResult.data?.entryCountByEvent || 0
+//             setEntryCount(count)
+
+//             if (event.maxEntries && count >= event.maxEntries) {
+//               setIsFull(true)
+//             } else {
+//               setIsFull(false)
+//             }
+//           }
+//         } catch (error) {
+//           console.error("Error checking event capacity:", error)
+//         } finally {
+//           setIsCheckingCapacity(false)
+//         }
+//       }
+//     }
+
+//     checkEventCapacity()
+//   }, [isOpen, category?.id, getEventDetails, getEntryCount])
+
+//   const handleRegisterClick = () => {
+//     if (isFull) {
+//       toast.error("This event has reached its maximum capacity. Registration is closed.")
+//       return
+//     }
+
+//     if (hasGuidelines) {
+//       setShowGuidelines(true)
+//     } else {
+//       handleAgreeToGuidelines()
+//     }
+//   }
+
+//   const handleAgreeToGuidelines = () => {
+//     let tournament: ITournament | undefined
+
+//     if (category?.tournamentId) {
+//       tournament = data?.publicTournaments?.find(
+//         (t: ITournament) => t._id === category.tournamentId
+//       )
+//     }
+
+//     if (!tournament) {
+//       const activeTournament = data?.publicTournaments?.find(
+//         (t: ITournament) => t.isActive,
+//       )
+//       tournament = activeTournament || data?.publicTournaments?.[0]
+//     }
+
+//     if (tournament && category) {
+//       const registrationUrl = `/sports-center/courts/registration/${tournament._id}/${category.id}`
+//       window.location.href = registrationUrl
+//     }
+//   }
+
+//   if (!isOpen || !category) return null
+//   if (loading) return <p>Loading...</p>
+//   if (error) return <p>Error loading tournaments: {error.message}</p>
+
+//   const tournament = category.tournamentId
+//     ? data?.publicTournaments?.find((t: ITournament) => t._id === category.tournamentId)
+//     : data?.publicTournaments?.find((t: ITournament) => t.isActive) || data?.publicTournaments?.[0]
+
+//   const hasGuidelines = tournament?.settings?.hasGuidelines || false
+
+//   const checkEarlyBirdActive = () => {
+//     const hasEarlyBirdSetting =
+//       category.hasEarlyBird || tournament?.settings.hasEarlyBird
+//     if (!hasEarlyBirdSetting) return false
+
+//     const earlyBirdEndDate = tournament?.dates?.earlyBirdPaymentEnd
+//     if (!earlyBirdEndDate) return false
+
+//     const now = new Date()
+//     const endDate = new Date(earlyBirdEndDate)
+
+//     return now <= endDate
+//   }
+
+//   const isEarlyBirdActive = checkEarlyBirdActive()
+
+//   const displayPricePerPlayer =
+//     isEarlyBirdActive && category.earlyBirdPricePerPlayer
+//       ? category.earlyBirdPricePerPlayer
+//       : category.pricePerPlayer
+
+//   const getCurrencySymbol = (currency?: string) => {
+//     if (!currency) return ""
+//     return currency.toUpperCase() === "USD" ? "$" : "₱"
+//   }
+
+//   const symbol = getCurrencySymbol(category.currency)
+//   const perPlayerPrice = displayPricePerPlayer
+//     ? `${symbol}${displayPricePerPlayer.toLocaleString()}`
+//     : "N/A"
+
+//   const earlyBirdPerPlayer = category.earlyBirdPricePerPlayer
+//     ? `${symbol}${category.earlyBirdPricePerPlayer.toLocaleString()}`
+//     : null
+
+//   const perPairPrice =
+//     category.type === "Doubles" && displayPricePerPlayer
+//       ? `${symbol}${(displayPricePerPlayer * 2).toLocaleString()}`
+//       : null
+
+//   const earlyBirdPerPair =
+//     category.type === "Doubles" && category.earlyBirdPricePerPlayer
+//       ? `${symbol}${(category.earlyBirdPricePerPlayer * 2).toLocaleString()}`
+//       : null
+
+//   const savingsPerPlayer =
+//     isEarlyBirdActive &&
+//       category.earlyBirdPricePerPlayer &&
+//       category.pricePerPlayer
+//       ? category.pricePerPlayer - category.earlyBirdPricePerPlayer
+//       : 0
+
+//   const savingsPerPair =
+//     category.type === "Doubles" && savingsPerPlayer ? savingsPerPlayer * 2 : 0
+
+//   const getTimeRemaining = () => {
+//     if (!tournament?.dates?.earlyBirdPaymentEnd || !isEarlyBirdActive)
+//       return null
+
+//     const endDate = new Date(tournament.dates.earlyBirdPaymentEnd)
+//     const now = new Date()
+//     const diffMs = endDate.getTime() - now.getTime()
+//     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+
+//     if (diffDays <= 0) return null
+//     return diffDays
+//   }
+
+//   const daysRemaining = getTimeRemaining()
+//   const maxEntries = category.maxEntries || eventDetails?.maxEntries || 0
+//   const currentCount = entryCount || 0
+//   const remainingSlots = maxEntries - currentCount
+
+//   return (
+//     <>
+//       <AnimatePresence>
+//         {isOpen && (
+//           <motion.div
+//             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+//             initial={{ opacity: 0 }}
+//             animate={{ opacity: 1 }}
+//             exit={{ opacity: 0 }}
+//             onClick={onClose}
+//           >
+//             <motion.div
+//               className={`rounded-xl shadow-2xl w-full max-w-[400px] p-6 relative overflow-hidden ${isFull
+//                 ? "bg-gradient-to-br from-red-900 via-red-800 to-red-900 border-2 border-red-500"
+//                 : "bg-white"
+//                 }`}
+//               initial={{ scale: 0.9, opacity: 0 }}
+//               animate={{ scale: 1, opacity: 1 }}
+//               exit={{ scale: 0.9, opacity: 0 }}
+//               onClick={(e) => e.stopPropagation()}
+//             >
+//               {/* No Entry Zone Pattern Overlay */}
+//               {isFull && (
+//                 <>
+//                   <div className="absolute inset-0 opacity-10 pointer-events-none">
+//                     <div className="absolute inset-0 bg-repeat" style={{
+//                       backgroundImage: `repeating-linear-gradient(
+//                         45deg,
+//                         #ff0000 0px,
+//                         #ff0000 2px,
+//                         transparent 2px,
+//                         transparent 8px
+//                       )`,
+//                     }} />
+//                   </div>
+//                   <div className="absolute -top-16 -right-16 w-32 h-32 bg-red-500 rounded-full opacity-20 blur-2xl" />
+//                   <div className="absolute -bottom-16 -left-16 w-32 h-32 bg-red-600 rounded-full opacity-20 blur-2xl" />
+//                 </>
+//               )}
+
+//               <button
+//                 onClick={onClose}
+//                 className={`absolute top-6 right-3 cursor-pointer transition-colors ${isFull ? "text-red-300 hover:text-white" : "text-gray-400 hover:text-gray-600"
+//                   }`}
+//               >
+//                 <X className="w-5 h-5" />
+//               </button>
+
+//               <div className="flex items-center gap-2 mb-4">
+//                 <Trophy className={`w-6 h-6 ${isFull ? "text-red-300" : "text-yellow-500"}`} />
+//                 <h2 className={`text-lg font-bold ${isFull ? "text-white" : ""}`}>
+//                   Category Registration
+//                 </h2>
+//               </div>
+
+//               <div className="mb-4 text-left">
+//                 <div className="flex items-center gap-2 mb-2">
+//                   {category.type === "Doubles" ? (
+//                     <Users className={`w-5 h-5 ${isFull ? "text-red-300" : "text-gray-600"}`} />
+//                   ) : (
+//                     <User className={`w-5 h-5 ${isFull ? "text-red-300" : "text-gray-600"}`} />
+//                   )}
+//                   <span className={`font-semibold text-sm ${isFull ? "text-white" : "text-gray-800"}`}>
+//                     {category.name}
+//                   </span>
+//                   <Badge
+//                     variant="outline"
+//                     className={`text-xs ${isFull
+//                       ? "bg-red-800 text-red-200 border-red-600"
+//                       : "bg-yellow-100 text-yellow-800"
+//                       }`}
+//                   >
+//                     {category.level || category.name.split(" ")[1]}
+//                   </Badge>
+//                 </div>
+
+//                 <p className={`text-sm ${isFull ? "text-red-200" : "text-gray-500"}`}>
+//                   {category.level || category.name.split(" ")[1]} level. This is a{" "}
+//                   {category.type.toLowerCase()} category where{" "}
+//                   {category.type === "Doubles" ? "pairs" : "players"} compete
+//                   together.
+//                 </p>
+//               </div>
+
+//               {/* NO ENTRY ZONE Warning */}
+//               {isFull && (
+//                 <div className="mb-4 p-4 bg-red-950/50 border-2 border-red-500 rounded-lg backdrop-blur-sm">
+//                   <div className="flex flex-col items-center text-center gap-3">
+//                     <div className="relative">
+//                       <div className="absolute inset-0 animate-ping rounded-full bg-red-500 opacity-75" />
+//                       <div className="relative p-3 bg-red-600 rounded-full">
+//                         <Ban className="w-8 h-8 text-white" />
+//                       </div>
+//                     </div>
+//                     <div>
+//                       <h3 className="font-bold text-white text-lg flex items-center gap-2 justify-center">
+//                         <Lock className="w-5 h-5" />
+//                         NO ENTRY ZONE
+//                         <ShieldX className="w-5 h-5" />
+//                       </h3>
+//                       <p className="text-sm text-red-200 mt-2">
+//                         This event has reached its <strong className="text-white">maximum capacity</strong> of{" "}
+//                         <strong className="text-white text-lg">{maxEntries}</strong> entries.
+//                       </p>
+//                       <p className="text-xs text-red-300 mt-3">
+//                         ⚠️ Registration is permanently closed for this category ⚠️
+//                       </p>
+//                     </div>
+//                   </div>
+//                 </div>
+//               )}
+
+//               {/* Available Slots Display - Only show when not full */}
+//               {!isFull && !isCheckingCapacity && maxEntries > 0 && (
+//                 <div className={`mb-4 p-3 rounded-lg border ${remainingSlots <= 5
+//                   ? "bg-amber-50 border-amber-300"
+//                   : "bg-green-50 border-green-300"
+//                   }`}>
+//                   <div className="flex items-center justify-between">
+//                     <div>
+//                       <p className="text-sm font-semibold">
+//                         Available Slots
+//                       </p>
+//                       <p className="text-2xl font-bold">
+//                         {remainingSlots} / {maxEntries}
+//                       </p>
+//                     </div>
+//                     {remainingSlots <= 5 && (
+//                       <Badge className="bg-amber-500 text-white">
+//                         Only {remainingSlots} left!
+//                       </Badge>
+//                     )}
+//                   </div>
+//                   {remainingSlots <= 3 && (
+//                     <p className="text-xs text-amber-600 mt-2">
+//                       ⚠️ Hurry! Only {remainingSlots} slot{remainingSlots !== 1 ? 's' : ''} remaining!
+//                     </p>
+//                   )}
+//                 </div>
+//               )}
+
+//               {isCheckingCapacity && (
+//                 <div className="mb-4 p-3 rounded-lg border bg-gray-50 border-gray-300">
+//                   <div className="flex items-center justify-center gap-2">
+//                     <Loader2 className="w-4 h-4 animate-spin" />
+//                     <span className="text-sm text-gray-600">Checking availability...</span>
+//                   </div>
+//                 </div>
+//               )}
+
+//               <div className={`relative mb-6 ${isFull ? "opacity-75" : ""}`}>
+//                 <div className="absolute -inset-2 bg-linear-to-r from-green-100 to-emerald-100 rounded-2xl blur opacity-60" />
+//                 <div className={`relative rounded-2xl p-5 border-2 shadow-md ${isFull
+//                   ? "bg-red-950/30 border-red-500 backdrop-blur-sm"
+//                   : "bg-white border-green-200"
+//                   }`}>
+//                   <div className="flex items-center gap-1 mb-2">
+//                     <Sparkles className={`size-4 ${isFull ? "text-red-300" : "text-yellow-500"}`} />
+//                     <span className={`text-[12px] font-semibold ${isFull ? "text-red-200" : "text-gray-900"}`}>
+//                       Registration Fee
+//                     </span>
+
+//                     {isEarlyBirdActive && (
+//                       <>
+//                         <Badge className="bg-linear-to-r rounded-sm! from-green-500 to-emerald-500 text-white border-0 shadow-sm text-[10px]">
+//                           Early Bird
+//                         </Badge>
+
+//                         <div className="flex items-center gap-1 text-gray-600 ml-4.5">
+//                           <Clock className="size-3" />
+//                           <span className="text-xs">
+//                             {daysRemaining
+//                               ? `Ends in ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""}`
+//                               : "Ends soon"}
+//                           </span>
+//                         </div>
+//                       </>
+//                     )}
+//                   </div>
+
+//                   <div className="space-y-4">
+//                     <div className="flex justify-between items-start">
+//                       <div className="space-y-2">
+//                         <div className="flex items-center gap-1">
+//                           <User className={`size-4 ${isFull ? "text-red-300" : "text-green-600"}`} />
+//                           <span className={`text-[13px] ${isFull ? "text-red-200" : "text-gray-700"}`}>
+//                             Per Player Fee
+//                           </span>
+//                         </div>
+//                         <div className="flex items-baseline gap-2">
+//                           <span className={`text-md font-bold ${isFull ? "text-white" : "text-green-700"}`}>
+//                             {perPlayerPrice}
+//                           </span>
+//                           {isEarlyBirdActive &&
+//                             category.pricePerPlayer &&
+//                             category.earlyBirdPricePerPlayer && (
+//                               <span className="text-gray-400 line-through text-xs">
+//                                 {symbol}
+//                                 {category.pricePerPlayer.toLocaleString()}
+//                               </span>
+//                             )}
+//                         </div>
+//                         {savingsPerPlayer > 0 && (
+//                           <div className="flex items-center gap-1 text-green-600">
+//                             <TrendingUp className="size-3" />
+//                             <span className="text-xs font-medium">
+//                               Save {symbol}
+//                               {savingsPerPlayer.toLocaleString()}
+//                             </span>
+//                           </div>
+//                         )}
+//                       </div>
+
+//                       {isEarlyBirdActive &&
+//                         tournament?.dates?.earlyBirdPaymentEnd && (
+//                           <div className="bg-green-50 border border-green-400 text-green-700 text-[12px] font-bold px-3 py-2 rounded-md">
+//                             {format(
+//                               new Date(tournament.dates.earlyBirdPaymentEnd),
+//                               "MMM dd, yyyy",
+//                             )}
+//                           </div>
+//                         )}
+//                     </div>
+
+//                     {perPairPrice && category.type === "Doubles" && (
+//                       <div className="pt-3 border-t border-gray-100">
+//                         <div className="space-y-1.5">
+//                           <div className="flex items-center gap-2">
+//                             <Users className={`size-4 ${isFull ? "text-red-300" : "text-blue-600"}`} />
+//                             <span className={`text-sm ${isFull ? "text-red-200" : "text-gray-700"}`}>
+//                               Per Pair Fee
+//                             </span>
+//                           </div>
+//                           <div className="flex items-baseline gap-2">
+//                             <span className={`text-xl font-bold ${isFull ? "text-white" : "text-blue-700"}`}>
+//                               {perPairPrice}
+//                             </span>
+//                             {isEarlyBirdActive &&
+//                               category.pricePerPlayer &&
+//                               category.earlyBirdPricePerPlayer && (
+//                                 <span className="text-gray-400 line-through text-xs">
+//                                   {symbol}
+//                                   {(category.pricePerPlayer * 2).toLocaleString()}
+//                                 </span>
+//                               )}
+//                           </div>
+//                           {savingsPerPair > 0 && (
+//                             <div className="flex items-center gap-1 text-green-600">
+//                               <TrendingUp className="size-3" />
+//                               <span className="text-xs font-medium">
+//                                 Save {symbol}
+//                                 {savingsPerPair.toLocaleString()}
+//                               </span>
+//                             </div>
+//                           )}
+//                         </div>
+//                       </div>
+//                     )}
+
+//                     {!isEarlyBirdActive && earlyBirdPerPlayer && (
+//                       <div className="pt-3 border-t border-gray-100">
+//                         <div className="text-xs text-gray-500 italic">
+//                           Early Bird was available at {earlyBirdPerPlayer}
+//                         </div>
+//                       </div>
+//                     )}
+//                   </div>
+//                 </div>
+//               </div>
+
+//               <div className={`p-4 rounded-md mb-6 text-left ${isFull ? "bg-red-950/50 border border-red-600" : "bg-blue-50"}`}>
+//                 <div className="flex items-center gap-2 mb-1">
+//                   <span className={`font-semibold text-sm ${isFull ? "text-red-200" : "text-gray-700"}`}>📅</span>
+//                   <span className={`font-semibold text-sm ${isFull ? "text-red-200" : "text-gray-800"}`}>
+//                     Tournament Details
+//                   </span>
+//                 </div>
+//                 <p className={`text-xs font-medium mb-1 ${isFull ? "text-red-200" : "text-gray-700"}`}>
+//                   {tournament?.name || "Tournament TBA"}
+//                 </p>
+//                 <p
+//                   className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"
+//                     }`}
+//                 >
+//                   {tournament?.isActive ? "Active" : "Inactive"}
+//                 </p>
+//                 <p className={`text-xs font-medium ${isFull ? "text-red-200" : "text-gray-700"}`}>
+//                   {tournament
+//                     ? `${format(
+//                       new Date(tournament.dates.tournamentStart),
+//                       "MMM dd, yyyy",
+//                     )} - ${format(
+//                       new Date(tournament.dates.tournamentEnd),
+//                       "MMM dd, yyyy",
+//                     )}`
+//                     : "Dates TBD"}
+//                 </p>
+//               </div>
+
+//               <div className="flex gap-3">
+//                 {!category?.isClosed && !isFull ? (
+//                   <Button
+//                     onClick={handleRegisterClick}
+//                     className="flex-1 bg-black text-white cursor-pointer hover:bg-gray-900 px-4 py-2"
+//                     disabled={isCheckingCapacity}
+//                   >
+//                     {isCheckingCapacity ? (
+//                       <div className="flex items-center gap-2">
+//                         <Loader2 className="w-4 h-4 animate-spin" />
+//                         <span>Checking...</span>
+//                       </div>
+//                     ) : (
+//                       "Register Now"
+//                     )}
+//                   </Button>
+//                 ) : (
+//                   <Button
+//                     disabled
+//                     className="flex-1 bg-gradient-to-r from-red-700 to-red-800 text-white px-4 py-2 rounded-md text-center text-sm font-medium cursor-not-allowed opacity-100 hover:from-red-700 hover:to-red-800 border border-red-500"
+//                   >
+//                     <div className="flex items-center justify-center gap-2">
+//                       <Ban className="w-4 h-4" />
+//                       <span>NO ENTRY - FULL</span>
+//                       <Lock className="w-3 h-3" />
+//                     </div>
+//                   </Button>
+//                 )}
+
+//                 <Button
+//                   variant="outline"
+//                   size="icon"
+//                   onClick={() =>
+//                     window.open(
+//                       "https://www.facebook.com/c.onebadmintonchallenge/",
+//                       "_blank",
+//                     )
+//                   }
+//                   className={`cursor-pointer ${isFull ? "border-red-500 text-red-400 hover:bg-red-950 hover:text-red-300" : ""}`}
+//                 >
+//                   <ExternalLink className="w-4 h-4" />
+//                 </Button>
+//               </div>
+
+//               {isFull && (
+//                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600" />
+//               )}
+//             </motion.div>
+//           </motion.div>
+//         )}
+//       </AnimatePresence>
+
+//       {hasGuidelines && (
+//         <Guidelines
+//           isOpen={showGuidelines}
+//           onClose={() => setShowGuidelines(false)}
+//           onAgree={handleAgreeToGuidelines}
+//           categoryName={category?.name || ""}
+//         />
+//       )}
+//     </>
+//   )
+// }
 
 export function CategoryModal({
   isOpen,
@@ -209,16 +810,75 @@ export function CategoryModal({
     currency?: string
     isClosed?: boolean
     tournamentId?: string
+    maxEntries?: number
   } | null
 }) {
   const [showGuidelines, setShowGuidelines] = useState(false)
+  const [entryCount, setEntryCount] = useState<number | null>(null)
+  const [isCheckingCapacity, setIsCheckingCapacity] = useState(false)
+  const [isFull, setIsFull] = useState(false)
+  const [eventDetails, setEventDetails] = useState<{ name: string; maxEntries: number } | null>(null)
+
   const { data, loading, error } =
     useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
 
-  console.log("CategoryModal - category:", category)
-  console.log("CategoryModal - category.tournamentId:", category?.tournamentId)
+  const [getEntryCount] = useLazyQuery<EntryCountResponse>(GET_ENTRY_COUNT, {
+    fetchPolicy: "network-only",
+  })
+
+  const [getEventDetails] = useLazyQuery<EventDetailsResponse>(GET_EVENT_DETAILS, {
+    fetchPolicy: "network-only",
+  })
+
+  // Fetch event details and entry count when modal opens
+  useEffect(() => {
+    const checkEventCapacity = async () => {
+      if (isOpen && category?.id) {
+        setIsCheckingCapacity(true)
+        try {
+          // Get event details (name and maxEntries)
+          const eventResult = await getEventDetails({
+            variables: { eventId: category.id }
+          })
+
+          const event = eventResult.data?.event
+          if (event) {
+            setEventDetails({
+              name: event.name,
+              maxEntries: event.maxEntries
+            })
+
+            // Get total entry count (ALL entries, not just approved)
+            const countResult = await getEntryCount({
+              variables: { eventId: category.id }
+            })
+
+            const count = countResult.data?.entryCountByEvent || 0
+            setEntryCount(count)
+
+            if (event.maxEntries && count >= event.maxEntries) {
+              setIsFull(true)
+            } else {
+              setIsFull(false)
+            }
+          }
+        } catch (error) {
+          console.error("Error checking event capacity:", error)
+        } finally {
+          setIsCheckingCapacity(false)
+        }
+      }
+    }
+
+    checkEventCapacity()
+  }, [isOpen, category?.id, getEventDetails, getEntryCount])
 
   const handleRegisterClick = () => {
+    if (isFull) {
+      toast.error("This event has reached its maximum capacity. Registration is closed.")
+      return
+    }
+
     if (hasGuidelines) {
       setShowGuidelines(true)
     } else {
@@ -229,13 +889,10 @@ export function CategoryModal({
   const handleAgreeToGuidelines = () => {
     let tournament: ITournament | undefined
 
-    console.log("handleAgreeToGuidelines - category.tournamentId:", category?.tournamentId)
-
     if (category?.tournamentId) {
       tournament = data?.publicTournaments?.find(
         (t: ITournament) => t._id === category.tournamentId
       )
-      console.log("handleAgreeToGuidelines - Found tournament by ID:", tournament?._id, tournament?.name)
     }
 
     if (!tournament) {
@@ -243,12 +900,10 @@ export function CategoryModal({
         (t: ITournament) => t.isActive,
       )
       tournament = activeTournament || data?.publicTournaments?.[0]
-      console.log("handleAgreeToGuidelines - Using fallback tournament:", tournament?._id, tournament?.name)
     }
 
     if (tournament && category) {
       const registrationUrl = `/sports-center/courts/registration/${tournament._id}/${category.id}`
-      console.log("handleAgreeToGuidelines - Redirecting to:", registrationUrl)
       window.location.href = registrationUrl
     }
   }
@@ -257,38 +912,30 @@ export function CategoryModal({
   if (loading) return <p>Loading...</p>
   if (error) return <p>Error loading tournaments: {error.message}</p>
 
-  // IMPORTANT: Find the tournament by the category's tournamentId, not the active tournament
   const tournament = category.tournamentId
     ? data?.publicTournaments?.find((t: ITournament) => t._id === category.tournamentId)
     : data?.publicTournaments?.find((t: ITournament) => t.isActive) || data?.publicTournaments?.[0]
 
-  console.log("CategoryModal - Found tournament for display:", tournament?._id, tournament?.name)
-
   const hasGuidelines = tournament?.settings?.hasGuidelines || false
 
   const checkEarlyBirdActive = () => {
-    // First check if early bird is enabled in settings
     const hasEarlyBirdSetting =
       category.hasEarlyBird || tournament?.settings.hasEarlyBird
     if (!hasEarlyBirdSetting) return false
 
-    // Then check if the early bird period has ended
     const earlyBirdEndDate = tournament?.dates?.earlyBirdPaymentEnd
     if (!earlyBirdEndDate) return false
 
-    // Get current date in UTC for comparison
-    const nowUTC = new Date().toISOString()
-    const now = new Date(nowUTC)
+    const now = new Date()
     const endDate = new Date(earlyBirdEndDate)
 
-    // Early bird is active if current date is before/equal to end date
     return now <= endDate
   }
 
-  const isEarlyBirdActive = checkEarlyBirdActive() // ✅ Now includes date check
+  const isEarlyBirdActive = checkEarlyBirdActive()
 
   const displayPricePerPlayer =
-    isEarlyBirdActive && category.earlyBirdPricePerPlayer // ✅ Use isEarlyBirdActive
+    isEarlyBirdActive && category.earlyBirdPricePerPlayer
       ? category.earlyBirdPricePerPlayer
       : category.pricePerPlayer
 
@@ -316,18 +963,16 @@ export function CategoryModal({
       ? `${symbol}${(category.earlyBirdPricePerPlayer * 2).toLocaleString()}`
       : null
 
-  // Calculate savings if early bird is active
   const savingsPerPlayer =
     isEarlyBirdActive &&
       category.earlyBirdPricePerPlayer &&
-      category.pricePerPlayer // ✅ Use isEarlyBirdActive
+      category.pricePerPlayer
       ? category.pricePerPlayer - category.earlyBirdPricePerPlayer
       : 0
 
   const savingsPerPair =
     category.type === "Doubles" && savingsPerPlayer ? savingsPerPlayer * 2 : 0
 
-  // Helper to format remaining time (optional)
   const getTimeRemaining = () => {
     if (!tournament?.dates?.earlyBirdPaymentEnd || !isEarlyBirdActive)
       return null
@@ -342,236 +987,317 @@ export function CategoryModal({
   }
 
   const daysRemaining = getTimeRemaining()
+  const maxEntries = category.maxEntries || eventDetails?.maxEntries || 0
+  const currentCount = entryCount || 0
+  const remainingSlots = maxEntries - currentCount
 
   return (
     <>
-      <div
-        className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
-        onClick={onClose}
-      >
-        <div
-          className="bg-white rounded-xl shadow-xl w-full max-w-[400px] p-6 relative"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute top-6 right-3 text-gray-400 cursor-pointer hover:text-gray-600"
           >
-            <X className="w-5 h-5" />
-          </button>
-
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className="w-6 h-6 text-yellow-500" />
-            <h2 className="text-lg font-bold">Category Registration</h2>
-          </div>
-
-          <div className="mb-4 text-left">
-            <div className="flex items-center gap-2 mb-2">
-              <Users
-                className={`w-5 h-5 text-gray-600 ${category.type === "Singles" ? "hidden" : ""
-                  }`}
-              />
-              <User
-                className={`w-5 h-5 text-gray-600 ${category.type === "Doubles" ? "hidden" : ""
-                  }`}
-              />
-              <span className="font-semibold text-gray-800 text-sm">
-                {category.name}
-              </span>
-              <Badge
-                variant="outline"
-                className="bg-yellow-100 text-yellow-800 text-xs"
+            <motion.div
+              className="bg-white rounded-xl shadow-xl w-full max-w-[450px] p-6 relative"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={onClose}
+                className="absolute top-6 right-3 text-gray-400 cursor-pointer hover:text-gray-600"
               >
-                {category.level || category.name.split(" ")[1]}
-              </Badge>
-            </div>
+                <X className="w-5 h-5" />
+              </button>
 
-            <p className="text-sm text-gray-500">
-              {category.level || category.name.split(" ")[1]} level. This is a{" "}
-              {category.type.toLowerCase()} category where{" "}
-              {category.type === "Doubles" ? "pairs" : "players"} compete
-              together.
-            </p>
-          </div>
-
-          <div className="relative mb-6">
-            <div className="absolute -inset-2 bg-linear-to-r from-green-100 to-emerald-100 rounded-2xl blur opacity-60" />
-            <div className="relative bg-white rounded-2xl p-5 border-2 border-green-200 shadow-md">
-              <div className="flex items-center gap-1 mb-2">
-                <Sparkles className="size-4 text-yellow-500" />
-                <span className="text-gray-900 text-[12px] font-semibold">
-                  Registration Fee
-                </span>
-
-                {isEarlyBirdActive && (
-                  <>
-                    <Badge className="bg-linear-to-r rounded-sm! from-green-500 to-emerald-500 text-white border-0 shadow-sm text-[10px]">
-                      Early Bird
-                    </Badge>
-
-                    <div className="flex items-center gap-1 text-gray-600 ml-4.5">
-                      <Clock className="size-3" />
-                      <span className="text-xs">
-                        {daysRemaining
-                          ? `Ends in ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""}`
-                          : "Ends soon"}
-                      </span>
-                    </div>
-                  </>
-                )}
+              <div className="flex items-center gap-2 mb-4">
+                <Trophy className="w-6 h-6 text-yellow-500" />
+                <h2 className="text-lg font-bold">Category Registration</h2>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1">
-                      <User className="size-4 text-green-600" />
-                      <span className="text-gray-700 text-[13px]">
-                        Per Player Fee
-                      </span>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-md text-green-700 font-bold">
-                        {perPlayerPrice}
-                      </span>
-                      {isEarlyBirdActive &&
-                        category.pricePerPlayer &&
-                        category.earlyBirdPricePerPlayer && (
-                          <span className="text-gray-400 line-through text-xs">
-                            {symbol}
-                            {category.pricePerPlayer.toLocaleString()}
-                          </span>
-                        )}
-                    </div>
-                    {savingsPerPlayer > 0 && (
-                      <div className="flex items-center gap-1 text-green-600">
-                        <TrendingUp className="size-3" />
-                        <span className="text-xs font-medium">
-                          Save {symbol}
-                          {savingsPerPlayer.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {isEarlyBirdActive &&
-                    tournament?.dates?.earlyBirdPaymentEnd && (
-                      <div className="bg-green-50 border border-green-400 text-green-700 text-[12px] font-bold px-3 py-2 rounded-md">
-                        {format(
-                          new Date(tournament.dates.earlyBirdPaymentEnd),
-                          "MMM dd, yyyy",
-                        )}
-                      </div>
-                    )}
+              <div className="mb-4 text-left">
+                <div className="flex items-center gap-2 mb-2">
+                  {category.type === "Doubles" ? (
+                    <Users className="w-5 h-5 text-gray-600" />
+                  ) : (
+                    <User className="w-5 h-5 text-gray-600" />
+                  )}
+                  <span className="font-semibold text-gray-800 text-sm">
+                    {category.name}
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="bg-yellow-100 text-yellow-800 text-xs"
+                  >
+                    {category.level || category.name.split(" ")[1]}
+                  </Badge>
                 </div>
 
-                {perPairPrice && category.type === "Doubles" && (
-                  <div className="pt-3 border-t border-gray-100">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <Users className="size-4 text-blue-600" />
-                        <span className="text-gray-700 text-sm">
-                          Per Pair Fee
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xl text-blue-700 font-bold">
-                          {perPairPrice}
-                        </span>
-                        {isEarlyBirdActive &&
-                          category.pricePerPlayer &&
-                          category.earlyBirdPricePerPlayer && (
-                            <span className="text-gray-400 line-through text-xs">
-                              {symbol}
-                              {(category.pricePerPlayer * 2).toLocaleString()}
-                            </span>
-                          )}
-                      </div>
-                      {savingsPerPair > 0 && (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <TrendingUp className="size-3" />
-                          <span className="text-xs font-medium">
-                            Save {symbol}
-                            {savingsPerPair.toLocaleString()}
+                <p className="text-sm text-gray-500">
+                  {category.level || category.name.split(" ")[1]} level. This is a{" "}
+                  {category.type.toLowerCase()} category where{" "}
+                  {category.type === "Doubles" ? "pairs" : "players"} compete
+                  together.
+                </p>
+              </div>
+
+              {isFull && (
+                <div className="mb-4 p-4 bg-red-50 border-2 border-red-400 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-red-100 rounded-full">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-red-800 text-base">
+                        EVENT IS FULL
+                      </h3>
+                      <p className="text-sm text-red-700 mt-1">
+                        The event <strong className="text-red-800">"{category.name}"</strong> has reached its maximum capacity of{" "}
+                        <strong className="text-red-800">{maxEntries}</strong> entries.
+                      </p>
+                      <p className="text-xs text-red-600 mt-2">
+                        Please go back and select another category.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!isFull && !isCheckingCapacity && maxEntries > 0 && (
+                <div className={`mb-4 p-3 rounded-lg border ${remainingSlots <= 5
+                  ? "bg-amber-50 border-amber-300"
+                  : "bg-green-50 border-green-300"
+                  }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        Available Slots
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {remainingSlots} / {maxEntries}
+                      </p>
+                    </div>
+                    {remainingSlots <= 5 && (
+                      <Badge className="bg-amber-500 text-white">
+                        Only {remainingSlots} left!
+                      </Badge>
+                    )}
+                  </div>
+                  {remainingSlots <= 3 && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      ⚠️ Hurry! Only {remainingSlots} slot{remainingSlots !== 1 ? 's' : ''} remaining!
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {isCheckingCapacity && (
+                <div className="mb-4 p-3 rounded-lg border bg-gray-50 border-gray-300">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm text-gray-600">Checking availability...</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="relative mb-6">
+                <div className="absolute -inset-2 bg-linear-to-r from-green-100 to-emerald-100 rounded-2xl blur opacity-60" />
+                <div className="relative bg-white rounded-2xl p-5 border-2 border-green-200 shadow-md">
+                  <div className="flex items-center gap-1 mb-2">
+                    <Sparkles className="size-4 text-yellow-500" />
+                    <span className="text-gray-900 text-[12px] font-semibold">
+                      Registration Fee
+                    </span>
+
+                    {isEarlyBirdActive && (
+                      <>
+                        <Badge className="bg-linear-to-r rounded-sm! from-green-500 to-emerald-500 text-white border-0 shadow-sm text-[10px]">
+                          Early Bird
+                        </Badge>
+
+                        <div className="flex items-center gap-1 text-gray-600 ml-4.5">
+                          <Clock className="size-3" />
+                          <span className="text-xs">
+                            {daysRemaining
+                              ? `Ends in ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""}`
+                              : "Ends soon"}
                           </span>
                         </div>
-                      )}
-                    </div>
+                      </>
+                    )}
                   </div>
-                )}
 
-                {!isEarlyBirdActive && earlyBirdPerPlayer && (
-                  <div className="pt-3 border-t border-gray-100">
-                    <div className="text-xs text-gray-500 italic">
-                      Early Bird was available at {earlyBirdPerPlayer}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1">
+                          <User className="size-4 text-green-600" />
+                          <span className="text-gray-700 text-[13px]">
+                            Per Player Fee
+                          </span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-md text-green-700 font-bold">
+                            {perPlayerPrice}
+                          </span>
+                          {isEarlyBirdActive &&
+                            category.pricePerPlayer &&
+                            category.earlyBirdPricePerPlayer && (
+                              <span className="text-gray-400 line-through text-xs">
+                                {symbol}
+                                {category.pricePerPlayer.toLocaleString()}
+                              </span>
+                            )}
+                        </div>
+                        {savingsPerPlayer > 0 && (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <TrendingUp className="size-3" />
+                            <span className="text-xs font-medium">
+                              Save {symbol}
+                              {savingsPerPlayer.toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {isEarlyBirdActive &&
+                        tournament?.dates?.earlyBirdPaymentEnd && (
+                          <div className="bg-green-50 border border-green-400 text-green-700 text-[12px] font-bold px-3 py-2 rounded-md">
+                            {format(
+                              new Date(tournament.dates.earlyBirdPaymentEnd),
+                              "MMM dd, yyyy",
+                            )}
+                          </div>
+                        )}
                     </div>
+
+                    {perPairPrice && category.type === "Doubles" && (
+                      <div className="pt-3 border-t border-gray-100">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <Users className="size-4 text-blue-600" />
+                            <span className="text-gray-700 text-sm">
+                              Per Pair Fee
+                            </span>
+                          </div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xl text-blue-700 font-bold">
+                              {perPairPrice}
+                            </span>
+                            {isEarlyBirdActive &&
+                              category.pricePerPlayer &&
+                              category.earlyBirdPricePerPlayer && (
+                                <span className="text-gray-400 line-through text-xs">
+                                  {symbol}
+                                  {(category.pricePerPlayer * 2).toLocaleString()}
+                                </span>
+                              )}
+                          </div>
+                          {savingsPerPair > 0 && (
+                            <div className="flex items-center gap-1 text-green-600">
+                              <TrendingUp className="size-3" />
+                              <span className="text-xs font-medium">
+                                Save {symbol}
+                                {savingsPerPair.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {!isEarlyBirdActive && earlyBirdPerPlayer && (
+                      <div className="pt-3 border-t border-gray-100">
+                        <div className="text-xs text-gray-500 italic">
+                          Early Bird was available at {earlyBirdPerPlayer}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="bg-blue-50 p-4 rounded-md mb-6 text-left">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-gray-700 text-sm">📅</span>
-              <span className="font-semibold text-gray-800 text-sm">
-                Tournament Details
-              </span>
-            </div>
-            <p className="text-gray-700 text-xs font-medium mb-1">
-              {tournament?.name || "Tournament TBA"}
-            </p>
-            <p
-              className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"
-                }`}
-            >
-              {tournament?.isActive ? "Active" : "Inactive"}
-            </p>
-            <p className="text-gray-700 text-xs font-medium">
-              {tournament
-                ? `${format(
-                  new Date(tournament.dates.tournamentStart),
-                  "MMM dd, yyyy",
-                )} - ${format(
-                  new Date(tournament.dates.tournamentEnd),
-                  "MMM dd, yyyy",
-                )}`
-                : "Dates TBD"}
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            {!category?.isClosed ? (
-              <>
-                <Button
-                  onClick={handleRegisterClick}
-                  className="flex-1 bg-black text-white cursor-pointer hover:bg-gray-900 px-4 py-2"
+              <div className="bg-blue-50 p-4 rounded-md mb-6 text-left">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-gray-700 text-sm">📅</span>
+                  <span className="font-semibold text-gray-800 text-sm">
+                    Tournament Details
+                  </span>
+                </div>
+                <p className="text-gray-700 text-xs font-medium mb-1">
+                  {tournament?.name || "Tournament TBA"}
+                </p>
+                <p
+                  className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"
+                    }`}
                 >
-                  Register Now
-                </Button>
-              </>
-            ) : (
-              <div className="flex-1 bg-gray-200 text-gray-500 px-4 py-2 rounded-md text-center text-sm font-medium cursor-not-allowed">
-                Registration Closed
+                  {tournament?.isActive ? "Active" : "Inactive"}
+                </p>
+                <p className="text-gray-700 text-xs font-medium">
+                  {tournament
+                    ? `${format(
+                      new Date(tournament.dates.tournamentStart),
+                      "MMM dd, yyyy",
+                    )} - ${format(
+                      new Date(tournament.dates.tournamentEnd),
+                      "MMM dd, yyyy",
+                    )}`
+                    : "Dates TBD"}
+                </p>
               </div>
-            )}
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() =>
-                window.open(
-                  "https://www.facebook.com/c.onebadmintonchallenge/",
-                  "_blank",
-                )
-              }
-              className="cursor-pointer"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
+              <div className="flex gap-3">
+                {!category?.isClosed && !isFull ? (
+                  <Button
+                    onClick={handleRegisterClick}
+                    className="flex-1 bg-black text-white cursor-pointer hover:bg-gray-900 px-4 py-2"
+                    disabled={isCheckingCapacity}
+                  >
+                    {isCheckingCapacity ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Checking...</span>
+                      </div>
+                    ) : (
+                      "Register Now"
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    disabled
+                    className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md text-center text-sm font-medium cursor-not-allowed opacity-100 hover:bg-red-600"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>Event Full - Event Registration Closed</span>
+                    </div>
+                  </Button>
+                )}
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    window.open(
+                      "https://www.facebook.com/c.onebadmintonchallenge/",
+                      "_blank",
+                    )
+                  }
+                  className="cursor-pointer"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {hasGuidelines && (
         <Guidelines
@@ -584,7 +1310,6 @@ export function CategoryModal({
     </>
   )
 }
-
 function SubmissionSuccessModal({
   isOpen,
   onClose,
@@ -3377,6 +4102,7 @@ export default function App() {
     currency?: string
     hasEarlyBird?: boolean
     tournamentId?: string
+    maxEntries?: number
   } | null>(null)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -3463,6 +4189,7 @@ export default function App() {
 
   const handleCategoryClick = (category: any) => {
     console.log("Category clicked - raw category object:", category)
+    console.log("Category clicked - maxEntries:", category.maxEntries)
     console.log("Category clicked - tournamentId:", category.tournamentId)
 
     setSelectedCategory({
@@ -3477,6 +4204,7 @@ export default function App() {
       currency: category.currency,
       hasEarlyBird: currentTournament?.settings?.hasEarlyBird,
       tournamentId: category.tournamentId,
+      maxEntries: category.maxEntries,
     })
     setIsModalOpen(true)
   }
@@ -3547,6 +4275,7 @@ export default function App() {
               name={category.name}
               type={category.type}
               level={category.level}
+              maxEntries={category.maxEntries}
               gender={category.gender}
               onClick={() => handleCategoryClick(category)}
             />
@@ -3652,7 +4381,6 @@ export default function App() {
 
         <Separator className="my-8" />
 
-        {/* ✅ SINGLES CATEGORIES */}
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-6">
             <User className="w-6 h-6 text-green-600" />

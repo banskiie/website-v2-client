@@ -1263,7 +1263,7 @@ const AssignDialog = (props: Props) => {
             ({ path, message }: { path: string; message: string }) =>
               formApi.fieldInfo[
                 path as keyof typeof formApi.fieldInfo
-              ].instance?.setErrorMap({
+              ]?.instance?.setErrorMap({
                 onSubmit: { message },
               }),
           );
@@ -1431,7 +1431,7 @@ const AssignDialog = (props: Props) => {
                 ({ path, message }: { path: string; message: string }) =>
                   formApi.fieldInfo[
                     path as keyof typeof formApi.fieldInfo
-                  ].instance?.setErrorMap({
+                  ]?.instance?.setErrorMap({
                     onSubmit: { message },
                   }),
               );

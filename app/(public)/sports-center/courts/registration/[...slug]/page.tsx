@@ -1006,12 +1006,12 @@ export default function Page({ params }: RegistrationPageProps) {
   const eventDataForValidation =
     event && tournament
       ? {
-          ...event,
-          tournamentStart: tournament.dates.tournamentStart,
-          minAge: event.minAge,
-          maxAge: event.maxAge,
-          gender: event.gender,
-        }
+        ...event,
+        tournamentStart: tournament.dates.tournamentStart,
+        minAge: event.minAge,
+        maxAge: event.maxAge,
+        gender: event.gender,
+      }
       : undefined;
 
   const uploadFile = async (
@@ -1916,16 +1916,15 @@ export default function Page({ params }: RegistrationPageProps) {
               onBlur={handleBlur}
               variant="outline"
               role="combobox"
-              className={`w-full justify-between font-normal capitalize -mt-2 ${
-                hasError
-                  ? "border-red-500 bg-red-50 hover:bg-red-100 focus:ring-red-500"
-                  : "border-green-200 hover:border-green-300"
-              }`}
+              className={`w-full justify-between font-normal capitalize -mt-2 ${hasError
+                ? "border-red-500 bg-red-50 hover:bg-red-100 focus:ring-red-500"
+                : "border-green-200 hover:border-green-300"
+                }`}
               type="button"
             >
               {selectedDocumentType
                 ? documentTypes.find((o) => o.value === selectedDocumentType)
-                    ?.label
+                  ?.label
                 : "Select Document Type"}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -2423,15 +2422,14 @@ export default function Page({ params }: RegistrationPageProps) {
                                       tournament?.dates?.tournamentStart && (
                                         <div className="flex items-center gap-1">
                                           <span
-                                            className={`text-xs font-medium px-2 rounded ${
-                                              minAge !== undefined &&
+                                            className={`text-xs font-medium px-2 rounded ${minAge !== undefined &&
                                               maxAge !== undefined &&
                                               calculatedAge !== null &&
                                               calculatedAge >= minAge &&
                                               calculatedAge <= maxAge
-                                                ? "text-green-600 bg-green-50 border border-green-200"
-                                                : "text-red-600 bg-red-50 border border-red-200"
-                                            }`}
+                                              ? "text-green-600 bg-green-50 border border-green-200"
+                                              : "text-red-600 bg-red-50 border border-red-200"
+                                              }`}
                                           >
                                             Age: {calculatedAge}
                                           </span>
@@ -2450,7 +2448,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                           name={field.name}
                                           value={
                                             typeof field.state.value ===
-                                            "string"
+                                              "string"
                                               ? field.state.value
                                               : ""
                                           }
@@ -2551,9 +2549,9 @@ export default function Page({ params }: RegistrationPageProps) {
                                             {typeof field.state.value ===
                                               "string" && field.state.value
                                               ? format(
-                                                  new Date(field.state.value),
-                                                  "PPP",
-                                                )
+                                                new Date(field.state.value),
+                                                "PPP",
+                                              )
                                               : "Pick a date"}
                                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                           </Button>
@@ -2566,7 +2564,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                             mode="single"
                                             selected={
                                               typeof field.state.value ===
-                                              "string"
+                                                "string"
                                                 ? new Date(field.state.value)
                                                 : undefined
                                             }
@@ -2636,33 +2634,33 @@ export default function Page({ params }: RegistrationPageProps) {
                         </span>
                       </div>
 
-    <form.Field
-  name={`player${playerNum}Address` as FormFieldNames}
-  children={(field) => {
-    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-    // Cast the field value to LocationData | undefined
-    const addressValue = field.state.value as LocationData | undefined;
-    
-    return (
-      <Field data-invalid={isInvalid} className="text-left">
-        <LocationSelector
-          value={addressValue}
-          onChange={(location: LocationData) => {
-            // Cast the location to the expected type
-            field.handleChange(location as any);
-          }}
-          disabled={isSubmitting || isUploading}
-        />
-        {isInvalid && (
-          <EnhancedFieldError
-            errors={field.state.meta.errors}
-            fieldName={field.name}
-          />
-        )}
-      </Field>
-    );
-  }}
-/>
+                      <form.Field
+                        name={`player${playerNum}Address` as FormFieldNames}
+                        children={(field) => {
+                          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                          // Cast the field value to LocationData | undefined
+                          const addressValue = field.state.value as LocationData | undefined;
+
+                          return (
+                            <Field data-invalid={isInvalid} className="text-left">
+                              <LocationSelector
+                                value={addressValue}
+                                onChange={(location: LocationData) => {
+                                  // Cast the location to the expected type
+                                  field.handleChange(location as any);
+                                }}
+                                disabled={isSubmitting || isUploading}
+                              />
+                              {isInvalid && (
+                                <EnhancedFieldError
+                                  errors={field.state.meta.errors}
+                                  fieldName={field.name}
+                                />
+                              )}
+                            </Field>
+                          );
+                        }}
+                      />
                       <div className="mt-6">
                         {/* Document Type Selector */}
                         <div className="mb-4">
@@ -2769,7 +2767,7 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                   <div className="w-full flex justify-center mb-4">
                                     {preview &&
-                                    file?.type?.startsWith("image/") ? (
+                                      file?.type?.startsWith("image/") ? (
                                       <Image
                                         src={preview}
                                         alt={`Uploaded ${selectedDocumentType} Preview`}
@@ -2830,15 +2828,14 @@ export default function Page({ params }: RegistrationPageProps) {
 
                                   <label
                                     htmlFor={`player${playerNum}IdUpload`}
-                                    className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed rounded-xl transition ${
-                                      fieldErrors[`filePlayer${playerNum}`]
-                                        ? "border-red-300 bg-red-50 hover:bg-red-100"
-                                        : "border-green-300 bg-green-50 hover:bg-green-100"
-                                    } ${submitting || isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed rounded-xl transition ${fieldErrors[`filePlayer${playerNum}`]
+                                      ? "border-red-300 bg-red-50 hover:bg-red-100"
+                                      : "border-green-300 bg-green-50 hover:bg-green-100"
+                                      } ${submitting || isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
                                   >
                                     {isUploading &&
-                                    ((playerNum === 1 && filePlayer1) ||
-                                      (playerNum === 2 && filePlayer2)) ? (
+                                      ((playerNum === 1 && filePlayer1) ||
+                                        (playerNum === 2 && filePlayer2)) ? (
                                       <div className="flex flex-col items-center">
                                         <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
                                         <span className="font-medium text-sm text-green-700">
@@ -2851,22 +2848,20 @@ export default function Page({ params }: RegistrationPageProps) {
                                     ) : (
                                       <>
                                         <UploadIcon
-                                          className={`w-6 h-6 mb-2 ${
-                                            fieldErrors[
-                                              `filePlayer${playerNum}`
-                                            ]
-                                              ? "text-red-500"
-                                              : "text-green-600"
-                                          }`}
+                                          className={`w-6 h-6 mb-2 ${fieldErrors[
+                                            `filePlayer${playerNum}`
+                                          ]
+                                            ? "text-red-500"
+                                            : "text-green-600"
+                                            }`}
                                         />
                                         <span
-                                          className={`font-medium text-sm ${
-                                            fieldErrors[
-                                              `filePlayer${playerNum}`
-                                            ]
-                                              ? "text-red-700"
-                                              : "text-green-700"
-                                          }`}
+                                          className={`font-medium text-sm ${fieldErrors[
+                                            `filePlayer${playerNum}`
+                                          ]
+                                            ? "text-red-700"
+                                            : "text-green-700"
+                                            }`}
                                         >
                                           Upload your files or{" "}
                                           <span className="underline">
@@ -2949,7 +2944,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                   form.setFieldValue(
                                     "player1ContactNumber",
                                     form.getFieldValue("clubContactNumber") ??
-                                      "",
+                                    "",
                                   );
                                 }
                               } else {
@@ -2962,7 +2957,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                   form.setFieldValue(
                                     "player2ContactNumber",
                                     form.getFieldValue("clubContactNumber") ??
-                                      "",
+                                    "",
                                   );
                                 }
                               }
@@ -2972,11 +2967,10 @@ export default function Page({ params }: RegistrationPageProps) {
                           />
 
                           <span
-                            className={`mt-1 text-xs font-semibold ${
-                              (playerNum === 1 ? syncPlayer1 : syncPlayer2)
-                                ? "text-green-700"
-                                : "text-gray-500"
-                            }`}
+                            className={`mt-1 text-xs font-semibold ${(playerNum === 1 ? syncPlayer1 : syncPlayer2)
+                              ? "text-green-700"
+                              : "text-gray-500"
+                              }`}
                           >
                             {(playerNum === 1 ? syncPlayer1 : syncPlayer2)
                               ? "ON"
