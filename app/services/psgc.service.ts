@@ -107,8 +107,6 @@ class PSGCService {
     }
 
     try {
-      console.log(`Fetching from Next.js API: ${PSGC_API_BASE}${endpoint}`);
-      
       const response = await axios.get(`${PSGC_API_BASE}${endpoint}`, {
         timeout: 15000,
         headers: {

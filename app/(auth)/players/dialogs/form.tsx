@@ -65,6 +65,17 @@ const PLAYER = gql`
       gender
       achievements
       address {
+        country {
+          code
+          name
+          alpha2Code
+          alpha3Code
+          flag
+          region
+          capital
+          population
+          area
+        }
         region {
           code
           name
@@ -129,6 +140,17 @@ type Props = {
 };
 
 interface FormAddress {
+  country?: {
+    code: string;
+    name: string;
+    alpha2Code?: string;
+    alpha3Code?: string;
+    flag?: string;
+    region?: string;
+    capital?: string;
+    population?: number;
+    area?: number;
+  };
   region?: {
     code: string;
     name: string;
@@ -212,6 +234,7 @@ const FormDialog = (props: Props) => {
       gender: Gender.MALE,
       achievements: [],
       address: {
+        country: undefined,
         region: undefined,
         province: undefined,
         city: undefined,
@@ -281,6 +304,7 @@ const FormDialog = (props: Props) => {
         gender: data.player.gender || Gender.MALE,
         achievements: data.player.achievements || [],
         address: data.player.address || {
+          country: undefined,
           region: undefined,
           province: undefined,
           city: undefined,
@@ -302,6 +326,7 @@ const FormDialog = (props: Props) => {
 
   const formAddressToLocationData = (address: FormAddress): LocationData => {
     return {
+      country: address.country,
       region: address.region,
       province: address.province,
       city: address.city,
@@ -315,6 +340,19 @@ const FormDialog = (props: Props) => {
   
   const locationDataToFormAddress = (location: LocationData): FormAddress => {
     return {
+      country: location.country
+        ? {
+            code: location.country.code || "",
+            name: location.country.name || "",
+            alpha2Code: location.country.alpha2Code,
+            alpha3Code: location.country.alpha3Code,
+            flag: location.country.flag,
+            region: location.country.region,
+            capital: location.country.capital,
+            population: location.country.population,
+            area: location.country.area,
+          }
+        : undefined,
       region: location.region
         ? {
             code: location.region.code || "",

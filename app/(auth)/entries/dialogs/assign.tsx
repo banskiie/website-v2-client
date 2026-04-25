@@ -311,18 +311,12 @@ const replaceDocumentsInDrive = async (
       for (const [documentType, selection] of Object.entries(documentSelection)) {
         const { selectedSource, existingDocs, newDocs } = selection;
 
-        // Parse selectedSource
         const parts = selectedSource.split("-");
-        const source = parts[1]; // 'existing' or 'new'
+        const source = parts[1];
 
         if (source === "existing" && existingDocs?.length) {
-          // ✅ KEEP the existing document
           const selectedDoc = existingDocs[0];
 
-          console.log(`📌 KEEPING existing document: ${documentType}`);
-          console.log(`   URL: ${selectedDoc.documentURL}`);
-
-          // ✅ DELETE the new document (since it's different type and not selected)
           const newDocToDelete = newDocs.find(doc => doc.documentType === documentType);
           if (newDocToDelete?.documentURL) {
             const fileIdToDelete = extractFileIdFromUrl(newDocToDelete.documentURL);
@@ -347,7 +341,6 @@ const replaceDocumentsInDrive = async (
                     player: playerType,
                     message: "New document deleted (user chose to keep existing)",
                   });
-                  console.log(`✅ Deleted new document for ${documentType}`);
                 }
               } catch (err) {
                 console.warn(`Failed to delete new document for ${documentType}:`, err);
@@ -374,13 +367,8 @@ const replaceDocumentsInDrive = async (
           });
 
         } else if (source === "new" && newDocs?.length) {
-          // ✅ KEEP the new document
           const selectedDoc = newDocs[0];
 
-          console.log(`📌 KEEPING new document: ${documentType}`);
-          console.log(`   URL: ${selectedDoc.documentURL}`);
-
-          // ✅ DELETE the existing document (since it's different type and not selected)
           const existingDocToDelete = existingDocs.find(doc => doc.documentType === documentType);
           if (existingDocToDelete?.documentURL) {
             const fileIdToDelete = extractFileIdFromUrl(existingDocToDelete.documentURL);
@@ -405,7 +393,6 @@ const replaceDocumentsInDrive = async (
                     player: playerType,
                     message: "Existing document deleted (user chose to use new document)",
                   });
-                  console.log(`✅ Deleted existing document for ${documentType}`);
                 }
               } catch (err) {
                 console.warn(`Failed to delete existing document for ${documentType}:`, err);
@@ -433,11 +420,6 @@ const replaceDocumentsInDrive = async (
         }
       }
     }
-
-    console.log(`📊 Results:`);
-    console.log(`   - Kept documents: ${replacedDocuments.length}`);
-    console.log(`   - Deleted documents: ${deletedDocuments.length}`);
-    console.log(`   - URL updates: ${urlUpdates.length}`);
 
     return {
       replacedDocuments,
@@ -477,29 +459,12 @@ const checkAndMoveDocuments = async (
       player: string;
     }> = [];
 
-    console.log("========== START checkAndMoveDocuments ==========");
-    console.log("Document Selections received:", JSON.stringify(documentSelections, null, 2));
-
-    // Process Player 1 documents
     if (entry.player1Entry?.validDocuments && entry.player1Entry.validDocuments.length > 0) {
       const player1NewDocs = entry.player1Entry.validDocuments;
       const player1ExistingDocs = connectedPlayer1?.validDocuments || [];
       const hasExistingPlayer1Docs = player1ExistingDocs.length > 0;
 
-      console.log("\n========== PLAYER 1 ==========");
-      console.log("New documents from entry:", player1NewDocs.map(d => ({
-        type: d.documentType,
-        url: d.documentURL
-      })));
-      console.log("Existing documents from database:", player1ExistingDocs.map((d: any) => ({
-        type: d.documentType,
-        url: d.documentURL
-      })));
-      console.log("Has existing docs:", hasExistingPlayer1Docs);
-      console.log("Document selections for Player 1:", documentSelections.player1);
-
       if (hasExistingPlayer1Docs && documentSelections.player1) {
-        // Use replaceDocumentsInDrive to handle the document replacement
         const player1Result = await replaceDocumentsInDrive(
           player1ExistingDocs,
           player1NewDocs,
@@ -517,9 +482,7 @@ const checkAndMoveDocuments = async (
           deletedDocuments.push(...player1Result.deletedDocuments);
         }
 
-        console.log(`Player 1 URL updates:`, player1Result.urlUpdates);
       } else if (!hasExistingPlayer1Docs) {
-        console.log("\n📦 No existing documents for Player 1 - adding new ones");
         for (const doc of player1NewDocs) {
           allUrlUpdates.push({
             oldUrl: "",
@@ -535,10 +498,8 @@ const checkAndMoveDocuments = async (
             message: "Adding new document",
             newUrl: doc.documentURL,
           });
-          console.log(`✅ ADD NEW: ${doc.documentType} -> ${doc.documentURL}`);
         }
       } else {
-        console.log("\n📦 No selections for Player 1 - keeping existing documents");
         for (const existingDoc of player1ExistingDocs) {
           allUrlUpdates.push({
             oldUrl: player1NewDocs.find((d) => d.documentType === existingDoc.documentType)?.documentURL || "",
@@ -554,25 +515,16 @@ const checkAndMoveDocuments = async (
             message: "Keeping existing document",
             newUrl: existingDoc.documentURL,
           });
-          console.log(`✅ KEEP EXISTING: ${existingDoc.documentType} -> ${existingDoc.documentURL}`);
         }
       }
     }
 
-    // Process Player 2 documents
     if (entry.player2Entry?.validDocuments && entry.player2Entry.validDocuments.length > 0) {
       const player2NewDocs = entry.player2Entry.validDocuments;
       const player2ExistingDocs = connectedPlayer2?.validDocuments || [];
       const hasExistingPlayer2Docs = player2ExistingDocs.length > 0;
 
-      console.log("\n========== PLAYER 2 ==========");
-      console.log("New documents from entry:", player2NewDocs.map(d => ({ type: d.documentType, url: d.documentURL })));
-      console.log("Existing documents from database:", player2ExistingDocs.map((d: any) => ({ type: d.documentType, url: d.documentURL })));
-      console.log("Has existing docs:", hasExistingPlayer2Docs);
-      console.log("Document selections for Player 2:", documentSelections.player2);
-
       if (hasExistingPlayer2Docs && documentSelections.player2) {
-        // Use replaceDocumentsInDrive to handle the document replacement
         const player2Result = await replaceDocumentsInDrive(
           player2ExistingDocs,
           player2NewDocs,
@@ -590,9 +542,7 @@ const checkAndMoveDocuments = async (
           deletedDocuments.push(...player2Result.deletedDocuments);
         }
 
-        console.log(`Player 2 URL updates:`, player2Result.urlUpdates);
       } else if (!hasExistingPlayer2Docs) {
-        console.log("\n📦 No existing documents for Player 2 - adding new ones");
         for (const doc of player2NewDocs) {
           allUrlUpdates.push({
             oldUrl: "",
@@ -610,7 +560,6 @@ const checkAndMoveDocuments = async (
           });
         }
       } else {
-        console.log("\n📦 No selections for Player 2 - keeping existing documents");
         for (const existingDoc of player2ExistingDocs) {
           allUrlUpdates.push({
             oldUrl: player2NewDocs.find((d) => d.documentType === existingDoc.documentType)?.documentURL || "",
@@ -629,16 +578,6 @@ const checkAndMoveDocuments = async (
         }
       }
     }
-
-    console.log("\n========== FINAL URL UPDATES ==========");
-    console.log("Total URL updates:", allUrlUpdates.length);
-    allUrlUpdates.forEach((update, idx) => {
-      console.log(`${idx + 1}. ${update.player} - ${update.documentType}`);
-      console.log(`   Old URL: ${update.oldUrl}`);
-      console.log(`   New URL: ${update.newUrl}`);
-      console.log(`   Replace: ${update.oldUrl !== update.newUrl ? "YES" : "NO - same URL"}`);
-    });
-    console.log("========== END checkAndMoveDocuments ==========\n");
 
     return {
       moved: movedDocuments,
@@ -714,36 +653,31 @@ const DocumentSelectionDialog = ({
         };
       });
 
-      // Also handle new documents that don't have existing counterparts
       newDocuments.forEach(newDoc => {
         const docType = newDoc.documentType;
         if (!selections[docType]) {
-          // No existing document of this type, so we need to delete this new document
           selections[docType] = {
-            selectedSource: "", // Empty means delete
+            selectedSource: "",
             existingDocs: [],
             newDocs: [newDoc],
           };
         }
       });
     } else {
-      // "global-new" - Keep all new documents, delete all existing documents
       newDocuments.forEach(newDoc => {
         const docType = newDoc.documentType;
         selections[docType] = {
           selectedSource: `${docType}-new-0`,
-          existingDocs: existingDocuments.filter(doc => doc.documentType === docType), // Include matching existing docs for deletion
+          existingDocs: existingDocuments.filter(doc => doc.documentType === docType),
           newDocs: [newDoc],
         };
       });
 
-      // Also handle existing documents that don't have new counterparts
       existingDocuments.forEach(existingDoc => {
         const docType = existingDoc.documentType;
         if (!selections[docType]) {
-          // No new document of this type, so we need to delete this existing document
           selections[docType] = {
-            selectedSource: "", // Empty means delete
+            selectedSource: "",
             existingDocs: [existingDoc],
             newDocs: [],
           };
@@ -751,7 +685,6 @@ const DocumentSelectionDialog = ({
       });
     }
 
-    console.log("Final selections:", selections);
     onSave(selections);
     onOpenChange(false);
   };
@@ -948,7 +881,6 @@ const DocumentSelectionDialog = ({
           <>
             <div className="h-[60vh] overflow-y-auto pr-2">
               <div className="space-y-6">
-                {/* Global Radio Selection */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Choose Document Source</h3>
 
@@ -958,7 +890,6 @@ const DocumentSelectionDialog = ({
                       onValueChange={setGlobalSelection}
                       className="grid grid-cols-1 md:grid-cols-2 gap-6"
                     >
-                      {/* Existing Documents Option */}
                       {existingDocuments.length > 0 && (
                         <div className="space-y-3 p-4 border rounded-lg bg-white">
                           <div className="flex items-center space-x-3">
@@ -975,7 +906,6 @@ const DocumentSelectionDialog = ({
                             <div className="text-xs text-gray-500">
                               Keep all existing documents from database
                             </div>
-                            {/* Document Type Labels - Only show existing document types */}
                             <div className="flex flex-wrap gap-2 pt-2">
                               {existingDocuments.map(existingDoc => (
                                 <Badge key={existingDoc.documentType} variant="outline" className="text-xs bg-blue-50">
@@ -987,7 +917,6 @@ const DocumentSelectionDialog = ({
                         </div>
                       )}
 
-                      {/* New Documents Option */}
                       {newDocuments.length > 0 && (
                         <div className="space-y-3 p-4 border rounded-lg bg-white">
                           <div className="flex items-center space-x-3">
@@ -1007,7 +936,6 @@ const DocumentSelectionDialog = ({
                             <div className="text-xs text-gray-500">
                               Use all new documents from entry
                             </div>
-                            {/* Document Type Labels - Only show new document types */}
                             <div className="flex flex-wrap gap-2 pt-2">
                               {newDocuments.map(newDoc => (
                                 <Badge key={newDoc.documentType} variant="outline" className="text-xs bg-green-50">
@@ -1021,7 +949,6 @@ const DocumentSelectionDialog = ({
                     </RadioGroup>
                   </div>
 
-                  {/* Document Previews - All in a single grid with increased gap */}
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm text-gray-700">
                       Document Previews ({allDocuments.length} total)
@@ -1040,7 +967,6 @@ const DocumentSelectionDialog = ({
                     </div>
                   </div>
 
-                  {/* Selection Status Message */}
                   {globalSelection && (
                     <div className="text-sm text-center pt-4">
                       {globalSelection === "global-existing" ? (
@@ -1445,19 +1371,15 @@ const AssignDialog = (props: Props) => {
     const currentEntry = entry;
 
     if (!currentEntry?.player1Entry) {
-      console.log("No player1 entry data available");
       return;
     }
 
     const { firstName, lastName, birthDate } = currentEntry.player1Entry;
 
     if (!firstName || !lastName || !birthDate) {
-      console.log("Missing required player1 data:", { firstName, lastName, birthDate });
       setSuggestedPlayers1([]);
       return;
     }
-
-    console.log("Fetching suggestions for Player 1 with:", { firstName, lastName, birthDate });
 
     setIsLoadingSuggestions1(true);
     try {
@@ -1476,7 +1398,6 @@ const AssignDialog = (props: Props) => {
       }
 
       const suggestions = data?.suggestPlayers || [];
-      console.log(`Received ${suggestions.length} suggestions for Player 1`);
       setSuggestedPlayers1(suggestions);
     } catch (error) {
       console.error("Error fetching suggestions for Player 1:", error);
@@ -1490,19 +1411,15 @@ const AssignDialog = (props: Props) => {
     const currentEntry = entry;
 
     if (!currentEntry?.player2Entry) {
-      console.log("No player2 entry data available");
       return;
     }
 
     const { firstName, lastName, birthDate } = currentEntry.player2Entry;
 
     if (!firstName || !lastName || !birthDate) {
-      console.log("Missing required player2 data:", { firstName, lastName, birthDate });
       setSuggestedPlayers2([]);
       return;
     }
-
-    console.log("Fetching suggestions for Player 2 with:", { firstName, lastName, birthDate });
 
     setIsLoadingSuggestions2(true);
     try {
@@ -1521,7 +1438,6 @@ const AssignDialog = (props: Props) => {
       }
 
       const suggestions = data?.suggestPlayers || [];
-      console.log(`Received ${suggestions.length} suggestions for Player 2`);
       setSuggestedPlayers2(suggestions);
     } catch (error) {
       console.error("Error fetching suggestions for Player 2:", error);
@@ -1535,11 +1451,9 @@ const AssignDialog = (props: Props) => {
     if (open && entry) {
       const timer = setTimeout(() => {
         if (entry?.player1Entry) {
-          console.log("Fetching suggestion for Player 1 on dialog open");
           fetchPlayer1Suggestions();
         }
         if (entry?.player2Entry) {
-          console.log("Fetching suggestions for Player 2 on dialog open");
           fetchPlayer2Suggestions();
         }
       }, 100);
@@ -1567,10 +1481,6 @@ const AssignDialog = (props: Props) => {
   };
 
   const handleSaveDocumentSelections1 = (selections: DocumentSelection) => {
-    console.log(
-      "💾 SAVING document selections for Player 1:",
-      JSON.stringify(selections, null, 2),
-    );
     setDocumentSelections((prev) => ({ ...prev, player1: selections }));
     form.setFieldValue("migratePlayer1Data.validDocuments", true);
     toast.success("Document selections saved for Player 1", {
@@ -1579,7 +1489,6 @@ const AssignDialog = (props: Props) => {
   };
 
   const handleSaveDocumentSelections2 = (selections: DocumentSelection) => {
-    // console.log("💾 Saving document selections for Player 2:", selections);
     setDocumentSelections((prev) => ({ ...prev, player2: selections }));
     form.setFieldValue("migratePlayer2Data.validDocuments", true);
     toast.success("Document selections saved for Player 2", {

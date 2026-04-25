@@ -42,8 +42,14 @@ export const EventSchema = z.object({
   minAge: z.number().min(0, "Min age must be at least 0").optional().nullable(),
   tournament: z.string().nonempty("Tournament ID is required"),
   isClosed: z.boolean().default(false),
+  // maxEntries: z
+  //   .number()
+  //   .min(0, "Max entries must not be less than 0.")
+  //   .nonoptional("Max entries is required"),
   maxEntries: z
-    .number()
-    .min(0, "Max entries must not be less than 0.")
-    .nonoptional("Max entries is required"),
+  .number()
+  .min(0, "Max entries must not be less than 0.")
+  .nullable()
+  .optional()
+  .transform(val => val === 0 ? null : val),
 })

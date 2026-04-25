@@ -39,6 +39,7 @@ export interface IPlayerEntry {
   phoneNumber: string
   jerseySize?: JerseySize
   validDocuments?: IValidDocument[]
+  address?: IAddress
 }
 
 export interface IEntryStatusLog {
@@ -54,6 +55,55 @@ export interface ITransactions {
   pendingAmount: number
   amountChanged: number
   transactionDate: Date
+}
+
+export interface IAddress {
+  country?: {
+    code: string;
+    name: string;
+    alpha2Code?: string;
+    alpha3Code?: string;
+    flag?: string;
+    region?: string;
+    capital?: string;
+    population?: number;
+    area?: number;
+  };
+  region?: {
+    code: string;
+    name: string;
+    regionName: string;
+    psgcCode: string;
+  };
+  province?: {
+    code: string;
+    name: string;
+    regionCode: string;
+    psgcCode: string;
+  };
+  city?: {
+    code: string;
+    name: string;
+    provinceCode: string;
+    regionCode: string;
+    psgcCode: string;
+    classification: string;
+  };
+  barangay?: {
+    code: string;
+    name: string;
+    cityCode: string;
+    provinceCode: string;
+    regionCode: string;
+    psgcCode: string;
+  };
+  street?: string;
+  zipCode?: string;
+  fullAddress?: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface IEntry {

@@ -77,7 +77,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import Image from "next/image";
 import {
-  InputGroup,
+  InputGroup, 
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
@@ -1204,9 +1204,6 @@ export default function Page({ params }: RegistrationPageProps) {
     },
     onSubmit: async ({ value }) => {
       if (maxEntriesReached) {
-        console.log(
-          "Max entries reached, showing modal and preventing submission",
-        );
         setShowMaxEntriesModal(true);
         toast.error(
           `Cannot register. The event "${eventName}" has reached its maximum capacity of ${maxEntriesLimit} entries.`,
@@ -1217,21 +1214,16 @@ export default function Page({ params }: RegistrationPageProps) {
       if (eventId && !isSubmitting && !isUploading) {
         const isFull = await checkEventMaxEntries();
         if (isFull) {
-          console.log("Event is full after fresh check, preventing submission");
           setShowMaxEntriesModal(true);
           return;
         }
       }
 
-      // Don't proceed if already submitting
       if (isSubmitting || isUploading) {
-        // console.log("Already submitting, skipping...");
         return;
       }
 
       try {
-        // console.log("Starting form submission...");
-
         setIsSubmitting(true);
 
         // setShownFieldErrors(new Set());
@@ -2650,6 +2642,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                   field.handleChange(location as any);
                                 }}
                                 disabled={isSubmitting || isUploading}
+                                eventLocation={(event as any)?.location}
                               />
                               {isInvalid && (
                                 <EnhancedFieldError

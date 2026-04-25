@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -9,10 +9,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Input } from "@/components/ui/input"
+import { Globe, Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Search, MapPin, Loader2 } from "lucide-react"
 import { psgcService, PSGCRegion, PSGCProvince, PSGCCity, PSGCBarangay } from "@/app/services/psgc.service"
+import { countryService, RestCountry } from "@/app/services/country.service"
+
+export interface Country {
+  code: string
+  name: string
+  alpha2Code?: string
+  alpha3Code?: string
+  flag?: string
+  region?: string
+  capital?: string
+  population?: number
+  area?: number
+}
 
 export interface Region {
   code: string
@@ -47,6 +67,7 @@ export interface Barangay {
 }
 
 export interface LocationData {
+  country?: Country
   region?: Region
   province?: Province
   city?: City
@@ -64,6 +85,7 @@ export interface LocationSelectorProps {
   value?: LocationData
   onChange: (location: LocationData) => void
   disabled?: boolean
+  eventLocation?: 'LOCAL' | 'NATIONAL' | 'MINDANAO' | 'INTERNATIONAL'
 }
 
 const convertToRegion = (serviceRegion: PSGCRegion): Region => ({
@@ -98,16 +120,16 @@ const convertToBarangay = (serviceBarangay: PSGCBarangay, cityCode: string, prov
   psgcCode: serviceBarangay.psgcCode || serviceBarangay.code
 })
 
-export const LocationSelector = ({ value, onChange, disabled }: LocationSelectorProps) => {
+export const LocationSelector = ({ value, onChange, disabled, eventLocation }: LocationSelectorProps) => {
+  const [countries, setCountries] = useState<Country[]>([])
+  const [countriesLoading, setCountriesLoading] = useState(true)
+  const [selectedCountry, setSelectedCountry] = useState<Country | undefined>(value?.country)
   const [selectedRegion, setSelectedRegion] = useState<Region | undefined>(value?.region)
   const [selectedProvince, setSelectedProvince] = useState<Province | undefined>(value?.province)
   const [selectedCity, setSelectedCity] = useState<City | undefined>(value?.city)
   const [selectedBarangay, setSelectedBarangay] = useState<Barangay | undefined>(value?.barangay)
   const [street, setStreet] = useState<string>(value?.street || "")
   const [zipCode, setZipCode] = useState<string>(value?.zipCode || "")
-  const [searchTerm, setSearchTerm] = useState("")
-  const [searchResults, setSearchResults] = useState<any[]>([])
-  const [showSearch, setShowSearch] = useState(false)
   
   const [regions, setRegions] = useState<Region[]>([])
   const [provinces, setProvinces] = useState<Province[]>([])
@@ -118,12 +140,225 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
   const [provincesLoading, setProvincesLoading] = useState(false)
   const [citiesLoading, setCitiesLoading] = useState(false)
   const [barangaysLoading, setBarangaysLoading] = useState(false)
-  const [searchLoading, setSearchLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  const [countrySearchOpen, setCountrySearchOpen] = useState(false)
   
   const isUpdatingFromProps = useRef(false)
   const isUpdatingFromInternal = useRef(false)
   const previousValueRef = useRef(value)
+  const isAutoSetting = useRef(false)
+  const autoSetAttempts = useRef(0)
+
+  const isPhilippines = selectedCountry?.code === "PH" || selectedCountry?.name === "Philippines"
+  const shouldAutoSetLocal = eventLocation === 'LOCAL'
+  const shouldAutoSetCountryOnly = eventLocation === 'NATIONAL'
+  const shouldAutoSetMindanao = eventLocation === 'MINDANAO'
+  const shouldBeManual = eventLocation === 'INTERNATIONAL'
+
+  // Load countries from REST Countries API
+  useEffect(() => {
+    const loadCountries = async () => {
+      try {
+        setCountriesLoading(true)
+        const apiCountries = await countryService.getAllCountries()
+        
+        const mappedCountries: Country[] = apiCountries.map((c: RestCountry) => ({
+          code: c.cca2,
+          name: c.name.common,
+          alpha2Code: c.cca2,
+          alpha3Code: c.cca3,
+          flag: c.flags?.png || c.flags?.svg,
+          region: c.region,
+          capital: c.capital?.[0],
+          population: c.population,
+          area: c.area
+        }))
+        
+        setCountries(mappedCountries)
+        
+        if ((shouldAutoSetLocal || shouldAutoSetCountryOnly || shouldAutoSetMindanao) && !selectedCountry) {
+          const philippines = mappedCountries.find(c => c.code === 'PH')
+          if (philippines) {
+            setSelectedCountry(philippines)
+          }
+        }
+      } catch (err: any) {
+        console.error("Error loading countries:", err)
+        setError(err.message || "Failed to load countries")
+      } finally {
+        setCountriesLoading(false)
+      }
+    }
+    loadCountries()
+  }, [])
+
+  useEffect(() => {
+    if (!shouldAutoSetLocal) {
+      return
+    }
+    
+    autoSetAttempts.current = 0
+    
+    const autoSetLocation = async () => {
+      if (isAutoSetting.current) {
+        return
+      }
+      
+      isAutoSetting.current = true
+      
+      try {
+        if (!selectedCountry || selectedCountry.code !== 'PH') {
+          const philippines = countries.find(c => c.code === 'PH')
+          if (philippines) {
+            setSelectedCountry(philippines)
+          } else {
+            return
+          }
+        }
+        
+        if (regions.length === 0) {
+          return
+        }
+        
+        if (!selectedRegion) {
+          const regionX = regions.find(r => {
+            const nameLower = r.name.toLowerCase()
+            const codeLower = r.code.toLowerCase()
+            const psgcCodeLower = r.psgcCode.toLowerCase()
+            
+            return nameLower.includes('region x') || 
+                   nameLower.includes('northern mindanao') ||
+                   nameLower === 'region x' ||
+                   codeLower === '10' ||
+                   psgcCodeLower === '100000000'
+          })
+          
+          if (regionX) {
+            setSelectedRegion(regionX)
+          } else {
+            return
+          }
+        }
+        
+        if (provinces.length === 0) {
+          return
+        }
+        
+        if (!selectedProvince) {
+          const misamisOriental = provinces.find(p => {
+            const nameLower = p.name.toLowerCase()
+            return nameLower.includes('misamis oriental') ||
+                   nameLower === 'misamis oriental'
+          })
+          
+          if (misamisOriental) {
+            setSelectedProvince(misamisOriental)
+          } else {
+            return
+          }
+        }
+        
+        if (cities.length === 0) {
+          return
+        }
+        
+        if (!selectedCity) {
+          const cagayanDeOro = cities.find(c => {
+            const nameLower = c.name.toLowerCase()
+            return nameLower.includes('cagayan de oro') ||
+                   nameLower === 'cagayan de oro' ||
+                   nameLower.includes('cagayan de oro city')
+          })
+          
+          if (cagayanDeOro) {
+            setSelectedCity(cagayanDeOro)
+          } else {
+            return
+          }
+        }
+        
+      } catch (error) {
+        console.error("Error in LOCAL auto-set:", error)
+      } finally {
+        isAutoSetting.current = false
+      }
+    }
+    
+    const timer = setTimeout(() => {
+      autoSetLocation()
+    }, 100)
+    
+    return () => clearTimeout(timer)
+  }, [shouldAutoSetLocal, countries, regions, provinces, cities, selectedCountry, selectedRegion, selectedProvince, selectedCity, eventLocation])
+
+  useEffect(() => {
+    if (!shouldAutoSetMindanao) {
+      return
+    }
+    
+    autoSetAttempts.current = 0
+    
+    const autoSetMindanaoLocation = async () => {
+      if (isAutoSetting.current) {
+        return
+      }
+      
+      isAutoSetting.current = true
+      
+      try {
+        if (!selectedCountry || selectedCountry.code !== 'PH') {
+          const philippines = countries.find(c => c.code === 'PH')
+          if (philippines) {
+            setSelectedCountry(philippines)
+          } else {
+            return
+          }
+        }
+        
+        if (regions.length === 0) {
+          return
+        }
+        
+        if (!selectedRegion) {
+          const regionX = regions.find(r => {
+            const nameLower = r.name.toLowerCase()
+            const codeLower = r.code.toLowerCase()
+            const psgcCodeLower = r.psgcCode.toLowerCase()
+            
+            return nameLower.includes('region x') || 
+                   nameLower.includes('northern mindanao') ||
+                   nameLower === 'region x' ||
+                   codeLower === '10' ||
+                   psgcCodeLower === '100000000'
+          })
+          
+          if (regionX) {
+            setSelectedRegion(regionX)
+          } else {
+            return
+          }
+        }
+        
+      } catch (error) {
+        console.error("Error in MINDANAO auto-set:", error)
+      } finally {
+        isAutoSetting.current = false
+      }
+    }
+    
+    const timer = setTimeout(() => {
+      autoSetMindanaoLocation()
+    }, 100)
+    
+    return () => clearTimeout(timer)
+  }, [shouldAutoSetMindanao, countries, regions, selectedCountry, selectedRegion, eventLocation])
+
+  useEffect(() => {
+    if ((shouldAutoSetLocal || shouldAutoSetMindanao) && selectedCity && selectedBarangay) {
+      setSelectedBarangay(undefined)
+    }
+  }, [shouldAutoSetLocal, shouldAutoSetMindanao, selectedCity])
 
   useEffect(() => {
     if (isUpdatingFromInternal.current) return
@@ -134,6 +369,7 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
     isUpdatingFromProps.current = true
 
     if (value) {
+      setSelectedCountry(value.country)
       setSelectedRegion(value.region)
       setSelectedProvince(value.province)
       setSelectedCity(value.city)
@@ -149,6 +385,10 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
 
   useEffect(() => {
     const loadRegions = async () => {
+      if (!isPhilippines) {
+        setRegions([])
+        return
+      }
       try {
         setRegionsLoading(true)
         setError(null)
@@ -163,11 +403,11 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
       }
     }
     loadRegions()
-  }, [])
+  }, [isPhilippines])
 
   useEffect(() => {
     const loadProvinces = async () => {
-      if (!selectedRegion) {
+      if (!selectedRegion || !isPhilippines) {
         setProvinces([])
         return
       }
@@ -183,11 +423,11 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
       }
     }
     loadProvinces()
-  }, [selectedRegion])
+  }, [selectedRegion, isPhilippines])
 
   useEffect(() => {
     const loadCities = async () => {
-      if (!selectedProvince) {
+      if (!selectedProvince || !isPhilippines) {
         setCities([])
         return
       }
@@ -203,11 +443,11 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
       }
     }
     loadCities()
-  }, [selectedProvince])
+  }, [selectedProvince, isPhilippines])
 
   useEffect(() => {
     const loadBarangays = async () => {
-      if (!selectedCity) {
+      if (!selectedCity || !isPhilippines) {
         setBarangays([])
         return
       }
@@ -223,25 +463,26 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
       }
     }
     loadBarangays()
-  }, [selectedCity])
+  }, [selectedCity, isPhilippines])
 
-  const prevStateRef = useRef({ selectedRegion, selectedProvince, selectedCity, selectedBarangay, street, zipCode })
+  const prevStateRef = useRef({ selectedCountry, selectedRegion, selectedProvince, selectedCity, selectedBarangay, street, zipCode })
 
   useEffect(() => {
     if (isUpdatingFromProps.current) return
 
     const prev = prevStateRef.current
     const hasChanged = 
-      prev.selectedRegion !== selectedRegion ||
-      prev.selectedProvince !== selectedProvince ||
-      prev.selectedCity !== selectedCity ||
-      prev.selectedBarangay !== selectedBarangay ||
+      prev.selectedCountry?.code !== selectedCountry?.code ||
+      prev.selectedRegion?.code !== selectedRegion?.code ||
+      prev.selectedProvince?.code !== selectedProvince?.code ||
+      prev.selectedCity?.code !== selectedCity?.code ||
+      prev.selectedBarangay?.code !== selectedBarangay?.code ||
       prev.street !== street ||
       prev.zipCode !== zipCode
 
     if (!hasChanged) return
 
-    prevStateRef.current = { selectedRegion, selectedProvince, selectedCity, selectedBarangay, street, zipCode }
+    prevStateRef.current = { selectedCountry, selectedRegion, selectedProvince, selectedCity, selectedBarangay, street, zipCode }
 
     const addressParts: string[] = []
     if (street) addressParts.push(street)
@@ -249,6 +490,7 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
     if (selectedCity?.name) addressParts.push(selectedCity.name)
     if (selectedProvince?.name) addressParts.push(selectedProvince.name)
     if (selectedRegion?.name) addressParts.push(selectedRegion.name)
+    if (selectedCountry?.name) addressParts.push(selectedCountry.name)
     if (zipCode) addressParts.push(zipCode)
 
     const fullAddress = addressParts.join(", ")
@@ -256,6 +498,7 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
     isUpdatingFromInternal.current = true
     
     onChange({
+      country: selectedCountry,
       region: selectedRegion,
       province: selectedProvince,
       city: selectedCity,
@@ -268,35 +511,19 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
     setTimeout(() => {
       isUpdatingFromInternal.current = false
     }, 0)
-  }, [selectedRegion, selectedProvince, selectedCity, selectedBarangay, street, zipCode, onChange])
+  }, [selectedCountry, selectedRegion, selectedProvince, selectedCity, selectedBarangay, street, zipCode, onChange])
 
-  const handleSearch = async () => {
-    if (searchTerm.length < 2) return
+  const handleCountryChange = (countryCode: string) => {
+    if (shouldAutoSetLocal || shouldAutoSetCountryOnly || shouldAutoSetMindanao) return
     
-    try {
-      setSearchLoading(true)
-      const results = await psgcService.searchLocation(searchTerm)
-      const transformedResults = results.map((result: any) => {
-        if (result.type === 'region') {
-          return { ...result, parentName: null }
-        } else if (result.type === 'province') {
-          const region = regions.find(r => r.code === result.parentCode)
-          return { ...result, parentName: region?.name || result.parentName }
-        } else if (result.type === 'city') {
-          const province = provinces.find(p => p.code === result.parentCode)
-          return { ...result, parentName: province?.name || result.parentName }
-        } else if (result.type === 'barangay') {
-          const city = cities.find(c => c.code === result.parentCode)
-          return { ...result, parentName: city?.name || result.parentName }
-        }
-        return result
-      })
-      setSearchResults(transformedResults)
-      setShowSearch(true)
-    } catch (err: any) {
-      console.error("Search error:", err)
-    } finally {
-      setSearchLoading(false)
+    const country = countries.find(c => c.code === countryCode)
+    if (country) {
+      setSelectedCountry(country)
+      setSelectedRegion(undefined)
+      setSelectedProvince(undefined)
+      setSelectedCity(undefined)
+      setSelectedBarangay(undefined)
+      setCountrySearchOpen(false)
     }
   }
 
@@ -336,221 +563,266 @@ export const LocationSelector = ({ value, onChange, disabled }: LocationSelector
 
   return (
     <div className="space-y-4">
-      {/* Search Section - Uncomment if needed */}
-      {/* <div className="flex gap-2 mb-2">
-        <Input
-          placeholder="Search location (e.g., 'Cebu', 'Manila', 'Davao')"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-          disabled={disabled}
-        />
-        <Button onClick={handleSearch} type="button" variant="outline" disabled={disabled || searchLoading}>
-          {searchLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-        </Button>
-      </div>
-
-      {showSearch && searchResults.length > 0 && (
-        <div className="border rounded-lg p-3 space-y-2 max-h-60 overflow-y-auto mb-2">
-          <Label className="text-sm font-medium">Search Results</Label>
-          {searchResults.map((result) => (
-            <div
-              key={result.code}
-              className="p-2 hover:bg-gray-50 cursor-pointer rounded flex items-start gap-2"
-              onClick={async () => {
-                if (result.type === 'region') {
-                  handleRegionChange(result.code)
-                } else if (result.type === 'province') {
-                  if (result.parentCode) {
-                    const parentRegion = regions.find(r => r.code === result.parentCode)
-                    if (parentRegion) setSelectedRegion(parentRegion)
-                  }
-                  const provinceObj: Province = {
-                    code: result.code,
-                    name: result.name,
-                    regionCode: result.parentCode || selectedRegion?.code || '',
-                    psgcCode: result.psgcCode || result.code
-                  }
-                  setSelectedProvince(provinceObj)
-                  setSelectedCity(undefined)
-                  setSelectedBarangay(undefined)
-                } else if (result.type === 'city') {
-                  if (result.parentCode && selectedProvince) {
-                    setSelectedProvince(prev => prev || undefined)
-                  }
-                  const cityObj: City = {
-                    code: result.code,
-                    name: result.name,
-                    provinceCode: result.parentCode || selectedProvince?.code || '',
-                    regionCode: selectedProvince?.regionCode || selectedRegion?.code || '',
-                    psgcCode: result.psgcCode || result.code,
-                    classification: result.classification || 'Municipality'
-                  }
-                  setSelectedCity(cityObj)
-                  setSelectedBarangay(undefined)
-                } else if (result.type === 'barangay') {
-                  const barangayObj: Barangay = {
-                    code: result.code,
-                    name: result.name,
-                    cityCode: result.parentCode || selectedCity?.code || '',
-                    provinceCode: selectedCity?.provinceCode || selectedProvince?.code || '',
-                    regionCode: selectedCity?.regionCode || selectedProvince?.regionCode || selectedRegion?.code || '',
-                    psgcCode: result.psgcCode || result.code
-                  }
-                  setSelectedBarangay(barangayObj)
-                }
-                setShowSearch(false)
-                setSearchTerm("")
-              }}
-            >
-              <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
-              <div>
-                <div className="text-sm font-medium">{result.name}</div>
-                <div className="text-xs text-gray-500 capitalize">
-                  {result.type} {result.parentName && `• ${result.parentName}`}
-                  {'classification' in result && result.classification && ` • ${result.classification}`}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )} */}
-
       {error && (
         <div className="text-red-500 text-sm p-2 border rounded bg-red-50 mb-2">
           Error: {error}
         </div>
       )}
 
-      <div className="grid grid-cols-4 gap-3">
-        <div className="mb-2">
-          <Label className="text-sm font-medium">Region</Label>
-          <Select 
-            value={selectedRegion?.code || ""} 
-            onValueChange={handleRegionChange} 
-            disabled={disabled || regionsLoading}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={regionsLoading ? "Loading regions..." : "Select Region"} />
-            </SelectTrigger>
-            <SelectContent>
-              {regions.length > 0 ? (
-                regions.map((region) => (
-                  <SelectItem key={region.code} value={region.code}>
-                    {region.name}
-                  </SelectItem>
-                ))
+      {/* Country Selection with Search - Full width on all screens */}
+      <div className="mb-3">
+        <Label className="text-sm font-medium flex items-center gap-2">
+          <Globe className="w-4 h-4" />
+          Country
+        </Label>
+        <Popover open={countrySearchOpen} onOpenChange={setCountrySearchOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={countrySearchOpen}
+              className="w-full justify-between"
+              disabled={disabled || countriesLoading || shouldAutoSetLocal || shouldAutoSetCountryOnly || shouldAutoSetMindanao}
+            >
+              {selectedCountry ? (
+                <div className="flex items-center gap-2">
+                  {selectedCountry.flag && (
+                    <img src={selectedCountry.flag} alt={selectedCountry.name} className="w-5 h-3 object-cover" />
+                  )}
+                  <span className="truncate">{selectedCountry.name}</span>
+                </div>
               ) : (
-                <SelectItem value="no-data" disabled>No regions available</SelectItem>
+                <span>{countriesLoading ? "Loading countries..." : "Select Country"}</span>
               )}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="mb-2">
-          <Label className="text-sm font-medium">Province</Label>
-          <Select 
-            value={selectedProvince?.code || ""} 
-            onValueChange={handleProvinceChange} 
-            disabled={disabled || provincesLoading || !selectedRegion}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={provincesLoading ? "Loading provinces..." : "Select Province"} />
-            </SelectTrigger>
-            <SelectContent>
-              {provinces.length > 0 ? (
-                provinces.map((province) => (
-                  <SelectItem key={province.code} value={province.code}>
-                    {province.name}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="no-data" disabled>No provinces available</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="mb-2">
-          <Label className="text-sm font-medium">City/Municipality</Label>
-          <Select 
-            value={selectedCity?.code || ""} 
-            onValueChange={handleCityChange} 
-            disabled={disabled || citiesLoading || !selectedProvince}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={citiesLoading ? "Loading cities..." : "Select City/Municipality"} />
-            </SelectTrigger>
-            <SelectContent>
-              {cities.length > 0 ? (
-                cities.map((city) => (
-                  <SelectItem key={city.code} value={city.code}>
-                    {city.name} {city.classification === 'City' ? '(City)' : '(Municipality)'}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="no-data" disabled>No cities available</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="mb-2">
-          <Label className="text-sm font-medium">Barangay</Label>
-          <Select 
-            value={selectedBarangay?.code || ""} 
-            onValueChange={handleBarangayChange} 
-            disabled={disabled || barangaysLoading || !selectedCity}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={barangaysLoading ? "Loading barangays..." : "Select Barangay"} />
-            </SelectTrigger>
-            <SelectContent>
-              {barangays.length > 0 ? (
-                barangays.map((barangay) => (
-                  <SelectItem key={barangay.code} value={barangay.code}>
-                    {barangay.name}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="no-data" disabled>No barangays available</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[--radix-popover-trigger-width] p-0 max-w-[calc(100vw-2rem)]">
+            <Command>
+              <CommandInput placeholder="Search country..." />
+              <CommandList>
+                <CommandEmpty>No country found.</CommandEmpty>
+                <CommandGroup>
+                  {countries.map((country) => (
+                    <CommandItem
+                      key={country.code}
+                      value={country.name}
+                      onSelect={() => handleCountryChange(country.code)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 shrink-0",
+                          selectedCountry?.code === country.code ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex items-center gap-2 min-w-0">
+                        {country.flag && (
+                          <img src={country.flag} alt={country.name} className="w-5 h-3 object-cover shrink-0" />
+                        )}
+                        <span className="truncate">{country.name}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">({country.code})</span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
-      <div className="mb-2">
-        <Label className="text-sm font-medium">Street Address (Optional)</Label>
-        <Input
-          placeholder="House number, street, subdivision"
-          value={street}
-          onChange={(e) => setStreet(e.target.value)}
-          disabled={disabled}
-        />
-      </div>
+      {/* Philippine-specific location fields - Responsive grid */}
+      {isPhilippines && selectedCountry && (
+        <>
+          {/* Region, Province, City/Municipality, Barangay - Responsive 2x2 grid on mobile, 4x4 on desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="mb-2">
+              <Label className="text-sm font-medium">Region</Label>
+              <Select 
+                value={selectedRegion?.code || ""} 
+                onValueChange={handleRegionChange} 
+                disabled={disabled || regionsLoading || shouldAutoSetLocal || shouldAutoSetMindanao}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={regionsLoading ? "Loading regions..." : "Select Region"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {regions.length > 0 ? (
+                    regions.map((region) => (
+                      <SelectItem key={region.code} value={region.code}>
+                        <span className="truncate">{region.name}</span>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-data" disabled>No regions available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
 
-      <div className="mb-2">
-        <Label className="text-sm font-medium">ZIP Code (Optional)</Label>
-        <Input
-          placeholder="ZIP Code"
-          value={zipCode}
-          onChange={(e) => setZipCode(e.target.value)}
-          disabled={disabled}
-          maxLength={4}
-        />
-      </div>
+            <div className="mb-2">
+              <Label className="text-sm font-medium">Province</Label>
+              <Select 
+                value={selectedProvince?.code || ""} 
+                onValueChange={handleProvinceChange} 
+                disabled={disabled || provincesLoading || !selectedRegion || shouldAutoSetLocal}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={provincesLoading ? "Loading provinces..." : "Select Province"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {provinces.length > 0 ? (
+                    provinces.map((province) => (
+                      <SelectItem key={province.code} value={province.code}>
+                        <span className="truncate">{province.name}</span>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-data" disabled>No provinces available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
 
-      {(selectedRegion || selectedProvince || selectedCity || selectedBarangay || street) && (
+            <div className="mb-2">
+              <Label className="text-sm font-medium">City/Municipality</Label>
+              <Select 
+                value={selectedCity?.code || ""} 
+                onValueChange={handleCityChange} 
+                disabled={disabled || citiesLoading || !selectedProvince || shouldAutoSetLocal}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={citiesLoading ? "Loading cities..." : "Select City/Municipality"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities.length > 0 ? (
+                    cities.map((city) => (
+                      <SelectItem key={city.code} value={city.code}>
+                        <span className="truncate">
+                          {city.name} {city.classification === 'City' ? '(City)' : '(Municipality)'}
+                        </span>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-data" disabled>No cities available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="mb-2">
+              <Label className="text-sm font-medium">Barangay</Label>
+              <Select 
+                value={selectedBarangay?.code || ""} 
+                onValueChange={handleBarangayChange} 
+                disabled={disabled || barangaysLoading || !selectedCity}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={barangaysLoading ? "Loading barangays..." : "Select Barangay"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {barangays.length > 0 ? (
+                    barangays.map((barangay) => (
+                      <SelectItem key={barangay.code} value={barangay.code}>
+                        <span className="truncate">{barangay.name}</span>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-data" disabled>No barangays available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Street Address and ZIP Code - Responsive stack on mobile, inline on desktop */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 mb-2">
+              <Label className="text-sm font-medium">Street Address (Optional)</Label>
+              <Input
+                placeholder="House number, street, subdivision"
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+                disabled={disabled}
+                className="w-full"
+              />
+            </div>
+
+            <div className="sm:w-48 mb-2">
+              <Label className="text-sm font-medium">ZIP Code (Optional)</Label>
+              <Input
+                placeholder="ZIP Code"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value)}
+                disabled={disabled}
+                maxLength={4}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* For non-Philippines countries - Responsive layout */}
+      {!isPhilippines && selectedCountry && !shouldAutoSetLocal && !shouldAutoSetCountryOnly && !shouldAutoSetMindanao && (
+        <>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 mb-2">
+              <Label className="text-sm font-medium">City/State/Province</Label>
+              <Input
+                placeholder="City, State, or Province"
+                value={selectedCity?.name || selectedProvince?.name || ""}
+                onChange={(e) => {
+                  setSelectedCity({ 
+                    code: "manual", 
+                    name: e.target.value, 
+                    provinceCode: "", 
+                    regionCode: "", 
+                    psgcCode: "", 
+                    classification: "City" 
+                  })
+                }}
+                disabled={disabled}
+                className="w-full"
+              />
+            </div>
+
+            <div className="sm:w-48 mb-2">
+              <Label className="text-sm font-medium">ZIP/Postal Code</Label>
+              <Input
+                placeholder="ZIP/Postal Code"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value)}
+                disabled={disabled}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <div className="mb-2">
+            <Label className="text-sm font-medium">Street Address</Label>
+            <Input
+              placeholder="House number, street"
+              value={street}
+              onChange={(e) => setStreet(e.target.value)}
+              disabled={disabled}
+              className="w-full"
+            />
+          </div>
+        </>
+      )}
+
+      {(selectedCountry || selectedRegion || selectedProvince || selectedCity || selectedBarangay || street) && (
         <div className="p-3 bg-gray-50 rounded-lg border mt-2">
           <Label className="text-xs text-muted-foreground">Full Address Preview</Label>
-          <p className="text-sm mt-1">
+          <p className="text-sm mt-1 break-words">
             {[
               street,
               selectedBarangay?.name,
               selectedCity?.name,
               selectedProvince?.name,
               selectedRegion?.name,
+              selectedCountry?.name,
               zipCode,
             ]
               .filter(Boolean)

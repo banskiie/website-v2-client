@@ -98,20 +98,18 @@ const ApproveDialog = (props: Props) => {
   })
   const loading = playerLoading || changeStatusLoading
 
-  // Get entry data safely
   const entryData = (data as any)?.entry;
 
-  // Log when dialog opens
-  useEffect(() => {
-    if (open) {
-      console.log("Dialog opened, entryData:", entryData);
-    }
-  }, [open, entryData]);
+  // // Log when dialog opens
+  // useEffect(() => {
+  //   if (open) {
+  //     console.log("Dialog opened, entryData:", entryData);
+  //   }
+  // }, [open, entryData]);
 
   // Check capacity when dialog opens and data is loaded
   useEffect(() => {
     if (open && entryData && !capacityChecked) {
-      console.log("Calling checkCapacityOnOpen with entry:", entryData);
       checkCapacityOnOpen();
     }
   }, [open, entryData, capacityChecked]);
@@ -120,7 +118,6 @@ const ApproveDialog = (props: Props) => {
     const entry = entryData;
 
     if (!entry?.event?.name) {
-      console.log("No event name found, skipping capacity check");
       setWarningMessage(null);
       setRemainingSlotsBefore(null);
       setRemainingSlotsAfter(null);
@@ -128,10 +125,7 @@ const ApproveDialog = (props: Props) => {
       return;
     }
 
-    console.log("Checking capacity for event:", entry.event.name);
-
     try {
-      // Find event by name
       const eventResult = await client.query({
         query: GET_EVENT_BY_NAME,
         variables: { name: entry.event.name },
@@ -142,7 +136,6 @@ const ApproveDialog = (props: Props) => {
       const events = eventData?.events?.edges || [];
 
       if (events.length === 0) {
-        console.log("No event found with name:", entry.event.name);
         setWarningMessage(null);
         setRemainingSlotsBefore(null);
         setRemainingSlotsAfter(null);
@@ -151,9 +144,7 @@ const ApproveDialog = (props: Props) => {
       }
 
       const eventId = events[0].node._id;
-      console.log("Found event ID:", eventId);
 
-      // Get event details
       const eventDetailsResult = await client.query({
         query: GET_EVENT_DETAILS,
         variables: { eventId },
@@ -163,7 +154,6 @@ const ApproveDialog = (props: Props) => {
       const eventDetails = (eventDetailsResult.data as any)?.event;
 
       if (!eventDetails || !eventDetails.maxEntries) {
-        console.log("Event details or maxEntries missing");
         setWarningMessage(null);
         setRemainingSlotsBefore(null);
         setRemainingSlotsAfter(null);
@@ -171,7 +161,6 @@ const ApproveDialog = (props: Props) => {
         return;
       }
 
-      // Get approved entries count (does NOT include current entry)
       const countResult = await client.query({
         query: GET_APPROVED_ENTRY_COUNT,
         variables: { eventId },
@@ -180,26 +169,13 @@ const ApproveDialog = (props: Props) => {
 
       const approvedCount = (countResult.data as any)?.approvedEntryCountByEvent || 0;
 
-      // Calculate remaining slots BEFORE this approval (current available slots)
       const remainingSlotsBeforeApproval = eventDetails.maxEntries - approvedCount;
 
-      // Calculate remaining slots AFTER this approval (add 1 for this entry)
       const remainingSlotsAfterApproval = eventDetails.maxEntries - (approvedCount + 1);
 
-      // Store values
       setRemainingSlotsBefore(remainingSlotsBeforeApproval);
       setRemainingSlotsAfter(remainingSlotsAfterApproval);
       setMaxEntries(eventDetails.maxEntries);
-
-      console.log("Capacity check in ApproveDialog:", {
-        eventName: eventDetails.name,
-        maxEntries: eventDetails.maxEntries,
-        approvedCountBefore: approvedCount,
-        approvedCountAfter: approvedCount + 1,
-        remainingSlotsBefore: remainingSlotsBeforeApproval,
-        remainingSlotsAfter: remainingSlotsAfterApproval,
-        entryNumber: entry.entryNumber
-      });
 
       if (remainingSlotsAfterApproval <= 5 && remainingSlotsAfterApproval > 0) {
         setWarningType("warning");
@@ -223,7 +199,6 @@ const ApproveDialog = (props: Props) => {
           `❌ EVENT OVER CAPACITY: This event already has ${approvedCount} approved entries out of ${eventDetails.maxEntries} maximum. This entry cannot be approved.`
         );
       } else {
-        console.log("No warning needed, remaining slots after:", remainingSlotsAfterApproval);
         setWarningMessage(null);
         setWarningType(null);
       }
@@ -240,10 +215,8 @@ const ApproveDialog = (props: Props) => {
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    console.log("Dialog open state changing to:", newOpen);
     setOpen(newOpen);
     if (!newOpen) {
-      // Reset when closing
       setCapacityChecked(false);
       setWarningMessage(null);
       setWarningType(null);
@@ -254,7 +227,6 @@ const ApproveDialog = (props: Props) => {
   };
 
   const onSubmit = async () => {
-    // Don't proceed if event is full or over capacity
     if (warningType === "danger") {
       toast.error("Cannot approve entry. Event has reached maximum capacity.");
       return;

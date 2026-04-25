@@ -4126,22 +4126,16 @@ export default function App() {
   }
 
   const handleMerge = (mergedData: Record<string, any>) => {
-    // console.log("✅ Merged Data:", mergedData)
     setShowReconciliation(false)
   }
 
   const { data, loading, error } =
     useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
-  console.log("All tournaments:", data?.publicTournaments)
-  console.log("Tournament from URL:", tournamentId)
 
   const currentTournament = tournamentId
     ? data?.publicTournaments?.find((t: any) => t._id === tournamentId)
     : data?.publicTournaments?.find((t: any) => t.isActive)
 
-  if (tournamentId && !currentTournament) {
-    console.log("Tournament not found in publicTournaments, checking if it exists at all...")
-  }
   const events =
     currentTournament?.events?.map((event: any) => {
       const rawGender = event.gender?.toLowerCase()
@@ -4169,7 +4163,6 @@ export default function App() {
         tournamentId: currentTournament?._id || tournamentId,
       }
 
-      console.log("Created event object with tournamentId:", eventObj)
       return eventObj
     }) || []
 
@@ -4188,9 +4181,6 @@ export default function App() {
   )
 
   const handleCategoryClick = (category: any) => {
-    console.log("Category clicked - raw category object:", category)
-    console.log("Category clicked - maxEntries:", category.maxEntries)
-    console.log("Category clicked - tournamentId:", category.tournamentId)
 
     setSelectedCategory({
       id: category.id,
