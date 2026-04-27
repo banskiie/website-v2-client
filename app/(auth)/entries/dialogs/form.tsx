@@ -129,22 +129,41 @@ const ENTRY = gql`
           country {
             name
             code
+            alpha2Code
+            alpha3Code
+            flag
+            region
+            capital
+            population
+            area
           }
           region {
             name
             code
+            regionName
+            psgcCode
           }
           province {
             name
             code
+            regionCode
+            psgcCode
           }
           city {
             name
             code
+            provinceCode
+            regionCode
+            psgcCode
+            classification
           }
           barangay {
             name
             code
+            cityCode
+            provinceCode
+            regionCode
+            psgcCode
           }
           street
           zipCode
@@ -173,22 +192,41 @@ const ENTRY = gql`
           country {
             name
             code
+            alpha2Code
+            alpha3Code
+            flag
+            region
+            capital
+            population
+            area
           }
           region {
             name
             code
+            regionName
+            psgcCode
           }
           province {
             name
             code
+            regionCode
+            psgcCode
           }
           city {
             name
             code
+            provinceCode
+            regionCode
+            psgcCode
+            classification
           }
           barangay {
             name
             code
+            cityCode
+            provinceCode
+            regionCode
+            psgcCode
           }
           street
           zipCode
@@ -350,6 +388,73 @@ type CheckEventEntriesResponse = {
     maxEntries: number;
   };
   entryCountByEvent: number;
+};
+
+const cleanAddressForInput = (address: any) => {
+  if (!address) return undefined;
+  
+  const result: any = {};
+  
+  if (address.street) result.street = address.street;
+  if (address.zipCode) result.zipCode = address.zipCode;
+  if (address.fullAddress) result.fullAddress = address.fullAddress;
+  if (address.coordinates) result.coordinates = address.coordinates;
+  
+  if (address.country) {
+    result.country = {
+      code: address.country.code,
+      name: address.country.name,
+      alpha2Code: address.country.alpha2Code,
+      alpha3Code: address.country.alpha3Code,
+      flag: address.country.flag,
+      region: address.country.region,
+      capital: address.country.capital,
+      population: address.country.population,
+      area: address.country.area
+    };
+  }
+  
+  if (address.region) {
+    result.region = {
+      code: address.region.code,
+      name: address.region.name,
+      regionName: address.region.regionName,
+      psgcCode: address.region.psgcCode     
+    };
+  }
+  
+  if (address.province) {
+    result.province = {
+      code: address.province.code,
+      name: address.province.name,
+      regionCode: address.province.regionCode,
+      psgcCode: address.province.psgcCode     
+    };
+  }
+  
+  if (address.city) {
+    result.city = {
+      code: address.city.code,
+      name: address.city.name,
+      provinceCode: address.city.provinceCode,
+      regionCode: address.city.regionCode,    
+      psgcCode: address.city.psgcCode,        
+      classification: address.city.classification
+    };
+  }
+  
+  if (address.barangay) {
+    result.barangay = {
+      code: address.barangay.code,
+      name: address.barangay.name,
+      cityCode: address.barangay.cityCode,
+      provinceCode: address.barangay.provinceCode,
+      regionCode: address.barangay.regionCode,
+      psgcCode: address.barangay.psgcCode 
+    };
+  }
+  
+  return result;
 };
 
 const truncateFileNameWithEllipsis = (
@@ -1620,7 +1725,8 @@ const FormDialog = (props: Props) => {
                 },
               ]
             : payload.player1Entry.validDocuments || [],
-          address: payload.player1Entry.address,
+          // address: payload.player1Entry.address,
+          address: cleanAddressForInput(payload.player1Entry.address), 
         };
 
         const player2Entry = isDoubles
@@ -1635,7 +1741,8 @@ const FormDialog = (props: Props) => {
                     },
                   ]
                 : payload.player2Entry?.validDocuments || [],
-              address: payload.player2Entry?.address,
+              // address: payload.player2Entry?.address,
+              address: cleanAddressForInput(payload.player2Entry?.address),
             }
           : null;
 

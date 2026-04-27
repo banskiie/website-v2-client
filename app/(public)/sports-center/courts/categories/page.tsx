@@ -665,9 +665,11 @@ import {
   Calendar,
   Ampersand,
   ArrowLeftIcon,
+  X,
+  Gift,
 } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useQuery, useSubscription } from "@apollo/client/react";
 import {
   CategoryModal,
@@ -836,9 +838,111 @@ function CategoryCard({
   );
 }
 
+function PrizeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80"
+          />
+
+          <AnimatePresence>
+            {isFullscreen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95"
+                onClick={() => setIsFullscreen(false)}
+              >
+                <button
+                  onClick={() => setIsFullscreen(false)}
+                  className="absolute top-4 right-4 z-[61] p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+                <motion.div
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0.9 }}
+                  className="max-w-[95vw] max-h-[95vh] flex items-center justify-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Image
+                    src="https://res.cloudinary.com/dqjcswchm/image/upload/v1777260206/signal-2026-04-27-112205_002_ij1fdi.jpg"
+                    alt="C-ONE Badminton Challenge Prizes - Full Screen"
+                    width={1200}
+                    height={800}
+                    className="w-auto h-auto max-w-full max-h-[95vh] object-contain rounded-lg"
+                    unoptimized
+                  />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] md:max-w-4xl max-h-[90vh] overflow-hidden pointer-events-auto"
+            >
+              <div className="flex justify-between items-center p-3 md:p-4 border-b bg-gradient-to-r from-green-50 to-emerald-50">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
+                  <h2 className="text-lg md:text-xl font-bold text-gray-800">Tournament Prizes</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={onClose}
+                    className="p-1.5 hover:bg-gray-200 rounded-full transition-colors"
+                  >
+                    <X className="w-4 h-4 md:w-5 md:h-5 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-y-auto max-h-[calc(90vh-70px)] p-4 md:p-6">
+                <div 
+                  className="flex justify-center cursor-pointer"
+                  onClick={() => setIsFullscreen(true)}
+                >
+                  <Image
+                    src="https://res.cloudinary.com/dqjcswchm/image/upload/v1777260206/signal-2026-04-27-112205_002_ij1fdi.jpg"
+                    alt="C-ONE Badminton Challenge Prizes - Click to zoom"
+                    width={900}
+                    height={600}
+                    className="w-full h-auto max-w-full md:max-w-2xl rounded-lg shadow-md mx-auto transition-transform duration-200 hover:scale-[1.02]"
+                    unoptimized
+                  />
+                </div>
+                
+                <div className="text-center mt-3 sm:hidden">
+                  <p className="text-xs text-gray-400">Tap image to zoom in</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function CategoriesContent() {
   const searchParams = useSearchParams();
   const tournamentId = searchParams.get("tournament");
+  const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<{
     id: string;
     name: string;
@@ -909,6 +1013,7 @@ function CategoriesContent() {
     ? data?.publicTournaments?.find((t: any) => t._id === tournamentId)
     : data?.publicTournaments?.find((t: any) => t.isActive);
 
+    const showPrizesButton = activeTournament?._id === "69c34fb8dcf40912c13a9e8a";
   const tournamentName = activeTournament?.name || "C-ONE Badminton Tournament";
 
   useEffect(() => {
@@ -1215,24 +1320,34 @@ function CategoriesContent() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-              <Button
-                variant="outline"
-                onClick={() => setIsCheckEntryModalOpen(true)}
-                className="cursor-pointer text-base bg-teal-600 text-white hover:bg-teal-700 flex items-center justify-center px-5 py-6 gap-2"
-              >
-                <Search className="!w-5 !h-5" />
-                Check Entry
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setIsUploadModalOpen(true)}
-                className="cursor-pointer text-base bg-green-600 text-white hover:bg-green-700 flex items-center justify-center px-5 py-6 gap-2"
-              >
-                <UploadIcon className="!w-5 !h-5" />
-                Upload Payment
-              </Button>
-            </div>
+            <div className={`grid grid-cols-1 gap-4 max-w-3xl mx-auto ${showPrizesButton ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+  <Button
+    variant="outline"
+    onClick={() => setIsCheckEntryModalOpen(true)}
+    className="cursor-pointer text-base bg-teal-600 text-white hover:bg-teal-700 flex items-center justify-center px-5 py-6 gap-2"
+  >
+    <Search className="!w-5 !h-5" />
+    Check Entry
+  </Button>
+  <Button
+    variant="outline"
+    onClick={() => setIsUploadModalOpen(true)}
+    className="cursor-pointer text-base bg-green-600 text-white hover:bg-green-700 flex items-center justify-center px-5 py-6 gap-2"
+  >
+    <UploadIcon className="!w-5 !h-5" />
+    Upload Payment
+  </Button>
+  {showPrizesButton && (
+    <Button
+      variant="outline"
+      onClick={() => setIsPrizeModalOpen(true)}
+      className="cursor-pointer text-base bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center px-5 py-6 gap-2"
+    >
+      <Gift className="!w-5 !h-5" />
+      View Prizes
+    </Button>
+  )}
+</div>
 
             <motion.div
               className="mt-8 flex flex-col items-center justify-center gap-2 cursor-pointer group"
@@ -1549,6 +1664,9 @@ function CategoriesContent() {
           onMerge={handleMerge}
         />
       )}
+
+      <PrizeModal isOpen={isPrizeModalOpen} onClose={() => setIsPrizeModalOpen(false)} />
+
     </div>
   );
 }

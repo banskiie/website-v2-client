@@ -913,7 +913,7 @@ export default function Page() {
       </div>
 
       <ScrollIndicator />
-      <FloatingTicketing />
+      {/* <FloatingTicketing /> */}
     </div >
   );
 }

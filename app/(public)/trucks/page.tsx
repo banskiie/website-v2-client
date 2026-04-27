@@ -769,7 +769,7 @@ function page() {
 
       <ScrollIndicator />
 
-      <FloatingTicketing />
+      {/* <FloatingTicketing /> */}
     </div >
 
   )

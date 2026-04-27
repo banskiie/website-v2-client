@@ -1375,7 +1375,7 @@ export default function Page() {
 
       <Footer />
       <ScrollIndicator />
-      <FloatingChatWidget />
+      {/* <FloatingChatWidget /> */}
     </div >
   )
 }

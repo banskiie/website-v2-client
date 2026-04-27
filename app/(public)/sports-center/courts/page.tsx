@@ -1011,7 +1011,7 @@ function Page() {
         onClose={() => setShowCheckEntryModal(false)}
       />
       <ScrollIndicator />
-      <FloatingChatWidget />
+      {/* <FloatingChatWidget /> */}
     </div>
   );
 }
