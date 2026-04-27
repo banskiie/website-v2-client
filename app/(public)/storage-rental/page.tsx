@@ -729,7 +729,7 @@ const Page = () => {
 
       <Footer />
       <ScrollIndicator />
-      <FloatingChatWidget />
+      {/* <FloatingChatWidget /> */}
     </div>
   )
 }

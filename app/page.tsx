@@ -490,9 +490,9 @@ const Home = () => {
         <ScrollIndicator />
       </div>
 
-      <div >
+      {/* <div >
         <FloatingTicketing />
-      </div>
+      </div> */}
     </div >
 
   );

@@ -209,6 +209,7 @@ const ENTRY_CHANGED = gql`
         totalRefundAmount
         hasRefunds
         totalPaid
+        maxEntries
         playerList {
           player1Name
           player2Name
@@ -651,11 +652,11 @@ const Page = () => {
 
           case "REFUND":
             const refundedEntry = entry
-            console.log("REFUND event received - forcing recalculation", {
-              entryNumber: refundedEntry?.entryNumber,
-              totalRefundAmount: refundedEntry?.totalRefundAmount,
-              currentRefreshTrigger: refreshTrigger,
-            })
+            // console.log("REFUND event received - forcing recalculation", {
+            //   entryNumber: refundedEntry?.entryNumber,
+            //   totalRefundAmount: refundedEntry?.totalRefundAmount,
+            //   currentRefreshTrigger: refreshTrigger,
+            // })
             toast.info(`💰 Refund Processed: ${refundedEntry?.entryNumber}`, {
               description: `Refund amount: ₱${refundedEntry?.totalRefundAmount?.toLocaleString()}`,
               duration: 5000,
@@ -667,7 +668,7 @@ const Page = () => {
               refetchEntries().then(() => {
                 setRefreshTrigger((prev) => {
                   const newValue = prev + 1
-                  console.log("Setting refreshTrigger to:", newValue)
+                  // console.log("Setting refreshTrigger to:", newValue)
                   return newValue
                 })
               })
@@ -807,16 +808,16 @@ const Page = () => {
         (edge) => edge.node.hasRefunds || edge.node.totalRefundAmount > 0,
       )
 
-      if (entriesWithRefunds.length > 0) {
-        console.log(
-          "Entries with refunds detected:",
-          entriesWithRefunds.map((e) => ({
-            entryNumber: e.node.entryNumber,
-            totalRefundAmount: e.node.totalRefundAmount,
-            hasRefunds: e.node.hasRefunds,
-          })),
-        )
-      }
+      // if (entriesWithRefunds.length > 0) {
+      //   console.log(
+      //     "Entries with refunds detected:",
+      //     entriesWithRefunds.map((e) => ({
+      //       entryNumber: e.node.entryNumber,
+      //       totalRefundAmount: e.node.totalRefundAmount,
+      //       hasRefunds: e.node.hasRefunds,
+      //     })),
+      //   )
+      // }
     }
   }, [entriesData])
 
@@ -1367,10 +1368,10 @@ const Page = () => {
   // Get selected month data
 
   const monthlyPayments = useMemo(() => {
-    console.log(
-      "Recalculating monthlyPayments with refreshTrigger:",
-      refreshTrigger,
-    )
+    // console.log(
+    //   "Recalculating monthlyPayments with refreshTrigger:",
+    //   refreshTrigger,
+    // )
     if (!entriesData?.entries?.edges) return []
 
     const endDate = new Date()

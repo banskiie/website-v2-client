@@ -449,7 +449,7 @@ const [heroLoaded, setHeroLoaded] = useState(false)
       </div>
 
       <ScrollIndicatorSB />
-      <FloatingChatWidget />
+      {/* <FloatingChatWidget /> */}
     </div>
   )
 }

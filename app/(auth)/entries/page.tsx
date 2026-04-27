@@ -1,16 +1,16 @@
-"use client"
-import ColumnFilter from "@/components/table/column-filter"
-import DataTable from "@/components/table/data-table"
-import SortHeader from "@/components/table/sort-header"
-import { Button } from "@/components/ui/button"
-import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group"
+"use client";
+import ColumnFilter from "@/components/table/column-filter";
+import DataTable from "@/components/table/data-table";
+import SortHeader from "@/components/table/sort-header";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
 import {
   InputGroup,
   InputGroupInput,
   InputGroupAddon,
   InputGroupButton,
-} from "@/components/ui/input-group"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/input-group";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -19,20 +19,20 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { EntryStatus, IEntry, IEntryNode } from "@/types/entry.interface"
-import { gql } from "@apollo/client"
-import { useQuery } from "@apollo/client/react"
-import { ColumnDef } from "@tanstack/react-table"
-import { InfoIcon, Settings, Trash2Icon, Flag } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import FormDialog from "./dialogs/form"
-import { toast } from "sonner"
+} from "@/components/ui/tooltip";
+import { EntryStatus, IEntry, IEntryNode } from "@/types/entry.interface";
+import { gql } from "@apollo/client";
+import { useApolloClient, useQuery } from "@apollo/client/react";
+import { ColumnDef } from "@tanstack/react-table";
+import { InfoIcon, Settings, Trash2Icon, Flag } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import FormDialog from "./dialogs/form";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,22 +44,23 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import ViewDialog from "./dialogs/view"
-import { Checkbox } from "@/components/ui/checkbox"
-import BatchMenu from "./dialogs/batch"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns/format"
-import EntryStatusBadge from "@/components/badges/entry-status-badge"
-import EntryTable from "@/components/table/entry-table"
-import AssignDialog from "./dialogs/assign"
-import ApproveDialog from "./dialogs/approve"
-import RejectDialog from "./dialogs/reject"
-import TransferDialog from "./dialogs/transfer-payment"
-import ExportMenu from "./dialogs/export"
-import CancelDialog from "./dialogs/cancel"
-import { useIsMobile } from "@/hooks/use-mobile"
+} from "@/components/ui/dropdown-menu";
+import ViewDialog from "./dialogs/view";
+import { Checkbox } from "@/components/ui/checkbox";
+import BatchMenu from "./dialogs/batch";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns/format";
+import EntryStatusBadge from "@/components/badges/entry-status-badge";
+import EntryTable from "@/components/table/entry-table";
+import AssignDialog from "./dialogs/assign";
+import ApproveDialog from "./dialogs/approve";
+import RejectDialog from "./dialogs/reject";
+import TransferDialog from "./dialogs/transfer-payment";
+import ExportMenu from "./dialogs/export";
+import CancelDialog from "./dialogs/cancel";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MaxEntriesWarningModal } from "@/components/custom/MaxEntriesWarningModal";
 
 const ENTRIES = gql`
   query Entries(
@@ -110,7 +111,7 @@ const ENTRIES = gql`
       }
     }
   }
-`
+`;
 
 const ENTRY_CHANGED = gql`
   subscription EntryChanged {
@@ -157,6 +158,7 @@ const ENTRY_CHANGED = gql`
         totalRefundAmount
         hasRefunds
         totalPaid
+        maxEntries
         playerList {
           player1Name
           player2Name
@@ -164,7 +166,7 @@ const ENTRY_CHANGED = gql`
       }
     }
   }
-`
+`;
 
 const REFUND_CHANGED = gql`
   subscription RefundChanged {
@@ -181,12 +183,141 @@ const REFUND_CHANGED = gql`
       }
     }
   }
-`
+`;
+const GET_EVENT_CAPACITY = gql`
+  query GetEventCapacity($eventId: ID!) {
+    event(_id: $eventId) {
+      _id
+      name
+      maxEntries
+    }
+    entryCountByEvent(eventId: $eventId)
+  }
+`;
+const GET_EVENT_BY_NAME = gql`
+  query GetEventByName($name: String!) {
+    events(filter: [{ key: "name", value: $name, type: TEXT }], first: 1) {
+      edges {
+        node {
+          _id
+          name
+        }
+      }
+    }
+  }
+`;
+
+const GET_EVENT_DETAILS = gql`
+  query GetEventDetails($eventId: ID!) {
+    event(_id: $eventId) {
+      _id
+      name
+      maxEntries
+    }
+  }
+`;
+const GET_APPROVED_ENTRY_COUNT = gql`
+  query GetApprovedEntryCount($eventId: ID!) {
+    approvedEntryCountByEvent(eventId: $eventId)
+  }
+`;
+
+const GET_EVENT_CAPACITY_STATUS = gql`
+  query GetEventCapacityStatusForActions($eventId: ID!) {
+    event(_id: $eventId) {
+      _id
+      maxEntries
+    }
+    approvedEntryCountByEvent(eventId: $eventId)
+  }
+`;
+
+interface EventByNameResponse {
+  events: {
+    edges: Array<{
+      node: {
+        _id: string;
+        name: string;
+        maxEntries: number;
+      };
+    }>;
+  };
+}
+
+interface EventCapacityResponse {
+  event: {
+    _id: string;
+    name: string;
+    maxEntries: number;
+  };
+  entryCountByEvent: number;
+}
 
 const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
-  const entry = useMemo(() => data, [data])
-  const [menuOpen, setMenuOpen] = useState(false)
-  const status = useMemo(() => entry?.currentStatus, [entry])
+  const entry = useMemo(() => data, [data]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [hasAvailableSlots, setHasAvailableSlots] = useState(true);
+  const [checkingCapacity, setCheckingCapacity] = useState(true);
+  const status = useMemo(() => entry?.currentStatus, [entry]);
+  const client = useApolloClient();
+
+  // Fetch event capacity when the dropdown opens
+  useEffect(() => {
+    const checkCapacity = async () => {
+      if (!menuOpen || status !== "LEVEL_PENDING") {
+        setCheckingCapacity(false);
+        return;
+      }
+
+      // Get event name from entry data - use type assertion
+      const eventName = (entry as any)?.eventName;
+      if (!eventName) {
+        setCheckingCapacity(false);
+        return;
+      }
+
+      try {
+        // First find event by name
+        const eventResult = await client.query({
+          query: GET_EVENT_BY_NAME,
+          variables: { name: eventName },
+          fetchPolicy: "network-only",
+        });
+
+        const eventData = eventResult.data as any;
+        const events = eventData?.events?.edges || [];
+
+        if (events.length === 0) {
+          setHasAvailableSlots(true);
+          setCheckingCapacity(false);
+          return;
+        }
+
+        const eventId = events[0].node._id;
+
+        // Then get approved count
+        const countResult = await client.query({
+          query: GET_EVENT_CAPACITY_STATUS,
+          variables: { eventId },
+          fetchPolicy: "network-only",
+        });
+
+        const countData = countResult.data as any;
+        const approvedCount = countData?.approvedEntryCountByEvent || 0;
+        const maxEntries = countData?.event?.maxEntries || 0;
+        const remainingSlots = maxEntries - approvedCount;
+
+        setHasAvailableSlots(remainingSlots > 0);
+      } catch (error) {
+        console.error("Error checking capacity:", error);
+        setHasAvailableSlots(true); // Default to true on error
+      } finally {
+        setCheckingCapacity(false);
+      }
+    };
+
+    checkCapacity();
+  }, [menuOpen, status, entry, client]);
 
   const canTransfer = useMemo(() => {
     const transferableStatuses = [
@@ -196,9 +327,13 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
       "PAYMENT_VERIFIED",
       "VERIFIED",
       "CANCELLED",
-    ]
-    return status && transferableStatuses.includes(status)
-  }, [status])
+    ];
+    return status && transferableStatuses.includes(status);
+  }, [status]);
+
+  // Don't show the Level submenu if there are no available slots
+  const showLevelMenu =
+    status === "LEVEL_PENDING" && hasAvailableSlots && !checkingCapacity;
 
   return (
     <DropdownMenu modal open={menuOpen} onOpenChange={setMenuOpen}>
@@ -221,7 +356,13 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
             />
           )}
 
-          {status === "LEVEL_PENDING" && (
+          {/* {!hasAvailableSlots && !checkingCapacity && (
+            <div className="px-2 py-1.5 text-xs text-muted-foreground italic">
+              Event full - Approval disabled
+            </div>
+          )} */}
+
+          {showLevelMenu && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuSub>
@@ -263,37 +404,42 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
-}
+  );
+};
 
 const Page = () => {
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile();
+  const client = useApolloClient();
   // Pagination
-  const [rows, setRows] = useState<number>(10)
+  const [rows, setRows] = useState<number>(10);
   const [page, setPage] = useState<{
-    current: number
-    loaded: number
-    max: number
+    current: number;
+    loaded: number;
+    max: number;
   }>({
     current: 1,
     loaded: 1,
     max: 1,
-  })
+  });
   // Global Search
-  const [search, setSearch] = useState<string>("")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [search, setSearch] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
   // Column Sorting
   const [sort, setSort] = useState<{
-    key: string
-    order: "ASC" | "DESC"
-  } | null>(null)
+    key: string;
+    order: "ASC" | "DESC";
+  } | null>(null);
   // Column Filtering
   const [filter, setFilter] = useState<
     { key: string; value: string; type: string }[]
-  >([])
-  // Selected Rows
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  // Table Data Fetching
+  >([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showMaxEntriesWarning, setShowMaxEntriesWarning] = useState(false);
+  const [warningEventName, setWarningEventName] = useState("");
+  const [warningMaxEntries, setWarningMaxEntries] = useState(0);
+  const [warningRemainingSlots, setWarningRemainingSlots] = useState(0);
+  const [warningEntryNumber, setWarningEntryNumber] = useState("");
+
   const { data, loading, fetchMore, subscribeToMore, error }: any = useQuery(
     ENTRIES,
     {
@@ -309,538 +455,62 @@ const Page = () => {
       fetchPolicy: "network-only",
       notifyOnNetworkStatusChange: true,
     },
-  )
+  );
 
-  if (error) console.error(error)
+  if (error) console.error(error);
 
   useEffect(() => {
     const unsubscribeRefund = subscribeToMore({
       document: REFUND_CHANGED,
       updateQuery: (prev: any, { subscriptionData }: any) => {
-        if (!subscriptionData.data) return prev
-        const { type, refund } = subscriptionData.data.refundChanged
+        if (!subscriptionData.data) return prev;
+        const { type, refund } = subscriptionData.data.refundChanged;
 
         if (type === "CREATE") {
           toast.success(
             `Refund of ₱${refund.amount.toLocaleString()} processed for entries: ${refund.entries}`,
-          )
+          );
         }
 
-        return prev
+        return prev;
       },
-    })
+    });
     return () => {
       if (typeof unsubscribeRefund === "function") {
-        unsubscribeRefund()
+        unsubscribeRefund();
       }
-    }
-  }, [subscribeToMore])
+    };
+  }, [subscribeToMore]);
 
-  // March 9
-  // useEffect(() => {
-  //   const unsubscribe = subscribeToMore({
-  //     document: ENTRY_CHANGED,
-  //     updateQuery: (prev: any, { subscriptionData }: any) => {
-  //       if (!subscriptionData.data) return prev
-  //       const { type, entry, entries } = subscriptionData.data.entryChanged
-
-  //       switch (type) {
-  //         case "CREATE":
-  //           const newEntry = entry
-  //           const newEntryExists = prev.entries.edges.find(
-  //             (edge: any) => edge.node._id === newEntry?._id,
-  //           )
-  //           if (newEntryExists) return prev
-
-  //           if (!search && !sort && filter.length === 0) {
-  //             toast.success(
-  //               `Entry (${newEntry?.entryNumber}) has been created.`,
-  //             )
-  //           }
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               total: prev.entries.total + 1,
-  //               edges: [
-  //                 { cursor: newEntry?._id, node: newEntry },
-  //                 ...prev.entries.edges,
-  //               ],
-  //             },
-  //           }
-
-  //         case "VERIFIED":
-  //           const verifiedEntry = entry
-
-  //           toast.success(
-  //             `Entry (${verifiedEntry?.entryNumber}) has been fully paid and verified! 🎉`,
-  //           )
-
-  //           const verifiedEdges = prev.entries.edges.map((edge: any) =>
-  //             edge.node._id === verifiedEntry._id
-  //               ? { ...edge, node: { ...verifiedEntry } }
-  //               : edge,
-  //           )
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: verifiedEdges,
-  //             },
-  //           }
-
-  //         case "PAYMENT_TRANSFERRED":
-  //           const paymentTransferredEntry = entry
-
-  //           // Only show the payment transferred toast for this specific type
-  //           toast.info(
-  //             `Payment transferred from entry (${paymentTransferredEntry?.entryNumber})`,
-  //             {
-  //               description: `New balance: ₱${paymentTransferredEntry?.pendingAmount?.toLocaleString()}`,
-  //               duration: 5000,
-  //             },
-  //           )
-
-  //           const paymentTransferredEdges = prev.entries.edges.map((edge: any) => {
-  //             if (edge.node._id === paymentTransferredEntry._id) {
-  //               const totalPaid =
-  //                 paymentTransferredEntry.totalPaid ?? edge.node.totalPaid ?? 0
-  //               const totalRefundAmount =
-  //                 paymentTransferredEntry.totalRefundAmount ??
-  //                 edge.node.totalRefundAmount ??
-  //                 0
-  //               const remainingPrincipal = totalPaid - totalRefundAmount
-
-  //               return {
-  //                 ...edge,
-  //                 node: {
-  //                   ...edge.node,
-  //                   ...paymentTransferredEntry,
-  //                   pendingAmount:
-  //                     paymentTransferredEntry.pendingAmount ?? edge.node.pendingAmount,
-  //                   totalPaid: totalPaid,
-  //                   totalRefundAmount: totalRefundAmount,
-  //                   hasRefunds:
-  //                     paymentTransferredEntry.hasRefunds ?? totalRefundAmount > 0,
-  //                   hasOverpayment:
-  //                     paymentTransferredEntry.hasOverpayment ??
-  //                     paymentTransferredEntry.pendingAmount < 0,
-  //                   totalExcess:
-  //                     paymentTransferredEntry.totalExcess ??
-  //                     (paymentTransferredEntry.pendingAmount < 0
-  //                       ? Math.abs(paymentTransferredEntry.pendingAmount)
-  //                       : 0),
-  //                   currentStatus:
-  //                     paymentTransferredEntry.currentStatus ?? edge.node.currentStatus,
-  //                 },
-  //               }
-  //             }
-  //             return edge
-  //           })
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: paymentTransferredEdges,
-  //             },
-  //           }
-
-  //         case "CANCEL":
-  //           const cancelledEntry = entry
-
-  //           if (
-  //             cancelledEntry?.hasOverpayment &&
-  //             cancelledEntry?.totalExcess > 0
-  //           ) {
-  //             toast.warning(
-  //               `Entry (${cancelledEntry?.entryNumber}) has been cancelled. Excess amount: ₱${cancelledEntry?.totalExcess?.toLocaleString()}`,
-  //               {
-  //                 description:
-  //                   "A refund may be required for the excess payment.",
-  //                 duration: 5000,
-  //               },
-  //             )
-  //           } else {
-  //             toast.warning(
-  //               `Entry (${cancelledEntry?.entryNumber}) has been cancelled.`,
-  //               {
-  //                 duration: 5000,
-  //               },
-  //             )
-  //           }
-
-  //           const cancelledEdges = prev.entries.edges.map((edge: any) =>
-  //             edge.node._id === cancelledEntry._id
-  //               ? {
-  //                 ...edge,
-  //                 node: {
-  //                   ...edge.node,
-  //                   ...cancelledEntry,
-  //                   currentStatus: "CANCELLED",
-  //                   hasOverpayment: cancelledEntry.hasOverpayment,
-  //                   totalExcess: cancelledEntry.totalExcess,
-  //                   pendingAmount: cancelledEntry.pendingAmount,
-  //                   totalRefundAmount:
-  //                     cancelledEntry.totalRefundAmount ||
-  //                     edge.node.totalRefundAmount,
-  //                   hasRefunds:
-  //                     cancelledEntry.hasRefunds || edge.node.hasRefunds,
-  //                   totalPaid:
-  //                     cancelledEntry.totalPaid || edge.node.totalPaid,
-  //                 },
-  //               }
-  //               : edge,
-  //           )
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: cancelledEdges,
-  //             },
-  //           }
-
-  //         case "REFUND":
-  //           const refundedEntry = entry
-
-  //           const refundMessage = refundedEntry?.isFullyRefunded
-  //             ? `Entry (${refundedEntry?.entryNumber}) has been fully refunded.`
-  //             : `Refund processed for entry (${refundedEntry?.entryNumber})`
-
-  //           toast.info(refundMessage)
-
-  //           const refundEdges = prev.entries.edges.map((edge: any) => {
-  //             if (edge.node._id === refundedEntry._id) {
-  //               return {
-  //                 ...edge,
-  //                 node: {
-  //                   ...edge.node,
-  //                   ...refundedEntry,
-  //                   hasOverpayment: refundedEntry.hasOverpayment,
-  //                   totalExcess: refundedEntry.totalExcess,
-  //                   pendingAmount: refundedEntry.pendingAmount,
-  //                   totalRefundAmount: refundedEntry.totalRefundAmount,
-  //                   hasRefunds: refundedEntry.hasRefunds,
-  //                   totalPaid: refundedEntry.totalPaid,
-  //                   latestPaymentAmount: refundedEntry.latestPaymentAmount,
-  //                   currentStatus: refundedEntry.currentStatus,
-  //                   remainingPrincipal: refundedEntry.remainingPrincipal,
-  //                   isFullyRefunded: refundedEntry.isFullyRefunded,
-  //                 },
-  //               }
-  //             }
-  //             return edge
-  //           })
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: refundEdges,
-  //             },
-  //           }
-
-  //         case "UPDATE":
-  //           const updatedEntry = entry
-
-  //           // Only show toast for regular updates (not payment related)
-  //           // Check if this is a regular update (changing player info, club, etc.)
-  //           const isRegularUpdate =
-  //             updatedEntry?.totalRefundAmount === undefined &&
-  //             updatedEntry?.pendingAmount === undefined &&
-  //             updatedEntry?.hasOverpayment === undefined
-
-  //           // Check if this is an early bird expiry (coming from a scheduled job)
-  //           // You need to add a flag in your resolver to indicate this is an automatic expiry
-  //           const isAutoEarlyBirdExpiry = updatedEntry?.isAutoEarlyBirdExpiry === true
-
-  //           if (isAutoEarlyBirdExpiry && updatedEntry?.isEarlyBird === false && updatedEntry?.pendingAmount > 0) {
-  //             if (!search && !sort && filter.length === 0) {
-  //               toast.info(
-  //                 `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
-  //                 `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
-  //               )
-  //             }
-  //           } else if (isRegularUpdate && !search && !sort && filter.length === 0) {
-  //             toast.success(
-  //               `Entry (${updatedEntry?.entryNumber}) has been updated.`,
-  //             )
-  //           }
-
-  //           const updatedEdges = prev.entries.edges.map((edge: any) => {
-  //             if (edge.node._id === updatedEntry._id) {
-  //               return {
-  //                 ...edge,
-  //                 node: {
-  //                   ...edge.node,
-  //                   ...updatedEntry,
-  //                   hasOverpayment:
-  //                     updatedEntry.hasOverpayment ?? edge.node.hasOverpayment,
-  //                   totalExcess:
-  //                     updatedEntry.totalExcess ?? edge.node.totalExcess,
-  //                   pendingAmount:
-  //                     updatedEntry.pendingAmount ?? edge.node.pendingAmount,
-  //                   totalRefundAmount:
-  //                     updatedEntry.totalRefundAmount ??
-  //                     edge.node.totalRefundAmount,
-  //                   hasRefunds: updatedEntry.hasRefunds ?? edge.node.hasRefunds,
-  //                   totalPaid: updatedEntry.totalPaid ?? edge.node.totalPaid,
-  //                   latestPaymentAmount:
-  //                     updatedEntry.latestPaymentAmount ??
-  //                     edge.node.latestPaymentAmount,
-  //                   currentStatus:
-  //                     updatedEntry.currentStatus ?? edge.node.currentStatus,
-  //                   isEarlyBird:
-  //                     updatedEntry.isEarlyBird ?? edge.node.isEarlyBird,
-  //                 },
-  //               }
-  //             }
-  //             return edge
-  //           })
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: updatedEdges,
-  //             },
-  //           }
-
-  //         case "ASSIGN":
-  //           const assignEntry = entry
-
-  //           if (!search && !sort && filter.length === 0) {
-  //             toast.info(
-  //               `Entry (${assignEntry?.entryNumber}) has been assigned.`,
-  //             )
-  //           }
-
-  //           const assignEdges = prev.entries.edges.map((edge: any) => {
-  //             if (edge.node._id === assignEntry._id) {
-  //               return {
-  //                 ...edge,
-  //                 node: {
-  //                   ...edge.node,
-  //                   ...assignEntry,
-  //                 },
-  //               }
-  //             }
-  //             return edge
-  //           })
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: assignEdges,
-  //             },
-  //           }
-
-  //         case "APPROVE":
-  //           const approveEntry = entry
-
-  //           if (!search && !sort && filter.length === 0) {
-  //             toast.success(
-  //               `Entry (${approveEntry?.entryNumber}) has been approved.`,
-  //             )
-  //           }
-
-  //           const approveEdges = prev.entries.edges.map((edge: any) => {
-  //             if (edge.node._id === approveEntry._id) {
-  //               return {
-  //                 ...edge,
-  //                 node: {
-  //                   ...edge.node,
-  //                   ...approveEntry,
-  //                 },
-  //               }
-  //             }
-  //             return edge
-  //           })
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: approveEdges,
-  //             },
-  //           }
-
-  //         case "PAID":
-  //           const paidEntry = entry
-
-  //           if (!search && !sort && filter.length === 0) {
-  //             toast.success(
-  //               `Entry (${paidEntry?.entryNumber}) has been paid.`,
-  //             )
-  //           }
-
-  //           const paidEdges = prev.entries.edges.map((edge: any) => {
-  //             if (edge.node._id === paidEntry._id) {
-  //               return {
-  //                 ...edge,
-  //                 node: {
-  //                   ...edge.node,
-  //                   ...paidEntry,
-  //                 },
-  //               }
-  //             }
-  //             return edge
-  //           })
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: paidEdges,
-  //             },
-  //           }
-
-  //         case "PARTIALLY_PAID":
-  //           const partiallyPaidEntry = entry
-
-  //           if (!search && !sort && filter.length === 0) {
-  //             toast.info(
-  //               `Entry (${partiallyPaidEntry?.entryNumber}) has been partially paid.`,
-  //             )
-  //           }
-
-  //           const partiallyPaidEdges = prev.entries.edges.map((edge: any) => {
-  //             if (edge.node._id === partiallyPaidEntry._id) {
-  //               return {
-  //                 ...edge,
-  //                 node: {
-  //                   ...edge.node,
-  //                   ...partiallyPaidEntry,
-  //                 },
-  //               }
-  //             }
-  //             return edge
-  //           })
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: partiallyPaidEdges,
-  //             },
-  //           }
-
-  //         case "REJECT":
-  //           const rejectEntry = entry
-
-  //           if (!search && !sort && filter.length === 0) {
-  //             toast.warning(
-  //               `Entry (${rejectEntry?.entryNumber}) has been rejected.`,
-  //             )
-  //           }
-
-  //           const rejectEdges = prev.entries.edges.map((edge: any) => {
-  //             if (edge.node._id === rejectEntry._id) {
-  //               return {
-  //                 ...edge,
-  //                 node: {
-  //                   ...edge.node,
-  //                   ...rejectEntry,
-  //                 },
-  //               }
-  //             }
-  //             return edge
-  //           })
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: rejectEdges,
-  //             },
-  //           }
-
-  //         case "DELETE":
-  //           const deletedEntry = entry
-
-  //           if (!search && !sort && filter.length === 0) {
-  //             toast.success(
-  //               `Entry (${deletedEntry?.entryNumber}) has been deleted.`,
-  //             )
-  //           }
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               total: prev.entries.total - 1,
-  //               edges: prev.entries.edges.filter(
-  //                 (edge: any) => edge.node._id !== deletedEntry._id,
-  //               ),
-  //             },
-  //           }
-
-  //         case "BATCH_UPDATE":
-  //           const updatedEntries = entries
-
-  //           if (!search && !sort && filter.length === 0) {
-  //             toast.success(
-  //               `Batch update successful for ${updatedEntries.length} entries.`,
-  //             )
-  //           }
-
-  //           const updatedIds = new Set(updatedEntries.map((u: any) => u._id))
-
-  //           return {
-  //             entries: {
-  //               ...prev.entries,
-  //               edges: prev.entries.edges.map((edge: any) =>
-  //                 updatedIds.has(edge.node._id)
-  //                   ? {
-  //                     ...edge,
-  //                     node: {
-  //                       ...edge.node,
-  //                       ...updatedEntries.find(
-  //                         (u: any) => u._id === edge.node._id,
-  //                       ),
-  //                     },
-  //                   }
-  //                   : edge,
-  //               ),
-  //             },
-  //           }
-
-  //         default:
-  //           return prev
-  //       }
-  //     },
-  //   })
-
-  //   return () => {
-  //     if (typeof unsubscribe === "function") {
-  //       unsubscribe()
-  //     }
-  //   }
-  // }, [subscribeToMore, search, sort, filter])
   useEffect(() => {
     const unsubscribe = subscribeToMore({
       document: ENTRY_CHANGED,
       updateQuery: (prev: any, { subscriptionData }: any) => {
-        if (!subscriptionData.data) return prev
-        const { type, entry, entries } = subscriptionData.data.entryChanged
+        if (!subscriptionData.data) return prev;
+        const { type, entry, entries } = subscriptionData.data.entryChanged;
 
-        // Get current user role (implement based on your auth system)
-        const userRole = localStorage.getItem("userRole") // Replace with your actual auth method
+        const userRole = localStorage.getItem("userRole");
 
-        // Helper function to check if entry should be shown for LEVELLER
         const shouldShowForLeveller = (entryNode: any) => {
-          if (userRole !== "LEVELLER") return true
-          return entryNode?.currentStatus === "LEVEL_PENDING"
-        }
+          if (userRole !== "LEVELLER") return true;
+          return entryNode?.currentStatus === "LEVEL_PENDING";
+        };
 
         switch (type) {
           case "CREATE":
-            const newEntry = entry
+            const newEntry = entry;
 
-            // Skip adding if LEVELLER and entry is not LEVEL_PENDING
-            if (!shouldShowForLeveller(newEntry)) return prev
+            if (!shouldShowForLeveller(newEntry)) return prev;
 
             const newEntryExists = prev.entries.edges.find(
               (edge: any) => edge.node._id === newEntry?._id,
-            )
-            if (newEntryExists) return prev
+            );
+            if (newEntryExists) return prev;
 
             if (!search && !sort && filter.length === 0) {
               toast.success(
                 `Entry (${newEntry?.entryNumber}) has been created.`,
-              )
+              );
             }
 
             return {
@@ -852,48 +522,45 @@ const Page = () => {
                   ...prev.entries.edges,
                 ],
               },
-            }
+            };
 
           case "VERIFIED":
-            const verifiedEntry = entry
+            const verifiedEntry = entry;
 
-            // Skip if LEVELLER and entry is not LEVEL_PENDING
             if (!shouldShowForLeveller(verifiedEntry)) {
-              // Remove from existing edges if present
               const filteredEdges = prev.entries.edges.filter(
                 (edge: any) => edge.node._id !== verifiedEntry._id,
-              )
+              );
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              }
+              };
             }
 
-            // Check if entry exists
             const existingVerifiedEdge = prev.entries.edges.find(
               (edge: any) => edge.node._id === verifiedEntry._id,
-            )
+            );
 
-            let verifiedEdges
+            let verifiedEdges;
             if (existingVerifiedEdge) {
               verifiedEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === verifiedEntry._id
                   ? { ...edge, node: { ...edge.node, ...verifiedEntry } }
                   : edge,
-              )
+              );
             } else {
               verifiedEdges = [
                 { cursor: verifiedEntry?._id, node: verifiedEntry },
                 ...prev.entries.edges,
-              ]
+              ];
             }
 
             toast.success(
               `Entry (${verifiedEntry?.entryNumber}) has been fully paid and verified! 🎉`,
-            )
+            );
 
             return {
               entries: {
@@ -903,43 +570,43 @@ const Page = () => {
                   : prev.entries.total + 1,
                 edges: verifiedEdges,
               },
-            }
+            };
 
           case "PAYMENT_TRANSFERRED":
-            const paymentTransferredEntry = entry
+            const paymentTransferredEntry = entry;
 
             // Skip update if LEVELLER and entry is not LEVEL_PENDING
             if (!shouldShowForLeveller(paymentTransferredEntry)) {
               // Remove from existing edges if present
               const filteredEdges = prev.entries.edges.filter(
                 (edge: any) => edge.node._id !== paymentTransferredEntry._id,
-              )
+              );
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              }
+              };
             }
 
             const existingPaymentEdge = prev.entries.edges.find(
               (edge: any) => edge.node._id === paymentTransferredEntry._id,
-            )
+            );
 
-            let paymentTransferredEdges
+            let paymentTransferredEdges;
             if (existingPaymentEdge) {
               paymentTransferredEdges = prev.entries.edges.map((edge: any) => {
                 if (edge.node._id === paymentTransferredEntry._id) {
                   const totalPaid =
                     paymentTransferredEntry.totalPaid ??
                     edge.node.totalPaid ??
-                    0
+                    0;
                   const totalRefundAmount =
                     paymentTransferredEntry.totalRefundAmount ??
                     edge.node.totalRefundAmount ??
-                    0
-                  const remainingPrincipal = totalPaid - totalRefundAmount
+                    0;
+                  const remainingPrincipal = totalPaid - totalRefundAmount;
 
                   return {
                     ...edge,
@@ -966,10 +633,10 @@ const Page = () => {
                         paymentTransferredEntry.currentStatus ??
                         edge.node.currentStatus,
                     },
-                  }
+                  };
                 }
-                return edge
-              })
+                return edge;
+              });
             } else {
               paymentTransferredEdges = [
                 {
@@ -977,7 +644,7 @@ const Page = () => {
                   node: paymentTransferredEntry,
                 },
                 ...prev.entries.edges,
-              ]
+              ];
             }
 
             toast.info(
@@ -986,7 +653,7 @@ const Page = () => {
                 description: `New balance: ₱${paymentTransferredEntry?.pendingAmount?.toLocaleString()}`,
                 duration: 5000,
               },
-            )
+            );
 
             return {
               entries: {
@@ -996,31 +663,31 @@ const Page = () => {
                   : prev.entries.total + 1,
                 edges: paymentTransferredEdges,
               },
-            }
+            };
 
           case "CANCEL":
-            const cancelledEntry = entry
+            const cancelledEntry = entry;
 
             // Skip if LEVELLER and entry is not LEVEL_PENDING
             if (!shouldShowForLeveller(cancelledEntry)) {
               // Remove from existing edges if present
               const filteredEdges = prev.entries.edges.filter(
                 (edge: any) => edge.node._id !== cancelledEntry._id,
-              )
+              );
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              }
+              };
             }
 
             const existingCancelEdge = prev.entries.edges.find(
               (edge: any) => edge.node._id === cancelledEntry._id,
-            )
+            );
 
-            let cancelledEdges
+            let cancelledEdges;
             if (existingCancelEdge) {
               cancelledEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === cancelledEntry._id
@@ -1043,12 +710,12 @@ const Page = () => {
                       },
                     }
                   : edge,
-              )
+              );
             } else {
               cancelledEdges = [
                 { cursor: cancelledEntry?._id, node: cancelledEntry },
                 ...prev.entries.edges,
-              ]
+              ];
             }
 
             if (
@@ -1062,14 +729,14 @@ const Page = () => {
                     "A refund may be required for the excess payment.",
                   duration: 5000,
                 },
-              )
+              );
             } else {
               toast.warning(
                 `Entry (${cancelledEntry?.entryNumber}) has been cancelled.`,
                 {
                   duration: 5000,
                 },
-              )
+              );
             }
 
             return {
@@ -1080,30 +747,30 @@ const Page = () => {
                   : prev.entries.total + 1,
                 edges: cancelledEdges,
               },
-            }
+            };
 
           case "REFUND":
-            const refundedEntry = entry
+            const refundedEntry = entry;
 
             // Skip if LEVELLER and entry is not LEVEL_PENDING
             if (!shouldShowForLeveller(refundedEntry)) {
               const filteredEdges = prev.entries.edges.filter(
                 (edge: any) => edge.node._id !== refundedEntry._id,
-              )
+              );
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              }
+              };
             }
 
             const existingRefundEdge = prev.entries.edges.find(
               (edge: any) => edge.node._id === refundedEntry._id,
-            )
+            );
 
-            let refundEdges
+            let refundEdges;
             if (existingRefundEdge) {
               refundEdges = prev.entries.edges.map((edge: any) => {
                 if (edge.node._id === refundedEntry._id) {
@@ -1123,22 +790,22 @@ const Page = () => {
                       remainingPrincipal: refundedEntry.remainingPrincipal,
                       isFullyRefunded: refundedEntry.isFullyRefunded,
                     },
-                  }
+                  };
                 }
-                return edge
-              })
+                return edge;
+              });
             } else {
               refundEdges = [
                 { cursor: refundedEntry?._id, node: refundedEntry },
                 ...prev.entries.edges,
-              ]
+              ];
             }
 
             const refundMessage = refundedEntry?.isFullyRefunded
               ? `Entry (${refundedEntry?.entryNumber}) has been fully refunded.`
-              : `Refund processed for entry (${refundedEntry?.entryNumber})`
+              : `Refund processed for entry (${refundedEntry?.entryNumber})`;
 
-            toast.info(refundMessage)
+            toast.info(refundMessage);
 
             return {
               entries: {
@@ -1148,31 +815,31 @@ const Page = () => {
                   : prev.entries.total + 1,
                 edges: refundEdges,
               },
-            }
+            };
 
           case "UPDATE":
-            const updatedEntry = entry
+            const updatedEntry = entry;
 
             // Skip update if LEVELLER and entry is not LEVEL_PENDING
             if (!shouldShowForLeveller(updatedEntry)) {
               // Remove from existing edges if present
               const filteredEdges = prev.entries.edges.filter(
                 (edge: any) => edge.node._id !== updatedEntry._id,
-              )
+              );
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              }
+              };
             }
 
             const existingUpdateEdge = prev.entries.edges.find(
               (edge: any) => edge.node._id === updatedEntry._id,
-            )
+            );
 
-            let updatedEdges
+            let updatedEdges;
             if (existingUpdateEdge) {
               updatedEdges = prev.entries.edges.map((edge: any) => {
                 if (edge.node._id === updatedEntry._id) {
@@ -1201,25 +868,25 @@ const Page = () => {
                       isEarlyBird:
                         updatedEntry.isEarlyBird ?? edge.node.isEarlyBird,
                     },
-                  }
+                  };
                 }
-                return edge
-              })
+                return edge;
+              });
             } else {
               updatedEdges = [
                 { cursor: updatedEntry?._id, node: updatedEntry },
                 ...prev.entries.edges,
-              ]
+              ];
             }
 
             // Only show toast for regular updates (not payment related)
             const isRegularUpdate =
               updatedEntry?.totalRefundAmount === undefined &&
               updatedEntry?.pendingAmount === undefined &&
-              updatedEntry?.hasOverpayment === undefined
+              updatedEntry?.hasOverpayment === undefined;
 
             const isAutoEarlyBirdExpiry =
-              updatedEntry?.isAutoEarlyBirdExpiry === true
+              updatedEntry?.isAutoEarlyBirdExpiry === true;
 
             if (
               isAutoEarlyBirdExpiry &&
@@ -1230,7 +897,7 @@ const Page = () => {
                 toast.info(
                   `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
                     `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
-                )
+                );
               }
             } else if (
               isRegularUpdate &&
@@ -1240,7 +907,7 @@ const Page = () => {
             ) {
               toast.success(
                 `Entry (${updatedEntry?.entryNumber}) has been updated.`,
-              )
+              );
             }
 
             return {
@@ -1251,51 +918,51 @@ const Page = () => {
                   : prev.entries.total + 1,
                 edges: updatedEdges,
               },
-            }
+            };
 
           case "ASSIGN":
-            const assignEntry = entry
+            const assignEntry = entry;
 
             // Check if this entry should be shown for LEVELLER
             if (!shouldShowForLeveller(assignEntry)) {
               // Remove from existing edges if present
               const filteredEdges = prev.entries.edges.filter(
                 (edge: any) => edge.node._id !== assignEntry._id,
-              )
+              );
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              }
+              };
             }
 
             // Check if entry already exists in the list
             const existingAssignEdge = prev.entries.edges.find(
               (edge: any) => edge.node._id === assignEntry._id,
-            )
+            );
 
-            let assignEdges
+            let assignEdges;
             if (existingAssignEdge) {
               // Update existing entry
               assignEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === assignEntry._id
                   ? { ...edge, node: { ...edge.node, ...assignEntry } }
                   : edge,
-              )
+              );
             } else {
               // Add new entry at the beginning
               assignEdges = [
                 { cursor: assignEntry?._id, node: assignEntry },
                 ...prev.entries.edges,
-              ]
+              ];
             }
 
             if (!search && !sort && filter.length === 0) {
               toast.info(
                 `Entry (${assignEntry?.entryNumber}) has been assigned.`,
-              )
+              );
             }
 
             return {
@@ -1306,46 +973,142 @@ const Page = () => {
                   : prev.entries.total + 1,
                 edges: assignEdges,
               },
-            }
+            };
 
           case "APPROVE":
-            const approveEntry = entry
+            const approveEntry = entry;
 
             if (!shouldShowForLeveller(approveEntry)) {
               const filteredEdges = prev.entries.edges.filter(
                 (edge: any) => edge.node._id !== approveEntry._id,
-              )
+              );
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              }
+              };
+            }
+
+            if (approveEntry?.eventName && approveEntry?.entryNumber) {
+
+              client
+                .query({
+                  query: GET_EVENT_BY_NAME,
+                  variables: { name: approveEntry.eventName },
+                  fetchPolicy: "network-only",
+                })
+                .then((result) => {
+                  const data = result.data as any;
+                  const events = data?.events?.edges || [];
+
+                  if (events.length === 0) {
+                    console.error(
+                      "No event found with name:",
+                      approveEntry.eventName,
+                    );
+                    return;
+                  }
+
+                  const eventId = events[0].node._id;
+
+                  return client
+                    .query({
+                      query: GET_EVENT_DETAILS,
+                      variables: { eventId },
+                      fetchPolicy: "network-only",
+                    })
+                    .then((eventResult) => {
+                      const eventData = eventResult.data as any;
+                      const event = eventData?.event;
+
+                      if (!event) {
+                        console.error("Event not found:", eventData);
+                        return;
+                      }
+
+                      if (event.maxEntries === null || event.maxEntries === 0) {
+                        return;
+                      }
+
+                      if (event.maxEntries === undefined) {
+                        console.error("Event maxEntries is undefined:", event);
+                        return;
+                      }
+
+                      return client
+                        .query({
+                          query: GET_APPROVED_ENTRY_COUNT,
+                          variables: { eventId },
+                          fetchPolicy: "network-only",
+                        })
+                        .then((countResult) => {
+                          const approvedCount =
+                            (countResult.data as any)
+                              ?.approvedEntryCountByEvent || 0;
+
+                          const totalAfterApproval = approvedCount;
+                          const remainingSlots =
+                            event.maxEntries - totalAfterApproval;
+
+                          if (remainingSlots <= 5 && remainingSlots > 0) {
+                           
+                            setWarningEventName(event.name);
+                            setWarningMaxEntries(event.maxEntries);
+                            setWarningRemainingSlots(remainingSlots);
+                            setWarningEntryNumber(approveEntry.entryNumber);
+                            setShowMaxEntriesWarning(true);
+                          }
+
+                          if (remainingSlots <= 3 && remainingSlots > 0) {
+                            toast.warning(
+                              `⚠️ Only ${remainingSlots} slot${remainingSlots !== 1 ? "s" : ""} remaining for ${event.name}!`,
+                              { duration: 5000 },
+                            );
+                          }
+
+                          if (remainingSlots === 0) {
+                            toast.error(
+                              `❌ Event ${event.name} has reached its maximum capacity of ${event.maxEntries} entries!`,
+                              { duration: 5000 },
+                            );
+                          }
+                        });
+                    });
+                })
+                .catch((error) => {
+                  console.error("Error in capacity check chain:", error);
+                });
+            } else {
+              console.error(
+                "Missing eventName or entryNumber for approved entry:",
+                approveEntry,
+              );
             }
 
             const existingApproveEdge = prev.entries.edges.find(
               (edge: any) => edge.node._id === approveEntry._id,
-            )
+            );
 
-            let approveEdges
+            let approveEdges;
             if (existingApproveEdge) {
               approveEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === approveEntry._id
                   ? { ...edge, node: { ...edge.node, ...approveEntry } }
                   : edge,
-              )
+              );
             } else {
               approveEdges = [
                 { cursor: approveEntry?._id, node: approveEntry },
                 ...prev.entries.edges,
-              ]
+              ];
             }
 
             if (!search && !sort && filter.length === 0) {
               toast.success(
                 `Entry (${approveEntry?.entryNumber}) has been approved.`,
-              )
+              );
             }
 
             return {
@@ -1356,44 +1119,43 @@ const Page = () => {
                   : prev.entries.total + 1,
                 edges: approveEdges,
               },
-            }
-
+            };
           case "PAID":
-            const paidEntry = entry
+            const paidEntry = entry;
 
             if (!shouldShowForLeveller(paidEntry)) {
               const filteredEdges = prev.entries.edges.filter(
                 (edge: any) => edge.node._id !== paidEntry._id,
-              )
+              );
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              }
+              };
             }
 
             const existingPaidEdge = prev.entries.edges.find(
               (edge: any) => edge.node._id === paidEntry._id,
-            )
+            );
 
-            let paidEdges
+            let paidEdges;
             if (existingPaidEdge) {
               paidEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === paidEntry._id
                   ? { ...edge, node: { ...edge.node, ...paidEntry } }
                   : edge,
-              )
+              );
             } else {
               paidEdges = [
                 { cursor: paidEntry?._id, node: paidEntry },
                 ...prev.entries.edges,
-              ]
+              ];
             }
 
             if (!search && !sort && filter.length === 0) {
-              toast.success(`Entry (${paidEntry?.entryNumber}) has been paid.`)
+              toast.success(`Entry (${paidEntry?.entryNumber}) has been paid.`);
             }
 
             return {
@@ -1404,46 +1166,46 @@ const Page = () => {
                   : prev.entries.total + 1,
                 edges: paidEdges,
               },
-            }
+            };
 
           case "PARTIALLY_PAID":
-            const partiallyPaidEntry = entry
+            const partiallyPaidEntry = entry;
 
             if (!shouldShowForLeveller(partiallyPaidEntry)) {
               const filteredEdges = prev.entries.edges.filter(
                 (edge: any) => edge.node._id !== partiallyPaidEntry._id,
-              )
+              );
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              }
+              };
             }
 
             const existingPartialEdge = prev.entries.edges.find(
               (edge: any) => edge.node._id === partiallyPaidEntry._id,
-            )
+            );
 
-            let partialEdges
+            let partialEdges;
             if (existingPartialEdge) {
               partialEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === partiallyPaidEntry._id
                   ? { ...edge, node: { ...edge.node, ...partiallyPaidEntry } }
                   : edge,
-              )
+              );
             } else {
               partialEdges = [
                 { cursor: partiallyPaidEntry?._id, node: partiallyPaidEntry },
                 ...prev.entries.edges,
-              ]
+              ];
             }
 
             if (!search && !sort && filter.length === 0) {
               toast.info(
                 `Entry (${partiallyPaidEntry?.entryNumber}) has been partially paid.`,
-              )
+              );
             }
 
             return {
@@ -1454,46 +1216,46 @@ const Page = () => {
                   : prev.entries.total + 1,
                 edges: partialEdges,
               },
-            }
+            };
 
           case "REJECT":
-            const rejectEntry = entry
+            const rejectEntry = entry;
 
             if (!shouldShowForLeveller(rejectEntry)) {
               const filteredEdges = prev.entries.edges.filter(
                 (edge: any) => edge.node._id !== rejectEntry._id,
-              )
+              );
               return {
                 entries: {
                   ...prev.entries,
                   total: filteredEdges.length,
                   edges: filteredEdges,
                 },
-              }
+              };
             }
 
             const existingRejectEdge = prev.entries.edges.find(
               (edge: any) => edge.node._id === rejectEntry._id,
-            )
+            );
 
-            let rejectEdges
+            let rejectEdges;
             if (existingRejectEdge) {
               rejectEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === rejectEntry._id
                   ? { ...edge, node: { ...edge.node, ...rejectEntry } }
                   : edge,
-              )
+              );
             } else {
               rejectEdges = [
                 { cursor: rejectEntry?._id, node: rejectEntry },
                 ...prev.entries.edges,
-              ]
+              ];
             }
 
             if (!search && !sort && filter.length === 0) {
               toast.warning(
                 `Entry (${rejectEntry?.entryNumber}) has been rejected.`,
-              )
+              );
             }
 
             return {
@@ -1504,20 +1266,20 @@ const Page = () => {
                   : prev.entries.total + 1,
                 edges: rejectEdges,
               },
-            }
+            };
 
           case "DELETE":
-            const deletedEntry = entry
+            const deletedEntry = entry;
 
             // For delete, just remove if exists
             const afterDeleteEdges = prev.entries.edges.filter(
               (edge: any) => edge.node._id !== deletedEntry._id,
-            )
+            );
 
             if (!search && !sort && filter.length === 0) {
               toast.success(
                 `Entry (${deletedEntry?.entryNumber}) has been deleted.`,
-              )
+              );
             }
 
             return {
@@ -1526,10 +1288,10 @@ const Page = () => {
                 total: afterDeleteEdges.length,
                 edges: afterDeleteEdges,
               },
-            }
+            };
 
           case "BATCH_UPDATE":
-            const updatedEntries = entries
+            const updatedEntries = entries;
 
             // Filter batch updates for LEVELLER
             const filteredBatchEntries =
@@ -1537,17 +1299,17 @@ const Page = () => {
                 ? updatedEntries.filter(
                     (e: any) => e.currentStatus === "LEVEL_PENDING",
                   )
-                : updatedEntries
+                : updatedEntries;
 
             if (!search && !sort && filter.length === 0) {
               toast.success(
                 `Batch update successful for ${filteredBatchEntries.length} entries.`,
-              )
+              );
             }
 
             const updatedIds = new Set(
               filteredBatchEntries.map((u: any) => u._id),
-            )
+            );
 
             return {
               entries: {
@@ -1566,60 +1328,107 @@ const Page = () => {
                     : edge,
                 ),
               },
-            }
+            };
 
           default:
-            return prev
+            return prev;
         }
       },
-    })
+    });
 
     return () => {
       if (typeof unsubscribe === "function") {
-        unsubscribe()
+        unsubscribe();
       }
-    }
-  }, [subscribeToMore, search, sort, filter])
+    };
+  }, [subscribeToMore, search, sort, filter]);
 
   const { total, nodes, pageInfo } = useMemo(() => {
-    const nodes = data?.entries.edges.map((edge: any) => edge.node) || []
-    const pageInfo = data?.entries.pageInfo
+    const nodes = data?.entries.edges.map((edge: any) => edge.node) || [];
+    const pageInfo = data?.entries.pageInfo;
 
     setPage((prev) => ({
       ...prev,
       max: data?.entries.pages || 1,
-    }))
+    }));
 
     return {
       total: data?.entries.total || 0,
       nodes,
       pageInfo,
-    }
-  }, [data])
+    };
+  }, [data]);
 
   // Reset to First Page
-  const resetPage = () => setPage({ current: 1, loaded: 1, max: 1 })
+  const resetPage = () => setPage({ current: 1, loaded: 1, max: 1 });
 
   // On Search
   const onSearch = (value: string) => {
-    setSearch(value)
-    resetPage()
-  }
+    setSearch(value);
+    resetPage();
+  };
 
   // On Filter
   const onFilter = useCallback((value: any) => {
-    setFilter(value)
-    resetPage()
-  }, [])
+    setFilter(value);
+    resetPage();
+  }, []);
 
   // On Sort
   const onSort = useCallback((value: any) => {
-    setSort(value)
-    resetPage()
-  }, [])
+    setSort(value);
+    resetPage();
+  }, []);
 
-  // Table Columns
-  // Table Columns
+  const checkAndShowCapacityWarning = useCallback(
+    async (eventId: string, approvedEntryNumber: string) => {
+      try {
+        const { data } = await client.query<EventCapacityResponse>({
+          query: GET_EVENT_CAPACITY,
+          variables: { eventId },
+          fetchPolicy: "network-only",
+        });
+
+        if (!data) {
+          console.error("No data returned from event capacity query");
+          return;
+        }
+
+        const { event, entryCountByEvent } = data;
+        const { maxEntries, name } = event;
+
+        if (maxEntries && maxEntries > 0) {
+          const remainingSlots = maxEntries - (entryCountByEvent + 1);
+
+          if (remainingSlots <= 5 && remainingSlots > 0) {
+            setWarningEventName(name);
+            setWarningMaxEntries(maxEntries);
+            setWarningRemainingSlots(remainingSlots);
+            setWarningEntryNumber(approvedEntryNumber);
+            setShowMaxEntriesWarning(true);
+          }
+
+          if (remainingSlots <= 3 && remainingSlots > 0) {
+            toast.warning(
+              `⚠️ Only ${remainingSlots} slot${remainingSlots !== 1 ? "s" : ""} remaining for ${name}!`,
+              { duration: 5000 },
+            );
+          }
+
+          if (remainingSlots === 0) {
+            toast.error(
+              `❌ Event ${name} has reached its maximum capacity of ${maxEntries} entries!`,
+              { duration: 5000 },
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error checking event capacity:", error);
+      }
+    },
+    [client],
+  );
+
   const columns: ColumnDef<IEntryNode>[] = useMemo(
     () => [
       {
@@ -1636,34 +1445,34 @@ const Page = () => {
                 if (value) {
                   const allIds = new Set<string>(
                     data?.entries.edges.map((edge: any) => edge.node._id),
-                  )
-                  setSelectedIds(allIds)
+                  );
+                  setSelectedIds(allIds);
                 } else {
-                  setSelectedIds(new Set())
+                  setSelectedIds(new Set());
                 }
               }}
             />
-          )
+          );
         },
         cell: ({ row }) => {
-          const isChecked = selectedIds.has((row.original as any)._id)
+          const isChecked = selectedIds.has((row.original as any)._id);
           return (
             <Checkbox
               checked={isChecked}
               className="hover:cursor-pointer"
               onCheckedChange={(value: boolean) => {
                 setSelectedIds((prev) => {
-                  const newSet = new Set(prev)
+                  const newSet = new Set(prev);
                   if (value) {
-                    newSet.add((row.original as any)._id)
+                    newSet.add((row.original as any)._id);
                   } else {
-                    newSet.delete((row.original as any)._id)
+                    newSet.delete((row.original as any)._id);
                   }
-                  return newSet
-                })
+                  return newSet;
+                });
               }}
             />
-          )
+          );
         },
         size: 10,
       },
@@ -1734,7 +1543,7 @@ const Page = () => {
         ),
         cell: ({ row }) => {
           const { entryNumber, entryKey, hasOverpayment, totalExcess } =
-            row.original as any
+            row.original as any;
 
           return (
             <div className="h-full flex flex-col justify-center">
@@ -1747,7 +1556,7 @@ const Page = () => {
                 </span>
               </div>
             </div>
-          )
+          );
         },
         size: 120,
       },
@@ -1771,7 +1580,7 @@ const Page = () => {
           />
         ),
         cell: ({ row }) => {
-          const { eventName, tournamentName } = row.original as any
+          const { eventName, tournamentName } = row.original as any;
           return (
             <div className="h-full flex flex-col justify-center">
               <span className="block capitalize">
@@ -1781,7 +1590,7 @@ const Page = () => {
                 {tournamentName}
               </span>
             </div>
-          )
+          );
         },
         size: 80,
       },
@@ -1798,7 +1607,7 @@ const Page = () => {
           />
         ),
         cell: ({ row }) => {
-          const { playerList, club } = row.original as any
+          const { playerList, club } = row.original as any;
           return (
             <div className="h-full flex flex-col justify-center">
               <span className="block">{playerList.player1Name}</span>
@@ -1807,7 +1616,7 @@ const Page = () => {
                 {club}
               </span>
             </div>
-          )
+          );
         },
         size: 200,
       },
@@ -1829,11 +1638,11 @@ const Page = () => {
 
           // For now, let's assume you have a way to get the role
           // Replace this with your actual role retrieval method
-          const userRole = localStorage.getItem("userRole") // Example, replace with your actual method
+          const userRole = localStorage.getItem("userRole"); // Example, replace with your actual method
 
           // Don't show filter for LEVELLER role
           if (userRole === "LEVELLER") {
-            return null
+            return null;
           }
 
           return (
@@ -1848,7 +1657,7 @@ const Page = () => {
               filterValue={filter}
               onFilterChange={onFilter}
             />
-          )
+          );
         },
         cell: ({ row }) => {
           const {
@@ -1857,14 +1666,14 @@ const Page = () => {
             totalRefundAmount,
             hasRefunds,
             totalPaid,
-          } = row.original as any
+          } = row.original as any;
 
           // Calculate remaining principal correctly
           // totalPaid should be the sum of ALL payments for this entry
           // totalRefundAmount should be the sum of ALL refunds for this entry
           const remainingPrincipal = totalPaid
             ? totalPaid - (totalRefundAmount || 0)
-            : 0
+            : 0;
 
           // An entry is fully refunded when:
           // 1. It's cancelled AND
@@ -1872,16 +1681,16 @@ const Page = () => {
           const isFullyRefunded =
             currentStatus === "CANCELLED" &&
             totalPaid > 0 &&
-            (totalRefundAmount || 0) >= totalPaid
+            (totalRefundAmount || 0) >= totalPaid;
 
           const isPartiallyRefunded =
-            currentStatus === "CANCELLED" && hasRefunds && !isFullyRefunded
+            currentStatus === "CANCELLED" && hasRefunds && !isFullyRefunded;
 
           // Calculate refund percentage for display
           const refundPercentage =
             totalPaid > 0 && totalRefundAmount
               ? Math.round((totalRefundAmount / totalPaid) * 100)
-              : 0
+              : 0;
 
           return (
             <div className="flex flex-col justify-center gap-1">
@@ -1991,7 +1800,7 @@ const Page = () => {
                   </div>
                 )}
             </div>
-          )
+          );
         },
         size: 20,
       },
@@ -2075,10 +1884,10 @@ const Page = () => {
       // },
     ],
     [sort, onSort, filter, onFilter, selectedIds, data?.entries],
-  )
+  );
 
   const goNext = async () => {
-    if (page.current === page.max) return
+    if (page.current === page.max) return;
     if (page.current === page.loaded) {
       await fetchMore({
         variables: {
@@ -2089,35 +1898,35 @@ const Page = () => {
           filter,
         },
         updateQuery: (prev: any, { fetchMoreResult: more }: any) => {
-          if (!more) return prev
+          if (!more) return prev;
           return {
             entries: {
               ...prev.entries,
               edges: [...prev.entries.edges, ...more.entries.edges],
               pageInfo: more.entries.pageInfo,
             },
-          }
+          };
         },
-      })
+      });
       setPage((prev) => ({
         ...prev,
         loaded: prev.loaded + 1,
-      }))
+      }));
     }
 
     setPage((prev) => ({
       ...prev,
       current: prev.current + 1,
-    }))
-  }
+    }));
+  };
 
   const goPrev = () => {
-    if (page.current === 1) return
+    if (page.current === 1) return;
     setPage((prev) => ({
       ...prev,
       current: prev.current - 1,
-    }))
-  }
+    }));
+  };
 
   return (
     <div className="w-full h-full flex-1 flex flex-col gap-2">
@@ -2137,10 +1946,10 @@ const Page = () => {
             onChange={(e) => setSearchTerm(e.currentTarget.value)}
             placeholder="Type to search..."
             onKeyDown={(e) => {
-              if (e.key === "Enter") onSearch(searchTerm)
+              if (e.key === "Enter") onSearch(searchTerm);
               if (e.key === "Escape") {
-                setSearchTerm("")
-                onSearch("")
+                setSearchTerm("");
+                onSearch("");
               }
             }}
           />
@@ -2153,8 +1962,8 @@ const Page = () => {
             <InputGroupAddon align="inline-end">
               <InputGroupButton
                 onClick={() => {
-                  onSearch("")
-                  setSearchTerm("")
+                  onSearch("");
+                  setSearchTerm("");
                 }}
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive hover:border-destructive"
                 variant="outline"
@@ -2323,8 +2132,16 @@ const Page = () => {
         actionsColumn={<ActionsColumn />}
         rowView={<ViewDialog row />}
       />
+      {/* <MaxEntriesWarningModal
+        isOpen={showMaxEntriesWarning}
+        onClose={() => setShowMaxEntriesWarning(false)}
+        eventName={warningEventName}
+        maxEntries={warningMaxEntries}
+        remainingSlots={warningRemainingSlots}
+        entryNumber={warningEntryNumber}
+      /> */}
     </div>
-  )
-}
+  );
+};
 
-export default Page
+export default Page;

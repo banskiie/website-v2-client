@@ -761,6 +761,14 @@ function Page() {
                           >
                             Registration Closed
                           </Button>
+                        ) : now < regStart ? (
+                          <Button
+                            size="sm"
+                            disabled
+                            className="w-full px-3 sm:px-4 py-1.5 sm:py-2 h-8 sm:h-9 text-xs sm:text-sm font-medium rounded-full shadow-sm bg-green-600 text-white opacity-70 cursor-not-allowed"
+                          >
+                            <span className="animate-pulse">Coming Soon</span>
+                          </Button>
                         ) : (
                           <Link
                             href={`/sports-center/courts/categories/?tournament=${tournament.value}`}
@@ -769,21 +777,9 @@ function Page() {
                           >
                             <Button
                               size="sm"
-                              className={`w-full px-3 sm:px-4 py-1.5 sm:py-2 h-8 sm:h-9 text-xs sm:text-sm font-medium rounded-full shadow-sm cursor-pointer ${
-                                now < regStart
-                                  ? "bg-green-600 hover:bg-green-700 text-white relative overflow-hidden group"
-                                  : "bg-green-600 hover:bg-green-700 text-white"
-                              }`}
+                              className="w-full px-3 sm:px-4 py-1.5 sm:py-2 h-8 sm:h-9 text-xs sm:text-sm font-medium rounded-full shadow-sm bg-green-600 hover:bg-green-700 text-white cursor-pointer"
                             >
-                              {now < regStart ? (
-                                <span className="relative z-10 flex items-center justify-center gap-1 sm:gap-2">
-                                  <span className="animate-pulse">
-                                    Coming Soon
-                                  </span>
-                                </span>
-                              ) : (
-                                "Register Now"
-                              )}
+                              Register Now
                             </Button>
                           </Link>
                         )}
@@ -1015,7 +1011,7 @@ function Page() {
         onClose={() => setShowCheckEntryModal(false)}
       />
       <ScrollIndicator />
-      <FloatingChatWidget />
+      {/* <FloatingChatWidget /> */}
     </div>
   );
 }

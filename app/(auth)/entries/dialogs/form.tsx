@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import {
   Dialog,
   DialogClose,
@@ -8,13 +8,23 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { CreateEntrySchema, fieldValidators, validateEntryGenders } from "@/validators/entry.validator"
-import { gql } from "@apollo/client"
-import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react"
-import { useForm } from "@tanstack/react-form"
-import React, { useEffect, useState, useTransition, useRef, useCallback } from "react"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/dialog";
+import {
+  CreateEntrySchema,
+  fieldValidators,
+  validateEntryGenders,
+} from "@/validators/entry.validator";
+import { gql } from "@apollo/client";
+import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react";
+import { useForm } from "@tanstack/react-form";
+import React, {
+  useEffect,
+  useState,
+  useTransition,
+  useRef,
+  useCallback,
+} from "react";
+import { Button } from "@/components/ui/button";
 import {
   CalendarIcon,
   CheckIcon,
@@ -27,14 +37,15 @@ import {
   AlertCircle,
   Sparkles,
   Check,
-} from "lucide-react"
-import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
-import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
+  MapPin,
+} from "lucide-react";
+import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field";
+import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -42,25 +53,29 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { Gender } from "@/types/shared.interface"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { EventGender, EventType } from "@/types/event.interface"
-import { Checkbox } from "@/components/ui/checkbox"
-import { JerseySize } from "@/types/jersey.interface"
-import { format } from "date-fns"
-import { Calendar } from "@/components/ui/calendar"
-import { Input } from "@/components/ui/input"
-import { toast } from "sonner"
-import Image from "next/image"
-import { AnimatePresence, motion } from "framer-motion"
-import { ValidDocumentType } from "@/types/player.interface"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import z from "zod"
+} from "@/components/ui/command";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Gender } from "@/types/shared.interface";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EventGender, EventType } from "@/types/event.interface";
+import { Checkbox } from "@/components/ui/checkbox";
+import { JerseySize } from "@/types/jersey.interface";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
+import { ValidDocumentType } from "@/types/player.interface";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import z from "zod";
+import {
+  LocationSelector,
+  LocationData,
+} from "@/components/custom/location-selector";
 
 const CHECK_EVENT_ENTRIES = gql`
   query CheckEventEntries($eventId: ID!) {
@@ -70,7 +85,7 @@ const CHECK_EVENT_ENTRIES = gql`
     }
     entryCountByEvent(eventId: $eventId)
   }
-`
+`;
 
 const ENTRY = gql`
   query Entry($_id: ID!) {
@@ -110,6 +125,50 @@ const ENTRY = gql`
           documentType
           dateUploaded
         }
+        address {
+          country {
+            name
+            code
+            alpha2Code
+            alpha3Code
+            flag
+            region
+            capital
+            population
+            area
+          }
+          region {
+            name
+            code
+            regionName
+            psgcCode
+          }
+          province {
+            name
+            code
+            regionCode
+            psgcCode
+          }
+          city {
+            name
+            code
+            provinceCode
+            regionCode
+            psgcCode
+            classification
+          }
+          barangay {
+            name
+            code
+            cityCode
+            provinceCode
+            regionCode
+            psgcCode
+          }
+          street
+          zipCode
+          fullAddress
+        }
       }
       connectedPlayer1 {
         _id
@@ -129,13 +188,57 @@ const ENTRY = gql`
           documentType
           dateUploaded
         }
+        address {
+          country {
+            name
+            code
+            alpha2Code
+            alpha3Code
+            flag
+            region
+            capital
+            population
+            area
+          }
+          region {
+            name
+            code
+            regionName
+            psgcCode
+          }
+          province {
+            name
+            code
+            regionCode
+            psgcCode
+          }
+          city {
+            name
+            code
+            provinceCode
+            regionCode
+            psgcCode
+            classification
+          }
+          barangay {
+            name
+            code
+            cityCode
+            provinceCode
+            regionCode
+            psgcCode
+          }
+          street
+          zipCode
+          fullAddress
+        }
       }
       connectedPlayer2 {
         _id
       }
     }
   }
-`
+`;
 
 const CREATE = gql`
   mutation CreateEntry($input: CreateEntryInput!) {
@@ -144,7 +247,7 @@ const CREATE = gql`
       message
     }
   }
-`
+`;
 
 const UPDATE = gql`
   mutation UpdateEntry($input: UpdateEntryInput!) {
@@ -153,7 +256,7 @@ const UPDATE = gql`
       message
     }
   }
-`
+`;
 
 const OPTIONS = gql`
   query Options {
@@ -168,7 +271,7 @@ const OPTIONS = gql`
       value
     }
   }
-`
+`;
 
 // UPDATED: Added pricePerPlayer and earlyBirdPricePerPlayer to the query
 const EVENT_OPTIONS_BY_TOURNAMENT = gql`
@@ -181,9 +284,10 @@ const EVENT_OPTIONS_BY_TOURNAMENT = gql`
       pricePerPlayer
       earlyBirdPricePerPlayer
       maxEntries
+      location
     }
   }
-`
+`;
 
 const PLAYER = gql`
   query Player($_id: ID!) {
@@ -197,9 +301,34 @@ const PLAYER = gql`
       phoneNumber
       birthDate
       gender
+      address {
+        country {
+          name
+          code
+        }
+        region {
+          name
+          code
+        }
+        province {
+          name
+          code
+        }
+        city {
+          name
+          code
+        }
+        barangay {
+          name
+          code
+        }
+        street
+        zipCode
+        fullAddress
+      }
     }
   }
-`
+`;
 
 const SUGGEST_PLAYERS = gql`
   query SuggestPlayers($input: SuggestPlayersInput!) {
@@ -217,7 +346,7 @@ const SUGGEST_PLAYERS = gql`
       matchReasons
     }
   }
-`
+`;
 
 type SuggestPlayer = {
   _id: string;
@@ -235,7 +364,7 @@ type SuggestPlayer = {
 
 type SuggestPlayersResponse = {
   suggestPlayers: SuggestPlayer[];
-}
+};
 
 type ExtendedEventOption = {
   label: string;
@@ -245,12 +374,13 @@ type ExtendedEventOption = {
   pricePerPlayer: number;
   earlyBirdPricePerPlayer?: number;
   maxEntries?: number;
-}
+  location?: "LOCAL" | "NATIONAL" | "MINDANAO" | "INTERNATIONAL";
+};
 
 type Props = {
-  _id?: string
-  onClose?: () => void
-}
+  _id?: string;
+  onClose?: () => void;
+};
 
 type CheckEventEntriesResponse = {
   event: {
@@ -258,13 +388,83 @@ type CheckEventEntriesResponse = {
     maxEntries: number;
   };
   entryCountByEvent: number;
-}
+};
 
-const truncateFileNameWithEllipsis = (fileName: string, prefixLength: number = 15): string => {
+const cleanAddressForInput = (address: any) => {
+  if (!address) return undefined;
+  
+  const result: any = {};
+  
+  if (address.street) result.street = address.street;
+  if (address.zipCode) result.zipCode = address.zipCode;
+  if (address.fullAddress) result.fullAddress = address.fullAddress;
+  if (address.coordinates) result.coordinates = address.coordinates;
+  
+  if (address.country) {
+    result.country = {
+      code: address.country.code,
+      name: address.country.name,
+      alpha2Code: address.country.alpha2Code,
+      alpha3Code: address.country.alpha3Code,
+      flag: address.country.flag,
+      region: address.country.region,
+      capital: address.country.capital,
+      population: address.country.population,
+      area: address.country.area
+    };
+  }
+  
+  if (address.region) {
+    result.region = {
+      code: address.region.code,
+      name: address.region.name,
+      regionName: address.region.regionName,
+      psgcCode: address.region.psgcCode     
+    };
+  }
+  
+  if (address.province) {
+    result.province = {
+      code: address.province.code,
+      name: address.province.name,
+      regionCode: address.province.regionCode,
+      psgcCode: address.province.psgcCode     
+    };
+  }
+  
+  if (address.city) {
+    result.city = {
+      code: address.city.code,
+      name: address.city.name,
+      provinceCode: address.city.provinceCode,
+      regionCode: address.city.regionCode,    
+      psgcCode: address.city.psgcCode,        
+      classification: address.city.classification
+    };
+  }
+  
+  if (address.barangay) {
+    result.barangay = {
+      code: address.barangay.code,
+      name: address.barangay.name,
+      cityCode: address.barangay.cityCode,
+      provinceCode: address.barangay.provinceCode,
+      regionCode: address.barangay.regionCode,
+      psgcCode: address.barangay.psgcCode 
+    };
+  }
+  
+  return result;
+};
+
+const truncateFileNameWithEllipsis = (
+  fileName: string,
+  prefixLength: number = 15,
+): string => {
   if (fileName.length <= prefixLength + 10) return fileName;
 
-  const extension = fileName.split('.').pop() || '';
-  const nameWithoutExtension = fileName.slice(0, fileName.lastIndexOf('.'));
+  const extension = fileName.split(".").pop() || "";
+  const nameWithoutExtension = fileName.slice(0, fileName.lastIndexOf("."));
 
   if (nameWithoutExtension.length <= prefixLength) return fileName;
 
@@ -288,31 +488,34 @@ const DocumentUploadTab = ({
   isUpdate,
   form,
   handleFileUpload,
-  handleRemoveFile
+  handleRemoveFile,
 }: {
-  playerNumber: number,
-  selectedDocumentType: ValidDocumentType,
-  setSelectedDocumentType: (type: ValidDocumentType) => void,
-  file: File | null,
-  setFile: (file: File | null) => void,
-  preview: string | null,
-  setPreview: (preview: string | null) => void,
-  isUploading: boolean,
-  fieldErrors: Record<string, string>,
-  initialDocumentUrl: string,
-  initialDocumentType: ValidDocumentType,
-  isLoading: boolean,
-  isUpdate: boolean,
-  form: any,
-  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>, playerNumber: number) => void,
-  handleRemoveFile: (playerNumber: number) => void
+  playerNumber: number;
+  selectedDocumentType: ValidDocumentType;
+  setSelectedDocumentType: (type: ValidDocumentType) => void;
+  file: File | null;
+  setFile: (file: File | null) => void;
+  preview: string | null;
+  setPreview: (preview: string | null) => void;
+  isUploading: boolean;
+  fieldErrors: Record<string, string>;
+  initialDocumentUrl: string;
+  initialDocumentType: ValidDocumentType;
+  isLoading: boolean;
+  isUpdate: boolean;
+  form: any;
+  handleFileUpload: (
+    event: React.ChangeEvent<HTMLInputElement>,
+    playerNumber: number,
+  ) => void;
+  handleRemoveFile: (playerNumber: number) => void;
 }) => {
-  const [openDocumentTypes, setOpenDocumentTypes] = useState(false)
-  const [imageLoading, setImageLoading] = useState(true)
+  const [openDocumentTypes, setOpenDocumentTypes] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
   const documentTypes = Object.values(ValidDocumentType).map((type) => ({
     label: type.toLocaleLowerCase().replaceAll("_", " "),
     value: type,
-  }))
+  }));
 
   return (
     <TabsContent value={`document${playerNumber}`}>
@@ -320,7 +523,8 @@ const DocumentUploadTab = ({
         <div className="w-full">
           <Field>
             <FieldLabel htmlFor={`documentType${playerNumber}`}>
-              Document Type (Player {playerNumber})<span className="text-red-500">*</span>
+              Document Type (Player {playerNumber})
+              <span className="text-red-500">*</span>
             </FieldLabel>
             <Popover
               open={openDocumentTypes}
@@ -340,8 +544,8 @@ const DocumentUploadTab = ({
                 >
                   {selectedDocumentType
                     ? documentTypes.find(
-                      (o) => o.value === selectedDocumentType
-                    )?.label
+                        (o) => o.value === selectedDocumentType,
+                      )?.label
                     : "Select Document Type"}
                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -352,7 +556,7 @@ const DocumentUploadTab = ({
                     documentTypes
                       .find(
                         (t: { value: string; label: string }) =>
-                          t.value === value
+                          t.value === value,
                       )
                       ?.label.toLowerCase()
                       .includes(search.toLowerCase())
@@ -362,9 +566,7 @@ const DocumentUploadTab = ({
                 >
                   <CommandInput placeholder="Select Document Type" />
                   <CommandList className="max-h-72 overflow-y-auto">
-                    <CommandEmpty>
-                      No document type found.
-                    </CommandEmpty>
+                    <CommandEmpty>No document type found.</CommandEmpty>
                     <CommandGroup>
                       <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
                         Document Types
@@ -374,8 +576,8 @@ const DocumentUploadTab = ({
                           key={o.value}
                           value={o.value}
                           onSelect={(v) => {
-                            setSelectedDocumentType(v as ValidDocumentType)
-                            setOpenDocumentTypes(false)
+                            setSelectedDocumentType(v as ValidDocumentType);
+                            setOpenDocumentTypes(false);
                           }}
                           className="capitalize"
                         >
@@ -384,7 +586,7 @@ const DocumentUploadTab = ({
                               "h-4 w-4",
                               selectedDocumentType === o.value
                                 ? "opacity-100"
-                                : "opacity-0"
+                                : "opacity-0",
                             )}
                           />
                           {o.label}
@@ -405,7 +607,8 @@ const DocumentUploadTab = ({
               Upload Supporting Document (for Player {playerNumber})
             </div>
             <p className="text-gray-600 text-xs">
-              Upload any supporting document for Player {playerNumber} (ID, proof of payment, etc.)
+              Upload any supporting document for Player {playerNumber} (ID,
+              proof of payment, etc.)
             </p>
           </div>
 
@@ -447,10 +650,12 @@ const DocumentUploadTab = ({
                 <Paperclip className="w-4 h-4 text-blue-500" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-blue-700">
-                    Existing document is already uploaded for Player {playerNumber}
+                    Existing document is already uploaded for Player{" "}
+                    {playerNumber}
                   </p>
                   <p className="text-xs text-blue-500">
-                    Type: {initialDocumentType.replaceAll("_", " ").toLowerCase()}
+                    Type:{" "}
+                    {initialDocumentType.replaceAll("_", " ").toLowerCase()}
                   </p>
                 </div>
               </div>
@@ -458,7 +663,8 @@ const DocumentUploadTab = ({
           )}
 
           <div className="w-full flex justify-center mb-4">
-            {preview && (file?.type.startsWith('image/') || initialDocumentUrl) ? (
+            {preview &&
+            (file?.type.startsWith("image/") || initialDocumentUrl) ? (
               <div className="relative w-full flex justify-center">
                 <div className="relative w-full max-w-[300px] h-[200px] overflow-hidden rounded-lg border shadow">
                   {imageLoading && (
@@ -471,21 +677,26 @@ const DocumentUploadTab = ({
                     <Image
                       src={preview}
                       alt={`Uploaded document for Player ${playerNumber}`}
-                      className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"
-                        }`}
+                      className={`transition-opacity duration-300 ${
+                        imageLoading ? "opacity-0" : "opacity-100"
+                      }`}
                       fill
                       sizes="(max-width: 300px) 100vw, 300px"
                       style={{
-                        objectFit: 'contain',
-                        objectPosition: 'center'
+                        objectFit: "contain",
+                        objectPosition: "center",
                       }}
                       onLoad={() => setImageLoading(false)}
                       onError={(e) => {
-                        console.error("Failed to load image:", e.currentTarget.src);
-                        setImageLoading(false)
-                        e.currentTarget.style.display = 'none';
-                        const fallbackDiv = document.createElement('div');
-                        fallbackDiv.className = 'absolute inset-0 flex items-center justify-center bg-gray-50';
+                        console.error(
+                          "Failed to load image:",
+                          e.currentTarget.src,
+                        );
+                        setImageLoading(false);
+                        e.currentTarget.style.display = "none";
+                        const fallbackDiv = document.createElement("div");
+                        fallbackDiv.className =
+                          "absolute inset-0 flex items-center justify-center bg-gray-50";
                         fallbackDiv.innerHTML = `
                           <div class="text-center">
                             <svg class="w-8 h-8 text-red-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -500,11 +711,13 @@ const DocumentUploadTab = ({
                   </div>
                 </div>
               </div>
-            ) : file && !file.type.startsWith('image/') ? (
+            ) : file && !file.type.startsWith("image/") ? (
               <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                   <Paperclip className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-gray-700">{truncateFileNameWithEllipsis(file.name, 15)}</p>
+                  <p className="text-sm font-medium text-gray-700">
+                    {truncateFileNameWithEllipsis(file.name, 15)}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">PDF Document</p>
                 </div>
               </div>
@@ -512,7 +725,9 @@ const DocumentUploadTab = ({
               <div className="w-full max-w-[300px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                   <UploadIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">Document preview will appear here</p>
+                  <p className="text-sm text-gray-500">
+                    Document preview will appear here
+                  </p>
                 </div>
               </div>
             )}
@@ -520,25 +735,43 @@ const DocumentUploadTab = ({
 
           <label
             htmlFor={`documentUpload${playerNumber}`}
-            className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${fieldErrors[`filePlayer${playerNumber}`] ? 'border-red-300 bg-red-50 hover:bg-red-100' : 'border-green-400 hover:bg-green-50'
-              }`}
+            className={`cursor-pointer w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl bg-white hover:bg-green-100 transition ${
+              fieldErrors[`filePlayer${playerNumber}`]
+                ? "border-red-300 bg-red-50 hover:bg-red-100"
+                : "border-green-400 hover:bg-green-50"
+            }`}
           >
             {isUploading ? (
               <div className="flex flex-col items-center">
                 <Loader2 className="w-6 h-6 mb-2 animate-spin text-green-600" />
-                <span className="font-medium text-sm text-green-700">Uploading...</span>
+                <span className="font-medium text-sm text-green-700">
+                  Uploading...
+                </span>
                 <span className="text-xs text-gray-500 mt-1">Please wait</span>
               </div>
             ) : (
               <>
-                <UploadIcon className={`w-6 h-6 mb-2 ${fieldErrors[`filePlayer${playerNumber}`] ? 'text-red-500' : 'text-green-600'
-                  }`} />
-                <span className={`font-medium text-sm ${fieldErrors[`filePlayer${playerNumber}`] ? 'text-red-700' : 'text-green-700'
-                  }`}>
-                  {isUpdate ? "Upload New Document or Browse" : "Upload your document or Browse"}
+                <UploadIcon
+                  className={`w-6 h-6 mb-2 ${
+                    fieldErrors[`filePlayer${playerNumber}`]
+                      ? "text-red-500"
+                      : "text-green-600"
+                  }`}
+                />
+                <span
+                  className={`font-medium text-sm ${
+                    fieldErrors[`filePlayer${playerNumber}`]
+                      ? "text-red-700"
+                      : "text-green-700"
+                  }`}
+                >
+                  {isUpdate
+                    ? "Upload New Document or Browse"
+                    : "Upload your document or Browse"}
                 </span>
                 <span className="text-xs text-gray-500 mt-1">
-                  Supports images (JPEG, PNG, JPG, WEBP) and PDF files up to 10MB
+                  Supports images (JPEG, PNG, JPG, WEBP) and PDF files up to
+                  10MB
                 </span>
               </>
             )}
@@ -553,73 +786,213 @@ const DocumentUploadTab = ({
           </label>
 
           {fieldErrors[`filePlayer${playerNumber}`] && (
-            <p className="text-xs text-red-500 mt-2">{fieldErrors[`filePlayer${playerNumber}`]}</p>
+            <p className="text-xs text-red-500 mt-2">
+              {fieldErrors[`filePlayer${playerNumber}`]}
+            </p>
           )}
         </div>
       </FieldSet>
     </TabsContent>
-  )
-}
+  );
+};
+
+const MaxEntriesModal = ({
+  isOpen,
+  onClose,
+  eventName,
+  maxEntries,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  eventName: string;
+  maxEntries: number | null;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+      <div className="animate-in fade-in-90 zoom-in-90 duration-300 w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-2xl p-6 text-center transform transition-all duration-300 scale-100 border border-red-200">
+          <div className="flex items-center justify-center mb-6">
+            <div className="p-3 bg-red-100 rounded-full">
+              <AlertCircle className="w-12 h-12 text-red-600" />
+            </div>
+          </div>
+
+          <h3 className="text-xl font-bold text-red-800 mb-3">
+            Event is Full!
+          </h3>
+
+          <p className="text-gray-700 mb-2">
+            The event <strong className="text-red-700">{eventName}</strong> has
+            reached its maximum capacity.
+          </p>
+
+          {maxEntries && (
+            <p className="text-gray-600 text-sm mb-4">
+              Maximum entries: <strong>{maxEntries}</strong> entries
+            </p>
+          )}
+
+          <p className="text-gray-600 mb-6">
+            No more entries can be registered for this event. Please select
+            another category or tournament.
+          </p>
+
+          <Button
+            onClick={onClose}
+            className="mt-3 text-sm text-white hover:cursor-pointer transition-colors w-full text-center"
+          >
+            Dismiss
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Address View Component
+const AddressView = ({
+  address,
+  label = "Address Information",
+}: {
+  address: any;
+  label?: string;
+}) => {
+  if (!address) {
+    return (
+      <div className="text-sm text-muted-foreground italic">
+        No address information provided
+      </div>
+    );
+  }
+
+  const addressFields = [
+    { label: "Street", value: address.street, key: "street" },
+    { label: "Barangay", value: address.barangay?.name, key: "barangay" },
+    { label: "City/Municipality", value: address.city?.name, key: "city" },
+    { label: "Province", value: address.province?.name, key: "province" },
+    { label: "Region", value: address.region?.name, key: "region" },
+    { label: "Country", value: address.country?.name, key: "country" },
+    { label: "ZIP Code", value: address.zipCode, key: "zipCode" },
+  ].filter((field) => field.value);
+
+  const addressParts = [];
+  if (address.street) addressParts.push(address.street);
+  if (address.barangay?.name) addressParts.push(address.barangay.name);
+  if (address.city?.name) addressParts.push(address.city.name);
+  if (address.province?.name) addressParts.push(address.province.name);
+  if (address.region?.name) addressParts.push(address.region.name);
+  if (address.country?.name) addressParts.push(address.country.name);
+  if (address.zipCode) addressParts.push(address.zipCode);
+
+  const fullAddress = addressParts.join(", ");
+
+  return (
+    <div className="space-y-3 mt-3 pt-3 border-t">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <MapPin className="h-4 w-4" />
+        <Label className="font-medium">{label}</Label>
+      </div>
+      {addressFields.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6">
+          {addressFields.map((field) => (
+            <div key={field.key} className="space-y-0.5">
+              <span className="text-xs text-muted-foreground block">
+                {field.label}:
+              </span>
+              <p className="text-sm font-medium break-words">{field.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {fullAddress && (
+        <div className="pl-6 mt-1">
+          <span className="text-xs text-muted-foreground block">
+            Full Address:
+          </span>
+          <p className="text-sm text-muted-foreground italic">{fullAddress}</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const FormDialog = (props: Props) => {
-  const [open, setOpen] = useState(false)
-  const isUpdate = Boolean(props._id)
-  const [isPending, startTransition] = useTransition()
-  const [currentTab, setCurrentTab] = useState('details')
-  const [isInitializing, setIsInitializing] = useState(false)
+  const [open, setOpen] = useState(false);
+  const isUpdate = Boolean(props._id);
+  const [isPending, startTransition] = useTransition();
+  const [currentTab, setCurrentTab] = useState("details");
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [showMaxEntriesModal, setShowMaxEntriesModal] = useState(false);
+  const [fullEventName, setFullEventName] = useState("");
+  const [fullEventMaxEntries, setFullEventMaxEntries] = useState<number | null>(
+    null,
+  );
 
-  const { data, loading: fetchLoading, refetch }: any = useQuery(ENTRY, {
+  const {
+    data,
+    loading: fetchLoading,
+    refetch,
+  }: any = useQuery(ENTRY, {
     variables: { _id: props._id },
     skip: !open || !isUpdate,
     fetchPolicy: "network-only",
-  })
-  const entry = data?.entry
+  });
+  const entry = data?.entry;
 
-  const [previewPlayer1, setPreviewPlayer1] = useState<string | null>(null)
-  const [previewPlayer2, setPreviewPlayer2] = useState<string | null>(null)
-  const [filePlayer1, setFilePlayer1] = useState<File | null>(null)
-  const [filePlayer2, setFilePlayer2] = useState<File | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [selectedDocumentTypePlayer1, setSelectedDocumentTypePlayer1] = useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
-  const [selectedDocumentTypePlayer2, setSelectedDocumentTypePlayer2] = useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE)
+  const [previewPlayer1, setPreviewPlayer1] = useState<string | null>(null);
+  const [previewPlayer2, setPreviewPlayer2] = useState<string | null>(null);
+  const [filePlayer1, setFilePlayer1] = useState<File | null>(null);
+  const [filePlayer2, setFilePlayer2] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [selectedDocumentTypePlayer1, setSelectedDocumentTypePlayer1] =
+    useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE);
+  const [selectedDocumentTypePlayer2, setSelectedDocumentTypePlayer2] =
+    useState<ValidDocumentType>(ValidDocumentType.BIRTH_CERTIFICATE);
 
-  const [openDocumentTypes, setOpenDocumentTypes] = useState(false)
+  const [openDocumentTypes, setOpenDocumentTypes] = useState(false);
   const documentTypes = Object.values(ValidDocumentType).map((type) => ({
     label: type.toLocaleLowerCase().replaceAll("_", " "),
     value: type,
-  }))
+  }));
 
-  const [openTournaments, setOpenTournaments] = useState(false)
+  const [openTournaments, setOpenTournaments] = useState(false);
   const { data: optionsData, loading: optionsLoading }: any = useQuery(
     OPTIONS,
     {
       skip: !open,
       fetchPolicy: "network-only",
-    }
-  )
-  const tournaments = optionsData?.tournamentOptions || []
+    },
+  );
+  const tournaments = optionsData?.tournamentOptions || [];
 
-  const [openPlayers, setOpenPlayers] = useState(false)
-  const players = optionsData?.playerOptions || []
+  const [openPlayers, setOpenPlayers] = useState(false);
+  const players = optionsData?.playerOptions || [];
 
-  const [tournamentId, setTournamentId] = useState<string | null>(null)
-  const [openEvents, setOpenEvents] = useState(false)
-  const { data: eventOptionsData, loading: eventOptionsLoading, refetch: refetchEvents }: any =
-    useQuery(EVENT_OPTIONS_BY_TOURNAMENT, {
-      skip: !tournamentId,
-      fetchPolicy: "network-only",
-      variables: { tournamentId },
-    })
-  const events: ExtendedEventOption[] = eventOptionsData?.eventOptionsByTournament || []
+  const [tournamentId, setTournamentId] = useState<string | null>(null);
+  const [openEvents, setOpenEvents] = useState(false);
+  const {
+    data: eventOptionsData,
+    loading: eventOptionsLoading,
+    refetch: refetchEvents,
+  }: any = useQuery(EVENT_OPTIONS_BY_TOURNAMENT, {
+    skip: !tournamentId,
+    fetchPolicy: "network-only",
+    variables: { tournamentId },
+  });
+  const events: ExtendedEventOption[] =
+    eventOptionsData?.eventOptionsByTournament || [];
 
-  const [selectedEvent, setSelectedEvent] = useState<ExtendedEventOption | null>(null)
+  const [selectedEvent, setSelectedEvent] =
+    useState<ExtendedEventOption | null>(null);
 
-  const [checkingMaxEntries, setCheckingMaxEntries] = useState(false)
-  const [maxEntriesReached, setMaxEntriesReached] = useState(false)
-  const [maxEntriesLimit, setMaxEntriesLimit] = useState<number | null>(null)
+  const [checkingMaxEntries, setCheckingMaxEntries] = useState(false);
+  const [maxEntriesReached, setMaxEntriesReached] = useState(false);
+  const [maxEntriesLimit, setMaxEntriesLimit] = useState<number | null>(null);
 
-  const [openJerseySizes, setOpenJerseySizes] = useState(false)
+  const [openJerseySizes, setOpenJerseySizes] = useState(false);
   const jerseySizes = [
     { value: JerseySize.XXS, label: "Double Extra Small" },
     { value: JerseySize.XS, label: "Extra Small" },
@@ -629,125 +1002,154 @@ const FormDialog = (props: Props) => {
     { value: JerseySize.XL, label: "Extra Large" },
     { value: JerseySize.XXL, label: "Double Extra Large" },
     { value: JerseySize.XXXL, label: "Triple Extra Large" },
-  ]
+  ];
 
   const [checkEventEntries] = useLazyQuery(CHECK_EVENT_ENTRIES, {
     fetchPolicy: "network-only",
-  })
+  });
 
-  const checkEventMaxEntries = useCallback(async (eventId: string) => {
-    if (!eventId) return false
+  const checkEventMaxEntries = useCallback(
+    async (eventId: string) => {
+      if (!eventId) return false;
 
-    setCheckingMaxEntries(true)
-    try {
-      const { data } = await checkEventEntries({
-        variables: { eventId },
-      }) as { data: CheckEventEntriesResponse }
+      setCheckingMaxEntries(true);
+      try {
+        const { data } = (await checkEventEntries({
+          variables: { eventId },
+        })) as { data: CheckEventEntriesResponse };
 
-      if (data?.event?.maxEntries && data.event.maxEntries > 0) {
-        const totalEntries = data?.entryCountByEvent || 0
-        const isFull = totalEntries >= data.event.maxEntries
+        if (data?.event?.maxEntries && data.event.maxEntries > 0) {
+          const totalEntries = data?.entryCountByEvent || 0;
+          const isFull = totalEntries >= data.event.maxEntries;
 
-        setMaxEntriesLimit(data.event.maxEntries)
-        setMaxEntriesReached(isFull)
+          setMaxEntriesLimit(data.event.maxEntries);
+          setMaxEntriesReached(isFull);
 
-        if (isFull) {
-          toast.error(`This event has reached its maximum capacity of ${data.event.maxEntries} entries.`)
+          if (isFull) {
+            const event = events.find((e) => e.value === eventId);
+            setFullEventName(event?.label || "This event");
+            setFullEventMaxEntries(data.event.maxEntries);
+            setShowMaxEntriesModal(true);
+          }
+
+          return isFull;
         }
-
-        return isFull
+      } catch (error) {
+        console.error("Error checking event entries:", error);
+      } finally {
+        setCheckingMaxEntries(false);
       }
-    } catch (error) {
-      console.error("Error checking event entries:", error)
-    } finally {
-      setCheckingMaxEntries(false)
-    }
-    return false
-  }, [checkEventEntries])
+      return false;
+    },
+    [checkEventEntries, events],
+  );
 
-  const autoSetGendersBasedOnEvent = useCallback((eventId: string, form: any) => {
-    const event = events.find(e => e.value === eventId);
-    if (!event) return;
+  const autoSetGendersBasedOnEvent = useCallback(
+    (eventId: string, form: any) => {
+      const event = events.find((e) => e.value === eventId);
+      if (!event) return;
 
-    const isDoubles = event.type === EventType.DOUBLES;
+      const isDoubles = event.type === EventType.DOUBLES;
 
-    if (isDoubles) {
-      switch (event.gender) {
-        case EventGender.NO_GENDER:
-        case EventGender.MALE:
-          form.setFieldValue("player1Entry.gender", Gender.MALE);
-          form.setFieldValue("player2Entry.gender", Gender.MALE);
-          toast.info("Gender auto-set to Male for both players.");
-          break;
-        case EventGender.FEMALE:
-          form.setFieldValue("player1Entry.gender", Gender.FEMALE);
-          form.setFieldValue("player2Entry.gender", Gender.FEMALE);
-          toast.info("Gender auto-set to Female for both players");
-          break;
-        case EventGender.MIXED:
-          form.setFieldValue("player1Entry.gender", Gender.MALE);
-          form.setFieldValue("player2Entry.gender", Gender.FEMALE);
-          toast.info("Gender auto-set to Mixed (Male & Female)");
-          break;
+      if (isDoubles) {
+        switch (event.gender) {
+          case EventGender.NO_GENDER:
+          case EventGender.MALE:
+            form.setFieldValue("player1Entry.gender", Gender.MALE);
+            form.setFieldValue("player2Entry.gender", Gender.MALE);
+            toast.info("Gender auto-set to Male for both players.");
+            break;
+          case EventGender.FEMALE:
+            form.setFieldValue("player1Entry.gender", Gender.FEMALE);
+            form.setFieldValue("player2Entry.gender", Gender.FEMALE);
+            toast.info("Gender auto-set to Female for both players");
+            break;
+          case EventGender.MIXED:
+            form.setFieldValue("player1Entry.gender", Gender.MALE);
+            form.setFieldValue("player2Entry.gender", Gender.FEMALE);
+            toast.info("Gender auto-set to Mixed (Male & Female)");
+            break;
+        }
+      } else {
+        switch (event.gender) {
+          case EventGender.MALE:
+            form.setFieldValue("player1Entry.gender", Gender.MALE);
+            toast.info("Gender auto-set to Male (Men's Singles)");
+            break;
+          case EventGender.FEMALE:
+            form.setFieldValue("player1Entry.gender", Gender.FEMALE);
+            toast.info("Gender auto-set to Female (Women's Singles)");
+            break;
+          case EventGender.MIXED:
+            form.setFieldValue("player1Entry.gender", Gender.MALE);
+            form.setFieldValue("player2Entry.gender", Gender.FEMALE);
+            toast.info("Gender auto-set to Mixed (Male & Female)");
+            break;
+        }
       }
-    } else {
-      switch (event.gender) {
-        case EventGender.MALE:
-          form.setFieldValue("player1Entry.gender", Gender.MALE);
-          toast.info("Gender auto-set to Male (Men's Singles)");
-          break;
-        case EventGender.FEMALE:
-          form.setFieldValue("player1Entry.gender", Gender.FEMALE);
-          toast.info("Gender auto-set to Female (Women's Singles)");
-          break;
-        case EventGender.MIXED:
-          form.setFieldValue("player1Entry.gender", Gender.MALE);
-          form.setFieldValue("player2Entry.gender", Gender.FEMALE);
-          toast.info("Gender auto-set to Mixed (Male & Female)");
-          break;
-      }
-    }
-  }, [events]);
+    },
+    [events],
+  );
 
-  const [openGenders, setOpenGenders] = useState(false)
+  const [openGenders, setOpenGenders] = useState(false);
   const genders = Object.values(Gender).map((gender) => ({
     label: gender.toLocaleLowerCase().replaceAll("_", " "),
     value: gender,
-  }))
+  }));
 
   const isLoading =
-    isPending || optionsLoading || eventOptionsLoading || fetchLoading || isInitializing || checkingMaxEntries
+    isPending ||
+    optionsLoading ||
+    eventOptionsLoading ||
+    fetchLoading ||
+    isInitializing ||
+    checkingMaxEntries;
 
-  const initialValidDocumentsPlayer1 = entry?.player1Entry?.validDocuments?.[0] || null
-  const initialDocumentUrlPlayer1 = initialValidDocumentsPlayer1?.documentURL || ""
-  const initialDocumentTypePlayer1 = initialValidDocumentsPlayer1?.documentType || ValidDocumentType.BIRTH_CERTIFICATE
+  const initialValidDocumentsPlayer1 =
+    entry?.player1Entry?.validDocuments?.[0] || null;
+  const initialDocumentUrlPlayer1 =
+    initialValidDocumentsPlayer1?.documentURL || "";
+  const initialDocumentTypePlayer1 =
+    initialValidDocumentsPlayer1?.documentType ||
+    ValidDocumentType.BIRTH_CERTIFICATE;
 
-  const initialValidDocumentsPlayer2 = entry?.player2Entry?.validDocuments?.[0] || null
-  const initialDocumentUrlPlayer2 = initialValidDocumentsPlayer2?.documentURL || ""
-  const initialDocumentTypePlayer2 = initialValidDocumentsPlayer2?.documentType || ValidDocumentType.BIRTH_CERTIFICATE
+  const initialValidDocumentsPlayer2 =
+    entry?.player2Entry?.validDocuments?.[0] || null;
+  const initialDocumentUrlPlayer2 =
+    initialValidDocumentsPlayer2?.documentURL || "";
+  const initialDocumentTypePlayer2 =
+    initialValidDocumentsPlayer2?.documentType ||
+    ValidDocumentType.BIRTH_CERTIFICATE;
 
   const [fetchPlayer, { data: playerData, loading: playerLoading }] =
     useLazyQuery(PLAYER, {
       fetchPolicy: "network-only",
-    })
+    });
 
-  const [fetchSuggestions, { loading: suggestionsLoading }] = useLazyQuery<SuggestPlayersResponse>(
-    SUGGEST_PLAYERS
-  )
-  const [suggestedPlayers1, setSuggestedPlayers1] = useState<SuggestPlayer[]>([])
-  const [suggestedPlayers2, setSuggestedPlayers2] = useState<SuggestPlayer[]>([])
-  const [isLoadingSuggestions1, setIsLoadingSuggestions1] = useState(false)
-  const [isLoadingSuggestions2, setIsLoadingSuggestions2] = useState(false)
+  const [fetchSuggestions, { loading: suggestionsLoading }] =
+    useLazyQuery<SuggestPlayersResponse>(SUGGEST_PLAYERS);
+  const [suggestedPlayers1, setSuggestedPlayers1] = useState<SuggestPlayer[]>(
+    [],
+  );
+  const [suggestedPlayers2, setSuggestedPlayers2] = useState<SuggestPlayer[]>(
+    [],
+  );
+  const [isLoadingSuggestions1, setIsLoadingSuggestions1] = useState(false);
+  const [isLoadingSuggestions2, setIsLoadingSuggestions2] = useState(false);
 
-  const [selectedSuggestionId1, setSelectedSuggestionId1] = useState<string | null>(null)
-  const [selectedSuggestionId2, setSelectedSuggestionId2] = useState<string | null>(null)
+  const [selectedSuggestionId1, setSelectedSuggestionId1] = useState<
+    string | null
+  >(null);
+  const [selectedSuggestionId2, setSelectedSuggestionId2] = useState<
+    string | null
+  >(null);
 
-  const debounceTimer1 = useRef<NodeJS.Timeout | null>(null)
-  const debounceTimer2 = useRef<NodeJS.Timeout | null>(null)
+  const debounceTimer1 = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimer2 = useRef<NodeJS.Timeout | null>(null);
 
-  const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
+  const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE);
 
-  const isSubmittingRef = useRef(false)
+  const isSubmittingRef = useRef(false);
 
   const form = useForm({
     defaultValues: {
@@ -765,6 +1167,17 @@ const FormDialog = (props: Props) => {
         gender: Gender.MALE,
         jerseySize: "M",
         validDocuments: [],
+        address: {
+          country: undefined,
+          region: undefined,
+          province: undefined,
+          city: undefined,
+          barangay: undefined,
+          street: "",
+          zipCode: "",
+          fullAddress: "",
+          coordinates: undefined,
+        },
       },
       player2Entry: {
         firstName: "",
@@ -777,6 +1190,17 @@ const FormDialog = (props: Props) => {
         gender: Gender.MALE,
         jerseySize: "M",
         validDocuments: [],
+        address: {
+          country: undefined,
+          region: undefined,
+          province: undefined,
+          city: undefined,
+          barangay: undefined,
+          street: "",
+          zipCode: "",
+          fullAddress: "",
+          coordinates: undefined,
+        },
       },
       connectedPlayer1: null as string | null,
       connectedPlayer2: null as string | null,
@@ -789,7 +1213,7 @@ const FormDialog = (props: Props) => {
       onSubmit: ({ formApi, value: payload }) => {
         try {
           const event = events.find(
-            (e: { value: string }) => e.value === payload.event
+            (e: { value: string }) => e.value === payload.event,
           );
           const isDoubles = event?.type === EventType.DOUBLES;
           const eventGender = event?.gender;
@@ -805,19 +1229,23 @@ const FormDialog = (props: Props) => {
               eventGender,
               isDoubles,
               payload.player1Entry.gender,
-              payload.player2Entry.gender
+              payload.player2Entry.gender,
             );
 
             if (!validation.valid) {
               if (validation.errors.player1) {
-                formApi.fieldInfo["player1Entry.gender"]?.instance?.setErrorMap({
-                  onSubmit: { message: validation.errors.player1 },
-                });
+                formApi.fieldInfo["player1Entry.gender"]?.instance?.setErrorMap(
+                  {
+                    onSubmit: { message: validation.errors.player1 },
+                  },
+                );
               }
               if (validation.errors.player2) {
-                formApi.fieldInfo["player2Entry.gender"]?.instance?.setErrorMap({
-                  onSubmit: { message: validation.errors.player2 },
-                });
+                formApi.fieldInfo["player2Entry.gender"]?.instance?.setErrorMap(
+                  {
+                    onSubmit: { message: validation.errors.player2 },
+                  },
+                );
               }
 
               throw new Error("Gender validation failed");
@@ -830,7 +1258,9 @@ const FormDialog = (props: Props) => {
               error.errors.forEach((err: any) => {
                 if (err && err.path) {
                   const path = err.path.join(".");
-                  formApi.fieldInfo[path as keyof typeof formApi.fieldInfo]?.instance?.setErrorMap({
+                  formApi.fieldInfo[
+                    path as keyof typeof formApi.fieldInfo
+                  ]?.instance?.setErrorMap({
                     onSubmit: { message: err.message || "Validation error" },
                   });
                 }
@@ -842,80 +1272,86 @@ const FormDialog = (props: Props) => {
     },
     listeners: {
       onChange: async ({ formApi, fieldApi }) => {
+        const activeTab =
+          document
+            .querySelector('[data-state="active"]')
+            ?.getAttribute("value") || "unknown";
 
-        const activeTab = document.querySelector('[data-state="active"]')?.getAttribute('value') || 'unknown'
-
-        const fieldName = fieldApi.name
-        const fieldValue = fieldApi.state.value
+        const fieldName = fieldApi.name;
+        const fieldValue = fieldApi.state.value;
 
         switch (fieldName) {
           case "tournament":
             if (fieldValue === "") {
-              setTournamentId(null)
-              formApi.resetField("event")
-              setSelectedEvent(null)
-              setMaxEntriesReached(false)
-              setMaxEntriesLimit(null)
+              setTournamentId(null);
+              formApi.resetField("event");
+              setSelectedEvent(null);
+              setMaxEntriesReached(false);
+              setMaxEntriesLimit(null);
             } else {
-              setTournamentId(fieldValue as string)
+              setTournamentId(fieldValue as string);
               const { hasEarlyBird, earlyBirdRegistrationEnd } =
                 tournaments.find(
                   (t: {
-                    value: string
-                    label: string
-                    hasEarlyBird: boolean
-                    earlyBirdRegistrationEnd: Date
-                  }) => t.value === fieldValue
-                )
+                    value: string;
+                    label: string;
+                    hasEarlyBird: boolean;
+                    earlyBirdRegistrationEnd: Date;
+                  }) => t.value === fieldValue,
+                );
 
               if (!isUpdate) {
                 const isEarlyBirdBasedOnDate =
                   hasEarlyBird &&
                   earlyBirdRegistrationEnd &&
-                  new Date() <= new Date(earlyBirdRegistrationEnd)
+                  new Date() <= new Date(earlyBirdRegistrationEnd);
 
-                const currentIsEarlyBird = formApi.getFieldValue("isEarlyBird")
-                if (currentIsEarlyBird === false || currentIsEarlyBird === undefined) {
-                  formApi.setFieldValue("isEarlyBird", isEarlyBirdBasedOnDate)
+                const currentIsEarlyBird = formApi.getFieldValue("isEarlyBird");
+                if (
+                  currentIsEarlyBird === false ||
+                  currentIsEarlyBird === undefined
+                ) {
+                  formApi.setFieldValue("isEarlyBird", isEarlyBirdBasedOnDate);
                 }
               }
 
-              formApi.resetField("event")
-              setSelectedEvent(null)
-              setMaxEntriesReached(false)
-              setMaxEntriesLimit(null)
+              formApi.resetField("event");
+              setSelectedEvent(null);
+              setMaxEntriesReached(false);
+              setMaxEntriesLimit(null);
             }
-            break
+            break;
           case "event":
             if (fieldValue) {
-              const event = events.find(e => e.value === fieldValue);
+              const event = events.find((e) => e.value === fieldValue);
               setSelectedEvent(event || null);
 
               if (!isUpdate) {
-                const isFull = await checkEventMaxEntries(fieldValue as string)
+                const isFull = await checkEventMaxEntries(fieldValue as string);
                 if (isFull) {
-                  formApi.setFieldValue("event", "")
-                  setSelectedEvent(null)
+                  formApi.setFieldValue("event", "");
+                  setSelectedEvent(null);
                 }
               }
 
               autoSetGendersBasedOnEvent(fieldValue as string, formApi);
             } else {
               setSelectedEvent(null);
-              setMaxEntriesReached(false)
-              setMaxEntriesLimit(null)
+              setMaxEntriesReached(false);
+              setMaxEntriesLimit(null);
             }
-            break
+            break;
           case "connectedPlayer1":
             if (fieldValue) {
               try {
                 const result = await fetchPlayer({
                   variables: { _id: fieldValue },
-                })
+                });
                 if (result.data) {
-                  const playerData = result.data as { player: any }
-                  const player1 = playerData.player
-                  const cleanedPhoneNumber = player1.phoneNumber?.replace(/^0/, "") || "";
+                  const playerData = result.data as { player: any };
+                  const player1 = playerData.player;
+                  const cleanedPhoneNumber =
+                    player1.phoneNumber?.replace(/^0/, "") || "";
 
                   formApi.setFieldValue("player1Entry", {
                     firstName: player1.firstName,
@@ -928,70 +1364,103 @@ const FormDialog = (props: Props) => {
                     gender: player1.gender,
                     jerseySize: "M",
                     validDocuments: [],
-                  })
+                    address: player1.address || {
+                      country: undefined,
+                      region: undefined,
+                      province: undefined,
+                      city: undefined,
+                      barangay: undefined,
+                      street: "",
+                      zipCode: "",
+                      fullAddress: "",
+                      coordinates: undefined,
+                    },
+                  });
 
-                  setSelectedSuggestionId1(null)
+                  setSelectedSuggestionId1(null);
 
                   const currentEventId = formApi.getFieldValue("event");
                   if (currentEventId) {
-                    const currentEvent = events.find(e => e.value === currentEventId);
+                    const currentEvent = events.find(
+                      (e) => e.value === currentEventId,
+                    );
                     if (currentEvent) {
                       const isDoubles = currentEvent.type === EventType.DOUBLES;
 
                       if (isDoubles) {
-                        const player2Gender = formApi.getFieldValue("player2Entry.gender");
+                        const player2Gender = formApi.getFieldValue(
+                          "player2Entry.gender",
+                        );
                         const validation = validateEntryGenders(
                           currentEvent.gender,
                           true,
                           player1.gender,
-                          player2Gender
+                          player2Gender,
                         );
 
                         if (!validation.valid) {
                           if (validation.errors.player1) {
-                            formApi.setFieldMeta("player1Entry.gender", (prev: any) => ({
-                              ...prev,
-                              errors: [validation.errors.player1],
-                              isTouched: true,
-                            }));
+                            formApi.setFieldMeta(
+                              "player1Entry.gender",
+                              (prev: any) => ({
+                                ...prev,
+                                errors: [validation.errors.player1],
+                                isTouched: true,
+                              }),
+                            );
 
                             toast.error(validation.errors.player1);
                           }
                         } else {
-                          formApi.setFieldMeta("player1Entry.gender", (prev: any) => ({
-                            ...prev,
-                            errors: [],
-                          }));
+                          formApi.setFieldMeta(
+                            "player1Entry.gender",
+                            (prev: any) => ({
+                              ...prev,
+                              errors: [],
+                            }),
+                          );
                         }
                       } else {
                         let error: string | null = null;
-                        if (currentEvent.gender === EventGender.MALE && player1.gender !== Gender.MALE) {
+                        if (
+                          currentEvent.gender === EventGender.MALE &&
+                          player1.gender !== Gender.MALE
+                        ) {
                           error = "Player must be Male for Men's Singles";
                         }
-                        if (currentEvent.gender === EventGender.FEMALE && player1.gender !== Gender.FEMALE) {
+                        if (
+                          currentEvent.gender === EventGender.FEMALE &&
+                          player1.gender !== Gender.FEMALE
+                        ) {
                           error = "Player must be Female for Women's Singles";
                         }
 
                         if (error) {
-                          formApi.setFieldMeta("player1Entry.gender", (prev: any) => ({
-                            ...prev,
-                            errors: [error],
-                            isTouched: true,
-                          }));
+                          formApi.setFieldMeta(
+                            "player1Entry.gender",
+                            (prev: any) => ({
+                              ...prev,
+                              errors: [error],
+                              isTouched: true,
+                            }),
+                          );
                           toast.error(error);
                         } else {
-                          formApi.setFieldMeta("player1Entry.gender", (prev: any) => ({
-                            ...prev,
-                            errors: [],
-                          }));
+                          formApi.setFieldMeta(
+                            "player1Entry.gender",
+                            (prev: any) => ({
+                              ...prev,
+                              errors: [],
+                            }),
+                          );
                         }
                       }
                     }
                   }
                 }
               } catch (error: any) {
-                if (error.name !== 'AbortError') {
-                  console.error("Error fetching player 1:", error)
+                if (error.name !== "AbortError") {
+                  console.error("Error fetching player 1:", error);
                 }
               }
             } else {
@@ -1006,12 +1475,25 @@ const FormDialog = (props: Props) => {
                 gender: Gender.MALE,
                 jerseySize: "M",
                 validDocuments: [],
-              })
+                address: {
+                  country: undefined,
+                  region: undefined,
+                  province: undefined,
+                  city: undefined,
+                  barangay: undefined,
+                  street: "",
+                  zipCode: "",
+                  fullAddress: "",
+                  coordinates: undefined,
+                },
+              });
             }
-            break
+            break;
           case "isPlayer1New":
             if (fieldValue) {
-              const currentGender = formApi.getFieldValue("player1Entry.gender");
+              const currentGender = formApi.getFieldValue(
+                "player1Entry.gender",
+              );
 
               formApi.setFieldValue("connectedPlayer1", null);
               setSelectedSuggestionId1(null);
@@ -1029,11 +1511,12 @@ const FormDialog = (props: Props) => {
               try {
                 const result = await fetchPlayer({
                   variables: { _id: fieldValue },
-                })
+                });
                 if (result.data) {
-                  const playerData = result.data as { player: any }
-                  const player2 = playerData.player
-                  const cleanedPhoneNumber = player2.phoneNumber?.replace(/^0/, "") || "";
+                  const playerData = result.data as { player: any };
+                  const player2 = playerData.player;
+                  const cleanedPhoneNumber =
+                    player2.phoneNumber?.replace(/^0/, "") || "";
 
                   formApi.setFieldValue("player2Entry", {
                     firstName: player2.firstName,
@@ -1046,44 +1529,68 @@ const FormDialog = (props: Props) => {
                     gender: player2.gender,
                     jerseySize: "M",
                     validDocuments: [],
-                  })
+                    address: player2.address || {
+                      country: undefined,
+                      region: undefined,
+                      province: undefined,
+                      city: undefined,
+                      barangay: undefined,
+                      street: "",
+                      zipCode: "",
+                      fullAddress: "",
+                      coordinates: undefined,
+                    },
+                  });
 
-                  setSelectedSuggestionId2(null)
+                  setSelectedSuggestionId2(null);
 
                   const currentEventId = formApi.getFieldValue("event");
                   if (currentEventId) {
-                    const currentEvent = events.find(e => e.value === currentEventId);
-                    if (currentEvent && currentEvent.type === EventType.DOUBLES) {
-                      const player1Gender = formApi.getFieldValue("player1Entry.gender");
+                    const currentEvent = events.find(
+                      (e) => e.value === currentEventId,
+                    );
+                    if (
+                      currentEvent &&
+                      currentEvent.type === EventType.DOUBLES
+                    ) {
+                      const player1Gender = formApi.getFieldValue(
+                        "player1Entry.gender",
+                      );
                       const validation = validateEntryGenders(
                         currentEvent.gender,
                         true,
                         player1Gender,
-                        player2.gender
+                        player2.gender,
                       );
 
                       if (!validation.valid) {
                         if (validation.errors.player2) {
-                          formApi.setFieldMeta("player2Entry.gender", (prev: any) => ({
-                            ...prev,
-                            errors: [validation.errors.player2],
-                            isTouched: true,
-                          }));
+                          formApi.setFieldMeta(
+                            "player2Entry.gender",
+                            (prev: any) => ({
+                              ...prev,
+                              errors: [validation.errors.player2],
+                              isTouched: true,
+                            }),
+                          );
 
                           toast.error(validation.errors.player2);
                         }
                       } else {
-                        formApi.setFieldMeta("player2Entry.gender", (prev: any) => ({
-                          ...prev,
-                          errors: [],
-                        }));
+                        formApi.setFieldMeta(
+                          "player2Entry.gender",
+                          (prev: any) => ({
+                            ...prev,
+                            errors: [],
+                          }),
+                        );
                       }
                     }
                   }
                 }
               } catch (error: any) {
-                if (error.name !== 'AbortError') {
-                  console.error("Error fetching player 2:", error)
+                if (error.name !== "AbortError") {
+                  console.error("Error fetching player 2:", error);
                 }
               }
             } else {
@@ -1098,12 +1605,25 @@ const FormDialog = (props: Props) => {
                 gender: Gender.MALE,
                 jerseySize: "M",
                 validDocuments: [],
-              })
+                address: {
+                  country: undefined,
+                  region: undefined,
+                  province: undefined,
+                  city: undefined,
+                  barangay: undefined,
+                  street: "",
+                  zipCode: "",
+                  fullAddress: "",
+                  coordinates: undefined,
+                },
+              });
             }
-            break
+            break;
           case "isPlayer2New":
             if (fieldValue) {
-              const currentGender = formApi.getFieldValue("player2Entry.gender");
+              const currentGender = formApi.getFieldValue(
+                "player2Entry.gender",
+              );
 
               formApi.setFieldValue("connectedPlayer2", null);
               setSelectedSuggestionId2(null);
@@ -1116,102 +1636,123 @@ const FormDialog = (props: Props) => {
             break;
         }
 
-        if (fieldName === "player1Entry.firstName" ||
+        if (
+          fieldName === "player1Entry.firstName" ||
           fieldName === "player1Entry.lastName" ||
-          fieldName === "player1Entry.birthDate") {
-          if (debounceTimer1.current) clearTimeout(debounceTimer1.current)
+          fieldName === "player1Entry.birthDate"
+        ) {
+          if (debounceTimer1.current) clearTimeout(debounceTimer1.current);
           debounceTimer1.current = setTimeout(() => {
-            fetchPlayer1Suggestions()
-          }, 500)
+            fetchPlayer1Suggestions();
+          }, 500);
         }
 
-        if (fieldName === "player2Entry.firstName" ||
+        if (
+          fieldName === "player2Entry.firstName" ||
           fieldName === "player2Entry.lastName" ||
-          fieldName === "player2Entry.birthDate") {
-          if (debounceTimer2.current) clearTimeout(debounceTimer2.current)
+          fieldName === "player2Entry.birthDate"
+        ) {
+          if (debounceTimer2.current) clearTimeout(debounceTimer2.current);
           debounceTimer2.current = setTimeout(() => {
-            fetchPlayer2Suggestions()
-          }, 500)
+            fetchPlayer2Suggestions();
+          }, 500);
         }
 
         if (fieldName === "connectedPlayer1" && !fieldValue) {
-          if (debounceTimer1.current) clearTimeout(debounceTimer1.current)
+          if (debounceTimer1.current) clearTimeout(debounceTimer1.current);
           debounceTimer1.current = setTimeout(() => {
-            fetchPlayer1Suggestions()
-          }, 500)
+            fetchPlayer1Suggestions();
+          }, 500);
         }
 
         if (fieldName === "connectedPlayer2" && !fieldValue) {
-          if (debounceTimer2.current) clearTimeout(debounceTimer2.current)
+          if (debounceTimer2.current) clearTimeout(debounceTimer2.current);
           debounceTimer2.current = setTimeout(() => {
-            fetchPlayer2Suggestions()
-          }, 500)
+            fetchPlayer2Suggestions();
+          }, 500);
         }
       },
     },
     onSubmit: async ({ value: payload, formApi }) => {
       if (isSubmittingRef.current) {
-        return
+        return;
       }
 
       if (!isUpdate && payload.event) {
-        const isFull = await checkEventMaxEntries(payload.event)
+        const isFull = await checkEventMaxEntries(payload.event);
         if (isFull) {
-          toast.error(`Cannot create entry. Event has reached its maximum capacity of ${maxEntriesLimit} entries.`)
-          return
+          const event = events.find((e) => e.value === payload.event);
+          setFullEventName(event?.label || "This event");
+          setFullEventMaxEntries(maxEntriesLimit);
+          setShowMaxEntriesModal(true);
+          return;
         }
       }
 
-      isSubmittingRef.current = true
+      isSubmittingRef.current = true;
 
       try {
-        let documentUrlPlayer1 = initialDocumentUrlPlayer1
-        let documentUrlPlayer2 = initialDocumentUrlPlayer2
+        let documentUrlPlayer1 = initialDocumentUrlPlayer1;
+        let documentUrlPlayer2 = initialDocumentUrlPlayer2;
 
         if (filePlayer1) {
-          const uploadedUrl = await uploadFile(filePlayer1, `entry-player1`)
+          const uploadedUrl = await uploadFile(filePlayer1, `entry-player1`);
           if (uploadedUrl) {
-            documentUrlPlayer1 = uploadedUrl
+            documentUrlPlayer1 = uploadedUrl;
           }
         }
 
         if (filePlayer2) {
-          const uploadedUrl = await uploadFile(filePlayer2, `entry-player2`)
+          const uploadedUrl = await uploadFile(filePlayer2, `entry-player2`);
           if (uploadedUrl) {
-            documentUrlPlayer2 = uploadedUrl
+            documentUrlPlayer2 = uploadedUrl;
           }
         }
 
         const event = events.find(
-          (e: { value: string }) => e.value === payload.event
-        )
-        const isDoubles = event?.type === EventType.DOUBLES
+          (e: { value: string }) => e.value === payload.event,
+        );
+        const isDoubles = event?.type === EventType.DOUBLES;
 
         const player1Entry = {
           ...payload.player1Entry,
-          validDocuments: documentUrlPlayer1 ? [{
-            documentURL: documentUrlPlayer1,
-            documentType: selectedDocumentTypePlayer1,
-            dateUploaded: new Date().toISOString(),
-          }] : payload.player1Entry.validDocuments || []
-        }
+          validDocuments: documentUrlPlayer1
+            ? [
+                {
+                  documentURL: documentUrlPlayer1,
+                  documentType: selectedDocumentTypePlayer1,
+                  dateUploaded: new Date().toISOString(),
+                },
+              ]
+            : payload.player1Entry.validDocuments || [],
+          // address: payload.player1Entry.address,
+          address: cleanAddressForInput(payload.player1Entry.address), 
+        };
 
-        const player2Entry = isDoubles ? {
-          ...payload.player2Entry,
-          validDocuments: documentUrlPlayer2 ? [{
-            documentURL: documentUrlPlayer2,
-            documentType: selectedDocumentTypePlayer2,
-            dateUploaded: new Date().toISOString(),
-          }] : payload.player2Entry?.validDocuments || []
-        } : null
+        const player2Entry = isDoubles
+          ? {
+              ...payload.player2Entry,
+              validDocuments: documentUrlPlayer2
+                ? [
+                    {
+                      documentURL: documentUrlPlayer2,
+                      documentType: selectedDocumentTypePlayer2,
+                      dateUploaded: new Date().toISOString(),
+                    },
+                  ]
+                : payload.player2Entry?.validDocuments || [],
+              // address: payload.player2Entry?.address,
+              address: cleanAddressForInput(payload.player2Entry?.address),
+            }
+          : null;
 
         const modifiedPayload = {
           ...payload,
           player1Entry,
           player2Entry: isDoubles ? player2Entry : null,
-        }
+        };
 
-        const { tournament, ...finalPayload } = modifiedPayload
+        const { tournament, ...finalPayload } = modifiedPayload;
 
         const response: any = await submitForm({
           variables: {
@@ -1219,57 +1760,65 @@ const FormDialog = (props: Props) => {
               ? { _id: props._id, ...finalPayload }
               : { ...finalPayload },
           },
-        })
+        });
 
-        if (response?.data?.createEntry?.ok || response?.data?.updateEntry?.ok) {
-          onClose()
-          toast.success(response?.data?.createEntry?.message || response?.data?.updateEntry?.message)
+        if (
+          response?.data?.createEntry?.ok ||
+          response?.data?.updateEntry?.ok
+        ) {
+          onClose();
+          toast.success(
+            response?.data?.createEntry?.message ||
+              response?.data?.updateEntry?.message,
+          );
         }
       } catch (error: any) {
-        if (error.name !== 'AbortError') {
-          console.error('Form submission error:', error)
+        if (error.name !== "AbortError") {
+          console.error("Form submission error:", error);
         }
         if (error.name == "CombinedGraphQLErrors") {
-          const fieldErrors = error.issues[0].extensions.fields
+          const fieldErrors = error.issues[0].extensions.fields;
           if (fieldErrors)
             fieldErrors.map(
               ({ path, message }: { path: string; message: string }) =>
                 formApi.fieldInfo[
                   path as keyof typeof formApi.fieldInfo
-                ].instance?.setErrorMap({
+                ]?.instance?.setErrorMap({
                   onSubmit: { message },
-                })
-            )
+                }),
+            );
         }
       } finally {
-        isSubmittingRef.current = false
+        isSubmittingRef.current = false;
       }
     },
-  })
+  });
 
   useEffect(() => {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'data-state') {
-          const target = mutation.target as HTMLElement
-          if (target.getAttribute('data-state') === 'active') {
-            const tabValue = target.getAttribute('value')
+        if (
+          mutation.type === "attributes" &&
+          mutation.attributeName === "data-state"
+        ) {
+          const target = mutation.target as HTMLElement;
+          if (target.getAttribute("data-state") === "active") {
+            const tabValue = target.getAttribute("value");
             if (tabValue) {
-              setCurrentTab(tabValue)
+              setCurrentTab(tabValue);
             }
           }
         }
-      })
-    })
+      });
+    });
 
-    const tabTriggers = document.querySelectorAll('[role="tab"]')
-    tabTriggers.forEach(trigger => {
-      observer.observe(trigger, { attributes: true })
-    })
+    const tabTriggers = document.querySelectorAll('[role="tab"]');
+    tabTriggers.forEach((trigger) => {
+      observer.observe(trigger, { attributes: true });
+    });
 
-    return () => observer.disconnect()
-  }, [form.state.values])
-
+    return () => observer.disconnect();
+  }, [form.state.values]);
 
   const validateDocuments = useCallback((): Record<string, string> => {
     const errors: Record<string, string> = {};
@@ -1277,7 +1826,7 @@ const FormDialog = (props: Props) => {
 
     if (!eventId) return errors;
 
-    const event = events.find(e => e.value === eventId);
+    const event = events.find((e) => e.value === eventId);
     if (!event) return errors;
 
     const isDoubles = event.type === EventType.DOUBLES;
@@ -1295,24 +1844,32 @@ const FormDialog = (props: Props) => {
     }
 
     return errors;
-  }, [form, events, filePlayer1, filePlayer2, initialDocumentUrlPlayer1, initialDocumentUrlPlayer2]);
+  }, [
+    form,
+    events,
+    filePlayer1,
+    filePlayer2,
+    initialDocumentUrlPlayer1,
+    initialDocumentUrlPlayer2,
+  ]);
 
   const calculateEntryAmount = useCallback(() => {
     if (!selectedEvent) return null;
 
-    const pricePerPlayer = form.getFieldValue("isEarlyBird") && selectedEvent.earlyBirdPricePerPlayer
-      ? selectedEvent.earlyBirdPricePerPlayer
-      : selectedEvent.pricePerPlayer;
+    const pricePerPlayer =
+      form.getFieldValue("isEarlyBird") && selectedEvent.earlyBirdPricePerPlayer
+        ? selectedEvent.earlyBirdPricePerPlayer
+        : selectedEvent.pricePerPlayer;
 
     if (selectedEvent.type === EventType.DOUBLES) {
       return {
         perPlayer: pricePerPlayer,
-        total: pricePerPlayer * 2
+        total: pricePerPlayer * 2,
       };
     } else {
       return {
         perPlayer: pricePerPlayer,
-        total: pricePerPlayer
+        total: pricePerPlayer,
       };
     }
   }, [selectedEvent, form]);
@@ -1327,7 +1884,7 @@ const FormDialog = (props: Props) => {
 
       const initializeForm = async () => {
         try {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
 
           form.reset();
 
@@ -1344,7 +1901,8 @@ const FormDialog = (props: Props) => {
           }
 
           if (entry?.player1Entry) {
-            const cleanedPhoneNumber1 = entry.player1Entry.phoneNumber?.replace(/^0/, "") || "";
+            const cleanedPhoneNumber1 =
+              entry.player1Entry.phoneNumber?.replace(/^0/, "") || "";
 
             form.setFieldValue("player1Entry", {
               firstName: entry.player1Entry.firstName || "",
@@ -1359,11 +1917,23 @@ const FormDialog = (props: Props) => {
               gender: entry.player1Entry.gender || Gender.MALE,
               jerseySize: entry.player1Entry.jerseySize || "M",
               validDocuments: entry.player1Entry.validDocuments || [],
+              address: entry.player1Entry.address || {
+                country: undefined,
+                region: undefined,
+                province: undefined,
+                city: undefined,
+                barangay: undefined,
+                street: "",
+                zipCode: "",
+                fullAddress: "",
+                coordinates: undefined,
+              },
             });
           }
 
           if (entry?.player2Entry) {
-            const cleanedPhoneNumber2 = entry.player2Entry.phoneNumber?.replace(/^0/, "") || "";
+            const cleanedPhoneNumber2 =
+              entry.player2Entry.phoneNumber?.replace(/^0/, "") || "";
 
             form.setFieldValue("player2Entry", {
               firstName: entry.player2Entry.firstName || "",
@@ -1378,6 +1948,17 @@ const FormDialog = (props: Props) => {
               gender: entry.player2Entry.gender || Gender.MALE,
               jerseySize: entry.player2Entry.jerseySize || "M",
               validDocuments: entry.player2Entry.validDocuments || [],
+              address: entry.player2Entry.address || {
+                country: undefined,
+                region: undefined,
+                province: undefined,
+                city: undefined,
+                barangay: undefined,
+                street: "",
+                zipCode: "",
+                fullAddress: "",
+                coordinates: undefined,
+              },
             });
           } else {
             form.setFieldValue("player2Entry", {
@@ -1391,6 +1972,17 @@ const FormDialog = (props: Props) => {
               gender: Gender.MALE,
               jerseySize: "M",
               validDocuments: [],
+              address: {
+                country: undefined,
+                region: undefined,
+                province: undefined,
+                city: undefined,
+                barangay: undefined,
+                street: "",
+                zipCode: "",
+                fullAddress: "",
+                coordinates: undefined,
+              },
             });
           }
 
@@ -1426,7 +2018,6 @@ const FormDialog = (props: Props) => {
           if (initialDocumentTypePlayer2) {
             setSelectedDocumentTypePlayer2(initialDocumentTypePlayer2);
           }
-
         } catch (error) {
           console.error("Error initializing form:", error);
         } finally {
@@ -1436,18 +2027,32 @@ const FormDialog = (props: Props) => {
 
       initializeForm();
     }
-  }, [entry, isUpdate, form, initialDocumentUrlPlayer1, initialDocumentUrlPlayer2, initialDocumentTypePlayer1, initialDocumentTypePlayer2]);
+  }, [
+    entry,
+    isUpdate,
+    form,
+    initialDocumentUrlPlayer1,
+    initialDocumentUrlPlayer2,
+    initialDocumentTypePlayer1,
+    initialDocumentTypePlayer2,
+  ]);
 
   useEffect(() => {
     const errors = validateDocuments();
-    setFieldErrors(prev => ({ ...prev, ...errors }));
-  }, [filePlayer1, filePlayer2, initialDocumentUrlPlayer1, initialDocumentUrlPlayer2, selectedEvent]);
+    setFieldErrors((prev) => ({ ...prev, ...errors }));
+  }, [
+    filePlayer1,
+    filePlayer2,
+    initialDocumentUrlPlayer1,
+    initialDocumentUrlPlayer2,
+    selectedEvent,
+  ]);
 
   useEffect(() => {
     if (data && !tournamentId) {
-      setTournamentId(data.entry.event.tournament._id)
+      setTournamentId(data.entry.event.tournament._id);
     }
-  }, [data, tournamentId])
+  }, [data, tournamentId]);
 
   const isFormValid = useCallback(() => {
     const values = form.state.values;
@@ -1459,7 +2064,7 @@ const FormDialog = (props: Props) => {
       return false;
     }
 
-    const event = events.find(e => e.value === eventId);
+    const event = events.find((e) => e.value === eventId);
     if (!event) return false;
 
     const isDoubles = event.type === EventType.DOUBLES;
@@ -1468,8 +2073,8 @@ const FormDialog = (props: Props) => {
       (meta: any) => {
         if (meta.errors && meta.errors.length > 0) {
           const hasActualErrors = meta.errors.some((err: any) => {
-            if (typeof err === 'string' && err.length > 0) return true;
-            if (err && typeof err === 'object' && err.message) return true;
+            if (typeof err === "string" && err.length > 0) return true;
+            if (err && typeof err === "object" && err.message) return true;
             return false;
           });
           if (hasActualErrors) return true;
@@ -1477,13 +2082,13 @@ const FormDialog = (props: Props) => {
 
         if (meta.errorMap) {
           const hasErrorMapErrors = Object.values(meta.errorMap).some(
-            (error: any) => error && error.message && error.message.length > 0
+            (error: any) => error && error.message && error.message.length > 0,
           );
           if (hasErrorMapErrors) return true;
         }
 
         return false;
-      }
+      },
     );
 
     if (hasFieldErrors) {
@@ -1522,21 +2127,27 @@ const FormDialog = (props: Props) => {
       if (!hasPlayer2Doc) return false;
 
       if (event.gender === EventGender.MALE) {
-        if (values.player1Entry.gender !== Gender.MALE ||
-          values.player2Entry?.gender !== Gender.MALE) {
+        if (
+          values.player1Entry.gender !== Gender.MALE ||
+          values.player2Entry?.gender !== Gender.MALE
+        ) {
           return false;
         }
       }
       if (event.gender === EventGender.FEMALE) {
-        if (values.player1Entry.gender !== Gender.FEMALE ||
-          values.player2Entry?.gender !== Gender.FEMALE) {
+        if (
+          values.player1Entry.gender !== Gender.FEMALE ||
+          values.player2Entry?.gender !== Gender.FEMALE
+        ) {
           return false;
         }
       }
       if (event.gender === EventGender.MIXED) {
         const isValid =
-          (values.player1Entry.gender === Gender.MALE && values.player2Entry?.gender === Gender.FEMALE) ||
-          (values.player1Entry.gender === Gender.FEMALE && values.player2Entry?.gender === Gender.MALE);
+          (values.player1Entry.gender === Gender.MALE &&
+            values.player2Entry?.gender === Gender.FEMALE) ||
+          (values.player1Entry.gender === Gender.FEMALE &&
+            values.player2Entry?.gender === Gender.MALE);
         if (!isValid) return false;
       }
     }
@@ -1555,13 +2166,13 @@ const FormDialog = (props: Props) => {
     selectedDocumentTypePlayer1,
     selectedDocumentTypePlayer2,
     maxEntriesReached,
-    isUpdate
+    isUpdate,
   ]);
 
   useEffect(() => {
     const eventId = form.getFieldValue("event");
     if (eventId) {
-      const event = events.find(e => e.value === eventId);
+      const event = events.find((e) => e.value === eventId);
       const isDoubles = event?.type === EventType.DOUBLES;
       const eventGender = event?.gender;
 
@@ -1573,7 +2184,7 @@ const FormDialog = (props: Props) => {
           eventGender,
           isDoubles,
           player1Gender,
-          player2Gender
+          player2Gender,
         );
 
         if (validation.errors.player1) {
@@ -1616,14 +2227,14 @@ const FormDialog = (props: Props) => {
     form.getFieldValue("event"),
     form.getFieldValue("player1Entry.gender"),
     form.getFieldValue("player2Entry.gender"),
-    events
+    events,
   ]);
 
   const GenderRequirementBadge = () => {
     const eventId = form.getFieldValue("event");
     if (!eventId) return null;
 
-    const event = events.find(e => e.value === eventId);
+    const event = events.find((e) => e.value === eventId);
     if (!event || event.type !== EventType.DOUBLES) return null;
 
     let requirementText = "";
@@ -1664,149 +2275,167 @@ const FormDialog = (props: Props) => {
   };
 
   const onClose = () => {
-    setOpen(false)
-    props.onClose?.()
-    form.reset()
-    setPreviewPlayer1(null)
-    setPreviewPlayer2(null)
-    setFilePlayer1(null)
-    setFilePlayer2(null)
-    setFieldErrors({})
-    setSelectedDocumentTypePlayer1(ValidDocumentType.BIRTH_CERTIFICATE)
-    setSelectedDocumentTypePlayer2(ValidDocumentType.BIRTH_CERTIFICATE)
-    setSuggestedPlayers1([])
-    setSuggestedPlayers2([])
-    setSelectedSuggestionId1(null)
-    setSelectedSuggestionId2(null)
-    setMaxEntriesReached(false)
-    setMaxEntriesLimit(null)
-    if (debounceTimer1.current) clearTimeout(debounceTimer1.current)
-    if (debounceTimer2.current) clearTimeout(debounceTimer2.current)
-    isSubmittingRef.current = false
-    setIsInitializing(false)
-    setSelectedEvent(null)
-  }
+    setOpen(false);
+    props.onClose?.();
+    form.reset();
+    setPreviewPlayer1(null);
+    setPreviewPlayer2(null);
+    setFilePlayer1(null);
+    setFilePlayer2(null);
+    setFieldErrors({});
+    setSelectedDocumentTypePlayer1(ValidDocumentType.BIRTH_CERTIFICATE);
+    setSelectedDocumentTypePlayer2(ValidDocumentType.BIRTH_CERTIFICATE);
+    setSuggestedPlayers1([]);
+    setSuggestedPlayers2([]);
+    setSelectedSuggestionId1(null);
+    setSelectedSuggestionId2(null);
+    setMaxEntriesReached(false);
+    setMaxEntriesLimit(null);
+    if (debounceTimer1.current) clearTimeout(debounceTimer1.current);
+    if (debounceTimer2.current) clearTimeout(debounceTimer2.current);
+    isSubmittingRef.current = false;
+    setIsInitializing(false);
+    setSelectedEvent(null);
+  };
 
-  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
-
+  const uploadFile = async (
+    file: File,
+    folder: string,
+  ): Promise<string | null> => {
     try {
-      setIsUploading(true)
+      setIsUploading(true);
 
-      const formData = new FormData()
-      const fileExt = file.name.split('.').pop() || ''
+      const formData = new FormData();
+      const fileExt = file.name.split(".").pop() || "";
 
-      const originalName = file.name.slice(0, file.name.lastIndexOf('.'))
-      const truncatedOriginalName = originalName.length > 30
-        ? originalName.slice(0, 30) + '...'
-        : originalName
+      const originalName = file.name.slice(0, file.name.lastIndexOf("."));
+      const truncatedOriginalName =
+        originalName.length > 30
+          ? originalName.slice(0, 30) + "..."
+          : originalName;
 
-      const fileName = `${folder}-${truncatedOriginalName}-${Date.now()}.${fileExt}`
-      formData.append("file", file, fileName)
+      const fileName = `${folder}-${truncatedOriginalName}-${Date.now()}.${fileExt}`;
+      formData.append("file", file, fileName);
 
       const response = await fetch(`/api/upload/entry_requirement`, {
         method: "POST",
         body: formData,
-      })
+      });
 
       if (!response.ok) {
-        console.error('Upload failed with status:', response.status);
-        throw new Error("Upload Failed")
+        console.error("Upload failed with status:", response.status);
+        throw new Error("Upload Failed");
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
-      toast.success("Document uploaded successfully!")
-      return data.url
+      toast.success("Document uploaded successfully!");
+      return data.url;
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error("Error uploading file:", error)
+      if (error.name !== "AbortError") {
+        console.error("Error uploading file:", error);
       }
-      toast.error("Error uploading document. Please try again.")
-      return null
+      toast.error("Error uploading document. Please try again.");
+      return null;
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
-  }
+  };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, playerNumber: number) => {
-    const uploadedFile = event.target.files?.[0]
-    if (!uploadedFile) return
+  const handleFileUpload = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    playerNumber: number,
+  ) => {
+    const uploadedFile = event.target.files?.[0];
+    if (!uploadedFile) return;
 
-    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/pdf']
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "image/webp",
+      "application/pdf",
+    ];
     if (!validTypes.includes(uploadedFile.type)) {
-      toast.error('Please upload a valid image file (JPEG, PNG, JPG, WEBP) or PDF')
-      setFieldErrors(prev => ({ ...prev, [`filePlayer${playerNumber}`]: 'Please upload a valid image file or PDF' }))
-      return
+      toast.error(
+        "Please upload a valid image file (JPEG, PNG, JPG, WEBP) or PDF",
+      );
+      setFieldErrors((prev) => ({
+        ...prev,
+        [`filePlayer${playerNumber}`]:
+          "Please upload a valid image file or PDF",
+      }));
+      return;
     }
     if (uploadedFile.size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB')
-      setFieldErrors(prev => ({ ...prev, [`filePlayer${playerNumber}`]: 'File size must be less than 10MB' }))
-      return
+      toast.error("File size must be less than 10MB");
+      setFieldErrors((prev) => ({
+        ...prev,
+        [`filePlayer${playerNumber}`]: "File size must be less than 10MB",
+      }));
+      return;
     }
 
     if (playerNumber === 1) {
-      setFilePlayer1(uploadedFile)
+      setFilePlayer1(uploadedFile);
     } else {
-      setFilePlayer2(uploadedFile)
+      setFilePlayer2(uploadedFile);
     }
 
-    setFieldErrors(prev => ({ ...prev, [`filePlayer${playerNumber}`]: '' }))
+    setFieldErrors((prev) => ({ ...prev, [`filePlayer${playerNumber}`]: "" }));
 
-    if (uploadedFile.type.startsWith('image/')) {
-      const reader = new FileReader()
+    if (uploadedFile.type.startsWith("image/")) {
+      const reader = new FileReader();
       reader.onload = () => {
-        const imageData = reader.result as string
+        const imageData = reader.result as string;
         if (playerNumber === 1) {
-          setPreviewPlayer1(imageData)
+          setPreviewPlayer1(imageData);
         } else {
-          setPreviewPlayer2(imageData)
+          setPreviewPlayer2(imageData);
         }
-      }
-      reader.readAsDataURL(uploadedFile)
+      };
+      reader.readAsDataURL(uploadedFile);
     } else {
       if (playerNumber === 1) {
-        setPreviewPlayer1(null)
+        setPreviewPlayer1(null);
       } else {
-        setPreviewPlayer2(null)
+        setPreviewPlayer2(null);
       }
     }
-
-  }
+  };
 
   const handleRemoveFile = (playerNumber: number) => {
-
     if (playerNumber === 1) {
-      setFilePlayer1(null)
-      setPreviewPlayer1(null)
-      form.setFieldValue("player1Entry.validDocuments" as any, [])
+      setFilePlayer1(null);
+      setPreviewPlayer1(null);
+      form.setFieldValue("player1Entry.validDocuments" as any, []);
     } else {
-      setFilePlayer2(null)
-      setPreviewPlayer2(null)
-      form.setFieldValue("player2Entry.validDocuments" as any, [])
+      setFilePlayer2(null);
+      setPreviewPlayer2(null);
+      form.setFieldValue("player2Entry.validDocuments" as any, []);
     }
-    setFieldErrors(prev => ({ ...prev, [`filePlayer${playerNumber}`]: '' }))
-
-  }
+    setFieldErrors((prev) => ({ ...prev, [`filePlayer${playerNumber}`]: "" }));
+  };
 
   const fetchPlayer1Suggestions = useCallback(async () => {
-    const firstName = form.getFieldValue("player1Entry.firstName")
-    const lastName = form.getFieldValue("player1Entry.lastName")
-    const birthDate = form.getFieldValue("player1Entry.birthDate")
+    const firstName = form.getFieldValue("player1Entry.firstName");
+    const lastName = form.getFieldValue("player1Entry.lastName");
+    const birthDate = form.getFieldValue("player1Entry.birthDate");
 
     if (!firstName || !lastName || !birthDate) {
-      setSuggestedPlayers1([])
-      return
+      setSuggestedPlayers1([]);
+      return;
     }
 
-    const connectedPlayer1 = form.getFieldValue("connectedPlayer1")
-    const isPlayer1New = form.getFieldValue("isPlayer1New")
+    const connectedPlayer1 = form.getFieldValue("connectedPlayer1");
+    const isPlayer1New = form.getFieldValue("isPlayer1New");
 
     if (connectedPlayer1 || isPlayer1New) {
-      setSuggestedPlayers1([])
-      return
+      setSuggestedPlayers1([]);
+      return;
     }
 
-    setIsLoadingSuggestions1(true)
+    setIsLoadingSuggestions1(true);
 
     try {
       const { data } = await fetchSuggestions({
@@ -1814,41 +2443,42 @@ const FormDialog = (props: Props) => {
           input: {
             firstName,
             lastName,
-            birthDate: birthDate instanceof Date ? birthDate.toISOString() : birthDate
-          }
-        }
-      })
+            birthDate:
+              birthDate instanceof Date ? birthDate.toISOString() : birthDate,
+          },
+        },
+      });
 
-      setSuggestedPlayers1(data?.suggestPlayers || [])
+      setSuggestedPlayers1(data?.suggestPlayers || []);
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error("Error fetching suggestions for Player 1:", error)
+      if (error.name !== "AbortError") {
+        console.error("Error fetching suggestions for Player 1:", error);
       }
-      setSuggestedPlayers1([])
+      setSuggestedPlayers1([]);
     } finally {
-      setIsLoadingSuggestions1(false)
+      setIsLoadingSuggestions1(false);
     }
-  }, [form, fetchSuggestions])
+  }, [form, fetchSuggestions]);
 
   const fetchPlayer2Suggestions = useCallback(async () => {
-    const firstName = form.getFieldValue("player2Entry.firstName")
-    const lastName = form.getFieldValue("player2Entry.lastName")
-    const birthDate = form.getFieldValue("player2Entry.birthDate")
+    const firstName = form.getFieldValue("player2Entry.firstName");
+    const lastName = form.getFieldValue("player2Entry.lastName");
+    const birthDate = form.getFieldValue("player2Entry.birthDate");
 
     if (!firstName || !lastName || !birthDate) {
-      setSuggestedPlayers2([])
-      return
+      setSuggestedPlayers2([]);
+      return;
     }
 
-    const connectedPlayer2 = form.getFieldValue("connectedPlayer2")
-    const isPlayer2New = form.getFieldValue("isPlayer2New")
+    const connectedPlayer2 = form.getFieldValue("connectedPlayer2");
+    const isPlayer2New = form.getFieldValue("isPlayer2New");
 
     if (connectedPlayer2 || isPlayer2New) {
-      setSuggestedPlayers2([])
-      return
+      setSuggestedPlayers2([]);
+      return;
     }
 
-    setIsLoadingSuggestions2(true)
+    setIsLoadingSuggestions2(true);
 
     try {
       const { data } = await fetchSuggestions({
@@ -1856,23 +2486,27 @@ const FormDialog = (props: Props) => {
           input: {
             firstName,
             lastName,
-            birthDate: birthDate instanceof Date ? birthDate.toISOString() : birthDate
-          }
-        }
-      })
+            birthDate:
+              birthDate instanceof Date ? birthDate.toISOString() : birthDate,
+          },
+        },
+      });
 
-      setSuggestedPlayers2(data?.suggestPlayers || [])
+      setSuggestedPlayers2(data?.suggestPlayers || []);
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error("Error fetching suggestions for Player 2:", error)
+      if (error.name !== "AbortError") {
+        console.error("Error fetching suggestions for Player 2:", error);
       }
-      setSuggestedPlayers2([])
+      setSuggestedPlayers2([]);
     } finally {
-      setIsLoadingSuggestions2(false)
+      setIsLoadingSuggestions2(false);
     }
-  }, [form, fetchSuggestions])
+  }, [form, fetchSuggestions]);
 
-  const handleSelectSuggestedPlayer = async (playerId: string, playerNumber: number) => {
+  const handleSelectSuggestedPlayer = async (
+    playerId: string,
+    playerNumber: number,
+  ) => {
     try {
       if (playerNumber === 1) {
         form.setFieldValue("connectedPlayer1", playerId);
@@ -1883,10 +2517,11 @@ const FormDialog = (props: Props) => {
         });
 
         if (result.data) {
-          const playerData = result.data as { player: any }
+          const playerData = result.data as { player: any };
           if (playerData.player) {
             const player = playerData.player;
-            const cleanedPhoneNumber = player.phoneNumber?.replace(/^0/, "") || "";
+            const cleanedPhoneNumber =
+              player.phoneNumber?.replace(/^0/, "") || "";
 
             form.setFieldValue("player1Entry", {
               firstName: player.firstName || "",
@@ -1895,25 +2530,42 @@ const FormDialog = (props: Props) => {
               suffix: player.suffix || "",
               email: player.email || "",
               phoneNumber: cleanedPhoneNumber,
-              birthDate: player.birthDate ? new Date(player.birthDate) : new Date(),
+              birthDate: player.birthDate
+                ? new Date(player.birthDate)
+                : new Date(),
               gender: player.gender || Gender.MALE,
               jerseySize: "M",
               validDocuments: [],
+              address: player.address || {
+                country: undefined,
+                region: undefined,
+                province: undefined,
+                city: undefined,
+                barangay: undefined,
+                street: "",
+                zipCode: "",
+                fullAddress: "",
+                coordinates: undefined,
+              },
             });
 
             const currentEventId = form.getFieldValue("event");
             if (currentEventId) {
-              const currentEvent = events.find(e => e.value === currentEventId);
+              const currentEvent = events.find(
+                (e) => e.value === currentEventId,
+              );
               if (currentEvent) {
                 const isDoubles = currentEvent.type === EventType.DOUBLES;
 
                 if (isDoubles) {
-                  const player2Gender = form.getFieldValue("player2Entry.gender");
+                  const player2Gender = form.getFieldValue(
+                    "player2Entry.gender",
+                  );
                   const validation = validateEntryGenders(
                     currentEvent.gender,
                     true,
                     player.gender,
-                    player2Gender
+                    player2Gender,
                   );
 
                   if (!validation.valid) {
@@ -1924,10 +2576,15 @@ const FormDialog = (props: Props) => {
                         isTouched: true,
                       }));
                     }
-                    toast.error(validation.errors.player1 || "Gender validation failed");
+                    toast.error(
+                      validation.errors.player1 || "Gender validation failed",
+                    );
                   }
                 } else {
-                  if (currentEvent.gender === EventGender.MALE && player.gender !== Gender.MALE) {
+                  if (
+                    currentEvent.gender === EventGender.MALE &&
+                    player.gender !== Gender.MALE
+                  ) {
                     form.setFieldMeta("player1Entry.gender", (prev: any) => ({
                       ...prev,
                       errors: ["Player must be Male for Men's Singles"],
@@ -1935,7 +2592,10 @@ const FormDialog = (props: Props) => {
                     }));
                     toast.error("Player must be Male for Men's Singles");
                   }
-                  if (currentEvent.gender === EventGender.FEMALE && player.gender !== Gender.FEMALE) {
+                  if (
+                    currentEvent.gender === EventGender.FEMALE &&
+                    player.gender !== Gender.FEMALE
+                  ) {
                     form.setFieldMeta("player1Entry.gender", (prev: any) => ({
                       ...prev,
                       errors: ["Player must be Female for Women's Singles"],
@@ -1957,10 +2617,11 @@ const FormDialog = (props: Props) => {
         });
 
         if (result.data) {
-          const playerData = result.data as { player: any }
+          const playerData = result.data as { player: any };
           if (playerData.player) {
             const player = playerData.player;
-            const cleanedPhoneNumber = player.phoneNumber?.replace(/^0/, "") || "";
+            const cleanedPhoneNumber =
+              player.phoneNumber?.replace(/^0/, "") || "";
 
             form.setFieldValue("player2Entry", {
               firstName: player.firstName || "",
@@ -1969,22 +2630,37 @@ const FormDialog = (props: Props) => {
               suffix: player.suffix || "",
               email: player.email || "",
               phoneNumber: cleanedPhoneNumber,
-              birthDate: player.birthDate ? new Date(player.birthDate) : new Date(),
+              birthDate: player.birthDate
+                ? new Date(player.birthDate)
+                : new Date(),
               gender: player.gender || Gender.MALE,
               jerseySize: "M",
               validDocuments: [],
+              address: player.address || {
+                country: undefined,
+                region: undefined,
+                province: undefined,
+                city: undefined,
+                barangay: undefined,
+                street: "",
+                zipCode: "",
+                fullAddress: "",
+                coordinates: undefined,
+              },
             });
 
             const currentEventId = form.getFieldValue("event");
             if (currentEventId) {
-              const currentEvent = events.find(e => e.value === currentEventId);
+              const currentEvent = events.find(
+                (e) => e.value === currentEventId,
+              );
               if (currentEvent && currentEvent.type === EventType.DOUBLES) {
                 const player1Gender = form.getFieldValue("player1Entry.gender");
                 const validation = validateEntryGenders(
                   currentEvent.gender,
                   true,
                   player1Gender,
-                  player.gender
+                  player.gender,
                 );
 
                 if (!validation.valid) {
@@ -1995,7 +2671,9 @@ const FormDialog = (props: Props) => {
                       isTouched: true,
                     }));
                   }
-                  toast.error(validation.errors.player2 || "Gender validation failed");
+                  toast.error(
+                    validation.errors.player2 || "Gender validation failed",
+                  );
                 }
               }
             }
@@ -2003,11 +2681,14 @@ const FormDialog = (props: Props) => {
         }
       }
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error(`Error selecting suggested player for Player ${playerNumber}:`, error);
+      if (error.name !== "AbortError") {
+        console.error(
+          `Error selecting suggested player for Player ${playerNumber}:`,
+          error,
+        );
       }
     }
-  }
+  };
 
   const SuggestedPlayersSection = ({
     suggestions,
@@ -2016,24 +2697,26 @@ const FormDialog = (props: Props) => {
     playerType,
     onFindMatches,
     showFindMatchesButton,
-    selectedSuggestionId
+    selectedSuggestionId,
   }: {
     suggestions: SuggestPlayer[];
     isLoading: boolean;
     onSelectPlayer: (playerId: string) => void;
-    playerType: 'player1' | 'player2';
+    playerType: "player1" | "player2";
     onFindMatches: () => void;
     showFindMatchesButton: boolean;
     selectedSuggestionId: string | null;
   }) => {
-    const playerNumber = playerType === 'player1' ? 1 : 2;
+    const playerNumber = playerType === "player1" ? 1 : 2;
 
     if (isLoading) {
       return (
         <div className="mb-4 p-3 border rounded-md bg-gray-50">
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm text-gray-600">Finding suggested players...</span>
+            <span className="text-sm text-gray-600">
+              Finding suggested players...
+            </span>
           </div>
         </div>
       );
@@ -2051,7 +2734,8 @@ const FormDialog = (props: Props) => {
                 Find Matching Players
               </p>
               <p className="text-xs text-blue-600 mb-3">
-                Enter first name, last name, and birth date to find similar players
+                Enter first name, last name, and birth date to find similar
+                players
               </p>
               <Button
                 size="sm"
@@ -2074,7 +2758,8 @@ const FormDialog = (props: Props) => {
                   key={player._id}
                   className={cn(
                     "p-3 border rounded-md hover:bg-gray-50 cursor-pointer transition-colors",
-                    selectedSuggestionId === player._id && "bg-green-50 border-green-300"
+                    selectedSuggestionId === player._id &&
+                      "bg-green-50 border-green-300",
                   )}
                   onClick={() => onSelectPlayer(player._id)}
                 >
@@ -2092,7 +2777,7 @@ const FormDialog = (props: Props) => {
                               ? "bg-green-50 text-green-700 border-green-200"
                               : player.similarityScore >= 40
                                 ? "bg-amber-50 text-amber-700 border-amber-200"
-                                : "bg-blue-50 text-blue-700 border-blue-200"
+                                : "bg-blue-50 text-blue-700 border-blue-200",
                           )}
                         >
                           {player.similarityScore}% match
@@ -2100,26 +2785,32 @@ const FormDialog = (props: Props) => {
                       </div>
                       <div className="mt-1 space-y-1">
                         <div className="flex flex-wrap gap-1">
-                          {player.matchReasons.map((reason: string, index: number) => (
-                            <Badge
-                              key={index}
-                              variant="secondary"
-                              className="text-xs py-0.5"
-                            >
-                              {reason}
-                            </Badge>
-                          ))}
+                          {player.matchReasons.map(
+                            (reason: string, index: number) => (
+                              <Badge
+                                key={index}
+                                variant="secondary"
+                                className="text-xs py-0.5"
+                              >
+                                {reason}
+                              </Badge>
+                            ),
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 space-y-0.5">
-                          <div>Birthday: {format(new Date(player.birthDate), "PP")}</div>
+                          <div>
+                            Birthday: {format(new Date(player.birthDate), "PP")}
+                          </div>
                           {player.email && (
                             <div className="truncate">
-                              <span className="font-medium">Email:</span> {player.email}
+                              <span className="font-medium">Email:</span>{" "}
+                              {player.email}
                             </div>
                           )}
                           {player.phoneNumber && (
                             <div>
-                              <span className="font-medium">Phone:</span> {player.phoneNumber}
+                              <span className="font-medium">Phone:</span>{" "}
+                              {player.phoneNumber}
                             </div>
                           )}
                         </div>
@@ -2129,8 +2820,6 @@ const FormDialog = (props: Props) => {
                 </div>
               ))}
             </div>
-
-
           </>
         )}
       </div>
@@ -2152,61 +2841,73 @@ const FormDialog = (props: Props) => {
         <p className="text-sm text-gray-500 mt-4">Please wait</p>
       </div>
     </motion.div>
-  )
+  );
 
   const getVisibleTabs = (selectedEventId?: string) => {
     if (!selectedEventId) {
-      return ["details"]
+      return ["details"];
     }
 
-    const event = events.find((e: { value: string }) => e.value === selectedEventId)
-    const isDoubles = event?.type === EventType.DOUBLES
+    const event = events.find(
+      (e: { value: string }) => e.value === selectedEventId,
+    );
+    const isDoubles = event?.type === EventType.DOUBLES;
 
     if (isDoubles) {
-      return ["details", "player1", "document1", "player2", "document2"]
+      return ["details", "player1", "document1", "player2", "document2"];
     } else {
-      return ["details", "player1", "document1"]
+      return ["details", "player1", "document1"];
     }
-  }
+  };
 
   const getTabLabel = (tab: string) => {
     switch (tab) {
-      case "details": return "Details"
-      case "player1": return "Player 1"
-      case "player2": return "Player 2"
-      case "document1": return "P1 Doc"
-      case "document2": return "P2 Doc"
-      default: return tab
+      case "details":
+        return "Details";
+      case "player1":
+        return "Player 1";
+      case "player2":
+        return "Player 2";
+      case "document1":
+        return "P1 Doc";
+      case "document2":
+        return "P2 Doc";
+      default:
+        return tab;
     }
-  }
+  };
 
   const handleSubmit = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
-    const activeTab = document.querySelector('[data-state="active"]')?.getAttribute('value') || 'unknown'
-    const formValues = form.state.values
+    const activeTab =
+      document.querySelector('[data-state="active"]')?.getAttribute("value") ||
+      "unknown";
+    const formValues = form.state.values;
 
     if (isSubmittingRef.current) {
-      toast.warning('Submission already in progress. Please wait.')
-      return
+      toast.warning("Submission already in progress. Please wait.");
+      return;
     }
 
     // Check event max entries
     const eventId = form.getFieldValue("event");
     if (eventId) {
-      const event = events.find(e => e.value === eventId);
+      const event = events.find((e) => e.value === eventId);
       if (event) {
         const isDoubles = event.type === EventType.DOUBLES;
         const player1Gender = form.getFieldValue("player1Entry.gender");
-        const player2Gender = isDoubles ? form.getFieldValue("player2Entry.gender") : null;
+        const player2Gender = isDoubles
+          ? form.getFieldValue("player2Entry.gender")
+          : null;
 
         if (isDoubles) {
           const validation = validateEntryGenders(
             event.gender,
             true,
             player1Gender,
-            player2Gender
+            player2Gender,
           );
 
           if (!validation.valid) {
@@ -2236,11 +2937,18 @@ const FormDialog = (props: Props) => {
                 field.setErrorMap({ onSubmit: validation.errors.player2 });
               }
             }
-            toast.error(validation.errors.player1 || validation.errors.player2 || "Please fix gender validation errors");
+            toast.error(
+              validation.errors.player1 ||
+                validation.errors.player2 ||
+                "Please fix gender validation errors",
+            );
             return;
           }
         } else {
-          if (event.gender === EventGender.MALE && player1Gender !== Gender.MALE) {
+          if (
+            event.gender === EventGender.MALE &&
+            player1Gender !== Gender.MALE
+          ) {
             const errorMsg = "Player must be Male for Men's Singles";
             form.setFieldMeta("player1Entry.gender", (prev: any) => ({
               ...prev,
@@ -2257,7 +2965,10 @@ const FormDialog = (props: Props) => {
             toast.error(errorMsg);
             return;
           }
-          if (event.gender === EventGender.FEMALE && player1Gender !== Gender.FEMALE) {
+          if (
+            event.gender === EventGender.FEMALE &&
+            player1Gender !== Gender.FEMALE
+          ) {
             const errorMsg = "Player must be Female for Women's Singles";
             form.setFieldMeta("player1Entry.gender", (prev: any) => ({
               ...prev,
@@ -2316,7 +3027,7 @@ const FormDialog = (props: Props) => {
     }
 
     // Get event to check if doubles
-    const selectedEvent = events.find(e => e.value === values.event);
+    const selectedEvent = events.find((e) => e.value === values.event);
     const isDoubles = selectedEvent?.type === EventType.DOUBLES;
 
     // Player 1 validations
@@ -2371,7 +3082,9 @@ const FormDialog = (props: Props) => {
     } else {
       const phoneRegex = /^9\d{9}$/;
       if (!phoneRegex.test(values.player1Entry.phoneNumber)) {
-        validationErrors.push("Player 1 Phone Number must be 10 digits starting with 9 (e.g., 9123456789)");
+        validationErrors.push(
+          "Player 1 Phone Number must be 10 digits starting with 9 (e.g., 9123456789)",
+        );
         form.setFieldMeta("player1Entry.phoneNumber", (prev: any) => ({
           ...prev,
           errors: ["Phone number must be 10 digits starting with 9"],
@@ -2406,9 +3119,12 @@ const FormDialog = (props: Props) => {
     const hasPlayer1Doc = filePlayer1 !== null || initialDocumentUrlPlayer1;
     if (!hasPlayer1Doc) {
       validationErrors.push("Player 1 Document is required");
-      setFieldErrors(prev => ({ ...prev, filePlayer1: "Document is required" }));
+      setFieldErrors((prev) => ({
+        ...prev,
+        filePlayer1: "Document is required",
+      }));
     } else {
-      setFieldErrors(prev => ({ ...prev, filePlayer1: "" }));
+      setFieldErrors((prev) => ({ ...prev, filePlayer1: "" }));
     }
 
     if (!selectedDocumentTypePlayer1) {
@@ -2468,7 +3184,9 @@ const FormDialog = (props: Props) => {
       } else {
         const phoneRegex = /^9\d{9}$/;
         if (!phoneRegex.test(values.player2Entry.phoneNumber)) {
-          validationErrors.push("Player 2 Phone Number must be 10 digits starting with 9 (e.g., 9123456789)");
+          validationErrors.push(
+            "Player 2 Phone Number must be 10 digits starting with 9 (e.g., 9123456789)",
+          );
           form.setFieldMeta("player2Entry.phoneNumber", (prev: any) => ({
             ...prev,
             errors: ["Phone number must be 10 digits starting with 9"],
@@ -2503,9 +3221,12 @@ const FormDialog = (props: Props) => {
       const hasPlayer2Doc = filePlayer2 !== null || initialDocumentUrlPlayer2;
       if (!hasPlayer2Doc) {
         validationErrors.push("Player 2 Document is required");
-        setFieldErrors(prev => ({ ...prev, filePlayer2: "Document is required" }));
+        setFieldErrors((prev) => ({
+          ...prev,
+          filePlayer2: "Document is required",
+        }));
       } else {
-        setFieldErrors(prev => ({ ...prev, filePlayer2: "" }));
+        setFieldErrors((prev) => ({ ...prev, filePlayer2: "" }));
       }
 
       if (!selectedDocumentTypePlayer2) {
@@ -2515,18 +3236,24 @@ const FormDialog = (props: Props) => {
 
     // Check if event is full
     if (!isUpdate && maxEntriesReached) {
-      validationErrors.push(`Cannot create entry. Event has reached its maximum capacity of ${maxEntriesLimit} entries.`);
+      validationErrors.push(
+        `Cannot create entry. Event has reached its maximum capacity of ${maxEntriesLimit} entries.`,
+      );
     }
 
     // If there are validation errors, show them all
     if (validationErrors.length > 0) {
       // Group errors by category for better UX
       const errorGroups = {
-        basic: validationErrors.filter(e =>
-          e.includes("Tournament") || e.includes("Event") || e.includes("Club") || e.includes("capacity")
+        basic: validationErrors.filter(
+          (e) =>
+            e.includes("Tournament") ||
+            e.includes("Event") ||
+            e.includes("Club") ||
+            e.includes("capacity"),
         ),
-        player1: validationErrors.filter(e => e.includes("Player 1")),
-        player2: validationErrors.filter(e => e.includes("Player 2")),
+        player1: validationErrors.filter((e) => e.includes("Player 1")),
+        player2: validationErrors.filter((e) => e.includes("Player 2")),
       };
 
       // Show a summary toast
@@ -2542,7 +3269,7 @@ const FormDialog = (props: Props) => {
             )}
           </ul>
         </div>,
-        { duration: 5000 }
+        { duration: 5000 },
       );
 
       // Also show individual toasts for critical errors
@@ -2574,17 +3301,16 @@ const FormDialog = (props: Props) => {
     // If no validation errors, proceed with submission
     try {
       startTransition(async () => {
-        await form.handleSubmit()
-      })
+        await form.handleSubmit();
+      });
     } catch (error) {
-      console.error('Form submission error in handleSubmit:', error)
-      isSubmittingRef.current = false
+      console.error("Form submission error in handleSubmit:", error);
+      isSubmittingRef.current = false;
     }
-  }
+  };
 
-  // Add a warning message when event is full
   const EventFullWarning = () => {
-    if (!maxEntriesReached || !selectedEvent) return null
+    if (!maxEntriesReached || !selectedEvent) return null;
 
     return (
       <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -2593,23 +3319,25 @@ const FormDialog = (props: Props) => {
           <div>
             <p className="font-medium text-red-800">Event is Full</p>
             <p className="text-sm text-red-700">
-              This event has reached its maximum capacity of {maxEntriesLimit} entries.
-              No more entries can be created for this event.
+              This event has reached its maximum capacity of {maxEntriesLimit}{" "}
+              entries. No more entries can be created for this event.
             </p>
           </div>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <Dialog modal open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {isUpdate ? (
-          <DropdownMenuItem onSelect={(e) => {
-            e.preventDefault()
-            setOpen(true)
-          }}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setOpen(true);
+            }}
+          >
             Edit
           </DropdownMenuItem>
         ) : (
@@ -2623,7 +3351,7 @@ const FormDialog = (props: Props) => {
         onOpenAutoFocus={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         showCloseButton={false}
-        className="max-w-[810px]!"
+        className="max-w-[900px]!"
       >
         <DialogHeader>
           <DialogTitle>
@@ -2650,19 +3378,27 @@ const FormDialog = (props: Props) => {
             <form.Subscribe
               selector={(state) => state.values}
               children={(state) => {
-                const visibleTabs = getVisibleTabs(state.event)
-                const isPlayer1New = state.isPlayer1New
-                const isPlayer2New = state.isPlayer2New
-                const hasPlayer1Data = state.player1Entry.firstName && state.player1Entry.lastName && state.player1Entry.birthDate
-                const hasPlayer2Data = state.player2Entry.firstName && state.player2Entry.lastName && state.player2Entry.birthDate
+                const visibleTabs = getVisibleTabs(state.event);
+                const isPlayer1New = state.isPlayer1New;
+                const isPlayer2New = state.isPlayer2New;
+                const hasPlayer1Data =
+                  state.player1Entry.firstName &&
+                  state.player1Entry.lastName &&
+                  state.player1Entry.birthDate;
+                const hasPlayer2Data =
+                  state.player2Entry.firstName &&
+                  state.player2Entry.lastName &&
+                  state.player2Entry.birthDate;
 
                 return (
-                  <Tabs
-                    defaultValue="details"
-                    className=""
-                  >
+                  <Tabs defaultValue="details" className="">
                     {visibleTabs.length > 1 && (
-                      <TabsList className="w-full -mt-2 mb-1 grid" style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, 1fr)` }}>
+                      <TabsList
+                        className="w-full -mt-2 mb-1 grid"
+                        style={{
+                          gridTemplateColumns: `repeat(${visibleTabs.length}, 1fr)`,
+                        }}
+                      >
                         {visibleTabs.map((tab) => (
                           <TabsTrigger key={tab} value={tab}>
                             {getTabLabel(tab)}
@@ -2677,12 +3413,13 @@ const FormDialog = (props: Props) => {
                           name="tournament"
                           validators={{
                             onChange: ({ value }) => {
-                              if (!value) return "Tournament is required"
-                              return undefined
+                              if (!value) return "Tournament is required";
+                              return undefined;
                             },
                           }}
                           children={(field) => {
-                            const isInvalid = field.state.meta.errors.length > 0
+                            const isInvalid =
+                              field.state.meta.errors.length > 0;
                             return (
                               <Field data-invalid={isInvalid}>
                                 <FieldLabel htmlFor={field.name}>
@@ -2704,18 +3441,19 @@ const FormDialog = (props: Props) => {
                                       aria-invalid={isInvalid}
                                       className={cn(
                                         "w-full justify-between font-normal capitalize -mt-2",
-                                        isInvalid && "border-red-500 text-red-700"
+                                        isInvalid &&
+                                          "border-red-500 text-red-700",
                                       )}
                                       type="button"
                                     >
                                       {field.state.value
                                         ? tournaments.find(
-                                          (o: {
-                                            value: string
-                                            label: string
-                                            hasEarlyBird: boolean
-                                          }) => o.value === field.state.value
-                                        )?.label
+                                            (o: {
+                                              value: string;
+                                              label: string;
+                                              hasEarlyBird: boolean;
+                                            }) => o.value === field.state.value,
+                                          )?.label
                                         : "Select Tournament"}
                                       <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
@@ -2725,8 +3463,10 @@ const FormDialog = (props: Props) => {
                                       filter={(value, search) =>
                                         tournaments
                                           .find(
-                                            (t: { value: string; label: string }) =>
-                                              t.value === value
+                                            (t: {
+                                              value: string;
+                                              label: string;
+                                            }) => t.value === value,
                                           )
                                           ?.label.toLowerCase()
                                           .includes(search.toLowerCase())
@@ -2745,30 +3485,33 @@ const FormDialog = (props: Props) => {
                                           </Label>
                                           {tournaments?.map(
                                             (o: {
-                                              value: string
-                                              label: string
-                                              hasEarlyBird: boolean
+                                              value: string;
+                                              label: string;
+                                              hasEarlyBird: boolean;
                                             }) => (
                                               <CommandItem
                                                 key={o.value}
                                                 value={o.value}
                                                 onSelect={(v) => {
-                                                  field.handleChange(v.toString())
-                                                  setOpenTournaments(false)
+                                                  field.handleChange(
+                                                    v.toString(),
+                                                  );
+                                                  setOpenTournaments(false);
                                                 }}
                                                 className="capitalize"
                                               >
                                                 <CheckIcon
                                                   className={cn(
                                                     "h-4 w-4",
-                                                    field.state.value === o.value
+                                                    field.state.value ===
+                                                      o.value
                                                       ? "opacity-100"
-                                                      : "opacity-0"
+                                                      : "opacity-0",
                                                   )}
                                                 />
                                                 {o.label}
                                               </CommandItem>
-                                            )
+                                            ),
                                           )}
                                         </CommandGroup>
                                       </CommandList>
@@ -2776,31 +3519,42 @@ const FormDialog = (props: Props) => {
                                   </PopoverContent>
                                 </Popover>
                                 {isInvalid && (
-                                  <FieldError errors={field.state.meta.errors.map((err) =>
-                                    typeof err === "string" ? { message: err } : err
-
-                                  )} />
+                                  <FieldError
+                                    errors={field.state.meta.errors.map(
+                                      (err) =>
+                                        typeof err === "string"
+                                          ? { message: err }
+                                          : err,
+                                    )}
+                                  />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
                         <form.Field
                           name="event"
                           validators={{
                             onChange: ({ value }) => {
-                              if (!value) return "Event is required"
-                              return undefined
+                              if (!value) return "Event is required";
+                              return undefined;
                             },
                           }}
                           children={(field) => {
-                            const isInvalid = field.state.meta.errors.length > 0
-                            const selectedEventObj = events.find(e => e.value === field.state.value)
-                            const isFull = selectedEventObj?.maxEntries ? maxEntriesReached : false
+                            const isInvalid =
+                              field.state.meta.errors.length > 0;
+                            const selectedEventObj = events.find(
+                              (e) => e.value === field.state.value,
+                            );
+                            const isFull = selectedEventObj?.maxEntries
+                              ? maxEntriesReached
+                              : false;
 
                             return (
                               <Field data-invalid={isInvalid}>
-                                <FieldLabel htmlFor={field.name}>Event</FieldLabel>
+                                <FieldLabel htmlFor={field.name}>
+                                  Event
+                                </FieldLabel>
                                 <Popover
                                   open={openEvents}
                                   onOpenChange={setOpenEvents}
@@ -2819,8 +3573,9 @@ const FormDialog = (props: Props) => {
                                       aria-invalid={isInvalid}
                                       className={cn(
                                         "w-full justify-between font-normal capitalize -mt-2 h-fit",
-                                        isInvalid && "border-red-500 text-red-700",
-                                        isFull && "border-red-300 bg-red-50"
+                                        isInvalid &&
+                                          "border-red-500 text-red-700",
+                                        isFull && "border-red-300 bg-red-50",
                                       )}
                                       type="button"
                                     >
@@ -2829,18 +3584,21 @@ const FormDialog = (props: Props) => {
                                           {(() => {
                                             const selectedEvent = events.find(
                                               (o: {
-                                                value: string
-                                                label: string
-                                                gender: EventGender
-                                                type: EventType
-                                                pricePerPlayer: number
-                                                earlyBirdPricePerPlayer?: number
-                                                maxEntries?: number
-                                              }) => o.value === field.state.value
-                                            )
+                                                value: string;
+                                                label: string;
+                                                gender: EventGender;
+                                                type: EventType;
+                                                pricePerPlayer: number;
+                                                earlyBirdPricePerPlayer?: number;
+                                                maxEntries?: number;
+                                              }) =>
+                                                o.value === field.state.value,
+                                            );
                                             return (
                                               <div className="w-full flex flex-col items-start">
-                                                <span>{selectedEvent?.label}</span>
+                                                <span>
+                                                  {selectedEvent?.label}
+                                                </span>
                                                 <div className="flex flex-row gap-2">
                                                   <span className=" text-xs text-muted-foreground capitalize underline underline-offset-2 font-semibold">
                                                     {selectedEvent?.gender.toLocaleLowerCase()}{" "}
@@ -2849,14 +3607,17 @@ const FormDialog = (props: Props) => {
                                                     )
                                                   </span>
                                                   -
-                                                  {selectedEvent?.maxEntries != null && (
+                                                  {selectedEvent?.maxEntries !=
+                                                    null && (
                                                     <span className=" text-xs text-muted-foreground underline underline-offset-2 font-semibold">
-                                                      Max: {selectedEvent.maxEntries} entries
+                                                      Max:{" "}
+                                                      {selectedEvent.maxEntries}{" "}
+                                                      entries
                                                     </span>
                                                   )}
                                                 </div>
                                               </div>
-                                            )
+                                            );
                                           })()}
                                         </div>
                                       ) : (
@@ -2865,13 +3626,18 @@ const FormDialog = (props: Props) => {
                                       <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </PopoverTrigger>
-                                  <PopoverContent className="w-full p-0" onWheel={(e) => e.stopPropagation()}>
+                                  <PopoverContent
+                                    className="w-full p-0"
+                                    onWheel={(e) => e.stopPropagation()}
+                                  >
                                     <Command
                                       filter={(value, search) =>
                                         events
                                           .find(
-                                            (t: { value: string; label: string }) =>
-                                              t.value === value
+                                            (t: {
+                                              value: string;
+                                              label: string;
+                                            }) => t.value === value,
                                           )
                                           ?.label.toLowerCase()
                                           .includes(search.toLowerCase())
@@ -2881,36 +3647,41 @@ const FormDialog = (props: Props) => {
                                     >
                                       <CommandInput placeholder="Select Event" />
                                       <CommandList className="max-h-72 overflow-y-auto">
-                                        <CommandEmpty>No event found.</CommandEmpty>
+                                        <CommandEmpty>
+                                          No event found.
+                                        </CommandEmpty>
                                         <CommandGroup>
                                           <Label className="text-muted-foreground px-2 py-1.5 text-xs font-normal">
                                             Events
                                           </Label>
                                           {events?.map(
                                             (o: {
-                                              value: string
-                                              label: string
-                                              gender: EventGender
-                                              type: EventType
-                                              pricePerPlayer: number
-                                              earlyBirdPricePerPlayer?: number
-                                              maxEntries?: number
+                                              value: string;
+                                              label: string;
+                                              gender: EventGender;
+                                              type: EventType;
+                                              pricePerPlayer: number;
+                                              earlyBirdPricePerPlayer?: number;
+                                              maxEntries?: number;
                                             }) => (
                                               <CommandItem
                                                 key={o.value}
                                                 value={o.value}
                                                 onSelect={(v) => {
-                                                  field.handleChange(v.toString())
-                                                  setOpenEvents(false)
+                                                  field.handleChange(
+                                                    v.toString(),
+                                                  );
+                                                  setOpenEvents(false);
                                                 }}
                                                 className="capitalize"
                                               >
                                                 <CheckIcon
                                                   className={cn(
                                                     "h-4 w-4",
-                                                    field.state.value === o.value
+                                                    field.state.value ===
+                                                      o.value
                                                       ? "opacity-100"
-                                                      : "opacity-0"
+                                                      : "opacity-0",
                                                   )}
                                                 />
                                                 <div>
@@ -2918,25 +3689,31 @@ const FormDialog = (props: Props) => {
                                                     {o.label}
                                                   </span>
                                                   <span className="block text-xs text-muted-foreground capitalize">
-                                                    {o.gender.toLocaleLowerCase()} (
-                                                    {o.type.toLowerCase()})
+                                                    {o.gender.toLocaleLowerCase()}{" "}
+                                                    ({o.type.toLowerCase()})
                                                   </span>
                                                   <span className="block text-xs text-green-600">
-                                                    ₱{o.pricePerPlayer.toLocaleString()} per player
+                                                    ₱
+                                                    {o.pricePerPlayer.toLocaleString()}{" "}
+                                                    per player
                                                     {o.earlyBirdPricePerPlayer && (
                                                       <span className="ml-2 text-orange-600">
-                                                        (Early Bird: ₱{o.earlyBirdPricePerPlayer.toLocaleString()})
+                                                        (Early Bird: ₱
+                                                        {o.earlyBirdPricePerPlayer.toLocaleString()}
+                                                        )
                                                       </span>
                                                     )}
                                                   </span>
-                                                  {o.maxEntries !== undefined && o.maxEntries !== null && (
-                                                    <span className="block text-xs text-muted-foreground">
-                                                      Max entries: {o.maxEntries}
-                                                    </span>
-                                                  )}
+                                                  {o.maxEntries !== undefined &&
+                                                    o.maxEntries !== null && (
+                                                      <span className="block text-xs text-muted-foreground">
+                                                        Max entries:{" "}
+                                                        {o.maxEntries}
+                                                      </span>
+                                                    )}
                                                 </div>
                                               </CommandItem>
-                                            )
+                                            ),
                                           )}
                                         </CommandGroup>
                                       </CommandList>
@@ -2944,19 +3721,24 @@ const FormDialog = (props: Props) => {
                                   </PopoverContent>
                                 </Popover>
                                 {isInvalid && (
-                                  <FieldError errors={field.state.meta.errors.map((err) =>
-                                    typeof err === "string" ? { message: err } : err
-
-                                  )} />
+                                  <FieldError
+                                    errors={field.state.meta.errors.map(
+                                      (err) =>
+                                        typeof err === "string"
+                                          ? { message: err }
+                                          : err,
+                                    )}
+                                  />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
                         <form.Field
                           name="club"
                           children={(field) => {
-                            const isInvalid = field.state.meta.errors.length > 0
+                            const isInvalid =
+                              field.state.meta.errors.length > 0;
                             return (
                               <Field data-invalid={isInvalid}>
                                 <FieldLabel htmlFor={field.name}>
@@ -2977,20 +3759,25 @@ const FormDialog = (props: Props) => {
                                   />
                                 </InputGroup>
                                 {isInvalid && (
-                                  <FieldError errors={field.state.meta.errors.map((err) =>
-                                    typeof err === "string" ? { message: err } : err
-
-                                  )} />
+                                  <FieldError
+                                    errors={field.state.meta.errors.map(
+                                      (err) =>
+                                        typeof err === "string"
+                                          ? { message: err }
+                                          : err,
+                                    )}
+                                  />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
 
                         <form.Field
                           name="isEarlyBird"
                           children={(field) => {
-                            const isInvalid = field.state.meta.errors.length > 0
+                            const isInvalid =
+                              field.state.meta.errors.length > 0;
                             const amount = calculateEntryAmount();
                             return (
                               <div className="space-y-3">
@@ -3022,9 +3809,14 @@ const FormDialog = (props: Props) => {
                                     </div>
                                   </div>
                                   {isInvalid && (
-                                    <FieldError errors={field.state.meta.errors.map((err) =>
-                                      typeof err === "string" ? { message: err } : err
-                                    )} />
+                                    <FieldError
+                                      errors={field.state.meta.errors.map(
+                                        (err) =>
+                                          typeof err === "string"
+                                            ? { message: err }
+                                            : err,
+                                      )}
+                                    />
                                   )}
                                 </Field>
 
@@ -3032,7 +3824,9 @@ const FormDialog = (props: Props) => {
                                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                     <div className="flex items-center justify-between">
                                       <div>
-                                        <h4 className="font-medium text-blue-800">Entry Fee</h4>
+                                        <h4 className="font-medium text-blue-800">
+                                          Entry Fee
+                                        </h4>
                                         <p className="text-sm text-blue-600">
                                           {field.state.value
                                             ? "Early Bird Rate Applied"
@@ -3043,19 +3837,24 @@ const FormDialog = (props: Props) => {
                                         <div className="text-2xl font-bold text-blue-800">
                                           ₱{amount.total.toLocaleString()}
                                         </div>
-                                        {field.state.value && selectedEvent.earlyBirdPricePerPlayer && (
-                                          <div className="text-xs text-blue-600 line-through">
-                                            ₱{(selectedEvent.type === EventType.DOUBLES
-                                              ? selectedEvent.pricePerPlayer * 2
-                                              : selectedEvent.pricePerPlayer).toLocaleString()}
-                                          </div>
-                                        )}
+                                        {field.state.value &&
+                                          selectedEvent.earlyBirdPricePerPlayer && (
+                                            <div className="text-xs text-blue-600 line-through">
+                                              ₱
+                                              {(selectedEvent.type ===
+                                              EventType.DOUBLES
+                                                ? selectedEvent.pricePerPlayer *
+                                                  2
+                                                : selectedEvent.pricePerPlayer
+                                              ).toLocaleString()}
+                                            </div>
+                                          )}
                                       </div>
                                     </div>
                                   </div>
                                 )}
                               </div>
-                            )
+                            );
                           }}
                         />
                       </FieldSet>
@@ -3072,7 +3871,8 @@ const FormDialog = (props: Props) => {
                                   <form.Field
                                     name="isPlayer1New"
                                     children={(field) => {
-                                      const isInvalid = field.state.meta.errors.length > 0
+                                      const isInvalid =
+                                        field.state.meta.errors.length > 0;
                                       return (
                                         <Field data-invalid={isInvalid}>
                                           <div className="flex items-center">
@@ -3082,7 +3882,9 @@ const FormDialog = (props: Props) => {
                                               checked={field.state.value}
                                               onBlur={field.handleBlur}
                                               onCheckedChange={(checked) =>
-                                                field.handleChange(checked === true)
+                                                field.handleChange(
+                                                  checked === true,
+                                                )
                                               }
                                               className="mr-2"
                                               aria-invalid={isInvalid}
@@ -3093,8 +3895,8 @@ const FormDialog = (props: Props) => {
                                                 Is New Player? (Player 1)
                                               </FieldLabel>
                                               <span className="text-muted-foreground text-xs">
-                                                Checking this will create a new player
-                                                profile.
+                                                Checking this will create a new
+                                                player profile.
                                               </span>
                                             </div>
                                           </div>
@@ -3104,7 +3906,7 @@ const FormDialog = (props: Props) => {
                                             />
                                           )}
                                         </Field>
-                                      )
+                                      );
                                     }}
                                   />
 
@@ -3112,7 +3914,8 @@ const FormDialog = (props: Props) => {
                                     <form.Field
                                       name={"connectedPlayer1" as any}
                                       children={(field) => {
-                                        const isInvalid = field.state.meta.errors.length > 0
+                                        const isInvalid =
+                                          field.state.meta.errors.length > 0;
                                         return (
                                           <Field data-invalid={isInvalid}>
                                             <FieldLabel htmlFor={field.name}>
@@ -3127,7 +3930,8 @@ const FormDialog = (props: Props) => {
                                                   id={field.name}
                                                   name={field.name}
                                                   disabled={
-                                                    optionsLoading || playerLoading
+                                                    optionsLoading ||
+                                                    playerLoading
                                                   }
                                                   aria-expanded={openPlayers}
                                                   onBlur={field.handleBlur}
@@ -3137,32 +3941,53 @@ const FormDialog = (props: Props) => {
                                                   className={cn(
                                                     "w-full justify-between font-normal capitalize -mt-2",
                                                     !field.state.value &&
-                                                    "text-muted-foreground",
-                                                    isInvalid && "border-red-500 text-red-700"
+                                                      "text-muted-foreground",
+                                                    isInvalid &&
+                                                      "border-red-500 text-red-700",
                                                   )}
                                                   type="button"
                                                 >
                                                   {field.state.value
                                                     ? (() => {
-                                                      const player = players.find((p: any) => p.value === field.state.value);
-                                                      return player?.label || entry?.player1Entry?.firstName + " " + entry?.player1Entry?.lastName || "Selected Player";
-                                                    })()
+                                                        const player =
+                                                          players.find(
+                                                            (p: any) =>
+                                                              p.value ===
+                                                              field.state.value,
+                                                          );
+                                                        return (
+                                                          player?.label ||
+                                                          entry?.player1Entry
+                                                            ?.firstName +
+                                                            " " +
+                                                            entry?.player1Entry
+                                                              ?.lastName ||
+                                                          "Selected Player"
+                                                        );
+                                                      })()
                                                     : "Select Player"}
                                                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
                                               </PopoverTrigger>
-                                              <PopoverContent className="w-full p-0 max-h-80 overflow-hidden" onWheel={(e) => e.stopPropagation()}>
+                                              <PopoverContent
+                                                className="w-full p-0 max-h-80 overflow-hidden"
+                                                onWheel={(e) =>
+                                                  e.stopPropagation()
+                                                }
+                                              >
                                                 <Command
                                                   filter={(value, search) =>
                                                     players
                                                       .find(
                                                         (t: {
-                                                          value: string
-                                                          label: string
-                                                        }) => t.value === value
+                                                          value: string;
+                                                          label: string;
+                                                        }) => t.value === value,
                                                       )
                                                       ?.label.toLowerCase()
-                                                      .includes(search.toLowerCase())
+                                                      .includes(
+                                                        search.toLowerCase(),
+                                                      )
                                                       ? 1
                                                       : 0
                                                   }
@@ -3178,33 +4003,36 @@ const FormDialog = (props: Props) => {
                                                       </Label>
                                                       {players?.map(
                                                         (o: {
-                                                          value: string
-                                                          label: string
-                                                          hasEarlyBird: boolean
+                                                          value: string;
+                                                          label: string;
+                                                          hasEarlyBird: boolean;
                                                         }) => (
                                                           <CommandItem
                                                             key={o.value}
                                                             value={o.value}
                                                             onSelect={(v) => {
                                                               field.handleChange(
-                                                                v.toString()
-                                                              )
-                                                              setOpenPlayers(false)
+                                                                v.toString(),
+                                                              );
+                                                              setOpenPlayers(
+                                                                false,
+                                                              );
                                                             }}
                                                             className="capitalize"
                                                           >
                                                             <CheckIcon
                                                               className={cn(
                                                                 "h-4 w-4",
-                                                                field.state.value ===
+                                                                field.state
+                                                                  .value ===
                                                                   o.value
                                                                   ? "opacity-100"
-                                                                  : "opacity-0"
+                                                                  : "opacity-0",
                                                               )}
                                                             />
                                                             {o.label}
                                                           </CommandItem>
-                                                        )
+                                                        ),
                                                       )}
                                                     </CommandGroup>
                                                   </CommandList>
@@ -3217,7 +4045,7 @@ const FormDialog = (props: Props) => {
                                               />
                                             )}
                                           </Field>
-                                        )
+                                        );
                                       }}
                                     />
                                   )}
@@ -3230,18 +4058,19 @@ const FormDialog = (props: Props) => {
                                   validators={{
                                     onChange: ({ value }) => {
                                       try {
-                                        fieldValidators.firstName.parse(value)
-                                        return undefined
+                                        fieldValidators.firstName.parse(value);
+                                        return undefined;
                                       } catch (error: any) {
                                         if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                          return error.issues[0].message;
                                         }
-                                        return "Invalid first name"
+                                        return "Invalid first name";
                                       }
                                     },
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    const isInvalid =
+                                      field.state.meta.errors.length > 0;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
@@ -3262,13 +4091,17 @@ const FormDialog = (props: Props) => {
                                           />
                                         </InputGroup>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors.map((err) =>
-                                            typeof err === "string" ? { message: err } : err
-
-                                          )} />
+                                          <FieldError
+                                            errors={field.state.meta.errors.map(
+                                              (err) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
+                                            )}
+                                          />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
                                 <form.Field
@@ -3276,7 +4109,7 @@ const FormDialog = (props: Props) => {
                                   children={(field) => {
                                     const isInvalid =
                                       field.state.meta.isTouched &&
-                                      !field.state.meta.isValid
+                                      !field.state.meta.isValid;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
@@ -3297,10 +4130,12 @@ const FormDialog = (props: Props) => {
                                           />
                                         </InputGroup>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors} />
+                                          <FieldError
+                                            errors={field.state.meta.errors}
+                                          />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
 
@@ -3310,18 +4145,19 @@ const FormDialog = (props: Props) => {
                                     validators={{
                                       onChange: ({ value }) => {
                                         try {
-                                          fieldValidators.lastName.parse(value)
-                                          return undefined
+                                          fieldValidators.lastName.parse(value);
+                                          return undefined;
                                         } catch (error: any) {
                                           if (error instanceof z.ZodError) {
-                                            return error.issues[0].message
+                                            return error.issues[0].message;
                                           }
-                                          return "Invalid last name"
+                                          return "Invalid last name";
                                         }
                                       },
                                     }}
                                     children={(field) => {
-                                      const isInvalid = field.state.meta.errors.length > 0
+                                      const isInvalid =
+                                        field.state.meta.errors.length > 0;
                                       return (
                                         <Field data-invalid={isInvalid}>
                                           <FieldLabel htmlFor={field.name}>
@@ -3336,19 +4172,25 @@ const FormDialog = (props: Props) => {
                                               value={field.state.value}
                                               onBlur={field.handleBlur}
                                               onChange={(e) =>
-                                                field.handleChange(e.target.value)
+                                                field.handleChange(
+                                                  e.target.value,
+                                                )
                                               }
                                               aria-invalid={isInvalid}
                                             />
                                           </InputGroup>
                                           {isInvalid && (
-                                            <FieldError errors={field.state.meta.errors.map((err) =>
-                                              typeof err === "string" ? { message: err } : err
-
-                                            )} />
+                                            <FieldError
+                                              errors={field.state.meta.errors.map(
+                                                (err) =>
+                                                  typeof err === "string"
+                                                    ? { message: err }
+                                                    : err,
+                                              )}
+                                            />
                                           )}
                                         </Field>
-                                      )
+                                      );
                                     }}
                                   />
                                   <form.Field
@@ -3356,10 +4198,15 @@ const FormDialog = (props: Props) => {
                                     children={(field) => {
                                       const isInvalid =
                                         field.state.meta.isTouched &&
-                                        !field.state.meta.isValid
+                                        !field.state.meta.isValid;
                                       return (
-                                        <Field data-invalid={isInvalid} className="w-24">
-                                          <FieldLabel htmlFor={field.name}>Ext.</FieldLabel>
+                                        <Field
+                                          data-invalid={isInvalid}
+                                          className="w-24"
+                                        >
+                                          <FieldLabel htmlFor={field.name}>
+                                            Ext.
+                                          </FieldLabel>
                                           <InputGroup className="-mt-1.5">
                                             <InputGroupInput
                                               placeholder="Ext."
@@ -3369,16 +4216,20 @@ const FormDialog = (props: Props) => {
                                               value={field.state.value}
                                               onBlur={field.handleBlur}
                                               onChange={(e) =>
-                                                field.handleChange(e.target.value)
+                                                field.handleChange(
+                                                  e.target.value,
+                                                )
                                               }
                                               aria-invalid={isInvalid}
                                             />
                                           </InputGroup>
                                           {isInvalid && (
-                                            <FieldError errors={field.state.meta.errors} />
+                                            <FieldError
+                                              errors={field.state.meta.errors}
+                                            />
                                           )}
                                         </Field>
-                                      )
+                                      );
                                     }}
                                   />
                                 </div>
@@ -3387,18 +4238,19 @@ const FormDialog = (props: Props) => {
                                   validators={{
                                     onChange: ({ value }) => {
                                       try {
-                                        fieldValidators.birthDate.parse(value)
-                                        return undefined
+                                        fieldValidators.birthDate.parse(value);
+                                        return undefined;
                                       } catch (error: any) {
                                         if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                          return error.issues[0].message;
                                         }
-                                        return "Invalid birth date"
+                                        return "Invalid birth date";
                                       }
                                     },
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    const isInvalid =
+                                      field.state.meta.errors.length > 0;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel
@@ -3416,7 +4268,8 @@ const FormDialog = (props: Props) => {
                                               data-empty={!field.state.value}
                                               className={cn(
                                                 "data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -my-1.5",
-                                                isInvalid && "border-red-500 text-red-700"
+                                                isInvalid &&
+                                                  "border-red-500 text-red-700",
                                               )}
                                               disabled={isLoading}
                                             >
@@ -3439,13 +4292,17 @@ const FormDialog = (props: Props) => {
                                           </PopoverContent>
                                         </Popover>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors.map((err) =>
-                                            typeof err === "string" ? { message: err } : err
-
-                                          )} />
+                                          <FieldError
+                                            errors={field.state.meta.errors.map(
+                                              (err) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
+                                            )}
+                                          />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
 
@@ -3455,22 +4312,43 @@ const FormDialog = (props: Props) => {
                                     onChange: ({ value, fieldApi }) => {
                                       if (!value) return "Gender is required";
 
-                                      const eventId = fieldApi.form.getFieldValue("event");
+                                      const eventId =
+                                        fieldApi.form.getFieldValue("event");
                                       if (eventId) {
-                                        const event = events.find(e => e.value === eventId);
+                                        const event = events.find(
+                                          (e) => e.value === eventId,
+                                        );
                                         if (event) {
-                                          if (event.type === EventType.DOUBLES) {
-                                            if (event.gender === EventGender.MALE && value !== Gender.MALE) {
+                                          if (
+                                            event.type === EventType.DOUBLES
+                                          ) {
+                                            if (
+                                              event.gender ===
+                                                EventGender.MALE &&
+                                              value !== Gender.MALE
+                                            ) {
                                               return "Player 1 must be Male for Men's Doubles";
                                             }
-                                            if (event.gender === EventGender.FEMALE && value !== Gender.FEMALE) {
+                                            if (
+                                              event.gender ===
+                                                EventGender.FEMALE &&
+                                              value !== Gender.FEMALE
+                                            ) {
                                               return "Player 1 must be Female for Women's Doubles";
                                             }
                                           } else {
-                                            if (event.gender === EventGender.MALE && value !== Gender.MALE) {
+                                            if (
+                                              event.gender ===
+                                                EventGender.MALE &&
+                                              value !== Gender.MALE
+                                            ) {
                                               return "Player must be Male for Men's Singles";
                                             }
-                                            if (event.gender === EventGender.FEMALE && value !== Gender.FEMALE) {
+                                            if (
+                                              event.gender ===
+                                                EventGender.FEMALE &&
+                                              value !== Gender.FEMALE
+                                            ) {
                                               return "Player must be Female for Women's Singles";
                                             }
                                           }
@@ -3480,37 +4358,77 @@ const FormDialog = (props: Props) => {
                                     },
                                   }}
                                   children={(field) => {
-                                    const hasErrorsInArray = field.state.meta.errors &&
+                                    const hasErrorsInArray =
+                                      field.state.meta.errors &&
                                       field.state.meta.errors.length > 0 &&
-                                      field.state.meta.errors.some((err: any) => {
-                                        if (typeof err === 'string' && err.length > 0) return true;
-                                        if (err && typeof err === 'object' && err !== null) {
-                                          const errorObj = err as { message?: string };
-                                          return errorObj.message && errorObj.message.length > 0;
+                                      field.state.meta.errors.some(
+                                        (err: any) => {
+                                          if (
+                                            typeof err === "string" &&
+                                            err.length > 0
+                                          )
+                                            return true;
+                                          if (
+                                            err &&
+                                            typeof err === "object" &&
+                                            err !== null
+                                          ) {
+                                            const errorObj = err as {
+                                              message?: string;
+                                            };
+                                            return (
+                                              errorObj.message &&
+                                              errorObj.message.length > 0
+                                            );
+                                          }
+                                          return false;
+                                        },
+                                      );
+
+                                    const hasErrorsInMap =
+                                      field.state.meta.errorMap &&
+                                      Object.values(field.state.meta.errorMap)
+                                        .length > 0 &&
+                                      Object.values(
+                                        field.state.meta.errorMap,
+                                      ).some((error: any) => {
+                                        if (
+                                          error &&
+                                          typeof error === "object" &&
+                                          error !== null
+                                        ) {
+                                          const errorObj = error as {
+                                            message?: string;
+                                          };
+                                          return (
+                                            errorObj.message &&
+                                            errorObj.message.length > 0
+                                          );
                                         }
                                         return false;
                                       });
 
-                                    const hasErrorsInMap = field.state.meta.errorMap &&
-                                      Object.values(field.state.meta.errorMap).length > 0 &&
-                                      Object.values(field.state.meta.errorMap).some((error: any) => {
-                                        if (error && typeof error === 'object' && error !== null) {
-                                          const errorObj = error as { message?: string };
-                                          return errorObj.message && errorObj.message.length > 0;
-                                        }
-                                        return false;
-                                      });
+                                    const isFieldInvalid =
+                                      !field.state.meta.isValid;
 
-                                    const isFieldInvalid = !field.state.meta.isValid;
-
-                                    const isInvalid = hasErrorsInArray || hasErrorsInMap || isFieldInvalid;
+                                    const isInvalid =
+                                      hasErrorsInArray ||
+                                      hasErrorsInMap ||
+                                      isFieldInvalid;
 
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
-                                          Gender <span className="text-red-500">*</span>
+                                          Gender{" "}
+                                          <span className="text-red-500">
+                                            *
+                                          </span>
                                         </FieldLabel>
-                                        <Popover open={openGenders} onOpenChange={setOpenGenders} modal>
+                                        <Popover
+                                          open={openGenders}
+                                          onOpenChange={setOpenGenders}
+                                          modal
+                                        >
                                           <PopoverTrigger asChild>
                                             <Button
                                               id={field.name}
@@ -3523,12 +4441,17 @@ const FormDialog = (props: Props) => {
                                               aria-invalid={isInvalid}
                                               className={cn(
                                                 "w-full justify-between font-normal capitalize -mt-2",
-                                                isInvalid && "border-red-500 text-red-700 ring-1 ring-red-500"
+                                                isInvalid &&
+                                                  "border-red-500 text-red-700 ring-1 ring-red-500",
                                               )}
                                               type="button"
                                             >
                                               {field.state.value
-                                                ? genders.find((o) => o.value === field.state.value)?.label
+                                                ? genders.find(
+                                                    (o) =>
+                                                      o.value ===
+                                                      field.state.value,
+                                                  )?.label
                                                 : "Select Gender"}
                                               <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
@@ -3537,14 +4460,18 @@ const FormDialog = (props: Props) => {
                                             <Command>
                                               <CommandInput placeholder="Select Gender" />
                                               <CommandList className="max-h-72 overflow-y-auto">
-                                                <CommandEmpty>No gender found.</CommandEmpty>
+                                                <CommandEmpty>
+                                                  No gender found.
+                                                </CommandEmpty>
                                                 <CommandGroup>
                                                   {genders?.map((o) => (
                                                     <CommandItem
                                                       key={o.value}
                                                       value={o.value}
                                                       onSelect={(v) => {
-                                                        field.handleChange(v as Gender);
+                                                        field.handleChange(
+                                                          v as Gender,
+                                                        );
                                                         setOpenGenders(false);
                                                         field.setErrorMap({});
                                                       }}
@@ -3553,7 +4480,10 @@ const FormDialog = (props: Props) => {
                                                       <CheckIcon
                                                         className={cn(
                                                           "h-4 w-4",
-                                                          field.state.value === o.value ? "opacity-100" : "opacity-0"
+                                                          field.state.value ===
+                                                            o.value
+                                                            ? "opacity-100"
+                                                            : "opacity-0",
                                                         )}
                                                       />
                                                       {o.label}
@@ -3566,13 +4496,16 @@ const FormDialog = (props: Props) => {
                                         </Popover>
                                         {isInvalid && (
                                           <FieldError
-                                            errors={field.state.meta.errors.map((err: any) =>
-                                              typeof err === "string" ? { message: err } : err
+                                            errors={field.state.meta.errors.map(
+                                              (err: any) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
                                             )}
                                           />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
 
@@ -3581,19 +4514,22 @@ const FormDialog = (props: Props) => {
                                   validators={{
                                     onChange: ({ value }) => {
                                       try {
-                                        fieldValidators.phoneNumber.parse(value)
-                                        return undefined
+                                        fieldValidators.phoneNumber.parse(
+                                          value,
+                                        );
+                                        return undefined;
                                       } catch (error: any) {
                                         if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                          return error.issues[0].message;
                                         }
-                                        return "Invalid phone number"
+                                        return "Invalid phone number";
                                       }
                                     },
                                     onChangeAsyncDebounceMs: 500,
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    const isInvalid =
+                                      field.state.meta.errors.length > 0;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
@@ -3608,12 +4544,18 @@ const FormDialog = (props: Props) => {
                                             disabled={isLoading}
                                             id={field.name}
                                             name={field.name}
-                                            value={field.state.value?.replace(/^0/, "")}
+                                            value={field.state.value?.replace(
+                                              /^0/,
+                                              "",
+                                            )}
                                             onBlur={field.handleBlur}
                                             onChange={(e) => {
                                               let value = e.target.value;
-                                              value = value.replace(/\D/g, '');
-                                              value = value.replace(/^(\+?0)?/, '');
+                                              value = value.replace(/\D/g, "");
+                                              value = value.replace(
+                                                /^(\+?0)?/,
+                                                "",
+                                              );
                                               value = value.slice(0, 10);
                                               field.handleChange(value);
                                             }}
@@ -3623,13 +4565,16 @@ const FormDialog = (props: Props) => {
                                         </InputGroup>
                                         {isInvalid && (
                                           <FieldError
-                                            errors={field.state.meta.errors.map((err) =>
-                                              typeof err === "string" ? { message: err } : err
+                                            errors={field.state.meta.errors.map(
+                                              (err) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
                                             )}
                                           />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
 
@@ -3638,18 +4583,19 @@ const FormDialog = (props: Props) => {
                                   validators={{
                                     onChange: ({ value }) => {
                                       try {
-                                        fieldValidators.jerseySize.parse(value)
-                                        return undefined
+                                        fieldValidators.jerseySize.parse(value);
+                                        return undefined;
                                       } catch (error: any) {
                                         if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                          return error.issues[0].message;
                                         }
-                                        return "Invalid jersey size"
+                                        return "Invalid jersey size";
                                       }
                                     },
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    const isInvalid =
+                                      field.state.meta.errors.length > 0;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
@@ -3672,14 +4618,17 @@ const FormDialog = (props: Props) => {
                                               aria-invalid={isInvalid}
                                               className={cn(
                                                 "w-full justify-between font-normal capitalize -mt-2",
-                                                isInvalid && "border-red-500 text-red-700"
+                                                isInvalid &&
+                                                  "border-red-500 text-red-700",
                                               )}
                                               type="button"
                                             >
                                               {field.state.value
                                                 ? jerseySizes.find(
-                                                  (o) => o.value === field.state.value
-                                                )?.label
+                                                    (o) =>
+                                                      o.value ===
+                                                      field.state.value,
+                                                  )?.label
                                                 : "Select Jersey Size"}
                                               <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
@@ -3689,11 +4638,15 @@ const FormDialog = (props: Props) => {
                                               filter={(value, search) =>
                                                 jerseySizes
                                                   .find(
-                                                    (t: { value: string; label: string }) =>
-                                                      t.value === value
+                                                    (t: {
+                                                      value: string;
+                                                      label: string;
+                                                    }) => t.value === value,
                                                   )
                                                   ?.label.toLowerCase()
-                                                  .includes(search.toLowerCase())
+                                                  .includes(
+                                                    search.toLowerCase(),
+                                                  )
                                                   ? 1
                                                   : 0
                                               }
@@ -3712,17 +4665,22 @@ const FormDialog = (props: Props) => {
                                                       key={o.value}
                                                       value={o.value}
                                                       onSelect={(v) => {
-                                                        field.handleChange(v as JerseySize)
-                                                        setOpenJerseySizes(false)
+                                                        field.handleChange(
+                                                          v as JerseySize,
+                                                        );
+                                                        setOpenJerseySizes(
+                                                          false,
+                                                        );
                                                       }}
                                                       className="capitalize"
                                                     >
                                                       <CheckIcon
                                                         className={cn(
                                                           "h-4 w-4",
-                                                          field.state.value === o.value
+                                                          field.state.value ===
+                                                            o.value
                                                             ? "opacity-100"
-                                                            : "opacity-0"
+                                                            : "opacity-0",
                                                         )}
                                                       />
                                                       {o.label}
@@ -3734,13 +4692,17 @@ const FormDialog = (props: Props) => {
                                           </PopoverContent>
                                         </Popover>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors.map((err) =>
-                                            typeof err === "string" ? { message: err } : err
-
-                                          )} />
+                                          <FieldError
+                                            errors={field.state.meta.errors.map(
+                                              (err) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
+                                            )}
+                                          />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
                                 <form.Field
@@ -3748,19 +4710,20 @@ const FormDialog = (props: Props) => {
                                   validators={{
                                     onChange: ({ value }) => {
                                       try {
-                                        fieldValidators.email.parse(value)
-                                        return undefined
+                                        fieldValidators.email.parse(value);
+                                        return undefined;
                                       } catch (error: any) {
                                         if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                          return error.issues[0].message;
                                         }
-                                        return "Invalid email"
+                                        return "Invalid email";
                                       }
                                     },
                                     onChangeAsyncDebounceMs: 500,
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    const isInvalid =
+                                      field.state.meta.errors.length > 0;
                                     return (
                                       <Field
                                         className="col-span-2"
@@ -3785,38 +4748,95 @@ const FormDialog = (props: Props) => {
                                           />
                                         </InputGroup>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors.map((err) =>
-                                            typeof err === "string" ? { message: err } : err
-
-                                          )} />
+                                          <FieldError
+                                            errors={field.state.meta.errors.map(
+                                              (err) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
+                                            )}
+                                          />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
                               </div>
+
+                              {/* Address Section for Player 1 */}
+                              <form.Field
+                                name="player1Entry.address"
+                                children={(field) => {
+                                  const getEventLocationMode = () => {
+                                    const selectedEventId =
+                                      form.getFieldValue("event");
+                                    if (!selectedEventId) return undefined;
+
+                                    const event = events.find(
+                                      (e) => e.value === selectedEventId,
+                                    );
+                                    if (!event) return undefined;
+
+                                    // Return the location from the event
+                                    return event.location;
+                                  };
+
+                                  return (
+                                    <Field className="mt-3">
+                                      <LocationSelector
+                                        value={
+                                          field.state.value as LocationData
+                                        }
+                                        onChange={(location: LocationData) => {
+                                          field.handleChange(location as any);
+                                        }}
+                                        disabled={isLoading}
+                                        eventLocation={getEventLocationMode()}
+                                      />
+                                      {field.state.meta.isTouched &&
+                                        !field.state.meta.isValid && (
+                                          <FieldError
+                                            errors={field.state.meta.errors}
+                                          />
+                                        )}
+                                    </Field>
+                                  );
+                                }}
+                              />
+
+                              {/* Display existing address for edit mode */}
+                              {isUpdate && entry?.player1Entry?.address && (
+                                <AddressView
+                                  address={entry.player1Entry.address}
+                                  label="Existing Address"
+                                />
+                              )}
                             </FieldSet>
                           </div>
 
                           {(!isPlayer1New || isUpdate) && (
                             <div className="w-2/5 border-l pl-6">
                               <div className="mb-4 mt-2">
-                                <h3 className="text-md font-semibold mb-2">Suggested Players</h3>
+                                <h3 className="text-md font-semibold mb-2">
+                                  Suggested Players
+                                </h3>
                                 <p className="text-xs text-muted-foreground">
-                                  Based on name and birthday match from your database
+                                  Based on name and birthday match from your
+                                  database
                                 </p>
                               </div>
 
                               <SuggestedPlayersSection
                                 suggestions={suggestedPlayers1}
                                 isLoading={isLoadingSuggestions1}
-                                onSelectPlayer={(playerId) => handleSelectSuggestedPlayer(playerId, 1)}
+                                onSelectPlayer={(playerId) =>
+                                  handleSelectSuggestedPlayer(playerId, 1)
+                                }
                                 playerType="player1"
                                 onFindMatches={() => fetchPlayer1Suggestions()}
                                 showFindMatchesButton={false}
                                 selectedSuggestionId={selectedSuggestionId1}
                               />
-
                             </div>
                           )}
                         </div>
@@ -3834,7 +4854,8 @@ const FormDialog = (props: Props) => {
                                   <form.Field
                                     name="isPlayer2New"
                                     children={(field) => {
-                                      const isInvalid = field.state.meta.errors.length > 0
+                                      const isInvalid =
+                                        field.state.meta.errors.length > 0;
                                       return (
                                         <Field data-invalid={isInvalid}>
                                           <div className="flex items-center">
@@ -3844,7 +4865,9 @@ const FormDialog = (props: Props) => {
                                               checked={field.state.value}
                                               onBlur={field.handleBlur}
                                               onCheckedChange={(checked) =>
-                                                field.handleChange(checked === true)
+                                                field.handleChange(
+                                                  checked === true,
+                                                )
                                               }
                                               className="mr-2"
                                               aria-invalid={isInvalid}
@@ -3855,8 +4878,8 @@ const FormDialog = (props: Props) => {
                                                 Is New Player? (Player 2)
                                               </FieldLabel>
                                               <span className="text-muted-foreground text-xs">
-                                                Checking this will create a new player
-                                                profile.
+                                                Checking this will create a new
+                                                player profile.
                                               </span>
                                             </div>
                                           </div>
@@ -3866,14 +4889,15 @@ const FormDialog = (props: Props) => {
                                             />
                                           )}
                                         </Field>
-                                      )
+                                      );
                                     }}
                                   />
                                   {!isPlayer2New && (
                                     <form.Field
                                       name={"connectedPlayer2" as any}
                                       children={(field) => {
-                                        const isInvalid = field.state.meta.errors.length > 0
+                                        const isInvalid =
+                                          field.state.meta.errors.length > 0;
                                         return (
                                           <Field data-invalid={isInvalid}>
                                             <FieldLabel htmlFor={field.name}>
@@ -3888,7 +4912,8 @@ const FormDialog = (props: Props) => {
                                                   id={field.name}
                                                   name={field.name}
                                                   disabled={
-                                                    optionsLoading || playerLoading
+                                                    optionsLoading ||
+                                                    playerLoading
                                                   }
                                                   aria-expanded={openPlayers}
                                                   onBlur={field.handleBlur}
@@ -3898,32 +4923,53 @@ const FormDialog = (props: Props) => {
                                                   className={cn(
                                                     "w-full justify-between font-normal capitalize -mt-2",
                                                     !field.state.value &&
-                                                    "text-muted-foreground",
-                                                    isInvalid && "border-red-500 text-red-700"
+                                                      "text-muted-foreground",
+                                                    isInvalid &&
+                                                      "border-red-500 text-red-700",
                                                   )}
                                                   type="button"
                                                 >
                                                   {field.state.value
                                                     ? (() => {
-                                                      const player = players.find((p: any) => p.value === field.state.value);
-                                                      return player?.label || entry?.player2Entry?.firstName + " " + entry?.player2Entry?.lastName || "Selected Player";
-                                                    })()
+                                                        const player =
+                                                          players.find(
+                                                            (p: any) =>
+                                                              p.value ===
+                                                              field.state.value,
+                                                          );
+                                                        return (
+                                                          player?.label ||
+                                                          entry?.player2Entry
+                                                            ?.firstName +
+                                                            " " +
+                                                            entry?.player2Entry
+                                                              ?.lastName ||
+                                                          "Selected Player"
+                                                        );
+                                                      })()
                                                     : "Select Player"}
                                                   <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
                                               </PopoverTrigger>
-                                              <PopoverContent className="w-full p-0" onWheel={(e) => e.stopPropagation()}>
+                                              <PopoverContent
+                                                className="w-full p-0"
+                                                onWheel={(e) =>
+                                                  e.stopPropagation()
+                                                }
+                                              >
                                                 <Command
                                                   filter={(value, search) =>
                                                     players
                                                       .find(
                                                         (t: {
-                                                          value: string
-                                                          label: string
-                                                        }) => t.value === value
+                                                          value: string;
+                                                          label: string;
+                                                        }) => t.value === value,
                                                       )
                                                       ?.label.toLowerCase()
-                                                      .includes(search.toLowerCase())
+                                                      .includes(
+                                                        search.toLowerCase(),
+                                                      )
                                                       ? 1
                                                       : 0
                                                   }
@@ -3939,33 +4985,36 @@ const FormDialog = (props: Props) => {
                                                       </Label>
                                                       {players?.map(
                                                         (o: {
-                                                          value: string
-                                                          label: string
-                                                          hasEarlyBird: boolean
+                                                          value: string;
+                                                          label: string;
+                                                          hasEarlyBird: boolean;
                                                         }) => (
                                                           <CommandItem
                                                             key={o.value}
                                                             value={o.value}
                                                             onSelect={(v) => {
                                                               field.handleChange(
-                                                                v.toString()
-                                                              )
-                                                              setOpenPlayers(false)
+                                                                v.toString(),
+                                                              );
+                                                              setOpenPlayers(
+                                                                false,
+                                                              );
                                                             }}
                                                             className="capitalize"
                                                           >
                                                             <CheckIcon
                                                               className={cn(
                                                                 "h-4 w-4",
-                                                                field.state.value ===
+                                                                field.state
+                                                                  .value ===
                                                                   o.value
                                                                   ? "opacity-100"
-                                                                  : "opacity-0"
+                                                                  : "opacity-0",
                                                               )}
                                                             />
                                                             {o.label}
                                                           </CommandItem>
-                                                        )
+                                                        ),
                                                       )}
                                                     </CommandGroup>
                                                   </CommandList>
@@ -3978,7 +5027,7 @@ const FormDialog = (props: Props) => {
                                               />
                                             )}
                                           </Field>
-                                        )
+                                        );
                                       }}
                                     />
                                   )}
@@ -3991,18 +5040,19 @@ const FormDialog = (props: Props) => {
                                   validators={{
                                     onChange: ({ value }) => {
                                       try {
-                                        fieldValidators.firstName.parse(value)
-                                        return undefined
+                                        fieldValidators.firstName.parse(value);
+                                        return undefined;
                                       } catch (error: any) {
                                         if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                          return error.issues[0].message;
                                         }
-                                        return "Invalid first name"
+                                        return "Invalid first name";
                                       }
                                     },
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    const isInvalid =
+                                      field.state.meta.errors.length > 0;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
@@ -4023,13 +5073,17 @@ const FormDialog = (props: Props) => {
                                           />
                                         </InputGroup>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors.map((err) =>
-                                            typeof err === "string" ? { message: err } : err
-
-                                          )} />
+                                          <FieldError
+                                            errors={field.state.meta.errors.map(
+                                              (err) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
+                                            )}
+                                          />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
                                 <form.Field
@@ -4037,7 +5091,7 @@ const FormDialog = (props: Props) => {
                                   children={(field) => {
                                     const isInvalid =
                                       field.state.meta.isTouched &&
-                                      !field.state.meta.isValid
+                                      !field.state.meta.isValid;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
@@ -4058,10 +5112,12 @@ const FormDialog = (props: Props) => {
                                           />
                                         </InputGroup>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors} />
+                                          <FieldError
+                                            errors={field.state.meta.errors}
+                                          />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
 
@@ -4071,19 +5127,20 @@ const FormDialog = (props: Props) => {
                                     validators={{
                                       onChange: ({ value }) => {
                                         try {
-                                          fieldValidators.lastName.parse(value)
-                                          return undefined
+                                          fieldValidators.lastName.parse(value);
+                                          return undefined;
                                         } catch (error: any) {
                                           if (error instanceof z.ZodError) {
-                                            return error.issues[0].message
+                                            return error.issues[0].message;
                                           }
-                                          return "Invalid last name"
+                                          return "Invalid last name";
                                         }
                                       },
                                     }}
                                   >
                                     {(field) => {
-                                      const isInvalid = field.state.meta.errors.length > 0
+                                      const isInvalid =
+                                        field.state.meta.errors.length > 0;
                                       return (
                                         <Field data-invalid={isInvalid}>
                                           <FieldLabel htmlFor={field.name}>
@@ -4098,19 +5155,25 @@ const FormDialog = (props: Props) => {
                                               value={field.state.value}
                                               onBlur={field.handleBlur}
                                               onChange={(e) =>
-                                                field.handleChange(e.target.value)
+                                                field.handleChange(
+                                                  e.target.value,
+                                                )
                                               }
                                               aria-invalid={isInvalid}
                                             />
                                           </InputGroup>
                                           {isInvalid && (
-                                            <FieldError errors={field.state.meta.errors.map((err) =>
-                                              typeof err === "string" ? { message: err } : err
-
-                                            )} />
+                                            <FieldError
+                                              errors={field.state.meta.errors.map(
+                                                (err) =>
+                                                  typeof err === "string"
+                                                    ? { message: err }
+                                                    : err,
+                                              )}
+                                            />
                                           )}
                                         </Field>
-                                      )
+                                      );
                                     }}
                                   </form.Field>
                                   <form.Field
@@ -4118,10 +5181,15 @@ const FormDialog = (props: Props) => {
                                     children={(field) => {
                                       const isInvalid =
                                         field.state.meta.isTouched &&
-                                        !field.state.meta.isValid
+                                        !field.state.meta.isValid;
                                       return (
-                                        <Field data-invalid={isInvalid} className="w-24">
-                                          <FieldLabel htmlFor={field.name}>Ext.</FieldLabel>
+                                        <Field
+                                          data-invalid={isInvalid}
+                                          className="w-24"
+                                        >
+                                          <FieldLabel htmlFor={field.name}>
+                                            Ext.
+                                          </FieldLabel>
                                           <InputGroup className="-mt-1.5">
                                             <InputGroupInput
                                               placeholder="Ext."
@@ -4131,16 +5199,20 @@ const FormDialog = (props: Props) => {
                                               value={field.state.value}
                                               onBlur={field.handleBlur}
                                               onChange={(e) =>
-                                                field.handleChange(e.target.value)
+                                                field.handleChange(
+                                                  e.target.value,
+                                                )
                                               }
                                               aria-invalid={isInvalid}
                                             />
                                           </InputGroup>
                                           {isInvalid && (
-                                            <FieldError errors={field.state.meta.errors} />
+                                            <FieldError
+                                              errors={field.state.meta.errors}
+                                            />
                                           )}
                                         </Field>
-                                      )
+                                      );
                                     }}
                                   />
                                 </div>
@@ -4149,18 +5221,19 @@ const FormDialog = (props: Props) => {
                                   validators={{
                                     onChange: ({ value }) => {
                                       try {
-                                        fieldValidators.birthDate.parse(value)
-                                        return undefined
+                                        fieldValidators.birthDate.parse(value);
+                                        return undefined;
                                       } catch (error: any) {
                                         if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                          return error.issues[0].message;
                                         }
-                                        return "Invalid birth date"
+                                        return "Invalid birth date";
                                       }
                                     },
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    const isInvalid =
+                                      field.state.meta.errors.length > 0;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel
@@ -4178,7 +5251,8 @@ const FormDialog = (props: Props) => {
                                               data-empty={!field.state.value}
                                               className={cn(
                                                 "data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal flex -my-1.5",
-                                                isInvalid && "border-red-500 text-red-700"
+                                                isInvalid &&
+                                                  "border-red-500 text-red-700",
                                               )}
                                               disabled={isLoading}
                                             >
@@ -4201,13 +5275,17 @@ const FormDialog = (props: Props) => {
                                           </PopoverContent>
                                         </Popover>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors.map((err) =>
-                                            typeof err === "string" ? { message: err } : err
-
-                                          )} />
+                                          <FieldError
+                                            errors={field.state.meta.errors.map(
+                                              (err) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
+                                            )}
+                                          />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
 
@@ -4217,18 +5295,36 @@ const FormDialog = (props: Props) => {
                                     onChange: ({ value, fieldApi }) => {
                                       if (!value) return "Gender is required";
 
-                                      const eventId = fieldApi.form.getFieldValue("event");
+                                      const eventId =
+                                        fieldApi.form.getFieldValue("event");
                                       if (eventId) {
-                                        const event = events.find(e => e.value === eventId);
-                                        if (event && event.type === EventType.DOUBLES) {
-                                          if (event.gender === EventGender.MALE && value !== Gender.MALE) {
+                                        const event = events.find(
+                                          (e) => e.value === eventId,
+                                        );
+                                        if (
+                                          event &&
+                                          event.type === EventType.DOUBLES
+                                        ) {
+                                          if (
+                                            event.gender === EventGender.MALE &&
+                                            value !== Gender.MALE
+                                          ) {
                                             return "Player 2 must be Male for Men's Doubles";
                                           }
-                                          if (event.gender === EventGender.FEMALE && value !== Gender.FEMALE) {
+                                          if (
+                                            event.gender ===
+                                              EventGender.FEMALE &&
+                                            value !== Gender.FEMALE
+                                          ) {
                                             return "Player 2 must be Female for Women's Doubles";
                                           }
-                                          if (event.gender === EventGender.MIXED) {
-                                            const player1Gender = fieldApi.form.getFieldValue("player1Entry.gender");
+                                          if (
+                                            event.gender === EventGender.MIXED
+                                          ) {
+                                            const player1Gender =
+                                              fieldApi.form.getFieldValue(
+                                                "player1Entry.gender",
+                                              );
                                             if (player1Gender === value) {
                                               return "Mixed Doubles requires one Male and one Female player";
                                             }
@@ -4239,37 +5335,77 @@ const FormDialog = (props: Props) => {
                                     },
                                   }}
                                   children={(field) => {
-                                    const hasErrorsInArray = field.state.meta.errors &&
+                                    const hasErrorsInArray =
+                                      field.state.meta.errors &&
                                       field.state.meta.errors.length > 0 &&
-                                      field.state.meta.errors.some((err: any) => {
-                                        if (typeof err === 'string' && err.length > 0) return true;
-                                        if (err && typeof err === 'object' && err !== null) {
-                                          const errorObj = err as { message?: string };
-                                          return errorObj.message && errorObj.message.length > 0;
+                                      field.state.meta.errors.some(
+                                        (err: any) => {
+                                          if (
+                                            typeof err === "string" &&
+                                            err.length > 0
+                                          )
+                                            return true;
+                                          if (
+                                            err &&
+                                            typeof err === "object" &&
+                                            err !== null
+                                          ) {
+                                            const errorObj = err as {
+                                              message?: string;
+                                            };
+                                            return (
+                                              errorObj.message &&
+                                              errorObj.message.length > 0
+                                            );
+                                          }
+                                          return false;
+                                        },
+                                      );
+
+                                    const hasErrorsInMap =
+                                      field.state.meta.errorMap &&
+                                      Object.values(field.state.meta.errorMap)
+                                        .length > 0 &&
+                                      Object.values(
+                                        field.state.meta.errorMap,
+                                      ).some((error: any) => {
+                                        if (
+                                          error &&
+                                          typeof error === "object" &&
+                                          error !== null
+                                        ) {
+                                          const errorObj = error as {
+                                            message?: string;
+                                          };
+                                          return (
+                                            errorObj.message &&
+                                            errorObj.message.length > 0
+                                          );
                                         }
                                         return false;
                                       });
 
-                                    const hasErrorsInMap = field.state.meta.errorMap &&
-                                      Object.values(field.state.meta.errorMap).length > 0 &&
-                                      Object.values(field.state.meta.errorMap).some((error: any) => {
-                                        if (error && typeof error === 'object' && error !== null) {
-                                          const errorObj = error as { message?: string };
-                                          return errorObj.message && errorObj.message.length > 0;
-                                        }
-                                        return false;
-                                      });
+                                    const isFieldInvalid =
+                                      !field.state.meta.isValid;
 
-                                    const isFieldInvalid = !field.state.meta.isValid;
-
-                                    const isInvalid = hasErrorsInArray || hasErrorsInMap || isFieldInvalid;
+                                    const isInvalid =
+                                      hasErrorsInArray ||
+                                      hasErrorsInMap ||
+                                      isFieldInvalid;
 
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
-                                          Gender <span className="text-red-500">*</span>
+                                          Gender{" "}
+                                          <span className="text-red-500">
+                                            *
+                                          </span>
                                         </FieldLabel>
-                                        <Popover open={openGenders} onOpenChange={setOpenGenders} modal>
+                                        <Popover
+                                          open={openGenders}
+                                          onOpenChange={setOpenGenders}
+                                          modal
+                                        >
                                           <PopoverTrigger asChild>
                                             <Button
                                               id={field.name}
@@ -4282,12 +5418,17 @@ const FormDialog = (props: Props) => {
                                               aria-invalid={isInvalid}
                                               className={cn(
                                                 "w-full justify-between font-normal capitalize -mt-2",
-                                                isInvalid && "border-red-500 text-red-700 ring-1 ring-red-500"
+                                                isInvalid &&
+                                                  "border-red-500 text-red-700 ring-1 ring-red-500",
                                               )}
                                               type="button"
                                             >
                                               {field.state.value
-                                                ? genders.find((o) => o.value === field.state.value)?.label
+                                                ? genders.find(
+                                                    (o) =>
+                                                      o.value ===
+                                                      field.state.value,
+                                                  )?.label
                                                 : "Select Gender"}
                                               <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
@@ -4296,14 +5437,18 @@ const FormDialog = (props: Props) => {
                                             <Command>
                                               <CommandInput placeholder="Select Gender" />
                                               <CommandList className="max-h-72 overflow-y-auto">
-                                                <CommandEmpty>No gender found.</CommandEmpty>
+                                                <CommandEmpty>
+                                                  No gender found.
+                                                </CommandEmpty>
                                                 <CommandGroup>
                                                   {genders?.map((o) => (
                                                     <CommandItem
                                                       key={o.value}
                                                       value={o.value}
                                                       onSelect={(v) => {
-                                                        field.handleChange(v as Gender);
+                                                        field.handleChange(
+                                                          v as Gender,
+                                                        );
                                                         setOpenGenders(false);
                                                         field.setErrorMap({});
                                                       }}
@@ -4312,7 +5457,10 @@ const FormDialog = (props: Props) => {
                                                       <CheckIcon
                                                         className={cn(
                                                           "h-4 w-4",
-                                                          field.state.value === o.value ? "opacity-100" : "opacity-0"
+                                                          field.state.value ===
+                                                            o.value
+                                                            ? "opacity-100"
+                                                            : "opacity-0",
                                                         )}
                                                       />
                                                       {o.label}
@@ -4325,13 +5473,16 @@ const FormDialog = (props: Props) => {
                                         </Popover>
                                         {isInvalid && (
                                           <FieldError
-                                            errors={field.state.meta.errors.map((err: any) =>
-                                              typeof err === "string" ? { message: err } : err
+                                            errors={field.state.meta.errors.map(
+                                              (err: any) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
                                             )}
                                           />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
 
@@ -4340,19 +5491,22 @@ const FormDialog = (props: Props) => {
                                   validators={{
                                     onChange: ({ value }) => {
                                       try {
-                                        fieldValidators.phoneNumber.parse(value)
-                                        return undefined
+                                        fieldValidators.phoneNumber.parse(
+                                          value,
+                                        );
+                                        return undefined;
                                       } catch (error: any) {
                                         if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                          return error.issues[0].message;
                                         }
-                                        return "Invalid phone number"
+                                        return "Invalid phone number";
                                       }
                                     },
                                     onChangeAsyncDebounceMs: 500,
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    const isInvalid =
+                                      field.state.meta.errors.length > 0;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
@@ -4367,12 +5521,18 @@ const FormDialog = (props: Props) => {
                                             disabled={isLoading}
                                             id={field.name}
                                             name={field.name}
-                                            value={field.state.value?.replace(/^0/, "")}
+                                            value={field.state.value?.replace(
+                                              /^0/,
+                                              "",
+                                            )}
                                             onBlur={field.handleBlur}
                                             onChange={(e) => {
                                               let value = e.target.value;
-                                              value = value.replace(/\D/g, '');
-                                              value = value.replace(/^(\+?0)?/, '');
+                                              value = value.replace(/\D/g, "");
+                                              value = value.replace(
+                                                /^(\+?0)?/,
+                                                "",
+                                              );
                                               value = value.slice(0, 10);
                                               field.handleChange(value);
                                             }}
@@ -4382,13 +5542,16 @@ const FormDialog = (props: Props) => {
                                         </InputGroup>
                                         {isInvalid && (
                                           <FieldError
-                                            errors={field.state.meta.errors.map((err) =>
-                                              typeof err === "string" ? { message: err } : err
+                                            errors={field.state.meta.errors.map(
+                                              (err) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
                                             )}
                                           />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
 
@@ -4397,18 +5560,19 @@ const FormDialog = (props: Props) => {
                                   validators={{
                                     onChange: ({ value }) => {
                                       try {
-                                        fieldValidators.jerseySize.parse(value)
-                                        return undefined
+                                        fieldValidators.jerseySize.parse(value);
+                                        return undefined;
                                       } catch (error: any) {
                                         if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                          return error.issues[0].message;
                                         }
-                                        return "Invalid jersey size"
+                                        return "Invalid jersey size";
                                       }
                                     },
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    const isInvalid =
+                                      field.state.meta.errors.length > 0;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
@@ -4431,14 +5595,17 @@ const FormDialog = (props: Props) => {
                                               aria-invalid={isInvalid}
                                               className={cn(
                                                 "w-full justify-between font-normal capitalize -mt-2",
-                                                isInvalid && "border-red-500 text-red-700"
+                                                isInvalid &&
+                                                  "border-red-500 text-red-700",
                                               )}
                                               type="button"
                                             >
                                               {field.state.value
                                                 ? jerseySizes.find(
-                                                  (o) => o.value === field.state.value
-                                                )?.label
+                                                    (o) =>
+                                                      o.value ===
+                                                      field.state.value,
+                                                  )?.label
                                                 : "Select Jersey Size"}
                                               <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
@@ -4448,11 +5615,15 @@ const FormDialog = (props: Props) => {
                                               filter={(value, search) =>
                                                 jerseySizes
                                                   .find(
-                                                    (t: { value: string; label: string }) =>
-                                                      t.value === value
+                                                    (t: {
+                                                      value: string;
+                                                      label: string;
+                                                    }) => t.value === value,
                                                   )
                                                   ?.label.toLowerCase()
-                                                  .includes(search.toLowerCase())
+                                                  .includes(
+                                                    search.toLowerCase(),
+                                                  )
                                                   ? 1
                                                   : 0
                                               }
@@ -4471,17 +5642,22 @@ const FormDialog = (props: Props) => {
                                                       key={o.value}
                                                       value={o.value}
                                                       onSelect={(v) => {
-                                                        field.handleChange(v as JerseySize)
-                                                        setOpenJerseySizes(false)
+                                                        field.handleChange(
+                                                          v as JerseySize,
+                                                        );
+                                                        setOpenJerseySizes(
+                                                          false,
+                                                        );
                                                       }}
                                                       className="capitalize"
                                                     >
                                                       <CheckIcon
                                                         className={cn(
                                                           "h-4 w-4",
-                                                          field.state.value === o.value
+                                                          field.state.value ===
+                                                            o.value
                                                             ? "opacity-100"
-                                                            : "opacity-0"
+                                                            : "opacity-0",
                                                         )}
                                                       />
                                                       {o.label}
@@ -4493,13 +5669,17 @@ const FormDialog = (props: Props) => {
                                           </PopoverContent>
                                         </Popover>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors.map((err) =>
-                                            typeof err === "string" ? { message: err } : err
-
-                                          )} />
+                                          <FieldError
+                                            errors={field.state.meta.errors.map(
+                                              (err) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
+                                            )}
+                                          />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
                                 <form.Field
@@ -4507,19 +5687,20 @@ const FormDialog = (props: Props) => {
                                   validators={{
                                     onChange: ({ value }) => {
                                       try {
-                                        fieldValidators.email.parse(value)
-                                        return undefined
+                                        fieldValidators.email.parse(value);
+                                        return undefined;
                                       } catch (error: any) {
                                         if (error instanceof z.ZodError) {
-                                          return error.issues[0].message
+                                          return error.issues[0].message;
                                         }
-                                        return "Invalid email"
+                                        return "Invalid email";
                                       }
                                     },
                                     onChangeAsyncDebounceMs: 500,
                                   }}
                                   children={(field) => {
-                                    const isInvalid = field.state.meta.errors.length > 0
+                                    const isInvalid =
+                                      field.state.meta.errors.length > 0;
                                     return (
                                       <Field
                                         className="col-span-2"
@@ -4544,47 +5725,92 @@ const FormDialog = (props: Props) => {
                                           />
                                         </InputGroup>
                                         {isInvalid && (
-                                          <FieldError errors={field.state.meta.errors.map((err) =>
-                                            typeof err === "string" ? { message: err } : err
-
-                                          )} />
+                                          <FieldError
+                                            errors={field.state.meta.errors.map(
+                                              (err) =>
+                                                typeof err === "string"
+                                                  ? { message: err }
+                                                  : err,
+                                            )}
+                                          />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
                               </div>
+
+                              <form.Field
+                                name="player2Entry.address"
+                                children={(field) => {
+                                  const getEventLocationMode = () => {
+                                    const selectedEventId =
+                                      form.getFieldValue("event");
+                                    if (!selectedEventId) return undefined;
+
+                                    const event = events.find(
+                                      (e) => e.value === selectedEventId,
+                                    );
+                                    if (!event) return undefined;
+
+                                    return event.location;
+                                  };
+                                  return (
+                                    <Field className="mt-3">
+                                      <LocationSelector
+                                        value={
+                                          field.state.value as LocationData
+                                        }
+                                        onChange={(location: LocationData) => {
+                                          field.handleChange(location as any);
+                                        }}
+                                        disabled={isLoading}
+                                        eventLocation={getEventLocationMode()}
+                                      />
+                                      {field.state.meta.isTouched &&
+                                        !field.state.meta.isValid && (
+                                          <FieldError
+                                            errors={field.state.meta.errors}
+                                          />
+                                        )}
+                                    </Field>
+                                  );
+                                }}
+                              />
+
+                              {/* Display existing address for edit mode */}
+                              {isUpdate && entry?.player2Entry?.address && (
+                                <AddressView
+                                  address={entry.player2Entry.address}
+                                  label="Existing Address"
+                                />
+                              )}
                             </FieldSet>
                           </div>
 
                           {(!isPlayer2New || isUpdate) && (
                             <div className="w-1/3 border-l pl-6">
                               <div className="mb-3">
-                                <h3 className="text-lg font-semibold mb-2">Suggested Players</h3>
+                                <h3 className="text-lg font-semibold mb-2">
+                                  Suggested Players
+                                </h3>
                                 <p className="text-xs text-muted-foreground">
-                                  Based on name and birthday match from your database
+                                  Based on name and birthday match from your
+                                  database
                                 </p>
                               </div>
 
                               <SuggestedPlayersSection
                                 suggestions={suggestedPlayers2}
                                 isLoading={isLoadingSuggestions2}
-                                onSelectPlayer={(playerId) => handleSelectSuggestedPlayer(playerId, 2)}
+                                onSelectPlayer={(playerId) =>
+                                  handleSelectSuggestedPlayer(playerId, 2)
+                                }
                                 playerType="player2"
                                 onFindMatches={() => fetchPlayer2Suggestions()}
                                 showFindMatchesButton={false}
                                 selectedSuggestionId={selectedSuggestionId2}
                               />
-
-                              {/* <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                                <div className="flex items-start gap-2">
-                                  <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
-                                  <div className="text-sm text-blue-800">
-                                    <p className="font-medium">How it works:</p>
-                                    <p className="text-xs">Suggestions automatically appear as you type. Click on a suggestion to auto-fill the player selection.</p>
-                                  </div>
-                                </div>
-                              </div> */}
                             </div>
                           )}
                         </div>
@@ -4633,7 +5859,7 @@ const FormDialog = (props: Props) => {
                       />
                     )}
                   </Tabs>
-                )
+                );
               }}
             />
           </div>
@@ -4656,12 +5882,22 @@ const FormDialog = (props: Props) => {
           </Button>
         </DialogFooter>
 
-        <AnimatePresence>
-          {isUploading && <UploadingOverlay />}
-        </AnimatePresence>
+        <MaxEntriesModal
+          isOpen={showMaxEntriesModal}
+          onClose={() => {
+            setShowMaxEntriesModal(false);
+            // Optional: Also clear the selected event if needed
+            form.setFieldValue("event", "");
+            setSelectedEvent(null);
+          }}
+          eventName={fullEventName}
+          maxEntries={fullEventMaxEntries}
+        />
+
+        <AnimatePresence>{isUploading && <UploadingOverlay />}</AnimatePresence>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
 
-export default FormDialog
+export default FormDialog;

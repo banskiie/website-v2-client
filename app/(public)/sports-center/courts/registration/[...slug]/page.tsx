@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useField, useForm } from "@tanstack/react-form"
-import { createFormSchema } from "@/components/custom/data/reg_validator"
-import { toast, Toaster } from "sonner"
+import { useField, useForm } from "@tanstack/react-form";
+import { createFormSchema } from "@/components/custom/data/reg_validator";
+import { toast, Toaster } from "sonner";
 import {
   Card,
   CardContent,
@@ -10,14 +10,18 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/field";
+import {
+  LocationSelector,
+  LocationData,
+} from "@/components/custom/location-selector";
+import { Button } from "@/components/ui/button";
 import {
   CalendarIcon,
   Mail,
@@ -44,45 +48,57 @@ import {
   ExternalLink,
   Download,
   Eye,
-} from "lucide-react"
-import { Switch } from "@/components/ui/switch"
-import { startTransition, use, useCallback, useEffect, useRef, useState } from "react"
-import Header from "@/components/custom/header-white"
+  MapPin,
+} from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  startTransition,
+  use,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import Header from "@/components/custom/header-white";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
-import Image from "next/image"
+} from "@/components/ui/select";
+import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react";
 import {
-  InputGroup,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import Image from "next/image";
+import {
+  InputGroup, 
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-} from "@/components/ui/input-group"
+} from "@/components/ui/input-group";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Badge } from "@/components/ui/badge"
-import { PUBLIC_TOURNAMENTS } from "@/graphql/events/queries"
-import { REGISTRY_ENTRY } from "@/graphql/registration/resolver"
-import { PublicTournamentsData } from "@/components/custom/category-selection"
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { PUBLIC_TOURNAMENTS } from "@/graphql/events/queries";
+import { REGISTRY_ENTRY } from "@/graphql/registration/resolver";
+import { PublicTournamentsData } from "@/components/custom/category-selection";
 import {
   RegisterEntryResponse,
   RegisterEntryVariables,
-} from "@/app/(public)/types/entry.interface"
-import FloatingTicketing from "@/components/custom/ticket"
-import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
-import { ValidDocumentType } from "@/types/player.interface"
+} from "@/app/(public)/types/entry.interface";
+import FloatingTicketing from "@/components/custom/ticket";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { ValidDocumentType } from "@/types/player.interface";
 import {
   Command,
   CommandEmpty,
@@ -90,17 +106,17 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/command";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { gql } from "@apollo/client"
+} from "@/components/ui/dialog";
+import { gql } from "@apollo/client";
 
 const CHECK_EVENT_ENTRIES = gql`
   query CheckEventEntries($eventId: ID!) {
@@ -111,9 +127,9 @@ const CHECK_EVENT_ENTRIES = gql`
     }
     entryCountByEvent(eventId: $eventId)
   }
-`
+`;
 interface RegistrationPageProps {
-  params: Promise<{ slug: string[] }>
+  params: Promise<{ slug: string[] }>;
 }
 
 type CheckEventEntriesResponse = {
@@ -123,7 +139,7 @@ type CheckEventEntriesResponse = {
     name: string;
   };
   entryCountByEvent: number;
-}
+};
 
 const RegistrationFeeModal = ({
   isOpen,
@@ -132,37 +148,37 @@ const RegistrationFeeModal = ({
   tournament,
   onDontShowAgain,
 }: {
-  isOpen: boolean
-  onClose: () => void
-  event: any
-  tournament: any
-  onDontShowAgain?: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  event: any;
+  tournament: any;
+  onDontShowAgain?: () => void;
 }) => {
-  if (!isOpen || !event || !tournament) return null
+  if (!isOpen || !event || !tournament) return null;
 
-  const hasEarlyBirdSetting = tournament.settings?.hasEarlyBird
-  const earlyBirdEndDate = tournament.dates?.earlyBirdPaymentEnd
-  const now = new Date()
+  const hasEarlyBirdSetting = tournament.settings?.hasEarlyBird;
+  const earlyBirdEndDate = tournament.dates?.earlyBirdPaymentEnd;
+  const now = new Date();
 
-  let isEarlyBirdActive = false
+  let isEarlyBirdActive = false;
 
   if (hasEarlyBirdSetting && earlyBirdEndDate) {
-    const endDate = new Date(earlyBirdEndDate)
-    isEarlyBirdActive = now <= endDate
+    const endDate = new Date(earlyBirdEndDate);
+    isEarlyBirdActive = now <= endDate;
   }
 
   const pricePerPlayer =
     isEarlyBirdActive && event.earlyBirdPricePerPlayer
       ? event.earlyBirdPricePerPlayer
-      : event.pricePerPlayer
+      : event.pricePerPlayer;
 
   const totalPrice =
-    event.type === "DOUBLES" ? pricePerPlayer * 2 : pricePerPlayer
+    event.type === "DOUBLES" ? pricePerPlayer * 2 : pricePerPlayer;
 
-  const isDoubles = event.type === "DOUBLES"
-  const isEarlyBird = isEarlyBirdActive
+  const isDoubles = event.type === "DOUBLES";
+  const isEarlyBird = isEarlyBirdActive;
 
-  const [dontShowChecked, setDontShowChecked] = useState(false)
+  const [dontShowChecked, setDontShowChecked] = useState(false);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -299,9 +315,9 @@ const RegistrationFeeModal = ({
           <Button
             onClick={() => {
               if (dontShowChecked && onDontShowAgain) {
-                onDontShowAgain()
+                onDontShowAgain();
               }
-              onClose()
+              onClose();
             }}
             className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white py-3 rounded-lg font-semibold transition-all duration-300 shadow-md"
           >
@@ -314,19 +330,19 @@ const RegistrationFeeModal = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const SuccessModal = ({
   isOpen,
   onClose,
   message,
 }: {
-  isOpen: boolean
-  onClose: () => void
-  message: string
+  isOpen: boolean;
+  onClose: () => void;
+  message: string;
 }) => {
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -353,13 +369,13 @@ const SuccessModal = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const showValidationToast = (errors: string[], title?: string) => {
-  if (!errors || errors.length === 0) return
+  if (!errors || errors.length === 0) return;
 
-  const uniqueErrors = [...new Set(errors)]
+  const uniqueErrors = [...new Set(errors)];
 
   toast.error(
     <div className="py-2">
@@ -391,11 +407,14 @@ const showValidationToast = (errors: string[], title?: string) => {
           size="sm"
           className="bg-red-600 hover:bg-red-700 text-white"
           onClick={() => {
-            const firstError = document.querySelector('[data-invalid="true"]')
+            const firstError = document.querySelector('[data-invalid="true"]');
             if (firstError) {
-              firstError.scrollIntoView({ behavior: "smooth", block: "center" })
+              firstError.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
             }
-            toast.dismiss()
+            toast.dismiss();
           }}
         >
           View Details
@@ -407,8 +426,8 @@ const showValidationToast = (errors: string[], title?: string) => {
       position: "bottom-right",
       icon: <AlertCircle className="w-5 h-5 text-red-600" />,
     },
-  )
-}
+  );
+};
 
 // const showFieldErrorToast = (fieldName: string, errors: any[]) => {
 //     if (!errors || errors.length === 0) return;
@@ -459,7 +478,7 @@ const UploadingOverlay = () => (
       <p className="text-sm text-gray-500">Please wait</p>
     </div>
   </motion.div>
-)
+);
 
 const FormSubmittingOverlay = () => (
   <motion.div
@@ -499,13 +518,13 @@ const FormSubmittingOverlay = () => (
       </p>
     </div>
   </motion.div>
-)
+);
 
 // Document type options
 const documentTypes = Object.values(ValidDocumentType).map((type) => ({
   label: type.toLocaleLowerCase().replaceAll("_", " "),
   value: type,
-}))
+}));
 
 // Document Preview Dialog Component
 const DocumentPreviewDialog = ({
@@ -514,15 +533,15 @@ const DocumentPreviewDialog = ({
   file,
   documentType,
 }: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  file: File | null
-  documentType: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  file: File | null;
+  documentType: string;
 }) => {
-  if (!file) return null
+  if (!file) return null;
 
-  const isImage = file.type.startsWith("image/")
-  const isPDF = file.type === "application/pdf"
+  const isImage = file.type.startsWith("image/");
+  const isPDF = file.type === "application/pdf";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -573,15 +592,12 @@ const DocumentPreviewDialog = ({
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
           <Button
             onClick={() => {
-              const link = document.createElement('a');
+              const link = document.createElement("a");
               link.href = URL.createObjectURL(file);
               link.download = file.name;
               link.click();
@@ -600,7 +616,7 @@ const MaxEntriesModal = ({
   isOpen,
   onClose,
   eventName,
-  maxEntries
+  maxEntries,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -624,7 +640,8 @@ const MaxEntriesModal = ({
           </h3>
 
           <p className="text-gray-700 mb-2">
-            The event <strong className="text-red-700">{eventName}</strong> has reached its maximum capacity.
+            The event <strong className="text-red-700">{eventName}</strong> has
+            reached its maximum capacity.
           </p>
 
           {maxEntries && (
@@ -634,12 +651,13 @@ const MaxEntriesModal = ({
           )}
 
           <p className="text-gray-600 mb-6">
-            No more entries can be registered for this event. Please select another category or tournament.
+            No more entries can be registered for this event. Please select
+            another category or tournament.
           </p>
 
           <Button
             onClick={() => {
-              window.location.href = "/sports-center/courts/categories"
+              window.location.href = "/sports-center/courts/categories";
             }}
             className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-all duration-300"
           >
@@ -656,18 +674,20 @@ const MaxEntriesModal = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default function Page({ params }: RegistrationPageProps) {
-  const paramData = use(params)
-  const [tournamentId, eventId] = paramData.slug ?? []
-  const [showFeeModal, setShowFeeModal] = useState(false)
-  const [checkingEntries, setCheckingEntries] = useState(false)
-  const [maxEntriesReached, setMaxEntriesReached] = useState(false)
-  const [maxEntriesLimit, setMaxEntriesLimit] = useState<number | null>(null)
-  const [eventName, setEventName] = useState<string>("")
-  const [showMaxEntriesModal, setShowMaxEntriesModal] = useState(false)
+  const paramData = use(params);
+  const [tournamentId, eventId] = paramData.slug ?? [];
+  const [showFeeModal, setShowFeeModal] = useState(false);
+  const [checkingEntries, setCheckingEntries] = useState(false);
+  const [maxEntriesReached, setMaxEntriesReached] = useState(false);
+  const [maxEntriesLimit, setMaxEntriesLimit] = useState<number | null>(null);
+  const [eventName, setEventName] = useState<string>("");
+  const [showMaxEntriesModal, setShowMaxEntriesModal] = useState(false);
+  const [syncAddressPlayer1, setSyncAddressPlayer1] = useState(false);
+  const [syncAddressPlayer2, setSyncAddressPlayer2] = useState(false);
 
   const { data, loading, error } = useQuery<PublicTournamentsData>(
     PUBLIC_TOURNAMENTS,
@@ -675,137 +695,137 @@ export default function Page({ params }: RegistrationPageProps) {
       variables: { id: eventId ?? "" },
       skip: !eventId,
     },
-  )
+  );
 
   const backUrl = tournamentId
     ? `/sports-center/courts/categories?tournament=${tournamentId}`
-    : "/sports-center/courts/categories"
+    : "/sports-center/courts/categories";
 
   const [registryEntry, { loading: submitting, error: submitError }] =
-    useMutation<RegisterEntryResponse, RegisterEntryVariables>(REGISTRY_ENTRY)
+    useMutation<RegisterEntryResponse, RegisterEntryVariables>(REGISTRY_ENTRY);
 
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [successMessage, setSuccessMessage] = useState("")
-  const [syncPlayer1, setSyncPlayer1] = useState(false)
-  const [syncPlayer2, setSyncPlayer2] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [syncPlayer1, setSyncPlayer1] = useState(false);
+  const [syncPlayer2, setSyncPlayer2] = useState(false);
 
-  const [player1IdPreview, setPlayer1IdPreview] = useState<string | null>(null)
-  const [player2IdPreview, setPlayer2IdPreview] = useState<string | null>(null)
-  const [filePlayer1, setFilePlayer1] = useState<File | null>(null)
-  const [filePlayer2, setFilePlayer2] = useState<File | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [player1IdPreview, setPlayer1IdPreview] = useState<string | null>(null);
+  const [player2IdPreview, setPlayer2IdPreview] = useState<string | null>(null);
+  const [filePlayer1, setFilePlayer1] = useState<File | null>(null);
+  const [filePlayer2, setFilePlayer2] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [selectedDocumentTypePlayer1, setSelectedDocumentTypePlayer1] =
-    useState<ValidDocumentType | null>(null)
+    useState<ValidDocumentType | null>(null);
   const [selectedDocumentTypePlayer2, setSelectedDocumentTypePlayer2] =
-    useState<ValidDocumentType | null>(null)
+    useState<ValidDocumentType | null>(null);
   const [openDocumentTypesPlayer1, setOpenDocumentTypesPlayer1] =
-    useState(false)
+    useState(false);
   const [openDocumentTypesPlayer2, setOpenDocumentTypesPlayer2] =
-    useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
-  const [previewFile, setPreviewFile] = useState<File | null>(null)
-  const [previewDocumentType, setPreviewDocumentType] = useState("")
+    useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewDocumentType, setPreviewDocumentType] = useState("");
 
   // Track shown field errors to prevent duplicate toasts
   // const [shownFieldErrors, setShownFieldErrors] = useState<Set<string>>(new Set());
 
-  const tournaments = data?.publicTournaments ?? []
+  const tournaments = data?.publicTournaments ?? [];
   const tournament =
     tournaments.find((t: any) => t._id === tournamentId) ??
-    tournaments.find((t: any) => t.isActive)
+    tournaments.find((t: any) => t.isActive);
   const event =
     tournament?.events?.find((e: any) => e._id === eventId) ??
-    tournament?.events?.[0]
-  const hasFreeJersey = tournament?.settings?.hasFreeJersey || false
+    tournament?.events?.[0];
+  const hasFreeJersey = tournament?.settings?.hasFreeJersey || false;
 
   const [checkEventEntries] = useLazyQuery(CHECK_EVENT_ENTRIES, {
     fetchPolicy: "network-only",
-  })
+  });
 
   const checkEventMaxEntries = useCallback(async () => {
-    if (!eventId) return false
+    if (!eventId) return false;
 
-    setCheckingEntries(true)
+    setCheckingEntries(true);
     try {
-      const { data } = await checkEventEntries({
+      const { data } = (await checkEventEntries({
         variables: { eventId },
-      }) as { data: CheckEventEntriesResponse }
+      })) as { data: CheckEventEntriesResponse };
 
       if (data?.event?.maxEntries && data.event.maxEntries > 0) {
-        const totalEntries = data?.entryCountByEvent || 0
-        const isFull = totalEntries >= data.event.maxEntries
+        const totalEntries = data?.entryCountByEvent || 0;
+        const isFull = totalEntries >= data.event.maxEntries;
 
-        setMaxEntriesLimit(data.event.maxEntries)
-        setEventName(data.event.name)
-        setMaxEntriesReached(isFull)
+        setMaxEntriesLimit(data.event.maxEntries);
+        setEventName(data.event.name);
+        setMaxEntriesReached(isFull);
 
         if (isFull) {
-          setShowMaxEntriesModal(true)
+          setShowMaxEntriesModal(true);
         }
 
-        return isFull
+        return isFull;
       }
     } catch (error) {
-      console.error("Error checking event entries:", error)
+      console.error("Error checking event entries:", error);
     } finally {
-      setCheckingEntries(false)
+      setCheckingEntries(false);
     }
-    return false
-  }, [checkEventEntries, eventId])
+    return false;
+  }, [checkEventEntries, eventId]);
 
   useEffect(() => {
     if (eventId) {
-      checkEventMaxEntries()
+      checkEventMaxEntries();
     }
-  }, [eventId, checkEventMaxEntries])
+  }, [eventId, checkEventMaxEntries]);
 
   useEffect(() => {
     if (event && tournament && !showSuccessModal) {
-      const modalKey = `registrationFeeModalShown-${tournamentId}-${eventId}`
-      const hasSeenModalBefore = localStorage.getItem(modalKey)
+      const modalKey = `registrationFeeModalShown-${tournamentId}-${eventId}`;
+      const hasSeenModalBefore = localStorage.getItem(modalKey);
 
-      const sessionKey = `registrationFeeModalSession-${tournamentId}-${eventId}`
-      const hasSeenThisSession = sessionStorage.getItem(sessionKey)
+      const sessionKey = `registrationFeeModalSession-${tournamentId}-${eventId}`;
+      const hasSeenThisSession = sessionStorage.getItem(sessionKey);
 
       if (!hasSeenModalBefore && !hasSeenThisSession) {
         const timer = setTimeout(() => {
-          setShowFeeModal(true)
-        }, 500)
+          setShowFeeModal(true);
+        }, 500);
 
-        return () => clearTimeout(timer)
+        return () => clearTimeout(timer);
       }
     }
-  }, [event, tournament, showSuccessModal, tournamentId, eventId])
+  }, [event, tournament, showSuccessModal, tournamentId, eventId]);
 
   const handleFeeModalClose = () => {
-    const sessionKey = `registrationFeeModalSession-${tournamentId}-${eventId}`
-    sessionStorage.setItem(sessionKey, "true")
-    setShowFeeModal(false)
-  }
+    const sessionKey = `registrationFeeModalSession-${tournamentId}-${eventId}`;
+    sessionStorage.setItem(sessionKey, "true");
+    setShowFeeModal(false);
+  };
 
   const handleDontShowAgain = () => {
-    const modalKey = `registrationFeeModalShown-${tournamentId}-${eventId}`
-    localStorage.setItem(modalKey, "true")
-  }
+    const modalKey = `registrationFeeModalShown-${tournamentId}-${eventId}`;
+    localStorage.setItem(modalKey, "true");
+  };
 
   useEffect(() => {
-    const modalKey = `registrationFeeModalSession-${tournamentId}-${eventId}`
-    sessionStorage.removeItem(modalKey)
-  }, [tournamentId, eventId])
+    const modalKey = `registrationFeeModalSession-${tournamentId}-${eventId}`;
+    sessionStorage.removeItem(modalKey);
+  }, [tournamentId, eventId]);
 
   useEffect(() => {
     if (event && tournament) {
-      const hasEarlyBird = tournament.settings?.hasEarlyBird
-      const earlyBirdEndDate = tournament.dates?.earlyBirdPaymentEnd
-      const now = new Date()
+      const hasEarlyBird = tournament.settings?.hasEarlyBird;
+      const earlyBirdEndDate = tournament.dates?.earlyBirdPaymentEnd;
+      const now = new Date();
 
-      let isEarlyBirdActive = false
+      let isEarlyBirdActive = false;
 
       if (hasEarlyBird && earlyBirdEndDate) {
-        const endDate = new Date(earlyBirdEndDate)
-        isEarlyBirdActive = now <= endDate
+        const endDate = new Date(earlyBirdEndDate);
+        isEarlyBirdActive = now <= endDate;
         // console.log("Early Bird End Date:", endDate);
         // console.log("Current Date:", now);
         // console.log("Is Early Bird Active:", isEarlyBirdActive);
@@ -815,27 +835,28 @@ export default function Page({ params }: RegistrationPageProps) {
       const actualPricePerPlayer =
         isEarlyBirdActive && event?.earlyBirdPricePerPlayer
           ? event.earlyBirdPricePerPlayer
-          : event.pricePerPlayer
+          : event.pricePerPlayer;
 
       if (actualPricePerPlayer) {
         const totalPrice =
           event.type === "DOUBLES"
             ? actualPricePerPlayer * 2
-            : actualPricePerPlayer
+            : actualPricePerPlayer;
         // console.log("💵 Total Amount:", totalPrice, event.currency)
       }
     }
-  }, [event, tournament])
+  }, [event, tournament]);
 
-  const isMixed = /mixed/i.test(event?.gender || "")
-  const isNoGender = /no_gender/i.test(event?.gender || "") || event?.gender === "NO_GENDER"
+  const isMixed = /mixed/i.test(event?.gender || "");
+  const isNoGender =
+    /no_gender/i.test(event?.gender || "") || event?.gender === "NO_GENDER";
   const autoGender = event
     ? /women|girls|female/i.test(event?.gender ?? "")
       ? "FEMALE"
       : /men|boys|male/i.test(event?.gender ?? "")
         ? "MALE"
         : null
-    : null
+    : null;
 
   type FormFieldNames =
     | "club"
@@ -852,6 +873,7 @@ export default function Page({ params }: RegistrationPageProps) {
     | "player1JerseySize"
     | "player1DocumentType"
     | "player1IdUpload"
+    | "player1Address"
     | "player2FirstName"
     | "player2LastName"
     | "player2MiddleName"
@@ -863,6 +885,7 @@ export default function Page({ params }: RegistrationPageProps) {
     | "player2JerseySize"
     | "player2DocumentType"
     | "player2IdUpload"
+    | "player2Address";
 
   const calculateAgeAtTournament = (
     birthday: string | FileList | null,
@@ -872,33 +895,33 @@ export default function Page({ params }: RegistrationPageProps) {
       !birthday ||
       !tournament?.dates?.tournamentStart
     )
-      return null
+      return null;
 
-    const birthDate = new Date(birthday)
-    const tournamentDate = new Date(tournament.dates.tournamentStart)
+    const birthDate = new Date(birthday);
+    const tournamentDate = new Date(tournament.dates.tournamentStart);
 
-    let age = tournamentDate.getFullYear() - birthDate.getFullYear()
-    const monthDiff = tournamentDate.getMonth() - birthDate.getMonth()
+    let age = tournamentDate.getFullYear() - birthDate.getFullYear();
+    const monthDiff = tournamentDate.getMonth() - birthDate.getMonth();
 
     if (
       monthDiff < 0 ||
       (monthDiff === 0 && tournamentDate.getDate() < birthDate.getDate())
     ) {
-      age--
+      age--;
     }
 
-    return age
-  }
+    return age;
+  };
 
   const getBirthdayString = (fieldValue: any): string | null => {
     if (typeof fieldValue === "string" && fieldValue) {
-      return fieldValue
+      return fieldValue;
     }
-    return null
-  }
+    return null;
+  };
 
   const extractAndDisplayBackendErrors = (graphQLError: any, form: any) => {
-    const validationErrors = graphQLError?.extensions?.validationErrors
+    const validationErrors = graphQLError?.extensions?.validationErrors;
 
     if (validationErrors && Array.isArray(validationErrors)) {
       // console.log("Backend validation errors:", validationErrors);
@@ -923,18 +946,18 @@ export default function Page({ params }: RegistrationPageProps) {
         "player1Entry.suffix": "player1Suffix",
         "player2Entry.suffix": "player2Suffix",
         club: "club",
-      }
+      };
 
-      let hasAgeError = false
-      let hasGenderError = false
-      const ageErrorMessages: string[] = []
-      const genderErrorMessages: string[] = []
+      let hasAgeError = false;
+      let hasGenderError = false;
+      const ageErrorMessages: string[] = [];
+      const genderErrorMessages: string[] = [];
 
       validationErrors.forEach((err: any) => {
         const backendPath = Array.isArray(err.path)
           ? err.path.join(".")
-          : err.path
-        const frontendFieldName = fieldMapping[backendPath] || err.path?.[0]
+          : err.path;
+        const frontendFieldName = fieldMapping[backendPath] || err.path?.[0];
 
         if (frontendFieldName) {
           // console.log(`Mapping backend error: ${backendPath} -> ${frontendFieldName}`);
@@ -945,8 +968,8 @@ export default function Page({ params }: RegistrationPageProps) {
             err.message.toLowerCase().includes("age") ||
             err.message.toLowerCase().includes("birth year")
           ) {
-            hasAgeError = true
-            ageErrorMessages.push(err.message)
+            hasAgeError = true;
+            ageErrorMessages.push(err.message);
           }
 
           if (
@@ -955,30 +978,30 @@ export default function Page({ params }: RegistrationPageProps) {
             err.message.toLowerCase().includes("mixed") ||
             err.message.toLowerCase().includes("different")
           ) {
-            hasGenderError = true
-            genderErrorMessages.push(err.message)
+            hasGenderError = true;
+            genderErrorMessages.push(err.message);
           }
 
           form.setFieldMeta(frontendFieldName as any, {
             isTouched: true,
             errors: [err.message],
             errorMap: { onBlur: err.message },
-          })
+          });
         }
-      })
+      });
 
       if (hasAgeError && ageErrorMessages.length > 0) {
-        showValidationToast(ageErrorMessages, "Age Validation Failed")
+        showValidationToast(ageErrorMessages, "Age Validation Failed");
       }
 
       if (hasGenderError && genderErrorMessages.length > 0) {
-        showValidationToast(genderErrorMessages, "Gender Validation Failed")
+        showValidationToast(genderErrorMessages, "Gender Validation Failed");
       }
 
-      return { hasAgeError: false, hasGenderError: false }
+      return { hasAgeError: false, hasGenderError: false };
     }
-    return { hasAgeError: false, hasGenderError: false }
-  }
+    return { hasAgeError: false, hasGenderError: false };
+  };
 
   const eventDataForValidation =
     event && tournament
@@ -989,48 +1012,48 @@ export default function Page({ params }: RegistrationPageProps) {
         maxAge: event.maxAge,
         gender: event.gender,
       }
-      : undefined
+      : undefined;
 
   const uploadFile = async (
     file: File,
     folder: string,
   ): Promise<string | null> => {
     try {
-      setIsUploading(true)
+      setIsUploading(true);
 
-      const formData = new FormData()
-      const fileExt = file.name.split(".").pop() || ""
-      const fileName = `${folder}-${Date.now()}.${fileExt}`
-      formData.append("file", file, fileName)
+      const formData = new FormData();
+      const fileExt = file.name.split(".").pop() || "";
+      const fileName = `${folder}-${Date.now()}.${fileExt}`;
+      formData.append("file", file, fileName);
 
       const response = await fetch(`/api/upload/entry_requirement`, {
         method: "POST",
         body: formData,
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Upload Failed")
+        throw new Error("Upload Failed");
       }
 
-      const data = await response.json()
-      toast.success("Document uploaded successfully!")
-      return data.url
+      const data = await response.json();
+      toast.success("Document uploaded successfully!");
+      return data.url;
     } catch (error) {
-      console.error("Error uploading file:", error)
-      toast.error("Error uploading document. Please try again.")
-      return null
+      console.error("Error uploading file:", error);
+      toast.error("Error uploading document. Please try again.");
+      return null;
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
-  }
+  };
 
   const handleFileUpload = (
     playerNum: number,
     event: React.ChangeEvent<HTMLInputElement>,
     field: any,
   ) => {
-    const uploadedFile = event.target.files?.[0]
-    if (!uploadedFile) return
+    const uploadedFile = event.target.files?.[0];
+    if (!uploadedFile) return;
 
     // Validate file
     const validTypes = [
@@ -1039,85 +1062,85 @@ export default function Page({ params }: RegistrationPageProps) {
       "image/jpg",
       "image/webp",
       "application/pdf",
-    ]
+    ];
     if (!validTypes.includes(uploadedFile.type)) {
       toast.error(
         "Please upload a valid image file (JPEG, PNG, JPG, WEBP) or PDF",
-      )
+      );
       setFieldErrors((prev) => ({
         ...prev,
         [`filePlayer${playerNum}`]: "Please upload a valid image file or PDF",
-      }))
-      return
+      }));
+      return;
     }
     if (uploadedFile.size > 10 * 1024 * 1024) {
-      toast.error("File size must be less than 10MB")
+      toast.error("File size must be less than 10MB");
       setFieldErrors((prev) => ({
         ...prev,
         [`filePlayer${playerNum}`]: "File size must be less than 10MB",
-      }))
-      return
+      }));
+      return;
     }
 
-    field.handleChange([uploadedFile])
+    field.handleChange([uploadedFile]);
 
     if (playerNum === 1) {
-      setFilePlayer1(uploadedFile)
+      setFilePlayer1(uploadedFile);
     } else {
-      setFilePlayer2(uploadedFile)
+      setFilePlayer2(uploadedFile);
     }
 
-    setFieldErrors((prev) => ({ ...prev, [`filePlayer${playerNum}`]: "" }))
+    setFieldErrors((prev) => ({ ...prev, [`filePlayer${playerNum}`]: "" }));
 
     // Create preview for images only
     if (uploadedFile.type.startsWith("image/")) {
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = () => {
-        const imageData = reader.result as string
+        const imageData = reader.result as string;
         if (playerNum === 1) {
-          setPlayer1IdPreview(imageData)
+          setPlayer1IdPreview(imageData);
         } else {
-          setPlayer2IdPreview(imageData)
+          setPlayer2IdPreview(imageData);
         }
-      }
-      reader.readAsDataURL(uploadedFile)
+      };
+      reader.readAsDataURL(uploadedFile);
     } else {
       // For PDFs, clear the image preview
       if (playerNum === 1) {
-        setPlayer1IdPreview(null)
+        setPlayer1IdPreview(null);
       } else {
-        setPlayer2IdPreview(null)
+        setPlayer2IdPreview(null);
       }
     }
-  }
+  };
 
   const handleRemoveFile = (playerNum: number, field: any) => {
-    field.handleChange(null)
+    field.handleChange(null);
 
     if (playerNum === 1) {
-      setFilePlayer1(null)
-      setPlayer1IdPreview(null)
+      setFilePlayer1(null);
+      setPlayer1IdPreview(null);
     } else {
-      setFilePlayer2(null)
-      setPlayer2IdPreview(null)
+      setFilePlayer2(null);
+      setPlayer2IdPreview(null);
     }
 
-    setFieldErrors((prev) => ({ ...prev, [`filePlayer${playerNum}`]: "" }))
+    setFieldErrors((prev) => ({ ...prev, [`filePlayer${playerNum}`]: "" }));
 
     // Clear file input
     const fileInput = document.getElementById(
       `player${playerNum}IdUpload`,
-    ) as HTMLInputElement
+    ) as HTMLInputElement;
     if (fileInput) {
-      fileInput.value = ""
+      fileInput.value = "";
     }
-  }
+  };
 
   const handlePreviewFile = (file: File, documentType: string) => {
-    setPreviewFile(file)
-    setPreviewDocumentType(documentType)
-    setPreviewDialogOpen(true)
-  }
+    setPreviewFile(file);
+    setPreviewDocumentType(documentType);
+    setPreviewDialogOpen(true);
+  };
 
   const form = useForm({
     defaultValues: {
@@ -1134,6 +1157,16 @@ export default function Page({ params }: RegistrationPageProps) {
       player1Gender: autoGender || "",
       player1DocumentType: null as ValidDocumentType | null,
       player1IdUpload: null as FileList | null,
+      player1Address: {
+        region: undefined,
+        province: undefined,
+        city: undefined,
+        barangay: undefined,
+        street: "",
+        zipCode: "",
+        fullAddress: "",
+        coordinates: undefined,
+      },
       ...(hasFreeJersey && { player1JerseySize: "" }),
       player2FirstName: "",
       player2LastName: "",
@@ -1145,39 +1178,53 @@ export default function Page({ params }: RegistrationPageProps) {
       player2Gender: autoGender || "",
       player2DocumentType: null as ValidDocumentType | null,
       player2IdUpload: null as FileList | null,
+      player2Address: {
+        region: undefined,
+        province: undefined,
+        city: undefined,
+        barangay: undefined,
+        street: "",
+        zipCode: "",
+        fullAddress: "",
+        coordinates: undefined,
+      },
       ...(hasFreeJersey && { player2JerseySize: "" }),
     },
     validators: {
-      onChange: createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation) as any,
-      onSubmit: createFormSchema(event?.type || "SINGLES", hasFreeJersey, eventDataForValidation) as any,
+      onChange: createFormSchema(
+        event?.type || "SINGLES",
+        hasFreeJersey,
+        eventDataForValidation,
+      ) as any,
+      onSubmit: createFormSchema(
+        event?.type || "SINGLES",
+        hasFreeJersey,
+        eventDataForValidation,
+      ) as any,
     },
     onSubmit: async ({ value }) => {
       if (maxEntriesReached) {
-        console.log("Max entries reached, showing modal and preventing submission");
         setShowMaxEntriesModal(true);
-        toast.error(`Cannot register. The event "${eventName}" has reached its maximum capacity of ${maxEntriesLimit} entries.`);
+        toast.error(
+          `Cannot register. The event "${eventName}" has reached its maximum capacity of ${maxEntriesLimit} entries.`,
+        );
         return;
       }
 
       if (eventId && !isSubmitting && !isUploading) {
         const isFull = await checkEventMaxEntries();
         if (isFull) {
-          console.log("Event is full after fresh check, preventing submission");
           setShowMaxEntriesModal(true);
           return;
         }
       }
 
-      // Don't proceed if already submitting
       if (isSubmitting || isUploading) {
-        // console.log("Already submitting, skipping...");
-        return
+        return;
       }
 
       try {
-        // console.log("Starting form submission...");
-
-        setIsSubmitting(true)
+        setIsSubmitting(true);
 
         // setShownFieldErrors(new Set());
 
@@ -1185,26 +1232,26 @@ export default function Page({ params }: RegistrationPageProps) {
           event?.type || "SINGLES",
           hasFreeJersey,
           eventDataForValidation,
-        )
-        const validationResult = schema.safeParse(value)
+        );
+        const validationResult = schema.safeParse(value);
 
         if (!validationResult.success) {
           const allErrors = validationResult.error.issues.map(
             (err: any) => err.message,
-          )
-          const uniqueAllErrors = [...new Set(allErrors)]
+          );
+          const uniqueAllErrors = [...new Set(allErrors)];
 
-          const fieldErrors: Record<string, string[]> = {}
+          const fieldErrors: Record<string, string[]> = {};
           validationResult.error.issues.forEach((err: any) => {
-            const fieldPath = err.path.join(".")
+            const fieldPath = err.path.join(".");
             if (!fieldErrors[fieldPath]) {
-              fieldErrors[fieldPath] = []
+              fieldErrors[fieldPath] = [];
             }
             // Only add unique error messages per field
             if (!fieldErrors[fieldPath].includes(err.message)) {
-              fieldErrors[fieldPath].push(err.message)
+              fieldErrors[fieldPath].push(err.message);
             }
-          })
+          });
 
           const ageErrors = validationResult.error.issues.filter(
             (err: any) =>
@@ -1218,10 +1265,10 @@ export default function Page({ params }: RegistrationPageProps) {
               err.message.toLowerCase().includes("birth year") ||
               err.message.toLowerCase().includes("minimum age") ||
               err.message.toLowerCase().includes("maximum age"),
-          )
+          );
           const uniqueAgeMessages = [
             ...new Set(ageErrors.map((err: any) => err.message)),
-          ]
+          ];
 
           const genderErrors = validationResult.error.issues.filter(
             (err: any) =>
@@ -1232,19 +1279,19 @@ export default function Page({ params }: RegistrationPageProps) {
               err.message.toLowerCase().includes("mixed") ||
               err.message.toLowerCase().includes("male") ||
               err.message.toLowerCase().includes("female"),
-          )
+          );
           const uniqueGenderMessages = [
             ...new Set(genderErrors.map((err: any) => err.message)),
-          ]
+          ];
 
           const requiredFieldErrors = validationResult.error.issues.filter(
             (err: any) =>
               err.message.toLowerCase().includes("required") ||
               (err.code === "invalid_type" && err.message.includes("Required")),
-          )
+          );
           const uniqueRequiredMessages = [
             ...new Set(requiredFieldErrors.map((err: any) => err.message)),
-          ]
+          ];
 
           const documentErrors = validationResult.error.issues.filter(
             (err: any) =>
@@ -1257,10 +1304,10 @@ export default function Page({ params }: RegistrationPageProps) {
               err.message.toLowerCase().includes("upload") ||
               err.message.toLowerCase().includes("document") ||
               err.message.toLowerCase().includes("file"),
-          )
+          );
           const uniqueDocumentMessages = [
             ...new Set(documentErrors.map((err: any) => err.message)),
-          ]
+          ];
 
           const contactErrors = validationResult.error.issues.filter(
             (err: any) =>
@@ -1273,43 +1320,44 @@ export default function Page({ params }: RegistrationPageProps) {
               err.message.toLowerCase().includes("email") ||
               err.message.toLowerCase().includes("phone") ||
               err.message.toLowerCase().includes("contact"),
-          )
+          );
           const uniqueContactMessages = [
             ...new Set(contactErrors.map((err: any) => err.message)),
-          ]
+          ];
 
           if (uniqueAgeMessages.length > 0) {
-            showValidationToast(uniqueAgeMessages, "🎂 Age Validation Failed")
+            showValidationToast(uniqueAgeMessages, "🎂 Age Validation Failed");
             setTimeout(() => {
-              const firstAgeField = document.querySelector('[name*="Birthday"]')
+              const firstAgeField =
+                document.querySelector('[name*="Birthday"]');
               if (firstAgeField) {
                 firstAgeField.scrollIntoView({
                   behavior: "smooth",
                   block: "center",
-                })
+                });
               }
-            }, 100)
+            }, 100);
           }
 
           if (uniqueGenderMessages.length > 0) {
             showValidationToast(
               uniqueGenderMessages,
               "⚥ Gender Validation Failed",
-            )
+            );
           }
 
           if (uniqueDocumentMessages.length > 0) {
             showValidationToast(
               uniqueDocumentMessages,
               "📄 Document Upload Required",
-            )
+            );
           }
 
           if (uniqueContactMessages.length > 0) {
             showValidationToast(
               uniqueContactMessages,
               "📞 Contact Information Error",
-            )
+            );
           }
 
           const otherErrors = validationResult.error.issues.filter(
@@ -1318,13 +1366,13 @@ export default function Page({ params }: RegistrationPageProps) {
               !genderErrors.includes(err) &&
               !documentErrors.includes(err) &&
               !contactErrors.includes(err),
-          )
+          );
           const uniqueOtherMessages = [
             ...new Set(otherErrors.map((err: any) => err.message)),
-          ]
+          ];
 
           if (uniqueOtherMessages.length > 0) {
-            showValidationToast(uniqueOtherMessages, "Validation Failed")
+            showValidationToast(uniqueOtherMessages, "Validation Failed");
           } else if (
             uniqueRequiredMessages.length > 0 &&
             uniqueAgeMessages.length === 0 &&
@@ -1335,15 +1383,15 @@ export default function Page({ params }: RegistrationPageProps) {
             showValidationToast(
               uniqueRequiredMessages,
               "Required Fields Missing",
-            )
+            );
           }
 
           // Set field meta errors (only first error per field) - FIXED VERSION
           Object.entries(fieldErrors).forEach(([fieldPath, errors]) => {
-            const fieldName = fieldPath as any
+            const fieldName = fieldPath as any;
             try {
               // Get the current field meta
-              const currentMeta = form.getFieldMeta(fieldName)
+              const currentMeta = form.getFieldMeta(fieldName);
 
               // Update with proper FieldMeta structure
               form.setFieldMeta(fieldName, (prev: any) => ({
@@ -1355,17 +1403,17 @@ export default function Page({ params }: RegistrationPageProps) {
                   onBlur: errors[0],
                   onChange: errors[0],
                 },
-              }))
+              }));
             } catch (e) {
-              console.error("Error setting field meta:", e)
+              console.error("Error setting field meta:", e);
             }
 
             // Trigger re-render by updating the field value
-            const currentValue = form.getFieldValue(fieldName)
+            const currentValue = form.getFieldValue(fieldName);
             if (currentValue !== undefined) {
-              form.setFieldValue(fieldName, currentValue)
+              form.setFieldValue(fieldName, currentValue);
             }
-          })
+          });
 
           if (uniqueAllErrors.length > 3) {
             toast.error(
@@ -1380,37 +1428,37 @@ export default function Page({ params }: RegistrationPageProps) {
                 duration: 8000,
                 position: "bottom-right",
               },
-            )
+            );
           }
 
-          setIsSubmitting(false)
-          return
+          setIsSubmitting(false);
+          return;
         }
 
         const finalFormData = {
           ...value,
           player1Gender: value.player1Gender || autoGender || "",
           player2Gender: value.player2Gender || autoGender || "",
-        }
+        };
 
         const convertToISODateTime = (dateString?: string) => {
-          if (!dateString) return ""
-          return new Date(dateString + "T00:00:00.000Z").toISOString()
-        }
+          if (!dateString) return "";
+          return new Date(dateString + "T00:00:00.000Z").toISOString();
+        };
 
-        let documentUrlPlayer1 = ""
-        let documentUrlPlayer2 = ""
+        let documentUrlPlayer1 = "";
+        let documentUrlPlayer2 = "";
 
         if (filePlayer1) {
           // console.log("Uploading player 1 document...");
-          setIsUploading(true)
+          setIsUploading(true);
           try {
             const uploadedUrl = await uploadFile(
               filePlayer1,
               `registration-player1-${Date.now()}`,
-            )
+            );
             if (uploadedUrl) {
-              documentUrlPlayer1 = uploadedUrl
+              documentUrlPlayer1 = uploadedUrl;
               // console.log("Player 1 document uploaded:", uploadedUrl);
             }
           } catch (error) {
@@ -1419,24 +1467,24 @@ export default function Page({ params }: RegistrationPageProps) {
               description:
                 "Please try again or contact support if the issue persists.",
               duration: 5000,
-            })
-            setIsSubmitting(false)
-            return
+            });
+            setIsSubmitting(false);
+            return;
           } finally {
-            setIsUploading(false)
+            setIsUploading(false);
           }
         }
 
         if (filePlayer2 && event?.type === "DOUBLES") {
           // console.log("Uploading player 2 document...");
-          setIsUploading(true)
+          setIsUploading(true);
           try {
             const uploadedUrl = await uploadFile(
               filePlayer2,
               `registration-player2-${Date.now()}`,
-            )
+            );
             if (uploadedUrl) {
-              documentUrlPlayer2 = uploadedUrl
+              documentUrlPlayer2 = uploadedUrl;
               // console.log("Player 2 document uploaded:", uploadedUrl);
             }
           } catch (error) {
@@ -1445,11 +1493,11 @@ export default function Page({ params }: RegistrationPageProps) {
               description:
                 "Please try again or contact support if the issue persists.",
               duration: 5000,
-            })
-            setIsSubmitting(false)
-            return
+            });
+            setIsSubmitting(false);
+            return;
           } finally {
-            setIsUploading(false)
+            setIsUploading(false);
           }
         }
 
@@ -1469,18 +1517,19 @@ export default function Page({ params }: RegistrationPageProps) {
             email: playerData[`player${playerNum}Email`],
             phoneNumber: playerData[`player${playerNum}ContactNumber`],
             gender: playerData[`player${playerNum}Gender`],
-          }
+            address: playerData[`player${playerNum}Address`] || undefined,
+          };
 
-          const jerseySize = playerData[`player${playerNum}JerseySize`]
+          const jerseySize = playerData[`player${playerNum}JerseySize`];
           const entryWithJersey = jerseySize
             ? { ...baseEntry, jerseySize }
-            : baseEntry
+            : baseEntry;
 
           if (documentUrl) {
             const documentType =
               playerNum === 1
                 ? selectedDocumentTypePlayer1
-                : selectedDocumentTypePlayer2
+                : selectedDocumentTypePlayer2;
             return {
               ...entryWithJersey,
               validDocuments: [
@@ -1490,11 +1539,11 @@ export default function Page({ params }: RegistrationPageProps) {
                   dateUploaded: new Date().toISOString(),
                 },
               ],
-            }
+            };
           }
 
-          return entryWithJersey
-        }
+          return entryWithJersey;
+        };
 
         const input = {
           event: eventId,
@@ -1507,14 +1556,14 @@ export default function Page({ params }: RegistrationPageProps) {
               documentUrlPlayer2,
             ),
           }),
-        }
+        };
 
         // console.log("GraphQL Input:", JSON.stringify(input, null, 2));
         // console.log("Calling registryEntry mutation...");
 
         const result = await registryEntry({
           variables: { input },
-        })
+        });
 
         // console.log("Mutation result:", result);
 
@@ -1522,88 +1571,88 @@ export default function Page({ params }: RegistrationPageProps) {
           // console.log("Registration successful!", result.data.registerEntry.message)
           const successMessage =
             result.data?.registerEntry?.message ??
-            "You have been registered successfully."
+            "You have been registered successfully.";
 
-          setSuccessMessage(successMessage)
-          setShowSuccessModal(true)
+          setSuccessMessage(successMessage);
+          setShowSuccessModal(true);
 
           toast.success("Registration Successful!", {
             description: successMessage,
             duration: 5000,
-          })
+          });
         } else {
           console.error(
             "Registration failed:",
             result.data?.registerEntry?.message,
-          )
+          );
           toast.error(
             `Registration failed: ${result.data?.registerEntry?.message || "Unknown error"}`,
-          )
+          );
         }
       } catch (error: any) {
-        console.error("Submission error:", error)
+        console.error("Submission error:", error);
 
         if (error.graphQLErrors && error.graphQLErrors.length > 0) {
-          const graphQLError = error.graphQLErrors[0]
+          const graphQLError = error.graphQLErrors[0];
 
-          extractAndDisplayBackendErrors(graphQLError, form)
+          extractAndDisplayBackendErrors(graphQLError, form);
 
           if (graphQLError.message) {
             toast.error("Validation Error", {
               description: graphQLError.message,
               duration: 5000,
-            })
+            });
           } else {
             toast.error("Validation failed", {
               description: "Please check all fields and try again.",
               duration: 5000,
-            })
+            });
           }
         } else if (error.networkError) {
           toast.error("Network Error", {
             description: "Please check your internet connection and try again.",
             duration: 5000,
-          })
+          });
         } else {
           toast.error("Submission Error", {
             description: "An unexpected error occurred. Please try again.",
             duration: 5000,
-          })
+          });
         }
       } finally {
         // console.log("Submission process completed, resetting submitting state");
-        setIsSubmitting(false)
+        setIsSubmitting(false);
       }
     },
-  })
+  });
 
-  const clubEmailField = useField({ form, name: "clubEmail" })
-  const clubContactNumberField = useField({ form, name: "clubContactNumber" })
+  const clubEmailField = useField({ form, name: "clubEmail" });
+  const clubContactNumberField = useField({ form, name: "clubContactNumber" });
 
-  const player1EmailField = useField({ form, name: "player1Email" })
+  const player1EmailField = useField({ form, name: "player1Email" });
   const player1ContactNumberField = useField({
     form,
     name: "player1ContactNumber",
-  })
+  });
 
-  const player2EmailField = useField({ form, name: "player2Email" })
+  const player2EmailField = useField({ form, name: "player2Email" });
   const player2ContactNumberField = useField({
     form,
     name: "player2ContactNumber",
-  })
+  });
 
   useEffect(() => {
-    const clubEmail = clubEmailField.getValue()
-    const clubContact = clubContactNumberField.getValue()
+    const clubEmail = clubEmailField.getValue();
+    const clubContact = clubContactNumberField.getValue();
 
     if (syncPlayer1) {
-      player1EmailField.setValue(clubEmail ?? "")
-      player1ContactNumberField.setValue(clubContact ?? "")
+      player1EmailField.setValue(clubEmail ?? "");
+      player1ContactNumberField.setValue(clubContact ?? "");
     }
 
     if (syncPlayer2 && event?.type === "DOUBLES") {
-      player2EmailField.setValue(clubEmail ?? "")
-      player2ContactNumberField.setValue(clubContact ?? "")
+      player2EmailField.setValue(clubEmail ?? "");
+      player2ContactNumberField.setValue(clubContact ?? "");
     }
   }, [
     clubEmailField,
@@ -1611,20 +1660,20 @@ export default function Page({ params }: RegistrationPageProps) {
     syncPlayer1,
     syncPlayer2,
     event?.type,
-  ])
+  ]);
 
   const handleModalClose = () => {
-    setIsSubmitting(false)
-    setShowSuccessModal(false)
-    setSyncPlayer1(false)
-    setSyncPlayer2(false)
-    setPlayer1IdPreview(null)
-    setPlayer2IdPreview(null)
-    setFilePlayer1(null)
-    setFilePlayer2(null)
-    setFieldErrors({})
-    setSelectedDocumentTypePlayer1(null)
-    setSelectedDocumentTypePlayer2(null)
+    setIsSubmitting(false);
+    setShowSuccessModal(false);
+    setSyncPlayer1(false);
+    setSyncPlayer2(false);
+    setPlayer1IdPreview(null);
+    setPlayer2IdPreview(null);
+    setFilePlayer1(null);
+    setFilePlayer2(null);
+    setFieldErrors({});
+    setSelectedDocumentTypePlayer1(null);
+    setSelectedDocumentTypePlayer2(null);
 
     form.reset({
       club: "",
@@ -1640,6 +1689,16 @@ export default function Page({ params }: RegistrationPageProps) {
       player1Gender: autoGender || "",
       player1DocumentType: null,
       player1IdUpload: null,
+      player1Address: {
+        region: undefined,
+        province: undefined,
+        city: undefined,
+        barangay: undefined,
+        street: "",
+        zipCode: "",
+        fullAddress: "",
+        coordinates: undefined,
+      },
       ...(hasFreeJersey && { player1JerseySize: "" }),
       player2FirstName: "",
       player2LastName: "",
@@ -1651,16 +1710,26 @@ export default function Page({ params }: RegistrationPageProps) {
       player2Gender: autoGender || "",
       player2DocumentType: null,
       player2IdUpload: null,
+      player2Address: {
+        region: undefined,
+        province: undefined,
+        city: undefined,
+        barangay: undefined,
+        street: "",
+        zipCode: "",
+        fullAddress: "",
+        coordinates: undefined,
+      },
       ...(hasFreeJersey && { player2JerseySize: "" }),
-    })
+    });
 
     const fileInputs = document.querySelectorAll(
       'input[type="file"]',
-    ) as NodeListOf<HTMLInputElement>
+    ) as NodeListOf<HTMLInputElement>;
     fileInputs.forEach((input) => {
-      input.value = ""
-    })
-  }
+      input.value = "";
+    });
+  };
 
   const getPlayerFieldNames = (playerKey: string): FormFieldNames[] => {
     const baseFields: FormFieldNames[] = [
@@ -1670,51 +1739,51 @@ export default function Page({ params }: RegistrationPageProps) {
       `${playerKey}Suffix` as FormFieldNames,
       `${playerKey}Birthday` as FormFieldNames,
       `${playerKey}Gender` as FormFieldNames,
-    ]
+    ];
 
     if (hasFreeJersey) {
-      return [...baseFields, `${playerKey}JerseySize` as FormFieldNames]
+      return [...baseFields, `${playerKey}JerseySize` as FormFieldNames];
     }
 
-    return baseFields
-  }
+    return baseFields;
+  };
 
   const getContactFieldNames = (playerKey: string): FormFieldNames[] => {
     return [
       `${playerKey}Email` as FormFieldNames,
       `${playerKey}ContactNumber` as FormFieldNames,
-    ]
-  }
+    ];
+  };
 
   const getAgeRequirementsText = () => {
-    if (!event) return null
+    if (!event) return null;
 
-    const minAge = (event as any).minAge
-    const maxAge = (event as any).maxAge
+    const minAge = (event as any).minAge;
+    const maxAge = (event as any).maxAge;
 
     if (minAge && maxAge) {
-      return `Ages ${minAge} to ${maxAge}`
+      return `Ages ${minAge} to ${maxAge}`;
     } else if (minAge) {
-      return `Minimum age: ${minAge}`
+      return `Minimum age: ${minAge}`;
     } else if (maxAge) {
-      return `Maximum age: ${maxAge}`
+      return `Maximum age: ${maxAge}`;
     }
-    return null
-  }
+    return null;
+  };
 
   const EnhancedFieldError = ({
     errors,
     fieldName,
   }: {
-    errors: any[]
-    fieldName?: string
+    errors: any[];
+    fieldName?: string;
   }) => {
-    if (!errors || errors.length === 0) return null
-    const firstError = errors[0]
+    if (!errors || errors.length === 0) return null;
+    const firstError = errors[0];
     const errorMessage =
       typeof firstError === "object" && firstError.message
         ? firstError.message
-        : String(firstError)
+        : String(firstError);
 
     return (
       <div className="space-y-1">
@@ -1723,96 +1792,98 @@ export default function Page({ params }: RegistrationPageProps) {
           <span>{errorMessage}</span>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   const DocumentTypeSelector = ({ playerNum }: { playerNum: number }) => {
     const [openDocumentTypes, setOpenDocumentTypes] = useState(
-      playerNum === 1 ? openDocumentTypesPlayer1 : openDocumentTypesPlayer2
-    )
+      playerNum === 1 ? openDocumentTypesPlayer1 : openDocumentTypesPlayer2,
+    );
     const [selectedDocumentType, setSelectedDocumentType] = useState(
-      playerNum === 1 ? selectedDocumentTypePlayer1 : selectedDocumentTypePlayer2
-    )
+      playerNum === 1
+        ? selectedDocumentTypePlayer1
+        : selectedDocumentTypePlayer2,
+    );
 
     useEffect(() => {
       if (playerNum === 1) {
-        setSelectedDocumentTypePlayer1(selectedDocumentType)
+        setSelectedDocumentTypePlayer1(selectedDocumentType);
       } else {
-        setSelectedDocumentTypePlayer2(selectedDocumentType)
+        setSelectedDocumentTypePlayer2(selectedDocumentType);
       }
-    }, [selectedDocumentType, playerNum])
+    }, [selectedDocumentType, playerNum]);
 
     useEffect(() => {
       if (playerNum === 1) {
-        setOpenDocumentTypesPlayer1(openDocumentTypes)
+        setOpenDocumentTypesPlayer1(openDocumentTypes);
       } else {
-        setOpenDocumentTypesPlayer2(openDocumentTypes)
+        setOpenDocumentTypesPlayer2(openDocumentTypes);
       }
-    }, [openDocumentTypes, playerNum])
+    }, [openDocumentTypes, playerNum]);
 
-    const fieldName = `player${playerNum}DocumentType` as FormFieldNames
-    const formValue = form.getFieldValue(fieldName)
+    const fieldName = `player${playerNum}DocumentType` as FormFieldNames;
+    const formValue = form.getFieldValue(fieldName);
 
-    const field = useField({ form, name: fieldName })
-    const hasError = field.state.meta.isTouched && !field.state.meta.isValid
-    const errorMessage = field.state.meta.errors?.[0]?.message
+    const field = useField({ form, name: fieldName });
+    const hasError = field.state.meta.isTouched && !field.state.meta.isValid;
+    const errorMessage = field.state.meta.errors?.[0]?.message;
 
-    const uploadFieldName = `player${playerNum}IdUpload` as FormFieldNames
-    const uploadField = useField({ form, name: uploadFieldName })
+    const uploadFieldName = `player${playerNum}IdUpload` as FormFieldNames;
+    const uploadField = useField({ form, name: uploadFieldName });
 
     useEffect(() => {
       if (formValue !== selectedDocumentType) {
-        setSelectedDocumentType(formValue as ValidDocumentType | null)
+        setSelectedDocumentType(formValue as ValidDocumentType | null);
       }
-    }, [formValue])
+    }, [formValue]);
 
     useEffect(() => {
       if (selectedDocumentType !== formValue) {
-        form.setFieldValue(fieldName, selectedDocumentType)
+        form.setFieldValue(fieldName, selectedDocumentType);
         if (selectedDocumentType) {
           field.setMeta((prev: any) => ({
             ...prev,
             errors: [],
             errorMap: {},
             isValid: true,
-          }))
+          }));
         }
       }
-    }, [selectedDocumentType, fieldName, formValue])
+    }, [selectedDocumentType, fieldName, formValue]);
 
     const handleDocumentTypeSelect = (value: ValidDocumentType) => {
-      setSelectedDocumentType(value)
-      setOpenDocumentTypes(false)
+      setSelectedDocumentType(value);
+      setOpenDocumentTypes(false);
       uploadField.setMeta((prev: any) => ({
         ...prev,
         errors: [],
         errorMap: {},
-      }))
+      }));
       field.setMeta((prev: any) => ({
         ...prev,
         errors: [],
         errorMap: {},
         isTouched: true,
         isValid: true,
-      }))
-    }
+      }));
+    };
 
     const handleBlur = () => {
       field.setMeta((prev: any) => ({
         ...prev,
         isTouched: true,
-      }))
-    }
+      }));
+    };
 
     const handlePopoverOpenChange = (open: boolean) => {
-      setOpenDocumentTypes(open)
+      setOpenDocumentTypes(open);
       if (!open && !selectedDocumentType) {
         field.setMeta((prev: any) => ({
           ...prev,
           isTouched: true,
-        }))
+        }));
       }
-    }
+    };
 
     return (
       <Field className="text-left">
@@ -1844,7 +1915,8 @@ export default function Page({ params }: RegistrationPageProps) {
               type="button"
             >
               {selectedDocumentType
-                ? documentTypes.find((o) => o.value === selectedDocumentType)?.label
+                ? documentTypes.find((o) => o.value === selectedDocumentType)
+                  ?.label
                 : "Select Document Type"}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -1862,7 +1934,9 @@ export default function Page({ params }: RegistrationPageProps) {
                     <CommandItem
                       key={o.value}
                       value={o.value}
-                      onSelect={() => handleDocumentTypeSelect(o.value as ValidDocumentType)}
+                      onSelect={() =>
+                        handleDocumentTypeSelect(o.value as ValidDocumentType)
+                      }
                       className="capitalize"
                     >
                       <CheckIcon
@@ -1882,16 +1956,15 @@ export default function Page({ params }: RegistrationPageProps) {
           </PopoverContent>
         </Popover>
         <p className="text-xs text-gray-500 mt-1">
-          Select the type of document you're uploading (Birth Certificate, ID, Passport, etc.)
+          Select the type of document you're uploading (Birth Certificate, ID,
+          Passport, etc.)
         </p>
         {hasError && errorMessage && (
-          <p className="text-xs text-red-500 mt-1">
-            {errorMessage}
-          </p>
+          <p className="text-xs text-red-500 mt-1">{errorMessage}</p>
         )}
       </Field>
-    )
-  }
+    );
+  };
 
   if (loading) {
     return (
@@ -1901,7 +1974,7 @@ export default function Page({ params }: RegistrationPageProps) {
           <div className="w-16 h-16 rounded-full border-4 border-green-600 border-t-transparent animate-spin absolute top-0 left-0"></div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!tournament) {
@@ -1911,9 +1984,8 @@ export default function Page({ params }: RegistrationPageProps) {
           Tournament not found. Please go back and try again.
         </p>
       </div>
-    )
+    );
   }
-
 
   return (
     <div className="bg-linear-to-br from-green-50 to-emerald-100">
@@ -1963,7 +2035,11 @@ export default function Page({ params }: RegistrationPageProps) {
       </AnimatePresence>
 
       <div className="p-4 sm:p-6 pb-0 mt-20 mb-2 md:mb-0 lg:mb-0 xl:mb-0 2xl:mb-0">
-        <Button variant="ghost" asChild className="text-green-700 hover:text-green-800 hover:bg-green-200">
+        <Button
+          variant="ghost"
+          asChild
+          className="text-green-700 hover:text-green-800 hover:bg-green-200"
+        >
           <Link href={backUrl} className="flex items-center gap-2">
             <ArrowLeftIcon className="w-6 h-6" />
             <span className="underline text-md ">Back</span>
@@ -1981,7 +2057,7 @@ export default function Page({ params }: RegistrationPageProps) {
               <span>
                 {`${format(new Date(tournament.dates.tournamentStart), "MMM d")}–${format(
                   new Date(tournament.dates.tournamentEnd),
-                  "d"
+                  "d",
                 )}, ${format(new Date(tournament.dates.tournamentStart), "yyyy")}`}
               </span>
             </CardDescription>
@@ -1993,17 +2069,22 @@ export default function Page({ params }: RegistrationPageProps) {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
               <div className="flex-1">
-                <h3 className="font-semibold text-red-800">Registration Closed</h3>
+                <h3 className="font-semibold text-red-800">
+                  Registration Closed
+                </h3>
                 <p className="text-sm text-red-700">
-                  The event "{eventName}" has reached its maximum capacity of {maxEntriesLimit} entries.
-                  Please go back and select another category.
+                  The event "{eventName}" has reached its maximum capacity of{" "}
+                  {maxEntriesLimit} entries. Please go back and select another
+                  category.
                 </p>
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 className="border-red-300 text-red-700 hover:bg-red-50 shrink-0"
-                onClick={() => window.location.href = "/sports-center/courts/categories"}
+                onClick={() =>
+                  (window.location.href = "/sports-center/courts/categories")
+                }
               >
                 <ArrowLeftIcon className="w-4 h-4 mr-2" />
                 Back
@@ -2016,9 +2097,9 @@ export default function Page({ params }: RegistrationPageProps) {
           <form
             id="registration-form"
             onSubmit={async (e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              await form.handleSubmit()
+              e.preventDefault();
+              e.stopPropagation();
+              await form.handleSubmit();
             }}
             className="space-y-6"
           >
@@ -2043,7 +2124,7 @@ export default function Page({ params }: RegistrationPageProps) {
                     name="club"
                     children={(field) => {
                       const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid
+                        field.state.meta.isTouched && !field.state.meta.isValid;
                       return (
                         <Field data-invalid={isInvalid} className="text-left">
                           <FieldLabel
@@ -2092,7 +2173,7 @@ export default function Page({ params }: RegistrationPageProps) {
                             />
                           )}
                         </Field>
-                      )
+                      );
                     }}
                   />
                 </div>
@@ -2114,12 +2195,12 @@ export default function Page({ params }: RegistrationPageProps) {
                         children={(field) => {
                           const isInvalid =
                             field.state.meta.isTouched &&
-                            !field.state.meta.isValid
+                            !field.state.meta.isValid;
                           const label =
                             name === "clubEmail"
                               ? "Email Address"
-                              : "Contact Number"
-                          const isEmail = name === "clubEmail"
+                              : "Contact Number";
+                          const isEmail = name === "clubEmail";
 
                           return (
                             <Field
@@ -2147,17 +2228,17 @@ export default function Page({ params }: RegistrationPageProps) {
                                   onBlur={field.handleBlur}
                                   onChange={(e) => {
                                     if (isEmail) {
-                                      field.handleChange(e.target.value)
+                                      field.handleChange(e.target.value);
                                     } else {
                                       const rawValue = e.target.value.replace(
                                         /\D/g,
                                         "",
-                                      )
+                                      );
                                       const formattedValue = rawValue.slice(
                                         0,
                                         10,
-                                      )
-                                      field.handleChange(formattedValue)
+                                      );
+                                      field.handleChange(formattedValue);
                                     }
                                   }}
                                   placeholder={
@@ -2196,7 +2277,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                 />
                               )}
                             </Field>
-                          )
+                          );
                         }}
                       />
                     ),
@@ -2264,7 +2345,7 @@ export default function Page({ params }: RegistrationPageProps) {
                 </CardTitle>
 
                 {(event?.type === "DOUBLES" ? [1, 2] : [1]).map((playerNum) => {
-                  const playerKey = `player${playerNum}`
+                  const playerKey = `player${playerNum}`;
 
                   return (
                     <div key={playerNum} className="pt-4">
@@ -2285,7 +2366,7 @@ export default function Page({ params }: RegistrationPageProps) {
                             children={(field) => {
                               const isInvalid =
                                 field.state.meta.isTouched &&
-                                !field.state.meta.isValid
+                                !field.state.meta.isValid;
                               const label = name.includes("FirstName")
                                 ? "First Name"
                                 : name.includes("MiddleName")
@@ -2298,16 +2379,16 @@ export default function Page({ params }: RegistrationPageProps) {
                                         ? "Gender"
                                         : name.includes("JerseySize")
                                           ? "Jersey Size"
-                                          : "Suffix"
+                                          : "Suffix";
 
                               const birthdayString = name.includes("Birthday")
                                 ? getBirthdayString(field.state.value)
-                                : null
+                                : null;
                               const calculatedAge = birthdayString
                                 ? calculateAgeAtTournament(birthdayString)
-                                : null
-                              const minAge = (event as any)?.minAge
-                              const maxAge = (event as any)?.maxAge
+                                : null;
+                              const minAge = (event as any)?.minAge;
+                              const maxAge = (event as any)?.maxAge;
 
                               return (
                                 <Field
@@ -2349,7 +2430,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                   </div>
 
                                   {name.includes("Gender") ? (
-                                    (isMixed || isNoGender) ? (
+                                    isMixed || isNoGender ? (
                                       <InputGroup>
                                         <InputGroupAddon className="mx-auto px-3">
                                           <VenusAndMarsIcon className="w-4 h-4" />
@@ -2358,7 +2439,8 @@ export default function Page({ params }: RegistrationPageProps) {
                                         <Select
                                           name={field.name}
                                           value={
-                                            typeof field.state.value === "string"
+                                            typeof field.state.value ===
+                                              "string"
                                               ? field.state.value
                                               : ""
                                           }
@@ -2373,8 +2455,12 @@ export default function Page({ params }: RegistrationPageProps) {
                                             <SelectValue placeholder="Select Gender" />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="MALE">Male</SelectItem>
-                                            <SelectItem value="FEMALE">Female</SelectItem>
+                                            <SelectItem value="MALE">
+                                              Male
+                                            </SelectItem>
+                                            <SelectItem value="FEMALE">
+                                              Female
+                                            </SelectItem>
                                           </SelectContent>
                                         </Select>
                                       </InputGroup>
@@ -2479,7 +2565,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                                 date
                                                   ? format(date, "yyyy-MM-dd")
                                                   : "",
-                                              )
+                                              );
                                             }}
                                             initialFocus
                                             captionLayout="dropdown"
@@ -2525,12 +2611,49 @@ export default function Page({ params }: RegistrationPageProps) {
                                     />
                                   )}
                                 </Field>
-                              )
+                              );
                             }}
                           />
                         ))}
                       </FieldGroup>
 
+                      <div className="flex items-start justify-start gap-2 mt-6 mb-2">
+                        <div className="p-2 bg-linear-to-r from-green-500 to-teal-600 rounded-lg">
+                          <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                        </div>
+                        <span className="text-green-800 font-semibold text-lg">
+                          Address Information {playerNum}
+                        </span>
+                      </div>
+
+                      <form.Field
+                        name={`player${playerNum}Address` as FormFieldNames}
+                        children={(field) => {
+                          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                          // Cast the field value to LocationData | undefined
+                          const addressValue = field.state.value as LocationData | undefined;
+
+                          return (
+                            <Field data-invalid={isInvalid} className="text-left">
+                              <LocationSelector
+                                value={addressValue}
+                                onChange={(location: LocationData) => {
+                                  // Cast the location to the expected type
+                                  field.handleChange(location as any);
+                                }}
+                                disabled={isSubmitting || isUploading}
+                                eventLocation={(event as any)?.location}
+                              />
+                              {isInvalid && (
+                                <EnhancedFieldError
+                                  errors={field.state.meta.errors}
+                                  fieldName={field.name}
+                                />
+                              )}
+                            </Field>
+                          );
+                        }}
+                      />
                       <div className="mt-6">
                         {/* Document Type Selector */}
                         <div className="mb-4">
@@ -2542,27 +2665,30 @@ export default function Page({ params }: RegistrationPageProps) {
                           children={(field) => {
                             const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid
+                              !field.state.meta.isValid;
                             const preview =
                               playerNum === 1
                                 ? player1IdPreview
-                                : player2IdPreview
+                                : player2IdPreview;
                             const file =
-                              playerNum === 1 ? filePlayer1 : filePlayer2
+                              playerNum === 1 ? filePlayer1 : filePlayer2;
                             const selectedDocumentType =
                               playerNum === 1
                                 ? selectedDocumentTypePlayer1
-                                : selectedDocumentTypePlayer2
+                                : selectedDocumentTypePlayer2;
 
-                            const hasSelectedDocumentType = selectedDocumentType !== null
+                            const hasSelectedDocumentType =
+                              selectedDocumentType !== null;
 
                             // Show error message if file is uploaded but no document type selected
-                            const showNoDocumentTypeError = file && !selectedDocumentType
+                            const showNoDocumentTypeError =
+                              file && !selectedDocumentType;
                             // Show error message if document type selected but no file uploaded
-                            const showNoFileError = selectedDocumentType && !file
+                            const showNoFileError =
+                              selectedDocumentType && !file;
 
                             if (!hasSelectedDocumentType) {
-                              return null
+                              return null;
                             }
 
                             return (
@@ -2715,13 +2841,17 @@ export default function Page({ params }: RegistrationPageProps) {
                                     ) : (
                                       <>
                                         <UploadIcon
-                                          className={`w-6 h-6 mb-2 ${fieldErrors[`filePlayer${playerNum}`]
+                                          className={`w-6 h-6 mb-2 ${fieldErrors[
+                                            `filePlayer${playerNum}`
+                                          ]
                                             ? "text-red-500"
                                             : "text-green-600"
                                             }`}
                                         />
                                         <span
-                                          className={`font-medium text-sm ${fieldErrors[`filePlayer${playerNum}`]
+                                          className={`font-medium text-sm ${fieldErrors[
+                                            `filePlayer${playerNum}`
+                                          ]
                                             ? "text-red-700"
                                             : "text-green-700"
                                             }`}
@@ -2753,12 +2883,14 @@ export default function Page({ params }: RegistrationPageProps) {
                                   {/* Show validation error messages */}
                                   {showNoDocumentTypeError && (
                                     <p className="text-xs text-red-500 mt-2">
-                                      Please select a document type for Player {playerNum} before uploading.
+                                      Please select a document type for Player{" "}
+                                      {playerNum} before uploading.
                                     </p>
                                   )}
                                   {showNoFileError && (
                                     <p className="text-xs text-red-500 mt-2">
-                                      Please upload a document for Player {playerNum} after selecting document type.
+                                      Please upload a document for Player{" "}
+                                      {playerNum} after selecting document type.
                                     </p>
                                   )}
                                   {fieldErrors[`filePlayer${playerNum}`] && (
@@ -2774,7 +2906,7 @@ export default function Page({ params }: RegistrationPageProps) {
                                   />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
                       </div>
@@ -2796,30 +2928,30 @@ export default function Page({ params }: RegistrationPageProps) {
                             }
                             onCheckedChange={(checked) => {
                               if (playerNum === 1) {
-                                setSyncPlayer1(checked)
+                                setSyncPlayer1(checked);
                                 if (checked) {
                                   form.setFieldValue(
                                     "player1Email",
                                     form.getFieldValue("clubEmail") ?? "",
-                                  )
+                                  );
                                   form.setFieldValue(
                                     "player1ContactNumber",
                                     form.getFieldValue("clubContactNumber") ??
                                     "",
-                                  )
+                                  );
                                 }
                               } else {
-                                setSyncPlayer2(checked)
+                                setSyncPlayer2(checked);
                                 if (checked) {
                                   form.setFieldValue(
                                     "player2Email",
                                     form.getFieldValue("clubEmail") ?? "",
-                                  )
+                                  );
                                   form.setFieldValue(
                                     "player2ContactNumber",
                                     form.getFieldValue("clubContactNumber") ??
                                     "",
-                                  )
+                                  );
                                 }
                               }
                             }}
@@ -2872,11 +3004,11 @@ export default function Page({ params }: RegistrationPageProps) {
                             children={(field) => {
                               const isInvalid =
                                 field.state.meta.isTouched &&
-                                !field.state.meta.isValid
+                                !field.state.meta.isValid;
                               const label = name.includes("Email")
                                 ? "Email Address"
-                                : "Contact Number"
-                              const isEmail = name.includes("Email")
+                                : "Contact Number";
+                              const isEmail = name.includes("Email");
 
                               return (
                                 <Field
@@ -2903,15 +3035,15 @@ export default function Page({ params }: RegistrationPageProps) {
                                       onBlur={field.handleBlur}
                                       onChange={(e) => {
                                         if (isEmail) {
-                                          field.handleChange(e.target.value)
+                                          field.handleChange(e.target.value);
                                         } else {
                                           // Phone number field - fixed for 11 digits starting with 09
                                           // Remove any non-digit characters
                                           const rawValue =
-                                            e.target.value.replace(/\D/g, "")
+                                            e.target.value.replace(/\D/g, "");
 
                                           // Ensure it starts with 09 and limit to 11 digits
-                                          let formattedValue = rawValue
+                                          let formattedValue = rawValue;
                                           if (
                                             formattedValue &&
                                             !formattedValue.startsWith("9")
@@ -2921,18 +3053,18 @@ export default function Page({ params }: RegistrationPageProps) {
                                               formattedValue.startsWith("9")
                                             ) {
                                               formattedValue =
-                                                "0" + formattedValue
+                                                "0" + formattedValue;
                                             } else {
                                               formattedValue =
-                                                "9" + formattedValue
+                                                "9" + formattedValue;
                                             }
                                           }
                                           if (formattedValue.length > 10) {
                                             formattedValue =
-                                              formattedValue.substring(0, 10)
+                                              formattedValue.substring(0, 10);
                                           }
 
-                                          field.handleChange(formattedValue)
+                                          field.handleChange(formattedValue);
                                         }
                                       }}
                                       placeholder={
@@ -2973,13 +3105,13 @@ export default function Page({ params }: RegistrationPageProps) {
                                     />
                                   )}
                                 </Field>
-                              )
+                              );
                             }}
                           />
                         ))}
                       </FieldGroup>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -3001,10 +3133,14 @@ export default function Page({ params }: RegistrationPageProps) {
               type="submit"
               form="registration-form"
               // disabled={isSubmitting || submitting || isUploading}
-              disabled={isSubmitting || submitting || isUploading || maxEntriesReached}
+              disabled={
+                isSubmitting || submitting || isUploading || maxEntriesReached
+              }
               className="lg:w-1/2! w-auto! px-6 py-5 cursor-pointer disabled:cursor-not-allowed relative overflow-hidden bg-green-600 hover:bg-green-700 text-white"
             >
-              <span className={`transition-opacity duration-200 ${isSubmitting || submitting ? 'opacity-0' : 'opacity-100'}`}>
+              <span
+                className={`transition-opacity duration-200 ${isSubmitting || submitting ? "opacity-0" : "opacity-100"}`}
+              >
                 Submit Registration
               </span>
               {(isSubmitting || submitting) && (
@@ -3025,7 +3161,6 @@ export default function Page({ params }: RegistrationPageProps) {
         eventName={eventName}
         maxEntries={maxEntriesLimit}
       />
-
     </div>
-  )
+  );
 }

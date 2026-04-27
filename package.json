@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "dev:https": "next dev --experimental-https",
     "build": "next build",
     "start": "next start",
@@ -44,6 +44,7 @@
     "@studio-freight/lenis": "^1.0.42",
     "@tanstack/react-form": "^1.23.8",
     "@tanstack/react-table": "^8.21.3",
+    "axios": "^1.15.0",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",

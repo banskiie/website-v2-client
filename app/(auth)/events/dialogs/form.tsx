@@ -193,7 +193,7 @@ const FormDialog = (props: Props) => {
             ({ path, message }: { path: string; message: string }) =>
               formApi.fieldInfo[
                 path as keyof typeof formApi.fieldInfo
-              ].instance?.setErrorMap({
+              ]?.instance?.setErrorMap({
                 onSubmit: { message },
               })
           )
@@ -210,7 +210,6 @@ const FormDialog = (props: Props) => {
                 ? {
                     _id: props._id,
                     ...value,
-                    // convert 0 to null for optional fields
                     minAge: value.minAge == 0 ? null : value.minAge,
                     maxAge: value.maxAge == 0 ? null : value.maxAge,
                     earlyBirdPricePerPlayer: tournaments.find(
@@ -220,7 +219,9 @@ const FormDialog = (props: Props) => {
                       ? value.earlyBirdPricePerPlayer
                       : null,
                   }
-                : { ...value },
+                : { ...value,
+                   maxEntries: value.maxEntries == 0 ? null : value.maxEntries,
+                 },
             },
           })
           if (response) onClose()
@@ -233,7 +234,7 @@ const FormDialog = (props: Props) => {
                 ({ path, message }: { path: string; message: string }) =>
                   formApi.fieldInfo[
                     path as keyof typeof formApi.fieldInfo
-                  ].instance?.setErrorMap({
+                  ]?.instance?.setErrorMap({
                     onSubmit: { message },
                   })
               )
@@ -267,6 +268,7 @@ const FormDialog = (props: Props) => {
         "earlyBirdPricePerPlayer",
         earlyBirdPricePerPlayer || 0
       )
+      form.setFieldValue("maxEntries", maxEntries === null ? 0 : maxEntries)
       form.setFieldValue("tournament", tournament._id)
       form.setFieldValue("maxEntries", maxEntries || 0)
       form.setFieldValue("minAge", minAge || 0)

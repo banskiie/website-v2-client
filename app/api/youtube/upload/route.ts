@@ -37,12 +37,6 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer())
     const stream = Readable.from(buffer)
 
-    console.log({
-      CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
-      CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
-      REFRESH: !!process.env.GOOGLE_REFRESH_TOKEN,
-    })
-
     // // ✅ NEVER use NEXT_PUBLIC for secrets
     // const oauth2Client = new google.auth.OAuth2(
     //   process.env.GOOGLE_CLIENT_ID!,

@@ -33,6 +33,7 @@ import {
   MessageSquare,
   X,
   ZoomIn,
+  MapPin,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import PlayerViewDialog from "@/app/(auth)/players/dialogs/view"
@@ -96,6 +97,31 @@ const ENTRY = gql`
           documentType
           dateUploaded
         }
+        address {
+          country {
+            name
+            code
+          }
+          region {
+            name
+            code
+          }
+          province {
+            name
+            code
+          }
+          city {
+            name
+            code
+          }
+          barangay {
+            name
+            code
+          }
+          street
+          zipCode
+          fullAddress
+        }
       }
       connectedPlayer1 {
         _id
@@ -123,6 +149,31 @@ const ENTRY = gql`
           documentURL
           documentType
           dateUploaded
+        }
+        address {
+          country {
+            name
+            code
+          }
+          region {
+            name
+            code
+          }
+          province {
+            name
+            code
+          }
+          city {
+            name
+            code
+          }
+          barangay {
+            name
+            code
+          }
+          street
+          zipCode
+          fullAddress
         }
       }
       connectedPlayer2 {
@@ -604,6 +655,72 @@ const DocumentViewer = ({
   )
 }
 
+const AddressDisplay = ({ address }: { address: any }) => {
+  if (!address) {
+    return (
+      <div className="text-sm text-muted-foreground italic">
+        No address information provided
+      </div>
+    )
+  }
+
+  const addressParts = []
+  if (address.street) addressParts.push(address.street)
+  if (address.barangay?.name) addressParts.push(address.barangay.name)
+  if (address.city?.name) addressParts.push(address.city.name)
+  if (address.province?.name) addressParts.push(address.province.name)
+  if (address.region?.name) addressParts.push(address.region.name)
+  if (address.country?.name) addressParts.push(address.country.name)
+  if (address.zipCode) addressParts.push(address.zipCode)
+
+  const fullAddress = addressParts.join(", ")
+
+  const addressFields = [
+    { label: "Street", value: address.street, key: "street" },
+    { label: "Barangay", value: address.barangay?.name, key: "barangay" },
+    { label: "City/Municipality", value: address.city?.name, key: "city" },
+    { label: "Province", value: address.province?.name, key: "province" },
+    { label: "Region", value: address.region?.name, key: "region" },
+    { label: "Country", value: address.country?.name, key: "country" },
+    { label: "ZIP Code", value: address.zipCode, key: "zipCode" },
+  ].filter(field => field.value)
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <MapPin className="h-4 w-4" />
+        <Label className="font-medium">Address</Label>
+      </div>
+      
+      {addressFields.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2">
+          {addressFields.map((field) => (
+            <div key={field.key} className="space-y-0.5">
+              <span className="text-xs text-muted-foreground block">
+                {field.label}:
+              </span>
+              <p className="text-sm font-medium break-words">
+                {field.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {fullAddress && (
+        <div className="mt-3 pt-2 border-t pl-2">
+          <span className="text-xs text-black block mb-1">
+            Full Address:
+          </span>
+          <p className="text-sm text-black italic break-words">
+            {fullAddress}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const ViewDialog = (props: Props) => {
   // Dialog open state
   const [open, setOpen] = useState(false)
@@ -959,6 +1076,10 @@ const ViewDialog = (props: Props) => {
                           </span>
                         )}
                       </div>
+                      {/* Address for Player 1 */}
+                      <div className="col-span-1 sm:col-span-2 mt-2 pt-2 border-t border-info/20">
+                        <AddressDisplay address={entry?.player1Entry?.address} />
+                      </div>
                     </div>
                   )}
                   {entry?.event?.type === "DOUBLES" && (
@@ -1041,6 +1162,9 @@ const ViewDialog = (props: Props) => {
                                 )
                               </span>
                             )}
+                          </div>
+                          <div className="col-span-1 sm:col-span-2 mt-2 pt-2 border-t border-destructive/20">
+                            <AddressDisplay address={entry?.player2Entry?.address} />
                           </div>
                         </>
                       )}
