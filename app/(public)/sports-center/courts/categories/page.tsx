@@ -1638,7 +1638,7 @@ function CategoriesContent() {
         </div>
       </div>
 
-      <FloatingTicketing />
+      {/* <FloatingTicketing /> */}
       <CategoryModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

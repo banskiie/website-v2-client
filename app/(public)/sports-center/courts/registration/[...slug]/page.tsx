@@ -3152,7 +3152,7 @@ export default function Page({ params }: RegistrationPageProps) {
             </Button>
           </div>
         </CardFooter>
-        <FloatingTicketing />
+        {/* <FloatingTicketing /> */}
       </Card>
 
       <MaxEntriesModal
