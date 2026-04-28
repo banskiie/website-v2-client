@@ -120,6 +120,17 @@ const convertToBarangay = (serviceBarangay: PSGCBarangay, cityCode: string, prov
   psgcCode: serviceBarangay.psgcCode || serviceBarangay.code
 })
 
+// Helper function to check if region is NCR
+const isNCR = (region: Region | undefined): boolean => {
+  if (!region) return false
+  const regionName = region.name.toLowerCase()
+  const regionCode = region.code.toLowerCase()
+  return regionName.includes('national capital region') ||
+    regionName.includes('ncr') ||
+    regionCode === '13' ||
+    regionCode === '130000000'
+}
+
 export const LocationSelector = ({ value, onChange, disabled, eventLocation }: LocationSelectorProps) => {
   const [countries, setCountries] = useState<Country[]>([])
   const [countriesLoading, setCountriesLoading] = useState(true)
@@ -130,20 +141,20 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
   const [selectedBarangay, setSelectedBarangay] = useState<Barangay | undefined>(value?.barangay)
   const [street, setStreet] = useState<string>(value?.street || "")
   const [zipCode, setZipCode] = useState<string>(value?.zipCode || "")
-  
+
   const [regions, setRegions] = useState<Region[]>([])
   const [provinces, setProvinces] = useState<Province[]>([])
   const [cities, setCities] = useState<City[]>([])
   const [barangays, setBarangays] = useState<Barangay[]>([])
-  
+
   const [regionsLoading, setRegionsLoading] = useState(true)
   const [provincesLoading, setProvincesLoading] = useState(false)
   const [citiesLoading, setCitiesLoading] = useState(false)
   const [barangaysLoading, setBarangaysLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   const [countrySearchOpen, setCountrySearchOpen] = useState(false)
-  
+
   const isUpdatingFromProps = useRef(false)
   const isUpdatingFromInternal = useRef(false)
   const previousValueRef = useRef(value)
@@ -156,13 +167,16 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
   const shouldAutoSetMindanao = eventLocation === 'MINDANAO'
   const shouldBeManual = eventLocation === 'INTERNATIONAL'
 
+  // Check if selected region is NCR
+  const isSelectedRegionNCR = isNCR(selectedRegion)
+
   // Load countries from REST Countries API
   useEffect(() => {
     const loadCountries = async () => {
       try {
         setCountriesLoading(true)
         const apiCountries = await countryService.getAllCountries()
-        
+
         const mappedCountries: Country[] = apiCountries.map((c: RestCountry) => ({
           code: c.cca2,
           name: c.name.common,
@@ -174,9 +188,9 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
           population: c.population,
           area: c.area
         }))
-        
+
         setCountries(mappedCountries)
-        
+
         if ((shouldAutoSetLocal || shouldAutoSetCountryOnly || shouldAutoSetMindanao) && !selectedCountry) {
           const philippines = mappedCountries.find(c => c.code === 'PH')
           if (philippines) {
@@ -197,16 +211,16 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
     if (!shouldAutoSetLocal) {
       return
     }
-    
+
     autoSetAttempts.current = 0
-    
+
     const autoSetLocation = async () => {
       if (isAutoSetting.current) {
         return
       }
-      
+
       isAutoSetting.current = true
-      
+
       try {
         if (!selectedCountry || selectedCountry.code !== 'PH') {
           const philippines = countries.find(c => c.code === 'PH')
@@ -216,79 +230,79 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
             return
           }
         }
-        
+
         if (regions.length === 0) {
           return
         }
-        
+
         if (!selectedRegion) {
           const regionX = regions.find(r => {
             const nameLower = r.name.toLowerCase()
             const codeLower = r.code.toLowerCase()
             const psgcCodeLower = r.psgcCode.toLowerCase()
-            
-            return nameLower.includes('region x') || 
-                   nameLower.includes('northern mindanao') ||
-                   nameLower === 'region x' ||
-                   codeLower === '10' ||
-                   psgcCodeLower === '100000000'
+
+            return nameLower.includes('region x') ||
+              nameLower.includes('northern mindanao') ||
+              nameLower === 'region x' ||
+              codeLower === '10' ||
+              psgcCodeLower === '100000000'
           })
-          
+
           if (regionX) {
             setSelectedRegion(regionX)
           } else {
             return
           }
         }
-        
+
         if (provinces.length === 0) {
           return
         }
-        
+
         if (!selectedProvince) {
           const misamisOriental = provinces.find(p => {
             const nameLower = p.name.toLowerCase()
             return nameLower.includes('misamis oriental') ||
-                   nameLower === 'misamis oriental'
+              nameLower === 'misamis oriental'
           })
-          
+
           if (misamisOriental) {
             setSelectedProvince(misamisOriental)
           } else {
             return
           }
         }
-        
+
         if (cities.length === 0) {
           return
         }
-        
+
         if (!selectedCity) {
           const cagayanDeOro = cities.find(c => {
             const nameLower = c.name.toLowerCase()
             return nameLower.includes('cagayan de oro') ||
-                   nameLower === 'cagayan de oro' ||
-                   nameLower.includes('cagayan de oro city')
+              nameLower === 'cagayan de oro' ||
+              nameLower.includes('cagayan de oro city')
           })
-          
+
           if (cagayanDeOro) {
             setSelectedCity(cagayanDeOro)
           } else {
             return
           }
         }
-        
+
       } catch (error) {
         console.error("Error in LOCAL auto-set:", error)
       } finally {
         isAutoSetting.current = false
       }
     }
-    
+
     const timer = setTimeout(() => {
       autoSetLocation()
     }, 100)
-    
+
     return () => clearTimeout(timer)
   }, [shouldAutoSetLocal, countries, regions, provinces, cities, selectedCountry, selectedRegion, selectedProvince, selectedCity, eventLocation])
 
@@ -296,16 +310,16 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
     if (!shouldAutoSetMindanao) {
       return
     }
-    
+
     autoSetAttempts.current = 0
-    
+
     const autoSetMindanaoLocation = async () => {
       if (isAutoSetting.current) {
         return
       }
-      
+
       isAutoSetting.current = true
-      
+
       try {
         if (!selectedCountry || selectedCountry.code !== 'PH') {
           const philippines = countries.find(c => c.code === 'PH')
@@ -315,42 +329,42 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
             return
           }
         }
-        
+
         if (regions.length === 0) {
           return
         }
-        
+
         if (!selectedRegion) {
           const regionX = regions.find(r => {
             const nameLower = r.name.toLowerCase()
             const codeLower = r.code.toLowerCase()
             const psgcCodeLower = r.psgcCode.toLowerCase()
-            
-            return nameLower.includes('region x') || 
-                   nameLower.includes('northern mindanao') ||
-                   nameLower === 'region x' ||
-                   codeLower === '10' ||
-                   psgcCodeLower === '100000000'
+
+            return nameLower.includes('region x') ||
+              nameLower.includes('northern mindanao') ||
+              nameLower === 'region x' ||
+              codeLower === '10' ||
+              psgcCodeLower === '100000000'
           })
-          
+
           if (regionX) {
             setSelectedRegion(regionX)
           } else {
             return
           }
         }
-        
+
       } catch (error) {
         console.error("Error in MINDANAO auto-set:", error)
       } finally {
         isAutoSetting.current = false
       }
     }
-    
+
     const timer = setTimeout(() => {
       autoSetMindanaoLocation()
     }, 100)
-    
+
     return () => clearTimeout(timer)
   }, [shouldAutoSetMindanao, countries, regions, selectedCountry, selectedRegion, eventLocation])
 
@@ -362,7 +376,7 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
 
   useEffect(() => {
     if (isUpdatingFromInternal.current) return
-    
+
     if (JSON.stringify(previousValueRef.current) === JSON.stringify(value)) return
 
     previousValueRef.current = value
@@ -405,9 +419,10 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
     loadRegions()
   }, [isPhilippines])
 
+  // Load provinces - skip if NCR
   useEffect(() => {
     const loadProvinces = async () => {
-      if (!selectedRegion || !isPhilippines) {
+      if (!selectedRegion || !isPhilippines || isSelectedRegionNCR) {
         setProvinces([])
         return
       }
@@ -423,27 +438,45 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
       }
     }
     loadProvinces()
-  }, [selectedRegion, isPhilippines])
+  }, [selectedRegion, isPhilippines, isSelectedRegionNCR])
 
+  // Load cities - can be from province OR directly from region if NCR
   useEffect(() => {
     const loadCities = async () => {
-      if (!selectedProvince || !isPhilippines) {
+      if (!selectedRegion || !isPhilippines) {
         setCities([])
         return
       }
-      try {
-        setCitiesLoading(true)
-        const citiesData = await psgcService.getCitiesByProvince(selectedProvince.code)
-        const convertedCities = citiesData.map(c => convertToCity(c, selectedProvince.code, selectedProvince.regionCode))
-        setCities(convertedCities)
-      } catch (err: any) {
-        console.error("Error loading cities:", err)
-      } finally {
-        setCitiesLoading(false)
+
+      if (isSelectedRegionNCR) {
+        try {
+          setCitiesLoading(true)
+          const citiesData = await psgcService.getCitiesByRegion(selectedRegion.code)
+          const convertedCities = citiesData.map(c => convertToCity(c, "", selectedRegion.code))
+          setCities(convertedCities)
+        } catch (err: any) {
+          console.error("Error loading cities for NCR:", err)
+        } finally {
+          setCitiesLoading(false)
+        }
+      }
+      else if (selectedProvince && !isSelectedRegionNCR) {
+        try {
+          setCitiesLoading(true)
+          const citiesData = await psgcService.getCitiesByProvince(selectedProvince.code)
+          const convertedCities = citiesData.map(c => convertToCity(c, selectedProvince.code, selectedProvince.regionCode))
+          setCities(convertedCities)
+        } catch (err: any) {
+          console.error("Error loading cities:", err)
+        } finally {
+          setCitiesLoading(false)
+        }
+      } else {
+        setCities([])
       }
     }
     loadCities()
-  }, [selectedProvince, isPhilippines])
+  }, [selectedRegion, selectedProvince, isPhilippines, isSelectedRegionNCR])
 
   useEffect(() => {
     const loadBarangays = async () => {
@@ -471,7 +504,7 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
     if (isUpdatingFromProps.current) return
 
     const prev = prevStateRef.current
-    const hasChanged = 
+    const hasChanged =
       prev.selectedCountry?.code !== selectedCountry?.code ||
       prev.selectedRegion?.code !== selectedRegion?.code ||
       prev.selectedProvince?.code !== selectedProvince?.code ||
@@ -496,7 +529,7 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
     const fullAddress = addressParts.join(", ")
 
     isUpdatingFromInternal.current = true
-    
+
     onChange({
       country: selectedCountry,
       region: selectedRegion,
@@ -515,7 +548,7 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
 
   const handleCountryChange = (countryCode: string) => {
     if (shouldAutoSetLocal || shouldAutoSetCountryOnly || shouldAutoSetMindanao) return
-    
+
     const country = countries.find(c => c.code === countryCode)
     if (country) {
       setSelectedCountry(country)
@@ -531,8 +564,8 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
     const region = regions.find(r => r.code === regionCode)
     if (region) {
       setSelectedRegion(region)
-      setSelectedProvince(undefined)
-      setSelectedCity(undefined)
+      setSelectedProvince(undefined) // Clear province when region changes
+      setSelectedCity(undefined) // Clear city when region changes
       setSelectedBarangay(undefined)
     }
   }
@@ -638,9 +671,9 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="mb-2">
               <Label className="text-sm font-medium">Region</Label>
-              <Select 
-                value={selectedRegion?.code || ""} 
-                onValueChange={handleRegionChange} 
+              <Select
+                value={selectedRegion?.code || ""}
+                onValueChange={handleRegionChange}
                 disabled={disabled || regionsLoading || shouldAutoSetLocal || shouldAutoSetMindanao}
               >
                 <SelectTrigger className="w-full">
@@ -660,15 +693,25 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
               </Select>
             </div>
 
+            {/* Province - Disabled and hidden for NCR */}
             <div className="mb-2">
-              <Label className="text-sm font-medium">Province</Label>
-              <Select 
-                value={selectedProvince?.code || ""} 
-                onValueChange={handleProvinceChange} 
-                disabled={disabled || provincesLoading || !selectedRegion || shouldAutoSetLocal}
+              <Label className={cn(
+                "text-sm font-medium",
+                isSelectedRegionNCR && "text-muted-foreground"
+              )}>
+                Province
+                {isSelectedRegionNCR && " (Not applicable for NCR)"}
+              </Label>
+              <Select
+                value={selectedProvince?.code || ""}
+                onValueChange={handleProvinceChange}
+                disabled={disabled || provincesLoading || !selectedRegion || shouldAutoSetLocal || isSelectedRegionNCR}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={provincesLoading ? "Loading provinces..." : "Select Province"} />
+                <SelectTrigger className={cn(
+                  "w-full",
+                  isSelectedRegionNCR && "bg-gray-100 cursor-not-allowed opacity-60"
+                )}>
+                  <SelectValue placeholder={provincesLoading ? "Loading provinces..." : (isSelectedRegionNCR ? "N/A" : "Select Province")} />
                 </SelectTrigger>
                 <SelectContent>
                   {provinces.length > 0 ? (
@@ -684,12 +727,13 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
               </Select>
             </div>
 
+            {/* City/Municipality - Enabled for NCR even without province */}
             <div className="mb-2">
               <Label className="text-sm font-medium">City/Municipality</Label>
-              <Select 
-                value={selectedCity?.code || ""} 
-                onValueChange={handleCityChange} 
-                disabled={disabled || citiesLoading || !selectedProvince || shouldAutoSetLocal}
+              <Select
+                value={selectedCity?.code || ""}
+                onValueChange={handleCityChange}
+                disabled={disabled || citiesLoading || !selectedRegion || (shouldAutoSetLocal && !isSelectedRegionNCR)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder={citiesLoading ? "Loading cities..." : "Select City/Municipality"} />
@@ -712,9 +756,9 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
 
             <div className="mb-2">
               <Label className="text-sm font-medium">Barangay</Label>
-              <Select 
-                value={selectedBarangay?.code || ""} 
-                onValueChange={handleBarangayChange} 
+              <Select
+                value={selectedBarangay?.code || ""}
+                onValueChange={handleBarangayChange}
                 disabled={disabled || barangaysLoading || !selectedCity}
               >
                 <SelectTrigger className="w-full">
@@ -773,13 +817,13 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
                 placeholder="City, State, or Province"
                 value={selectedCity?.name || selectedProvince?.name || ""}
                 onChange={(e) => {
-                  setSelectedCity({ 
-                    code: "manual", 
-                    name: e.target.value, 
-                    provinceCode: "", 
-                    regionCode: "", 
-                    psgcCode: "", 
-                    classification: "City" 
+                  setSelectedCity({
+                    code: "manual",
+                    name: e.target.value,
+                    provinceCode: "",
+                    regionCode: "",
+                    psgcCode: "",
+                    classification: "City"
                   })
                 }}
                 disabled={disabled}

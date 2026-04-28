@@ -1831,16 +1831,18 @@ export function UploadProofMergedModal({
         const totalMatch =
           text.match(
             new RegExp(
-              `total[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`,
-              "i",
-            ),
-          ) ||
-          text.match(
-            new RegExp(
               `amount[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`,
               "i",
             ),
-          ) ||
+          )
+          ||
+          text.match(
+            new RegExp(
+              `total[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`,
+              "i",
+            ),
+          )
+          ||
           text.match(
             new RegExp(
               `total\\s*amount\\s*sent[\\s#:=-]*${currencyPattern}?\\s?([\\d,]+\\.\\d{2})`,

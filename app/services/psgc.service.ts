@@ -101,7 +101,7 @@ class PSGCService {
 
   private async fetchFromAPI<T>(endpoint: string): Promise<T> {
     const cacheKey = endpoint;
-    
+
     if (this.isCacheValid(cacheKey)) {
       return this.cache.get(cacheKey);
     }
@@ -114,10 +114,10 @@ class PSGCService {
           'Content-Type': 'application/json',
         },
       });
-      
+
       this.cache.set(cacheKey, response.data);
       this.cacheExpiry.set(cacheKey, Date.now() + this.CACHE_TTL);
-      
+
       return response.data;
     } catch (error) {
       console.error(`Error fetching from API: ${endpoint}`, error);
@@ -178,6 +178,20 @@ class PSGCService {
     }
   }
 
+  async getCitiesByRegion(regionCode: string): Promise<PSGCCity[]> {
+    try {
+      return this.fetchFromAPI<PSGCCity[]>(`/regions/${regionCode}/cities-municipalities`);
+    } catch (error) {
+      try {
+        const allCities = await this.getAllCities();
+        return allCities.filter(city => city.regionCode === regionCode);
+      } catch (fallbackError) {
+        console.error("Error fetching cities by region:", fallbackError);
+        return [];
+      }
+    }
+  }
+
   async getBarangaysByCity(cityCode: string): Promise<PSGCBarangay[]> {
     // Use the nested endpoint
     return this.fetchFromAPI<PSGCBarangay[]>(`/cities-municipalities/${cityCode}/barangays`);
@@ -231,7 +245,7 @@ class PSGCService {
 
   async searchLocation(searchTerm: string): Promise<LocationSearchResult[]> {
     if (!searchTerm || searchTerm.length < 2) return [];
-    
+
     const [regions, provinces, cities, barangays] = await Promise.all([
       this.getAllRegions(),
       this.getAllProvinces(),
