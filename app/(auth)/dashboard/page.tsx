@@ -1566,7 +1566,10 @@ const Page = () => {
       current.totalPendingAmount += pending
       current.totalPaidAmount += paid
 
-      totalPendingAmount += pending
+      if (status === "PAYMENT_PENDING" || status === "PAYMENT_PARTIALLY_PAID") {
+        totalPendingAmount += pending
+      }
+
       totalPaidAmount += paid
       totalRefundAmount += refund
       totalExcess += excess

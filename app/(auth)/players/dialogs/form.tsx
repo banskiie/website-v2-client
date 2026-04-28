@@ -255,7 +255,7 @@ const FormDialog = (props: Props) => {
             ({ path, message }: { path: string; message: string }) =>
               formApi.fieldInfo[
                 path as keyof typeof formApi.fieldInfo
-              ].instance?.setErrorMap({
+              ]?.instance?.setErrorMap({
                 onSubmit: { message },
               }),
           );
@@ -280,7 +280,7 @@ const FormDialog = (props: Props) => {
                 ({ path, message }: { path: string; message: string }) =>
                   formApi.fieldInfo[
                     path as keyof typeof formApi.fieldInfo
-                  ].instance?.setErrorMap({
+                  ]?.instance?.setErrorMap({
                     onSubmit: { message },
                   }),
               );
@@ -291,6 +291,29 @@ const FormDialog = (props: Props) => {
 
   useEffect(() => {
     if (data && isUpdate) {
+      // Ensure address data is properly structured
+      const addressData = data.player.address ? {
+        country: data.player.address.country || undefined,
+        region: data.player.address.region || undefined,
+        province: data.player.address.province || undefined,
+        city: data.player.address.city || undefined,
+        barangay: data.player.address.barangay || undefined,
+        street: data.player.address.street || "",
+        zipCode: data.player.address.zipCode || "",
+        fullAddress: data.player.address.fullAddress || "",
+        coordinates: data.player.address.coordinates || undefined,
+      } : {
+        country: undefined,
+        region: undefined,
+        province: undefined,
+        city: undefined,
+        barangay: undefined,
+        street: "",
+        zipCode: "",
+        fullAddress: "",
+        coordinates: undefined,
+      };
+
       form.reset({
         firstName: data.player.firstName || "",
         middleName: data.player.middleName || "",
@@ -298,25 +321,17 @@ const FormDialog = (props: Props) => {
         suffix: data.player.suffix || "",
         email: data.player.email || "",
         phoneNumber: data.player.phoneNumber || "",
-        birthDate: data.player.birthDate
-          ? new Date(data.player.birthDate)
-          : new Date(),
+        birthDate: data.player.birthDate ? new Date(data.player.birthDate) : new Date(),
         gender: data.player.gender || Gender.MALE,
         achievements: data.player.achievements || [],
-        address: data.player.address || {
-          country: undefined,
-          region: undefined,
-          province: undefined,
-          city: undefined,
-          barangay: undefined,
-          street: "",
-          zipCode: "",
-          fullAddress: "",
-          coordinates: undefined,
-        },
+        address: addressData,
       });
+
+      setTimeout(() => {
+        form.update();
+      }, 0);
     }
-  }, [data, isUpdate]);
+  }, [data, isUpdate, form]);
 
   const onClose = () => {
     setOpen(false);
@@ -337,57 +352,57 @@ const FormDialog = (props: Props) => {
       coordinates: address.coordinates,
     };
   };
-  
+
   const locationDataToFormAddress = (location: LocationData): FormAddress => {
     return {
       country: location.country
         ? {
-            code: location.country.code || "",
-            name: location.country.name || "",
-            alpha2Code: location.country.alpha2Code,
-            alpha3Code: location.country.alpha3Code,
-            flag: location.country.flag,
-            region: location.country.region,
-            capital: location.country.capital,
-            population: location.country.population,
-            area: location.country.area,
-          }
+          code: location.country.code || "",
+          name: location.country.name || "",
+          alpha2Code: location.country.alpha2Code,
+          alpha3Code: location.country.alpha3Code,
+          flag: location.country.flag,
+          region: location.country.region,
+          capital: location.country.capital,
+          population: location.country.population,
+          area: location.country.area,
+        }
         : undefined,
       region: location.region
         ? {
-            code: location.region.code || "",
-            name: location.region.name || "",
-            regionName: location.region.regionName || "",
-            psgcCode: location.region.psgcCode || "",
-          }
+          code: location.region.code || "",
+          name: location.region.name || "",
+          regionName: location.region.regionName || "",
+          psgcCode: location.region.psgcCode || "",
+        }
         : undefined,
       province: location.province
         ? {
-            code: location.province.code || "",
-            name: location.province.name || "",
-            regionCode: location.province.regionCode || "",
-            psgcCode: location.province.psgcCode || "",
-          }
+          code: location.province.code || "",
+          name: location.province.name || "",
+          regionCode: location.province.regionCode || "",
+          psgcCode: location.province.psgcCode || "",
+        }
         : undefined,
       city: location.city
         ? {
-            code: location.city.code || "",
-            name: location.city.name || "",
-            provinceCode: location.city.provinceCode || "",
-            regionCode: location.city.regionCode || "",
-            psgcCode: location.city.psgcCode || "",
-            classification: location.city.classification || "",
-          }
+          code: location.city.code || "",
+          name: location.city.name || "",
+          provinceCode: location.city.provinceCode || "",
+          regionCode: location.city.regionCode || "",
+          psgcCode: location.city.psgcCode || "",
+          classification: location.city.classification || "",
+        }
         : undefined,
       barangay: location.barangay
         ? {
-            code: location.barangay.code || "",
-            name: location.barangay.name || "",
-            cityCode: location.barangay.cityCode || "",
-            provinceCode: location.barangay.provinceCode || "",
-            regionCode: location.barangay.regionCode || "",
-            psgcCode: location.barangay.psgcCode || "",
-          }
+          code: location.barangay.code || "",
+          name: location.barangay.name || "",
+          cityCode: location.barangay.cityCode || "",
+          provinceCode: location.barangay.provinceCode || "",
+          regionCode: location.barangay.regionCode || "",
+          psgcCode: location.barangay.psgcCode || "",
+        }
         : undefined,
       street: location.street || "",
       zipCode: location.zipCode || "",
@@ -454,6 +469,7 @@ const FormDialog = (props: Props) => {
           }}
         >
           <Tabs
+            key={isUpdate ? props._id : "create"}
             value={activeTab}
             onValueChange={setActiveTab}
             className="w-full"
@@ -723,8 +739,8 @@ const FormDialog = (props: Props) => {
                             >
                               {field.state.value
                                 ? genders.find(
-                                    (o) => o.value === field.state.value,
-                                  )?.label
+                                  (o) => o.value === field.state.value,
+                                )?.label
                                 : "Select Gender"}
                               <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -780,7 +796,7 @@ const FormDialog = (props: Props) => {
                   name="address"
                   children={(field) => {
                     return (
-                      <Field>
+                      <Field key={JSON.stringify(field.state.value)}>
                         <LocationSelector
                           value={formAddressToLocationData(field.state.value)}
                           onChange={(location) => {
@@ -863,7 +879,7 @@ const FormDialog = (props: Props) => {
                       );
                     }}
                   />
-                  
+
                   <p className="text-xs text-muted-foreground mt-2">
                     Add the player's achievements, awards, tournament wins, or recognitions.
                   </p>

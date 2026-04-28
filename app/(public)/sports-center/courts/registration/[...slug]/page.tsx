@@ -77,7 +77,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import Image from "next/image";
 import {
-  InputGroup, 
+  InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
@@ -2630,7 +2630,6 @@ export default function Page({ params }: RegistrationPageProps) {
                         name={`player${playerNum}Address` as FormFieldNames}
                         children={(field) => {
                           const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                          // Cast the field value to LocationData | undefined
                           const addressValue = field.state.value as LocationData | undefined;
 
                           return (
@@ -2638,7 +2637,6 @@ export default function Page({ params }: RegistrationPageProps) {
                               <LocationSelector
                                 value={addressValue}
                                 onChange={(location: LocationData) => {
-                                  // Cast the location to the expected type
                                   field.handleChange(location as any);
                                 }}
                                 disabled={isSubmitting || isUploading}

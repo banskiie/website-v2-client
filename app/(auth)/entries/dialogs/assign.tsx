@@ -78,6 +78,43 @@ const ENTRY = gql`
         birthDate
         email
         phoneNumber
+        address {
+          region {
+            code
+            name
+            regionName
+            psgcCode
+          }
+          province {
+            code
+            name
+            regionCode
+            psgcCode
+          }
+          city {
+            code
+            name
+            provinceCode
+            regionCode
+            psgcCode
+            classification
+          }
+          barangay {
+            code
+            name
+            cityCode
+            provinceCode
+            regionCode
+            psgcCode
+          }
+          street
+          zipCode
+          fullAddress
+          coordinates {
+            lat
+            lng
+          }
+        }
         validDocuments {
           documentURL
           documentType
@@ -94,6 +131,43 @@ const ENTRY = gql`
         birthDate
         email
         phoneNumber
+        address {
+          region {
+            code
+            name
+            regionName
+            psgcCode
+          }
+          province {
+            code
+            name
+            regionCode
+            psgcCode
+          }
+          city {
+            code
+            name
+            provinceCode
+            regionCode
+            psgcCode
+            classification
+          }
+          barangay {
+            code
+            name
+            cityCode
+            provinceCode
+            regionCode
+            psgcCode
+          }
+          street
+          zipCode
+          fullAddress
+          coordinates {
+            lat
+            lng
+          }
+        }
         validDocuments {
           documentURL
           documentType
@@ -109,6 +183,43 @@ const ENTRY = gql`
         birthDate
         email
         phoneNumber
+        address {
+          region {
+            code
+            name
+            regionName
+            psgcCode
+          }
+          province {
+            code
+            name
+            regionCode
+            psgcCode
+          }
+          city {
+            code
+            name
+            provinceCode
+            regionCode
+            psgcCode
+            classification
+          }
+          barangay {
+            code
+            name
+            cityCode
+            provinceCode
+            regionCode
+            psgcCode
+          }
+          street
+          zipCode
+          fullAddress
+          coordinates {
+            lat
+            lng
+          }
+        }
         validDocuments {
           documentURL
           documentType
@@ -125,6 +236,43 @@ const ENTRY = gql`
         birthDate
         email
         phoneNumber
+        address {
+          region {
+            code
+            name
+            regionName
+            psgcCode
+          }
+          province {
+            code
+            name
+            regionCode
+            psgcCode
+          }
+          city {
+            code
+            name
+            provinceCode
+            regionCode
+            psgcCode
+            classification
+          }
+          barangay {
+            code
+            name
+            cityCode
+            provinceCode
+            regionCode
+            psgcCode
+          }
+          street
+          zipCode
+          fullAddress
+          coordinates {
+            lat
+            lng
+          }
+        }
         validDocuments {
           documentURL
           documentType
@@ -156,6 +304,43 @@ const PLAYER_1 = gql`
       birthDate
       email
       phoneNumber
+      address {
+        region {
+          code
+          name
+          regionName
+          psgcCode
+        }
+        province {
+          code
+          name
+          regionCode
+          psgcCode
+        }
+        city {
+          code
+          name
+          provinceCode
+          regionCode
+          psgcCode
+          classification
+        }
+        barangay {
+          code
+          name
+          cityCode
+          provinceCode
+          regionCode
+          psgcCode
+        }
+        street
+        zipCode
+        fullAddress
+        coordinates {
+          lat
+          lng
+        }
+      }
       validDocuments {
         documentURL
         documentType
@@ -177,6 +362,43 @@ const PLAYER_2 = gql`
       birthDate
       email
       phoneNumber
+      address {
+        region {
+          code
+          name
+          regionName
+          psgcCode
+        }
+        province {
+          code
+          name
+          regionCode
+          psgcCode
+        }
+        city {
+          code
+          name
+          provinceCode
+          regionCode
+          psgcCode
+          classification
+        }
+        barangay {
+          code
+          name
+          cityCode
+          provinceCode
+          regionCode
+          psgcCode
+        }
+        street
+        zipCode
+        fullAddress
+        coordinates {
+          lat
+          lng
+        }
+      }
       validDocuments {
         documentURL
         documentType
@@ -198,6 +420,23 @@ const SUGGEST_PLAYERS = gql`
       birthDate
       email
       phoneNumber
+      address {
+        fullAddress
+        street
+        zipCode
+        region {
+          name
+        }
+        province {
+          name
+        }
+        city {
+          name
+        }
+        barangay {
+          name
+        }
+      }
       similarityScore
       matchReasons
     }
@@ -223,6 +462,15 @@ type SuggestPlayer = {
   birthDate: string;
   email?: string;
   phoneNumber?: string;
+  address?: {
+    fullAddress?: string;
+    street?: string;
+    zipCode?: string;
+    region?: { name: string };
+    province?: { name: string };
+    city?: { name: string };
+    barangay?: { name: string };
+  };
   similarityScore: number;
   matchReasons: string[];
 };
@@ -1119,6 +1367,7 @@ const AssignDialog = (props: Props) => {
         birthDate: false,
         phoneNumber: false,
         email: false,
+        address: false,
         validDocuments: false,
       },
       migratePlayer2Data: {
@@ -1129,6 +1378,7 @@ const AssignDialog = (props: Props) => {
         birthDate: false,
         phoneNumber: false,
         email: false,
+        address: false,
         validDocuments: false,
       },
     },
@@ -1151,6 +1401,7 @@ const AssignDialog = (props: Props) => {
             birthDate: false,
             phoneNumber: false,
             email: false,
+            address: false,
             validDocuments: false,
           });
           setDocumentSelections((prev) => ({ ...prev, player1: undefined }));
@@ -1170,6 +1421,7 @@ const AssignDialog = (props: Props) => {
             birthDate: false,
             phoneNumber: false,
             email: false,
+            address: false,
             validDocuments: false,
           });
           setDocumentSelections((prev) => ({ ...prev, player2: undefined }));
@@ -1985,6 +2237,7 @@ const AssignDialog = (props: Props) => {
                                   suffix: checked === true,
                                   birthDate: checked === true,
                                   phoneNumber: checked === true,
+                                  address: checked === true,
                                   email: checked === true,
                                   validDocuments: checked === true,
                                 },
@@ -2677,6 +2930,91 @@ const AssignDialog = (props: Props) => {
                           }}
                         />
                       </div>
+                      <div>
+                        <form.Field
+                          name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.address`}
+                          children={(field) => (
+                            <Field>
+                              <div className="flex items-center w-full gap-2">
+                                <div className="flex items-center justify-center">
+                                  <Checkbox
+                                    id={field.name}
+                                    name={field.name}
+                                    checked={field.state.value}
+                                    onBlur={field.handleBlur}
+                                    onCheckedChange={(checked) =>
+                                      field.handleChange(checked === true)
+                                    }
+                                    disabled={
+                                      isLoading ||
+                                      !form.getFieldValue(
+                                        `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                                  <span className="px-2 border w-full flex items-center justify-center py-1 text-center font-medium">
+                                    Address
+                                  </span>
+                                  {form.getFieldValue(
+                                    `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                  ) ? (
+                                    <>
+                                      <span
+                                        className={cn(
+                                          !field.state.value && "text-success bg-success/5",
+                                          "col-span-2 px-2 border w-full flex items-center justify-start py-1 text-clip",
+                                          !(tab === "player1"
+                                            ? player1?.address?.fullAddress
+                                            : player2?.address?.fullAddress) && "italic"
+                                        )}
+                                        title={tab === "player1"
+                                          ? player1?.address?.fullAddress || "N/A"
+                                          : player2?.address?.fullAddress || "N/A"}
+                                      >
+                                        {tab === "player1"
+                                          ? player1?.address?.fullAddress?.substring(0, 50) || "N/A"
+                                          : player2?.address?.fullAddress?.substring(0, 50) || "N/A"}
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          field.state.value && "text-warning bg-warning/5",
+                                          "col-span-2 px-2 border w-full flex items-center justify-start py-1 text-clip",
+                                          !(tab === "player1"
+                                            ? entry?.player1Entry?.address?.fullAddress
+                                            : entry?.player2Entry?.address?.fullAddress) && "italic"
+                                        )}
+                                        title={tab === "player1"
+                                          ? entry?.player1Entry?.address?.fullAddress || "N/A"
+                                          : entry?.player2Entry?.address?.fullAddress || "N/A"}
+                                      >
+                                        {tab === "player1"
+                                          ? entry?.player1Entry?.address?.fullAddress?.substring(0, 50) || "N/A"
+                                          : entry?.player2Entry?.address?.fullAddress?.substring(0, 50) || "N/A"}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span
+                                      className={cn(
+                                        field.state.value && "text-warning",
+                                        "col-span-4 px-2 border w-full flex items-center justify-start py-1 truncate",
+                                        !(tab === "player1"
+                                          ? entry?.player1Entry?.address?.fullAddress
+                                          : entry?.player2Entry?.address?.fullAddress) && "italic"
+                                      )}
+                                    >
+                                      {tab === "player1"
+                                        ? entry?.player1Entry?.address?.fullAddress?.substring(0, 50) || "N/A"
+                                        : entry?.player2Entry?.address?.fullAddress?.substring(0, 50) || "N/A"}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </Field>
+                          )}
+                        />
+                      </div>
                     </div>
                   </>
                 )}
@@ -2757,6 +3095,12 @@ const AssignDialog = (props: Props) => {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">Phone:</span>
                           <span>{player.phoneNumber}</span>
+                        </div>
+                      )}
+                      {player.address?.fullAddress && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Address:</span>
+                          <span className="truncate">{player.address.fullAddress}</span>
                         </div>
                       )}
                     </div>
@@ -3016,6 +3360,9 @@ const AssignDialog = (props: Props) => {
                             {player.phoneNumber && (
                               <div>Phone: {player.phoneNumber}</div>
                             )}
+                            {player.address?.fullAddress && (
+                              <div>Address: {player.address.fullAddress}</div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -3214,6 +3561,7 @@ const AssignDialog = (props: Props) => {
                             birthDate: checked === true,
                             phoneNumber: checked === true,
                             email: checked === true,
+                            address: checked === true,
                             validDocuments: checked === true,
                           },
                         );
@@ -3882,9 +4230,97 @@ const AssignDialog = (props: Props) => {
                       );
                     }}
                   />
+
+                </div>
+                <div>
+                  <form.Field
+                    name={`migrate${tab === "player1" ? "Player1" : "Player2"}Data.address`}
+                    children={(field) => (
+                      <Field>
+                        <div className="flex items-center w-full gap-2">
+                          <div className="flex items-center justify-center">
+                            <Checkbox
+                              id={field.name}
+                              name={field.name}
+                              checked={field.state.value}
+                              onBlur={field.handleBlur}
+                              onCheckedChange={(checked) =>
+                                field.handleChange(checked === true)
+                              }
+                              disabled={
+                                isLoading ||
+                                !form.getFieldValue(
+                                  `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="text-xs grid grid-cols-5 col-span-2 w-full min-h-8">
+                            <span className="px-2 border w-full flex items-center justify-center py-1 text-center font-medium">
+                              Address
+                            </span>
+                            {form.getFieldValue(
+                              `connected${tab === "player1" ? "Player1" : "Player2"}`,
+                            ) ? (
+                              <>
+                                <span
+                                  className={cn(
+                                    !field.state.value && "text-success bg-success/5",
+                                    "col-span-2 px-2 border w-full flex items-center justify-start py-1 text-clip",
+                                    !(tab === "player1"
+                                      ? player1?.address?.fullAddress
+                                      : player2?.address?.fullAddress) && "italic"
+                                  )}
+                                  title={tab === "player1"
+                                    ? player1?.address?.fullAddress || "N/A"
+                                    : player2?.address?.fullAddress || "N/A"}
+                                >
+                                  {tab === "player1"
+                                    ? player1?.address?.fullAddress?.substring(0, 50) || "N/A"
+                                    : player2?.address?.fullAddress?.substring(0, 50) || "N/A"}
+                                </span>
+                                <span
+                                  className={cn(
+                                    field.state.value && "text-warning bg-warning/5",
+                                    "col-span-2 px-2 border w-full flex items-center justify-start py-1 text-clip",
+                                    !(tab === "player1"
+                                      ? entry?.player1Entry?.address?.fullAddress
+                                      : entry?.player2Entry?.address?.fullAddress) && "italic"
+                                  )}
+                                  title={tab === "player1"
+                                    ? entry?.player1Entry?.address?.fullAddress || "N/A"
+                                    : entry?.player2Entry?.address?.fullAddress || "N/A"}
+                                >
+                                  {tab === "player1"
+                                    ? entry?.player1Entry?.address?.fullAddress?.substring(0, 50) || "N/A"
+                                    : entry?.player2Entry?.address?.fullAddress?.substring(0, 50) || "N/A"}
+                                </span>
+                              </>
+                            ) : (
+                              <span
+                                className={cn(
+                                  field.state.value && "text-warning",
+                                  "col-span-4 px-2 border w-full flex items-center justify-start py-1 truncate",
+                                  !(tab === "player1"
+                                    ? entry?.player1Entry?.address?.fullAddress
+                                    : entry?.player2Entry?.address?.fullAddress) && "italic"
+                                )}
+                              >
+                                {tab === "player1"
+                                  ? entry?.player1Entry?.address?.fullAddress?.substring(0, 50) || "N/A"
+                                  : entry?.player2Entry?.address?.fullAddress?.substring(0, 50) || "N/A"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Field>
+                    )}
+                  />
                 </div>
               </div>
+
             </>
+
           )}
       </FieldSet>
     );
