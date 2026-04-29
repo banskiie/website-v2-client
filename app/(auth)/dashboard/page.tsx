@@ -470,6 +470,7 @@ interface EventEntryCount {
   percentage: number
   earlyBirdCount: number
   verifiedCount: number
+  rejectedCount: number
   pendingCount: number
   totalAmount: number
 }
@@ -1660,6 +1661,7 @@ const Page = () => {
           earlyBirdCount: 0,
           verifiedCount: 0,
           pendingCount: 0,
+          rejectedCount: 0,
           totalAmount: 0,
         })
       }
@@ -1681,6 +1683,9 @@ const Page = () => {
         entry.currentStatus === "LEVEL_PENDING"
       ) {
         eventData.pendingCount++
+      }
+      if (entry.currentStatus === "REJECTED") {
+        eventData.rejectedCount++
       }
     })
 
@@ -2414,6 +2419,8 @@ const Page = () => {
                       (event.verifiedCount / event.count) * 100
                     const pendingPercentage =
                       (event.pendingCount / event.count) * 100
+                    const rejectedPercentage =
+                      (event.rejectedCount / event.count) * 100
 
                     return (
                       <div
@@ -2459,6 +2466,13 @@ const Page = () => {
                               title={`Pending: ${event.pendingCount} entries`}
                             />
                           )}
+                          {event.rejectedCount > 0 && (
+                            <div
+                              className="h-full bg-yellow-500 transition-all duration-500 ease-in-out"
+                              style={{ width: `${rejectedPercentage}%` }}
+                              title={`Pending: ${event.rejectedCount} entries`}
+                            />
+                          )}
                         </div>
 
                         <div className="flex items-center justify-between text-xs mt-1">
@@ -2480,6 +2494,12 @@ const Page = () => {
                               className="bg-yellow-50 text-yellow-700 border-yellow-200"
                             >
                               Pending: {event.pendingCount}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="bg-yellow-50 text-red-700 border-red-200"
+                            >
+                              Reject: {event.rejectedCount}
                             </Badge>
                           </div>
                           <span className="font-medium text-muted-foreground">

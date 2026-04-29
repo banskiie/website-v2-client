@@ -177,23 +177,32 @@ const ApproveDialog = (props: Props) => {
       setRemainingSlotsAfter(remainingSlotsAfterApproval);
       setMaxEntries(eventDetails.maxEntries);
 
-      if (remainingSlotsAfterApproval <= 5 && remainingSlotsAfterApproval > 0) {
+      console.log({
+        maxEntries: eventDetails.maxEntries,
+        approvedCount,
+        remainingSlotsBeforeApproval,
+        remainingSlotsAfterApproval,
+        warningType, // This will be null at this point
+        isDanger: warningType === "danger" // This will be false at this point
+      });
+
+      if (remainingSlotsBeforeApproval <= 5 && remainingSlotsBeforeApproval > 0) {
         setWarningType("warning");
-        if (remainingSlotsAfterApproval === 1) {
+        if (remainingSlotsBeforeApproval === 1) {
           setWarningMessage(
-            `⚠️ LAST SLOT! After approving this entry, only 1 slot will remain for "${eventDetails.name}".`
+            `⚠️ LAST SLOT! Only 1 slot remaining for "${eventDetails.name}".`
           );
         } else {
           setWarningMessage(
-            `⚠️ WARNING: After approving this entry, only ${remainingSlotsAfterApproval} slot${remainingSlotsAfterApproval !== 1 ? 's' : ''} will remain for "${eventDetails.name}"!`
+            `⚠️ WARNING: Only ${remainingSlotsBeforeApproval} slot${remainingSlotsBeforeApproval !== 1 ? 's' : ''} remaining for "${eventDetails.name}"!`
           );
         }
-      } else if (remainingSlotsAfterApproval === 0) {
+      } else if (remainingSlotsBeforeApproval === 0) {
         setWarningType("danger");
         setWarningMessage(
-          `❌ EVENT WILL BE FULL: After approving this entry, "${eventDetails.name}" will reach its maximum capacity of ${eventDetails.maxEntries} entries.`
+          `❌ EVENT IS FULL: "${eventDetails.name}" has reached maximum capacity of ${eventDetails.maxEntries} entries.`
         );
-      } else if (remainingSlotsAfterApproval < 0) {
+      } else if (remainingSlotsBeforeApproval < 0) {
         setWarningType("danger");
         setWarningMessage(
           `❌ EVENT OVER CAPACITY: This event already has ${approvedCount} approved entries out of ${eventDetails.maxEntries} maximum. This entry cannot be approved.`
