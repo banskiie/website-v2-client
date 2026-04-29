@@ -10,10 +10,10 @@ export async function POST(req: Request) {
   const tournamentName = result.tournament
   const events = result.events.map((event: any) => ({
     "Event Name": event.eventName,
-    Total: event.total,
-    Paid: event.paid,
-    Approved: event.approved,
     Pending: event.pending,
+    Approved: event.approved,
+    Paid: event.paid,
+    "App. Total": event.paid + event.approved,
   }))
   // Create worksheet with tournament name in first row
   const worksheet = XLSX.utils.json_to_sheet([[tournamentName]], {
