@@ -753,6 +753,11 @@ export default function Page({ params }: RegistrationPageProps) {
         variables: { eventId },
       })) as { data: CheckEventEntriesResponse };
 
+      console.log("📊 Event Data:", data);
+      console.log("   Max Entries:", data?.event?.maxEntries);
+      console.log("   Current Entry Count:", data?.entryCountByEvent);
+      console.log("   Is Full:", data?.entryCountByEvent >= data?.event?.maxEntries);
+
       if (data?.event?.maxEntries && data.event.maxEntries > 0) {
         const totalEntries = data?.entryCountByEvent || 0;
         const isFull = totalEntries >= data.event.maxEntries;
@@ -2617,7 +2622,7 @@ export default function Page({ params }: RegistrationPageProps) {
                         ))}
                       </FieldGroup>
 
-{/* Dari Address */}
+                      {/* Dari Address */}
                       {/* <div className="flex items-start justify-start gap-2 mt-6 mb-2">
                         <div className="p-2 bg-linear-to-r from-green-500 to-teal-600 rounded-lg">
                           <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
