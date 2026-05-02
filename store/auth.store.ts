@@ -63,6 +63,7 @@ export const useAuthStore = create<AuthState>()(
             token: get().accessToken,
           },
         })
+        window.location.href = "/"
       },
       refreshAuthUser: async () => {
         try {
@@ -82,7 +83,6 @@ export const useAuthStore = create<AuthState>()(
         })
         set({ accessToken: null, user: null, isAuthenticated: false })
         // console.log("Auth cleared, redirecting to login...")
-        // window.location.href = "/"
       },
       refreshToken: async () => {
         const response: any = await client.mutate({
