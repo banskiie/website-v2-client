@@ -40,11 +40,11 @@ class CountryService {
       const response = await fetch(
         `${this.baseUrl}/all?fields=name,cca2,cca3,flags,capital,region,subregion,population,area,languages`
       );
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch countries: ${response.status}`);
       }
-      
+
       const data = await response.json();
       this.cache = data;
       return data;
