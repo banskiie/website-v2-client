@@ -14,6 +14,8 @@ export async function POST(req: Request) {
     Approved: event.approved,
     Paid: event.paid,
     "App. Total": event.paid + event.approved,
+    "Max Slots": event.slots,
+    "Pending Slots": (event.paid + event.approved) < event.slots ? event.slots - (event.paid + event.approved) : 0,
   }))
   // Create worksheet with tournament name in first row
   const worksheet = XLSX.utils.json_to_sheet([[tournamentName]], {

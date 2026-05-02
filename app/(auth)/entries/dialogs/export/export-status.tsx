@@ -31,6 +31,7 @@ const EXPORT_ENTRIES = gql`
     exportEntries(tournamentId: $tournamentId) {
       tournament
       events {
+        slots
         eventName
         total
         paid
