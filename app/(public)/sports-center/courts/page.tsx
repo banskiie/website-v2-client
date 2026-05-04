@@ -735,11 +735,11 @@ function Page() {
                         )}
 
                       <div className="mt-2 flex flex-wrap gap-1 sm:gap-1.5">
-                        {tournament.hasFreeJersey && (
+                        {/* {tournament.hasFreeJersey && (
                           <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 bg-purple-50 text-purple-700 text-[9px] sm:text-[10px] font-medium rounded-full border border-purple-200">
                             Free Jersey
                           </span>
-                        )}
+                        )} */}
                         {tournament.ticket && (
                           <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 bg-gray-50 text-gray-700 text-[9px] sm:text-[10px] font-medium rounded-full border border-gray-200">
                             {tournament.ticket}
@@ -952,11 +952,11 @@ function Page() {
                       </div>
 
                       <div className="mt-2 flex flex-wrap gap-1 sm:gap-1.5">
-                        {tournament.hasFreeJersey && (
+                        {/* {tournament.hasFreeJersey && (
                           <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 bg-purple-50 text-purple-700 text-[9px] sm:text-[10px] font-medium rounded-full border border-purple-200">
                             Free Jersey
                           </span>
-                        )}
+                        )} */}
                         {tournament.ticket && (
                           <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 bg-gray-50 text-gray-700 text-[9px] sm:text-[10px] font-medium rounded-full border border-gray-200">
                             {tournament.ticket}
