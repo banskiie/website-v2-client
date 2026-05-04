@@ -50,7 +50,7 @@ export default function SortableEntry({
                         type="text"
                         value={entry.entryNumber}
                         onChange={(e) => onChange(index, "entryNumber", e.target.value)}
-                        placeholder="Example: 000V8_0001"
+                        placeholder="Example: 000V8"
                         className="w-full placeholder:text-sm"
                     />
                 </div>
