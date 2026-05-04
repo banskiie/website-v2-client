@@ -174,6 +174,7 @@ const GET_DUPLICATE_ENTRIES = gql`
   query GetAllDuplicateEntries($tournamentId: String) {
     getAllDuplicateEntries(tournamentId: $tournamentId) {
       totalGroups
+      totalEntries
       duplicateGroups {
         key
         total
@@ -349,6 +350,7 @@ interface DuplicateEntryGroup {
 interface DuplicateEntriesData {
   getAllDuplicateEntries: {
     totalGroups: number;
+    totalEntries: number;
     duplicateGroups: DuplicateEntryGroup[];
   };
 }
@@ -553,15 +555,26 @@ const DuplicateEntriesDialog = ({ open, onOpenChange, tournamentId }: { open: bo
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-700">Total Players with Duplicates</p>
-                  <p className="text-2xl font-bold text-blue-800">{duplicateData?.totalGroups}</p>
-                </div>
-                <Flag className="h-8 w-8 text-blue-400" />
-              </div>
-            </div>
+           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+  <div className="flex items-center justify-between mb-3">
+    <div>
+      <p className="text-sm text-blue-700">Total Players with Duplicates</p>
+      <p className="text-2xl font-bold text-blue-800">{duplicateData?.totalGroups}</p>
+    </div>
+    <Flag className="h-8 w-8 text-blue-400" />
+  </div>
+  <div className="border-t border-blue-200 pt-3 mt-1">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-blue-700">Total Duplicate Entries</p>
+        <p className="text-2xl font-bold text-blue-800">{duplicateData?.totalEntries}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-xs text-blue-600">Entries that have duplicate players</p>
+      </div>
+    </div>
+  </div>
+</div>
 
             {duplicateData?.duplicateGroups?.map((group: DuplicateEntryGroup) => (
               <div key={group.key} className="border rounded-lg overflow-hidden">
