@@ -566,7 +566,7 @@ const DuplicateEntriesDialog = ({ open, onOpenChange, tournamentId }: { open: bo
   <div className="border-t border-blue-200 pt-3 mt-1">
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm text-blue-700">Total Duplicate Entries</p>
+        <p className="text-sm text-blue-700">Total Double Entries</p>
         <p className="text-2xl font-bold text-blue-800">{duplicateData?.totalEntries}</p>
       </div>
       <div className="text-right">
