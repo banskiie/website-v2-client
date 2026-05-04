@@ -314,18 +314,10 @@ export const JerseySizeEnum = z
   ])
   .refine((val) => !!val, { message: "Jersey Size is required" })
 
+// YEAR-ONLY age calculation - ignores months and days completely
 const calculateAge = (birthDate: Date, referenceDate: Date): number => {
-  let age = referenceDate.getFullYear() - birthDate.getFullYear()
-  const monthDiff = referenceDate.getMonth() - birthDate.getMonth()
-
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && referenceDate.getDate() < birthDate.getDate())
-  ) {
-    age--
-  }
-
-  return age
+  // Only compare years, not months or days
+  return referenceDate.getFullYear() - birthDate.getFullYear()
 }
 
 const getBaseFields = (hasFreeJersey: boolean) => {
@@ -430,7 +422,7 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
   const schema = z.object(allFields)
 
   return schema.superRefine((data, ctx) => {
-    // Age validation for Player 1
+    // Age validation for Player 1 - YEAR ONLY
     if (eventData?.tournamentStart && data.player1Birthday) {
       const birthDate = new Date(data.player1Birthday)
       const tournamentDate = new Date(eventData.tournamentStart)
@@ -444,7 +436,7 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Player 1: Age ${age} is below minimum age of ${eventData.minAge}`,
+          message: `Player 1: Age ${age} is below minimum age of ${eventData.minAge} (based on year ${tournamentDate.getFullYear()})`,
           path: ["player1Birthday"],
         })
       }
@@ -456,13 +448,13 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Player 1: Age ${age} is above maximum age of ${eventData.maxAge}`,
+          message: `Player 1: Age ${age} is above maximum age of ${eventData.maxAge} (based on year ${tournamentDate.getFullYear()})`,
           path: ["player1Birthday"],
         })
       }
     }
 
-    // Age validation for Player 2
+    // Age validation for Player 2 - YEAR ONLY
     if (eventData?.tournamentStart && data.player2Birthday) {
       const birthDate = new Date(data.player2Birthday)
       const tournamentDate = new Date(eventData.tournamentStart)
@@ -476,7 +468,7 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Player 2: Age ${age} is below minimum age of ${eventData.minAge}`,
+          message: `Player 2: Age ${age} is below minimum age of ${eventData.minAge} (based on year ${tournamentDate.getFullYear()})`,
           path: ["player2Birthday"],
         })
       }
@@ -488,7 +480,7 @@ const createDoublesSchema = (hasFreeJersey: boolean, eventData?: any) => {
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Player 2: Age ${age} is above maximum age of ${eventData.maxAge}`,
+          message: `Player 2: Age ${age} is above maximum age of ${eventData.maxAge} (based on year ${tournamentDate.getFullYear()})`,
           path: ["player2Birthday"],
         })
       }
@@ -584,7 +576,7 @@ const createSinglesSchema = (hasFreeJersey: boolean, eventData?: any) => {
   const schema = z.object(allFields)
 
   return schema.superRefine((data, ctx) => {
-    // Age validation for Player 1
+    // Age validation for Player 1 - YEAR ONLY
     if (eventData?.tournamentStart && data.player1Birthday) {
       const birthDate = new Date(data.player1Birthday)
       const tournamentDate = new Date(eventData.tournamentStart)
@@ -598,7 +590,7 @@ const createSinglesSchema = (hasFreeJersey: boolean, eventData?: any) => {
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Age ${age} is below minimum age of ${eventData.minAge}`,
+          message: `Age ${age} is below minimum age of ${eventData.minAge} (based on year ${tournamentDate.getFullYear()})`,
           path: ["player1Birthday"],
         })
       }
@@ -610,7 +602,7 @@ const createSinglesSchema = (hasFreeJersey: boolean, eventData?: any) => {
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Age ${age} is above maximum age of ${eventData.maxAge}`,
+          message: `Age ${age} is above maximum age of ${eventData.maxAge} (based on year ${tournamentDate.getFullYear()})`,
           path: ["player1Birthday"],
         })
       }

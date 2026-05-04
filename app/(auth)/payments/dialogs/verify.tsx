@@ -81,6 +81,7 @@ const VERIFY = gql`
 type Props = {
   _id?: string
   onClose?: () => void
+  trigger?: React.ReactNode
 }
 
 const VerifyDialog = (props: Props) => {
@@ -109,10 +110,15 @@ const VerifyDialog = (props: Props) => {
   const onSubmit = async () => {
     try {
       const result: any = await verifyPayment()
-      if (result) onClose()
+      if (result.data?.verifyPayment?.ok) {
+        toast.success("Payment has been verified successfully")
+        onClose()
+      } else if (result.data?.verifyPayment?.message) {
+        toast.error(result.data.verifyPayment.message)
+      }
     } catch (error: any) {
-      console.error("Error changing player status:", error)
-      toast.error(error.message || "Failed to change player status.")
+      console.error("Error verifying payment:", error)
+      toast.error(error.message || "Failed to verify payment.")
     }
   }
 
@@ -121,59 +127,67 @@ const VerifyDialog = (props: Props) => {
     props.onClose?.()
   }
 
+  // If trigger is provided, use it as a Button, otherwise use DropdownMenuItem for menu context
+  const renderTrigger = () => {
+    if (props.trigger) {
+      return props.trigger
+    }
+    return (
+      <DropdownMenuItem
+        onSelect={(e) => e.preventDefault()}
+        className="text-success focus:bg-success/10 focus:text-success"
+      >
+        Verify
+      </DropdownMenuItem>
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <form>
-        <DialogTrigger asChild>
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="text-success focus:bg-success/10 focus:text-success"
+      <DialogTrigger asChild>
+        {renderTrigger()}
+      </DialogTrigger>
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogHeader>
+          <DialogTitle>Verify Payment</DialogTitle>
+          <DialogDescription>
+            <span className="block text-foreground">
+              Are you sure you want to verify this payment?
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+        <ViewDialog
+          externalUse
+          _id={data?.payment?._id}
+          title={`Click to view details: Ref. No. #${data?.payment?.referenceNumber} 🔍`}
+          titleClassName="block text-sm font-medium"
+        />
+        <div>
+          <span className="block text-xs">
+            <span className="font-bold text-info">*</span>This will send an
+            email notification to the players.
+          </span>
+          <span className="block text-xs">
+            <span className="font-bold text-info">*</span>This will also
+            verify the player entries involved that are fully paid by this
+            payment.
+          </span>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            loading={loading}
+            variant="success"
+            onClick={onSubmit}
+            className="w-22.5"
           >
             Verify
-          </DropdownMenuItem>
-        </DialogTrigger>
-        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>Verify Payment</DialogTitle>
-            <DialogDescription>
-              <span className="block text-foreground">
-                Are you sure you want to verify this payment?
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-          <ViewDialog
-            externalUse
-            _id={data?.payment?._id}
-            title={`Click to view details: Ref. No. #${data?.payment?.referenceNumber} 🔍`}
-            titleClassName="block text-sm font-medium"
-          />
-          <div>
-            <span className="block text-xs">
-              <span className="font-bold text-info">*</span>This will send an
-              email notification to the players.
-            </span>
-            <span className="block text-xs">
-              <span className="font-bold text-info">*</span>This will also
-              verify the player entries involved that are fully paid by this
-              payment.
-            </span>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              loading={loading}
-              variant="success"
-              onClick={onSubmit}
-              className="w-22.5"
-            >
-              Verify
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </form>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   )
 }

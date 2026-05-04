@@ -90,6 +90,7 @@ const REJECT = gql`
 type Props = {
   _id?: string
   onClose?: () => void
+  trigger?: React.ReactNode
 }
 
 const RejectDialog = (props: Props) => {
@@ -156,6 +157,8 @@ const RejectDialog = (props: Props) => {
       if (result.data?.rejectPayment?.ok) {
         toast.success("Payment has been rejected")
         onClose()
+      } else if (result.data?.rejectPayment?.message) {
+        toast.error(result.data.rejectPayment.message)
       }
     } catch (error: any) {
       console.error("Error rejecting payment:", error)
@@ -171,147 +174,153 @@ const RejectDialog = (props: Props) => {
     props.onClose?.()
   }
 
+  // If trigger is provided, use it, otherwise use DropdownMenuItem for menu context
+  const renderTrigger = () => {
+    if (props.trigger) {
+      return props.trigger
+    }
+    return (
+      <DropdownMenuItem
+        onSelect={(e) => e.preventDefault()}
+        className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+      >
+        Reject
+      </DropdownMenuItem>
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <form>
-        <DialogTrigger asChild>
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-          >
-            Reject
-          </DropdownMenuItem>
-        </DialogTrigger>
-        <DialogContent
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          className="max-w-md"
-        >
-          <DialogHeader>
-            <DialogTitle>Reject Payment</DialogTitle>
-            <DialogDescription>
-              <span className="block text-foreground">
-                Are you sure you want to reject this payment?
-              </span>
-            </DialogDescription>
-          </DialogHeader>
+      <DialogTrigger asChild>
+        {renderTrigger()}
+      </DialogTrigger>
+      <DialogContent
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="max-w-md"
+      >
+        <DialogHeader>
+          <DialogTitle>Reject Payment</DialogTitle>
+          <DialogDescription>
+            <span className="block text-foreground">
+              Are you sure you want to reject this payment?
+            </span>
+          </DialogDescription>
+        </DialogHeader>
 
-          <ViewDialog
-            externalUse
-            _id={data?.payment?._id}
-            title={`Click to view details: Ref. No. ${data?.payment?.referenceNumber}`}
-            titleClassName="block text-sm font-medium"
-          />
+        <ViewDialog
+          externalUse
+          _id={data?.payment?._id}
+          title={`Click to view details: Ref. No. ${data?.payment?.referenceNumber}`}
+          titleClassName="block text-sm font-medium"
+        />
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="rejection-type">Rejection Type</Label>
-              <Select
-                value={rejectionType}
-                onValueChange={(value: "REJECTED" | "DUPLICATE") =>
-                  setRejectionType(value)
-                }
-              >
-                <SelectTrigger id="rejection-type">
-                  <SelectValue placeholder="Select rejection type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="REJECTED">Reject Payment</SelectItem>
-                  <SelectItem value="DUPLICATE">Mark as Duplicate</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {rejectionType === "REJECTED" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="rejection-reason">
-                    Reason for Rejection{" "}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={rejectionReason}
-                    onValueChange={handleReasonChange}
-                  >
-                    <SelectTrigger id="rejection-reason">
-                      <SelectValue placeholder="Select a reason" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {predefinedReasons.map((reason, index) => (
-                        <SelectItem key={index} value={reason}>
-                          {reason}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="custom">Custom reason...</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {(rejectionReason === "custom" || rejectionReason === "") && (
-                  <div className="space-y-2">
-                    <Label htmlFor="custom-reason">
-                      Custom Reason <span className="text-destructive">*</span>
-                    </Label>
-                    <Textarea
-                      id="custom-reason"
-                      placeholder="Please provide a detailed reason for rejection..."
-                      value={customReason}
-                      onChange={(e) => setCustomReason(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-
-            {rejectionType === "DUPLICATE" && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
-                <p className="text-sm text-destructive font-medium">
-                  This will mark the payment as "DUPLICATE" status.
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  This action should only be used when this payment is a
-                  duplicate of another payment.
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <span className="block text-xs">
-                <span className="font-bold text-red-500">* </span>This will send
-                an email notification to the payer about the rejection.
-              </span>
-              <span className="block text-xs">
-                <span className="font-bold text-red-500">* </span>Payment status
-                will be updated to{" "}
-                <span className="font-semibold">
-                  {rejectionType === "DUPLICATE" ? "DUPLICATE" : "REJECTED"}
-                </span>
-              </span>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              loading={loading}
-              variant="destructive"
-              onClick={onSubmit}
-              disabled={
-                rejectionType === "REJECTED" &&
-                !rejectionReason &&
-                !customReason
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="rejection-type">Rejection Type</Label>
+            <Select
+              value={rejectionType}
+              onValueChange={(value: "REJECTED" | "DUPLICATE") =>
+                setRejectionType(value)
               }
             >
-              {rejectionType === "DUPLICATE"
-                ? "Mark as Duplicate"
-                : "Reject Payment"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </form>
+              <SelectTrigger id="rejection-type">
+                <SelectValue placeholder="Select rejection type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="REJECTED">Reject Payment</SelectItem>
+                <SelectItem value="DUPLICATE">Mark as Duplicate</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {rejectionType === "REJECTED" && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="rejection-reason">
+                  Reason for Rejection{" "}
+                  <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={rejectionReason}
+                  onValueChange={handleReasonChange}
+                >
+                  <SelectTrigger id="rejection-reason">
+                    <SelectValue placeholder="Select a reason" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {predefinedReasons.map((reason, index) => (
+                      <SelectItem key={index} value={reason}>
+                        {reason}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Custom reason...</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(rejectionReason === "custom" || rejectionReason === "") && (
+                <div className="space-y-2">
+                  <Label htmlFor="custom-reason">
+                    Custom Reason <span className="text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    id="custom-reason"
+                    placeholder="Please provide a detailed reason for rejection..."
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {rejectionType === "DUPLICATE" && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+              <p className="text-sm text-destructive font-medium">
+                This will mark the payment as "DUPLICATE" status.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                This action should only be used when this payment is a
+                duplicate of another payment.
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <span className="block text-xs">
+              <span className="font-bold text-red-500">* </span>This will send
+              an email notification to the payer about the rejection.
+            </span>
+            <span className="block text-xs">
+              <span className="font-bold text-red-500">* </span>Payment status
+              will be updated to{" "}
+              <span className="font-semibold">
+                {rejectionType === "DUPLICATE" ? "DUPLICATE" : "REJECTED"}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            loading={loading}
+            variant="destructive"
+            onClick={onSubmit}
+            disabled={
+              rejectionType === "REJECTED" && !rejectionReason && !customReason
+            }
+          >
+            {rejectionType === "DUPLICATE"
+              ? "Mark as Duplicate"
+              : "Reject Payment"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   )
 }

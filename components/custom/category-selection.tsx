@@ -2099,12 +2099,12 @@ export function UploadProofMergedModal({
     } catch (error: any) {
       console.error("Error checking duplicate:", error)
 
-      toast.error(
-        "Unable to check for duplicate references. Please verify your reference number is unique.",
-        {
-          duration: 5000,
-        },
-      )
+      // toast.error(
+      //   "Unable to check for duplicate references. Please verify your reference number is unique.",
+      //   {
+      //     duration: 5000,
+      //   },
+      // )
 
       setShowConfirmationDialog(true)
     } finally {
@@ -3738,7 +3738,7 @@ export function UploadProofMergedModal({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 mb-4">
+              {/* <div className="flex items-center gap-2 mb-4">
                 <input
                   id="jointPayment"
                   type="checkbox"
@@ -3752,7 +3752,7 @@ export function UploadProofMergedModal({
                 >
                   Want to Pay for Multiple Entries?
                 </label>
-              </div>
+              </div> */}
 
               <Button
                 className="w-full bg-green-600 text-white cursor-pointer hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -3790,7 +3790,7 @@ export function UploadProofMergedModal({
                     <span>Submitting...</span>
                   </div>
                 ) : (
-                  "Submit Payment"
+                  "Submit"
                 )}
               </Button>
             </div>

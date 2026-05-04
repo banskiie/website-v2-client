@@ -1,4 +1,15 @@
-[
+export interface Country {
+  name: {
+    common: string;
+    official: string;
+    nativeName?: Record<string, { official: string; common: string }>;
+  };
+  cca2: string;
+  cca3: string;
+}
+
+
+export const countriesData: Country[] = [
     {
         "name": {
             "common": "Denmark",

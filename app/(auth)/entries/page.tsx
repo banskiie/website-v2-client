@@ -29,7 +29,7 @@ import { EntryStatus, IEntry, IEntryNode } from "@/types/entry.interface";
 import { gql } from "@apollo/client";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { ColumnDef } from "@tanstack/react-table";
-import { InfoIcon, Settings, Trash2Icon, Flag } from "lucide-react";
+import { InfoIcon, Settings, Trash2Icon, Flag, CheckCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import FormDialog from "./dialogs/form";
 import { toast } from "sonner";
@@ -62,6 +62,7 @@ import CancelDialog from "./dialogs/cancel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MaxEntriesWarningModal } from "@/components/custom/MaxEntriesWarningModal";
 import ResendDialog from "./dialogs/resend";
+import { DialogContent, DialogFooter, Dialog, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const ENTRIES = gql`
   query Entries(
@@ -169,6 +170,55 @@ const ENTRY_CHANGED = gql`
   }
 `;
 
+const GET_DUPLICATE_ENTRIES = gql`
+  query GetAllDuplicateEntries($tournamentId: String) {
+    getAllDuplicateEntries(tournamentId: $tournamentId) {
+      totalGroups
+      duplicateGroups {
+        key
+        total
+        playerFirstName
+        playerLastName
+        playerBirthDate
+        entries {
+          _id
+          entryNumber
+          entryKey
+          position
+          club
+          isEarlyBird
+          currentStatus
+          event {
+            _id
+            name
+            type
+            tournament {
+              _id
+              name
+            }
+          }
+          player1Entry {
+            firstName
+            lastName
+            birthDate
+            email
+            phoneNumber
+          }
+          player2Entry {
+            firstName
+            lastName
+            birthDate
+            email
+            phoneNumber
+          }
+          createdAt
+          updatedAt
+        }
+      }
+    }
+  }
+`;
+
 const REFUND_CHANGED = gql`
   subscription RefundChanged {
     refundChanged {
@@ -252,6 +302,55 @@ interface EventCapacityResponse {
     maxEntries: number;
   };
   entryCountByEvent: number;
+}
+
+interface DuplicatePlayerInfo {
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
+interface DuplicateEntryEventInfo {
+  _id: string;
+  name: string;
+  type: string;
+  tournament: {
+    _id: string;
+    name: string;
+  } | null;
+}
+
+interface DuplicateEntryItem {
+  _id: string;
+  entryNumber: string;
+  entryKey: string;
+  position: string;
+  club: string;
+  isEarlyBird: boolean;
+  currentStatus: EntryStatus;
+  event: DuplicateEntryEventInfo;
+  player1Entry: DuplicatePlayerInfo;
+  player2Entry: DuplicatePlayerInfo | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface DuplicateEntryGroup {
+  key: string;
+  total: number;
+  playerFirstName: string;
+  playerLastName: string;
+  playerBirthDate: string;
+  entries: DuplicateEntryItem[];
+}
+
+interface DuplicateEntriesData {
+  getAllDuplicateEntries: {
+    totalGroups: number;
+    duplicateGroups: DuplicateEntryGroup[];
+  };
 }
 
 const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
@@ -415,6 +514,146 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
   );
 };
 
+
+const DuplicateEntriesDialog = ({ open, onOpenChange, tournamentId }: { open: boolean; onOpenChange: (open: boolean) => void; tournamentId?: string }) => {
+  const { data, loading, error } = useQuery<DuplicateEntriesData>(GET_DUPLICATE_ENTRIES, {
+    variables: { tournamentId: tournamentId || null },
+    skip: !open,
+    fetchPolicy: "network-only",
+  });
+
+  const duplicateData = data?.getAllDuplicateEntries;
+
+  if (error) {
+    console.error("Error fetching duplicate entries:", error);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Flag className="h-5 w-5" />
+            Duplicate Entries Report
+          </DialogTitle>
+          <DialogDescription>
+            Players who appear in multiple entries (same first name, last name, and birth date)
+          </DialogDescription>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-600 border-t-transparent"></div>
+          </div>
+        ) : duplicateData?.totalGroups === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
+            <p className="text-lg font-medium">No duplicate entries found</p>
+            <p className="text-sm">All players appear only once across all entries</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-700">Total Players with Duplicates</p>
+                  <p className="text-2xl font-bold text-blue-800">{duplicateData?.totalGroups}</p>
+                </div>
+                <Flag className="h-8 w-8 text-blue-400" />
+              </div>
+            </div>
+
+            {duplicateData?.duplicateGroups?.map((group: DuplicateEntryGroup) => (
+              <div key={group.key} className="border rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-4 py-3 border-b">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="font-semibold text-lg">
+                        {group.playerFirstName} {group.playerLastName}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        Birth Date: {group.playerBirthDate ? format(new Date(group.playerBirthDate), "PPP") : "N/A"}
+                      </p>
+                    </div>
+                    <Badge variant="destructive" className="text-sm px-3 py-1">
+                      {group.total} entries
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="divide-y">
+                  {group.entries.map((entry: DuplicateEntryItem) => (
+                    <div key={entry._id} className="p-4 hover:bg-gray-50">
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant={entry.position === "Player 1" ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {entry.position}
+                            </Badge>
+                            <span className="font-mono text-sm font-medium">
+                              Entry #{entry.entryNumber}
+                            </span>
+                            <span className="text-xs text-gray-500">{entry.entryKey}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Event: {entry.event?.name} ({entry.event?.type?.toLowerCase()})
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Tournament: {entry.event?.tournament?.name}
+                          </p>
+                        </div>
+                        <EntryStatusBadge status={entry.currentStatus as EntryStatus} />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 text-sm">
+                        <div className="bg-gray-50 p-2 rounded">
+                          <p className="font-medium text-xs text-gray-500 mb-1">Player 1</p>
+                          <p className="text-sm">
+                            {entry.player1Entry?.firstName} {entry.player1Entry?.lastName}
+                          </p>
+                          {entry.player1Entry?.email && (
+                            <p className="text-xs text-gray-500">{entry.player1Entry.email}</p>
+                          )}
+                        </div>
+                        {entry.player2Entry && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <p className="font-medium text-xs text-gray-500 mb-1">Player 2</p>
+                            <p className="text-sm">
+                              {entry.player2Entry?.firstName} {entry.player2Entry?.lastName}
+                            </p>
+                            {entry.player2Entry?.email && (
+                              <p className="text-xs text-gray-500">{entry.player2Entry.email}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {entry.club && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Club: {entry.club}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const Page = () => {
   const isMobile = useIsMobile();
   const client = useApolloClient();
@@ -432,6 +671,8 @@ const Page = () => {
   // Global Search
   const [search, setSearch] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefined>(undefined);
   // Column Sorting
   const [sort, setSort] = useState<{
     key: string;
@@ -1983,6 +2224,14 @@ const Page = () => {
         </InputGroup>
         <div className="flex items-center gap-2">
           <ExportMenu />
+           <Button 
+    variant="outline" 
+    onClick={() => setShowDuplicateDialog(true)}
+    className="border-amber-500 text-amber-600 hover:bg-amber-50"
+  >
+    <Flag className="size-3.5 mr-1" />
+    Check Duplicates
+  </Button>
           {selectedIds.size > 0 && (
             <>
               <BatchMenu
@@ -2148,6 +2397,12 @@ const Page = () => {
         remainingSlots={warningRemainingSlots}
         entryNumber={warningEntryNumber}
       /> */}
+
+      <DuplicateEntriesDialog 
+  open={showDuplicateDialog}
+  onOpenChange={setShowDuplicateDialog}
+  tournamentId={selectedTournamentId}
+/>
     </div>
   );
 };

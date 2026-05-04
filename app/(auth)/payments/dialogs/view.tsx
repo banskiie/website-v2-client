@@ -37,6 +37,9 @@ import {
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+// Import the VerifyDialog and RejectDialog components
+import VerifyDialog from "./verify";
+import RejectDialog from "./reject";
 
 const PAYMENT = gql`
   query Payment($_id: ID!) {
@@ -95,7 +98,7 @@ const ViewDialog = (props: Props) => {
       setOpen(value);
     }
   };
-  const { data, loading, error }: any = useQuery(PAYMENT, {
+  const { data, loading, error, refetch }: any = useQuery(PAYMENT, {
     variables: { _id: props._id },
     skip: !isOpen || !Boolean(props._id),
   });
@@ -111,29 +114,55 @@ const ViewDialog = (props: Props) => {
     }
   };
 
+  // Get the current status of the payment
+  const currentStatus = data?.payment?.statuses?.[data.payment.statuses.length - 1]?.status;
+  const isStatusSent = currentStatus === "SENT";
+
+  // Handle successful verification/rejection to refresh data
+  const handleActionComplete = () => {
+    refetch();
+  };
+
+  // For the trigger button - when externalUse is false, we need to return a span/button
+  // instead of DropdownMenuItem to avoid the Menu context error
+  const renderTrigger = () => {
+    if (props.row) return null;
+    
+    if (props.externalUse) {
+      return (
+        <span
+          className={cn(
+            "hover:underline hover:cursor-pointer",
+            props.titleClassName,
+          )}
+        >
+          {props.title || "View"}
+        </span>
+      );
+    }
+    
+    // When not in a dropdown menu context, use a simple button instead of DropdownMenuItem
+    return (
+      <span
+        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+        onClick={() => setIsOpen(true)}
+      >
+        View
+      </span>
+    );
+  };
+
   return (
     <Dialog modal open={isOpen} onOpenChange={setIsOpen}>
       <form>
         <DialogTrigger asChild>
-          {props.row ? null : props.externalUse ? (
-            <span
-              className={cn(
-                "hover:underline hover:cursor-pointer",
-                props.titleClassName,
-              )}
-            >
-              {props.title || "View"}
-            </span>
-          ) : (
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              View
-            </DropdownMenuItem>
-          )}
+          {renderTrigger()}
         </DialogTrigger>
         <DialogContent
           onOpenAutoFocus={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
           showCloseButton={false}
+          className="max-w-2xl"
         >
           <DialogHeader>
             <DialogTitle>View Payment</DialogTitle>
@@ -441,10 +470,52 @@ const ViewDialog = (props: Props) => {
             </TabsContent>
           </Tabs>
 
-          <DialogFooter>
-            <DialogClose asChild>
+          <DialogFooter className="flex gap-2 sm:justify-between">
+           
+            {/* Show Verify and Reject buttons only when payment status is SENT */}
+          {!loading && isStatusSent && (
+  <div className="flex gap-2">
+   
+   <VerifyDialog
+      _id={props._id || ""}
+      onClose={() => {
+        handleActionComplete();
+        onClose();
+      }}
+      trigger={
+        <Button
+          type="button"
+          variant="success"
+          size="sm"
+          className="cursor-pointer"
+        >
+          Verify
+        </Button>
+      }
+    />
+    <RejectDialog
+      _id={props._id || ""}
+      onClose={() => {
+        handleActionComplete();
+        onClose();
+      }}
+      trigger={
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          className="cursor-pointer"
+        >
+          Reject
+        </Button>
+      }
+    />
+            
+  </div>
+)}
+ <DialogClose asChild>
               <Button
-                className="w-full sm:w-20 cursor-pointer"
+                className="cursor-pointer"
                 onClick={onClose}
                 variant="outline"
               >

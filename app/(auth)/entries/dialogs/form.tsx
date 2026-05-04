@@ -390,6 +390,17 @@ type CheckEventEntriesResponse = {
   entryCountByEvent: number;
 };
 
+const convertCountryForGraphQL = (country: any) => {
+  if (!country) return undefined;
+  
+  return {
+    code: country.cca2,
+    name: country.name?.common || country.name?.official || "", 
+    alpha2Code: country.cca2,
+    alpha3Code: country.cca3,
+  };
+};
+
 const cleanAddressForInput = (address: any) => {
   if (!address) return undefined;
   
@@ -400,20 +411,12 @@ const cleanAddressForInput = (address: any) => {
   if (address.fullAddress) result.fullAddress = address.fullAddress;
   if (address.coordinates) result.coordinates = address.coordinates;
   
+  // Use the convertCountryForGraphQL function for country
   if (address.country) {
-    result.country = {
-      code: address.country.code,
-      name: address.country.name,
-      alpha2Code: address.country.alpha2Code,
-      alpha3Code: address.country.alpha3Code,
-      flag: address.country.flag,
-      region: address.country.region,
-      capital: address.country.capital,
-      population: address.country.population,
-      area: address.country.area
-    };
+    result.country = convertCountryForGraphQL(address.country);
   }
   
+  // Keep the rest as is (they're already in the correct format)
   if (address.region) {
     result.region = {
       code: address.region.code,

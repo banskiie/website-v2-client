@@ -20,19 +20,8 @@ import { Globe, Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { psgcService, PSGCRegion, PSGCProvince, PSGCCity, PSGCBarangay } from "@/app/services/psgc.service"
-import { countryService, RestCountry } from "@/app/services/country.service"
-
-export interface Country {
-  code: string
-  name: string
-  alpha2Code?: string
-  alpha3Code?: string
-  flag?: string
-  region?: string
-  capital?: string
-  population?: number
-  area?: number
-}
+import { countryService } from "@/app/services/country.service"
+import { Country } from "@/public/json/countries"
 
 export interface Region {
   code: string
@@ -161,7 +150,7 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
   const isAutoSetting = useRef(false)
   const autoSetAttempts = useRef(0)
 
-  const isPhilippines = selectedCountry?.code === "PH" || selectedCountry?.name === "Philippines"
+  const isPhilippines = selectedCountry?.cca2 === "PH" || selectedCountry?.name?.common === "Philippines"
   const shouldAutoSetLocal = eventLocation === 'LOCAL'
   const shouldAutoSetCountryOnly = eventLocation === 'NATIONAL'
   const shouldAutoSetMindanao = eventLocation === 'MINDANAO'
@@ -170,29 +159,16 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
   // Check if selected region is NCR
   const isSelectedRegionNCR = isNCR(selectedRegion)
 
-  // Load countries from REST Countries API
+  // Load countries from local JSON
   useEffect(() => {
     const loadCountries = async () => {
       try {
         setCountriesLoading(true)
         const apiCountries = await countryService.getAllCountries()
-
-        const mappedCountries: Country[] = apiCountries.map((c: RestCountry) => ({
-          code: c.cca2,
-          name: c.name.common,
-          alpha2Code: c.cca2,
-          alpha3Code: c.cca3,
-          flag: c.flags?.png || c.flags?.svg,
-          region: c.region,
-          capital: c.capital?.[0],
-          population: c.population,
-          area: c.area
-        }))
-
-        setCountries(mappedCountries)
+        setCountries(apiCountries)
 
         if ((shouldAutoSetLocal || shouldAutoSetCountryOnly || shouldAutoSetMindanao) && !selectedCountry) {
-          const philippines = mappedCountries.find(c => c.code === 'PH')
+          const philippines = apiCountries.find(c => c.cca2 === 'PH')
           if (philippines) {
             setSelectedCountry(philippines)
           }
@@ -222,8 +198,8 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
       isAutoSetting.current = true
 
       try {
-        if (!selectedCountry || selectedCountry.code !== 'PH') {
-          const philippines = countries.find(c => c.code === 'PH')
+        if (!selectedCountry || selectedCountry.cca2 !== 'PH') {
+          const philippines = countries.find(c => c.cca2 === 'PH')
           if (philippines) {
             setSelectedCountry(philippines)
           } else {
@@ -321,8 +297,8 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
       isAutoSetting.current = true
 
       try {
-        if (!selectedCountry || selectedCountry.code !== 'PH') {
-          const philippines = countries.find(c => c.code === 'PH')
+        if (!selectedCountry || selectedCountry.cca2 !== 'PH') {
+          const philippines = countries.find(c => c.cca2 === 'PH')
           if (philippines) {
             setSelectedCountry(philippines)
           } else {
@@ -505,7 +481,7 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
 
     const prev = prevStateRef.current
     const hasChanged =
-      prev.selectedCountry?.code !== selectedCountry?.code ||
+      prev.selectedCountry?.cca2 !== selectedCountry?.cca2 ||
       prev.selectedRegion?.code !== selectedRegion?.code ||
       prev.selectedProvince?.code !== selectedProvince?.code ||
       prev.selectedCity?.code !== selectedCity?.code ||
@@ -523,7 +499,7 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
     if (selectedCity?.name) addressParts.push(selectedCity.name)
     if (selectedProvince?.name) addressParts.push(selectedProvince.name)
     if (selectedRegion?.name) addressParts.push(selectedRegion.name)
-    if (selectedCountry?.name) addressParts.push(selectedCountry.name)
+    if (selectedCountry?.name?.common) addressParts.push(selectedCountry.name.common)
     if (zipCode) addressParts.push(zipCode)
 
     const fullAddress = addressParts.join(", ")
@@ -549,7 +525,7 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
   const handleCountryChange = (countryCode: string) => {
     if (shouldAutoSetLocal || shouldAutoSetCountryOnly || shouldAutoSetMindanao) return
 
-    const country = countries.find(c => c.code === countryCode)
+    const country = countries.find(c => c.cca2 === countryCode)
     if (country) {
       setSelectedCountry(country)
       setSelectedRegion(undefined)
@@ -619,10 +595,8 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
             >
               {selectedCountry ? (
                 <div className="flex items-center gap-2">
-                  {selectedCountry.flag && (
-                    <img src={selectedCountry.flag} alt={selectedCountry.name} className="w-5 h-3 object-cover" />
-                  )}
-                  <span className="truncate">{selectedCountry.name}</span>
+                  <span className="truncate">{selectedCountry.name?.common}</span>
+                  <span className="text-xs text-muted-foreground">({selectedCountry.cca2})</span>
                 </div>
               ) : (
                 <span>{countriesLoading ? "Loading countries..." : "Select Country"}</span>
@@ -638,22 +612,19 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
                 <CommandGroup>
                   {countries.map((country) => (
                     <CommandItem
-                      key={country.code}
-                      value={country.name}
-                      onSelect={() => handleCountryChange(country.code)}
+                      key={country.cca2}
+                      value={country.name?.common}
+                      onSelect={() => handleCountryChange(country.cca2)}
                     >
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4 shrink-0",
-                          selectedCountry?.code === country.code ? "opacity-100" : "opacity-0"
+                          selectedCountry?.cca2 === country.cca2 ? "opacity-100" : "opacity-0"
                         )}
                       />
                       <div className="flex items-center gap-2 min-w-0">
-                        {country.flag && (
-                          <img src={country.flag} alt={country.name} className="w-5 h-3 object-cover shrink-0" />
-                        )}
-                        <span className="truncate">{country.name}</span>
-                        <span className="text-xs text-muted-foreground shrink-0">({country.code})</span>
+                        <span className="truncate">{country.name?.common}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">({country.cca2})</span>
                       </div>
                     </CommandItem>
                   ))}
@@ -866,7 +837,7 @@ export const LocationSelector = ({ value, onChange, disabled, eventLocation }: L
               selectedCity?.name,
               selectedProvince?.name,
               selectedRegion?.name,
-              selectedCountry?.name,
+              selectedCountry?.name?.common,
               zipCode,
             ]
               .filter(Boolean)

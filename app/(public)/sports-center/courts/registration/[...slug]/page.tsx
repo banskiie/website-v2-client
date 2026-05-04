@@ -333,6 +333,17 @@ const RegistrationFeeModal = ({
   );
 };
 
+const convertCountryForGraphQL = (country: any) => {
+  if (!country) return undefined;
+  
+  return {
+    code: country.cca2,
+    name: country.name?.common || country.name?.official || "", 
+    alpha2Code: country.cca2,
+    alpha3Code: country.cca3,
+  };
+};
+
 const SuccessModal = ({
   isOpen,
   onClose,
@@ -1511,6 +1522,8 @@ export default function Page({ params }: RegistrationPageProps) {
           playerNum: number,
           documentUrl: string,
         ) => {
+          const originalAddress = playerData[`player${playerNum}Address`];
+
           const baseEntry = {
             firstName: playerData[`player${playerNum}FirstName`],
             middleName: playerData[`player${playerNum}MiddleName`],
@@ -1522,7 +1535,17 @@ export default function Page({ params }: RegistrationPageProps) {
             email: playerData[`player${playerNum}Email`],
             phoneNumber: playerData[`player${playerNum}ContactNumber`],
             gender: playerData[`player${playerNum}Gender`],
-            address: playerData[`player${playerNum}Address`] || undefined,
+            address: originalAddress ? {
+      country: convertCountryForGraphQL(originalAddress.country),
+      region: originalAddress.region,
+      province: originalAddress.province,
+      city: originalAddress.city,
+      barangay: originalAddress.barangay,
+      street: originalAddress.street,
+      zipCode: originalAddress.zipCode,
+      fullAddress: originalAddress.fullAddress,
+      coordinates: originalAddress.coordinates,
+    } : undefined,
           };
 
           const jerseySize = playerData[`player${playerNum}JerseySize`];
@@ -2623,16 +2646,16 @@ export default function Page({ params }: RegistrationPageProps) {
                       </FieldGroup>
 
                       {/* Dari Address */}
-                      {/* <div className="flex items-start justify-start gap-2 mt-6 mb-2">
+                     <div className="flex items-start justify-start gap-2 mt-6 mb-2">
                         <div className="p-2 bg-linear-to-r from-green-500 to-teal-600 rounded-lg">
                           <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </div>
                         <span className="text-green-800 font-semibold text-lg">
                           Address Information {playerNum}
                         </span>
-                      </div> */}
+                      </div>
 
-                      {/* <form.Field
+                     <form.Field
                         name={`player${playerNum}Address` as FormFieldNames}
                         children={(field) => {
                           const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
@@ -2657,7 +2680,7 @@ export default function Page({ params }: RegistrationPageProps) {
                             </Field>
                           );
                         }}
-                      /> */}
+                      />
                       <div className="mt-6">
                         {/* Document Type Selector */}
                         <div className="mb-4">
