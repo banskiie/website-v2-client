@@ -56,7 +56,7 @@ type Props = {
   onClose?: () => void
 }
 
-const BatchStatusDialog = (props: Props) => {
+const ExportEntriesDialog = (props: Props) => {
   // Dialog open state
   const [open, setOpen] = useState(false)
 
@@ -129,7 +129,7 @@ const BatchStatusDialog = (props: Props) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Status</SelectLabel>
+                    <SelectLabel>TournamentW</SelectLabel>
                     {tournamentOptions.map((option: any) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -138,14 +138,7 @@ const BatchStatusDialog = (props: Props) => {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <span className="block text-xs">
-                <span className="text-destructive">*</span> Note: This will
-                affect their access to the system
-              </span>
-              <span className="block text-xs">
-                <span className="text-info">**</span> Additional Note: You
-                cannot change the status of your own player account.
-              </span>
+             
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -162,4 +155,4 @@ const BatchStatusDialog = (props: Props) => {
   )
 }
 
-export default BatchStatusDialog
+export default ExportEntriesDialog

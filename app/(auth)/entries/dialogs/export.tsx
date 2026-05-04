@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import ExportStatusDialog from "./export/export-status"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
+import ExportPlayerByStatusDialog from "./export/export-players"
 
 const ExportMenu = () => {
   const isMobile = useIsMobile()
@@ -28,6 +29,7 @@ const ExportMenu = () => {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <ExportStatusDialog onClose={() => setExportMenuOpen(false)} />
+          <ExportPlayerByStatusDialog onClose={() => setExportMenuOpen(false)} />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
