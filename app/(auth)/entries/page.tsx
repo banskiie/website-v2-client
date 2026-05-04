@@ -535,8 +535,7 @@ const DuplicateEntriesDialog = ({ open, onOpenChange, tournamentId }: { open: bo
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Flag className="h-5 w-5" />
-            Duplicate Entries Report
+            Double Entries Report
           </DialogTitle>
           <DialogDescription>
             Players who appear in multiple entries (same first name, last name, and birth date)
@@ -561,7 +560,6 @@ const DuplicateEntriesDialog = ({ open, onOpenChange, tournamentId }: { open: bo
       <p className="text-sm text-blue-700">Total Players with Duplicates</p>
       <p className="text-2xl font-bold text-blue-800">{duplicateData?.totalGroups}</p>
     </div>
-    <Flag className="h-8 w-8 text-blue-400" />
   </div>
   <div className="border-t border-blue-200 pt-3 mt-1">
     <div className="flex items-center justify-between">
