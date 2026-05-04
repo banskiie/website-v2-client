@@ -2094,7 +2094,7 @@ export function UploadProofMergedModal({
         setDuplicatePaymentData(data.checkDuplicateReference[0])
         setShowDuplicateDialog(true)
       } else {
-        setShowConfirmationDialog(true)
+        setShowConfirmationDialog(true) 
       }
     } catch (error: any) {
       console.error("Error checking duplicate:", error)
