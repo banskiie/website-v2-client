@@ -12,10 +12,10 @@ export async function POST(req: Request) {
   const players = result.players.map((player: any) => ({
     "First Name": player.firstName,
     "Last Name": player.lastName,
-    "Email": player.email,
+    Email: player.email,
     // "Birthdate": player.birthDate,
     "Phone Number": player.phoneNumber,
-    "Jersey Sizes": player.jerseySizes.join(", "),
+    "Jersey Sizes": [...new Set(player.jerseySizes)].join(", "),
     "Entry Numbers": player.entryNumbers.join(", "),
   }))
   // Create worksheet with tournament name in first row
