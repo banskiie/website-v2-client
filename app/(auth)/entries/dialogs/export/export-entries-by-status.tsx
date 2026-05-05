@@ -193,7 +193,14 @@ const ExportEntriesByStatus = (props: Props) => {
                           EntryStatus.PAYMENT_PARTIALLY_PAID,
                         ])
                         break
-                      case "APPROVED":
+                      case "PAID":
+                        setStatuses([
+                          EntryStatus.PAYMENT_PAID,
+                          EntryStatus.VERIFIED,
+                          EntryStatus.PAYMENT_VERIFIED,
+                        ])
+                        break
+                           case "APPROVED":
                         setStatuses([
                           EntryStatus.LEVEL_APPROVED,
                           EntryStatus.PAYMENT_PENDING,
@@ -219,6 +226,7 @@ const ExportEntriesByStatus = (props: Props) => {
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Select Entry Status</SelectLabel>
+                      <SelectItem value="ALL">All</SelectItem>
                       <SelectItem value="UNASSIGNED">Unassigned</SelectItem>
                       <SelectItem value="PENDING">Pending</SelectItem>
                       <SelectItem value="PAYMENT_PENDING">
