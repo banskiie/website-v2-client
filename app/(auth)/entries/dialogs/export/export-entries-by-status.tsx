@@ -232,6 +232,9 @@ const ExportEntriesByStatus = (props: Props) => {
                       <SelectItem value="PAYMENT_PENDING">
                         Payment Pending
                       </SelectItem>
+                      <SelectItem value="PAID">
+                        Fully Paid
+                      </SelectItem>
                       <SelectItem value="APPROVED">Approved</SelectItem>
                       <SelectItem value="VERIFIED">Verified</SelectItem>
                     </SelectGroup>
