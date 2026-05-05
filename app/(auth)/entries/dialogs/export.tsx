@@ -13,6 +13,7 @@ import ExportReport from "./export/export-reports"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import ExportEntriesByStatus from "./export/export-entries-by-status"
+import ExportMultipleEntries from "./export/export-multiple-entries"
 
 const ExportMenu = () => {
   const isMobile = useIsMobile()
@@ -30,6 +31,7 @@ const ExportMenu = () => {
         <DropdownMenuGroup>
           <ExportReport onClose={() => setExportMenuOpen(false)} />
           <ExportEntriesByStatus onClose={() => setExportMenuOpen(false)} />
+          <ExportMultipleEntries onClose={() => setExportMenuOpen(false)} />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
