@@ -57,7 +57,7 @@ type Props = {
   onClose?: () => void
 }
 
-const BatchStatusDialog = (props: Props) => {
+const ExportEntriesReport = (props: Props) => {
   // Dialog open state
   const [open, setOpen] = useState(false)
 
@@ -89,7 +89,7 @@ const BatchStatusDialog = (props: Props) => {
 
       const link = document.createElement("a")
       link.href = URL.createObjectURL(blob)
-      link.download = `Exported Entries (${format(new Date(), "MMM dd, yyyy, hmm a")}).xlsx`
+      link.download = `Exported Report (${format(new Date(), "MMM dd, yyyy, hmm a")}).xlsx`
       link.click()
       if (result) {
         onClose()
@@ -110,16 +110,16 @@ const BatchStatusDialog = (props: Props) => {
       <form>
         <AlertDialogTrigger asChild>
           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-            Entries
+            Report
           </DropdownMenuItem>
         </AlertDialogTrigger>
         <AlertDialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Export Entries</AlertDialogTitle>
+            <AlertDialogTitle>Export Entries Report</AlertDialogTitle>
             <AlertDialogDescription>
               <span className="block text-foreground">
-                Are you sure you want to export the entries for the selected
-                tournament?
+                Are you sure you want to export the entries report for the
+                selected tournament?
               </span>
               <Select
                 onValueChange={(value) => setSelectedTournament(value)}
@@ -130,7 +130,7 @@ const BatchStatusDialog = (props: Props) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Status</SelectLabel>
+                    <SelectLabel>Tournament</SelectLabel>
                     {tournamentOptions.map((option: any) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -139,14 +139,6 @@ const BatchStatusDialog = (props: Props) => {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <span className="block text-xs">
-                <span className="text-destructive">*</span> Note: This will
-                affect their access to the system
-              </span>
-              <span className="block text-xs">
-                <span className="text-info">**</span> Additional Note: You
-                cannot change the status of your own player account.
-              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -163,4 +155,4 @@ const BatchStatusDialog = (props: Props) => {
   )
 }
 
-export default BatchStatusDialog
+export default ExportEntriesReport

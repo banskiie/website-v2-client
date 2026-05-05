@@ -9,9 +9,10 @@ import {
 import { DownloadCloud, Group } from "lucide-react"
 import { use, useState } from "react"
 import { Button } from "@/components/ui/button"
-import ExportStatusDialog from "./export/export-status"
+import ExportReport from "./export/export-reports"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
+import ExportEntriesByStatus from "./export/export-entries-by-status"
 
 const ExportMenu = () => {
   const isMobile = useIsMobile()
@@ -27,7 +28,8 @@ const ExportMenu = () => {
         <DropdownMenuLabel>Export Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <ExportStatusDialog onClose={() => setExportMenuOpen(false)} />
+          <ExportReport onClose={() => setExportMenuOpen(false)} />
+          <ExportEntriesByStatus onClose={() => setExportMenuOpen(false)} />
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

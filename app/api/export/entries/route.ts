@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": "attachment; filename=entries.xlsx",
+      "Content-Disposition": "attachment; filename=report.xlsx",
     },
   })
 }
