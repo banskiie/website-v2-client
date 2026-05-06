@@ -63,6 +63,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MaxEntriesWarningModal } from "@/components/custom/MaxEntriesWarningModal";
 import ResendDialog from "./dialogs/resend";
 import { DialogContent, DialogFooter, Dialog, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import SoftwareStatusDialog from "./dialogs/add-to-software"
 
 const ENTRIES = gql`
   query Entries(
@@ -493,11 +494,18 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
               </DropdownMenuSub>
             </>
           )}
+
           <DropdownMenuSeparator />
           <AssignDialog
             _id={entry?._id}
             onClose={() => setMenuOpen(false)}
             title={status === EntryStatus.PENDING ? "Assign" : "Reassign"}
+          />
+          <DropdownMenuSeparator />
+          <SoftwareStatusDialog
+            _id={entry?._id}
+            onClose={() => setMenuOpen(false)}
+            isInSoftware={entry?.isInSoftware}
           />
 
           <DropdownMenuSeparator />

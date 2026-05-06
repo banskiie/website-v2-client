@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  allowedDevOrigins: ["192.168.6.56", "192.168.6.64", "192.168.1.5",'192.168.1.237', "10.106.48.112"],
+  allowedDevOrigins: ["192.168.6.56", "192.168.6.64", "192.168.1.5", "192.168.1.237", "10.106.48.112"],
   images: {
     remotePatterns: [
       {
@@ -12,7 +12,7 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "drive.google.com",
-        pathname: "/**", 
+        pathname: "/**",
       },
       {
         protocol: "https",
