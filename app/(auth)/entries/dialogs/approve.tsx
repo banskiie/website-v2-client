@@ -17,7 +17,7 @@ import {
 import ViewDialog from "./view"
 import { AlertTriangle } from "lucide-react"
 
-const PLAYER = gql`
+const ENTRY = gql`
   query Entry($_id: ID!) {
     entry(_id: $_id) {
       _id
@@ -39,18 +39,7 @@ const APPROVE = gql`
   }
 `
 
-const GET_EVENT_BY_NAME = gql`
-  query GetEventByName($name: String!) {
-    events(filter: [{ key: "name", value: $name, type: TEXT }], first: 1) {
-      edges {
-        node {
-          _id
-          name
-        }
-      }
-    }
-  }
-`
+
 
 const GET_EVENT_DETAILS = gql`
   query GetEventDetails($eventId: ID!) {
@@ -88,7 +77,7 @@ const ApproveDialog = (props: Props) => {
   const [capacityChecked, setCapacityChecked] = useState(false)
 
   // Fetch existing date if updating
-  const { data, loading: playerLoading, refetch } = useQuery(PLAYER, {
+  const { data, loading: playerLoading, refetch } = useQuery(ENTRY, {
     variables: { _id: props._id },
     skip: !open || !Boolean(props._id),
     fetchPolicy: "network-only",
@@ -126,28 +115,9 @@ const ApproveDialog = (props: Props) => {
     }
 
     try {
-      const eventResult = await client.query({
-        query: GET_EVENT_BY_NAME,
-        variables: { name: entry.event.name },
-        fetchPolicy: "network-only",
-      });
-
-      const eventData = eventResult.data as any;
-      const events = eventData?.events?.edges || [];
-
-      if (events.length === 0) {
-        setWarningMessage(null);
-        setRemainingSlotsBefore(null);
-        setRemainingSlotsAfter(null);
-        setMaxEntries(null);
-        return;
-      }
-
-      const eventId = events[0].node._id;
-
       const eventDetailsResult = await client.query({
         query: GET_EVENT_DETAILS,
-        variables: { eventId },
+        variables: { eventId: entry?.event._id },
         fetchPolicy: "network-only",
       });
 
@@ -163,7 +133,7 @@ const ApproveDialog = (props: Props) => {
 
       const countResult = await client.query({
         query: GET_APPROVED_ENTRY_COUNT,
-        variables: { eventId },
+        variables: { eventId: entry?.event._id },
         fetchPolicy: "network-only",
       });
 
@@ -350,10 +320,7 @@ const ApproveDialog = (props: Props) => {
           </div>
 
           <div className="space-y-1.5 sm:space-y-2 my-3 sm:my-4">
-            <span className="text-destructive block text-xs sm:text-sm">
-              <span className="font-bold">*</span>
-              <span className="underline">This action cannot be reversed.</span>
-            </span>
+           
             <span className="block text-xs sm:text-sm text-muted-foreground">
               <span className="font-bold text-info">*</span>This will send an
               email notification to the players.
