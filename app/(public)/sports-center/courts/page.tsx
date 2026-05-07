@@ -754,13 +754,18 @@ function Page() {
 
                       <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100">
                         {now > regEnd ? (
-                          <Button
-                            size="sm"
-                            disabled
-                            className="w-full px-3 sm:px-4 py-1.5 sm:py-2 h-8 sm:h-9 text-xs sm:text-sm font-medium rounded-full shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
+                          <Link
+                            href={`/sports-center/courts/categories/?tournament=${tournament.value}`}
+                            onClick={() => setShowRegisterModal(false)}
+                            className="block w-full"
                           >
-                            Registration Closed
-                          </Button>
+                            <Button
+                              size="sm"
+                              className="w-full px-3 sm:px-4 py-1.5 sm:py-2 h-8 sm:h-9 text-xs sm:text-sm font-medium rounded-full shadow-sm bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                            >
+                              View Registration
+                            </Button>
+                          </Link>
                         ) : now < regStart ? (
                           <Button
                             size="sm"

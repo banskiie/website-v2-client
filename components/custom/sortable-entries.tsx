@@ -1,3 +1,4 @@
+// In sortable-entries.tsx, update the onChange type and add handlers for all fields:
 "use client"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
@@ -8,9 +9,9 @@ import { Button } from "../ui/button"
 interface SortableEntryProps {
     id: string
     index: number
-    entry: { entryNumber: string; entryKey: string }
+    entry: { combinedEntry: string; entryNumber: string; entryKey: string }
     isJointPayment: boolean
-    onChange: (index: number, field: "entryNumber" | "entryKey", value: string) => void
+    onChange: (index: number, field: "combinedEntry" | "entryNumber" | "entryKey", value: string) => void
     onDelete: (index: number) => void
 }
 
@@ -44,39 +45,34 @@ export default function SortableEntry({
                 <GripVertical className="w-4 h-4 text-gray-500" />
             </div>
 
-            <div className="grid grid-cols-2 gap-2 flex-1 items-end">
-                <div>
-                    <Input
-                        type="text"
-                        value={entry.entryNumber}
-                        onChange={(e) => onChange(index, "entryNumber", e.target.value)}
-                        placeholder="Example: 000V8"
-                        className="w-full placeholder:text-sm"
-                    />
-                </div>
-
-                <div className="relative">
-                    <Input
-                        type="text"
-                        value={entry.entryKey}
-                        onChange={(e) => onChange(index, "entryKey", e.target.value)}
-                        placeholder="Example: ABC123"
-                        className="w-full placeholder:text-sm pr-10"
-                    />
-
-                    {isJointPayment && index > 0 && (
-                        <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => onDelete(index)}
-                            className="absolute right-1 cursor-pointer top-1/2 -translate-y-1/2 h-7! w-7! hover:bg-red-500"
-                            aria-label="Remove Entry"
-                        >
-                            <Trash className="w-3.5 h-3.5" />
-                        </Button>
-                    )}
+            <div className="flex-1">
+                <div className="grid grid-cols-1 gap-2">
+                    <div className="relative">
+                        <Input
+                            type="text"
+                            value={entry.combinedEntry}
+                            onChange={(e) => onChange(index, "combinedEntry", e.target.value)}
+                            placeholder="Example: ME-0030_SAFW"
+                            className="w-full placeholder:text-sm pr-10"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Format: EntryNumber_EntryKey (e.g., ME-0030_SAFW)
+                        </p>
+                    </div>
                 </div>
             </div>
+
+            {isJointPayment && index > 0 && (
+                <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => onDelete(index)}
+                    className="flex-shrink-0 mt-0 cursor-pointer h-8! w-8! hover:bg-red-500"
+                    aria-label="Remove Entry"
+                >
+                    <Trash className="w-3.5 h-3.5" />
+                </Button>
+            )}
         </div>
     )
 }

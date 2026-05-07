@@ -135,6 +135,25 @@ interface ApprovedEntryCountResponse {
   approvedEntryCountByEvent: number;
 }
 
+const parseEntryInput = (input: string): { entryNumber: string; entryKey: string } => {
+  if (!input.trim()) {
+    return { entryNumber: "", entryKey: "" };
+  }
+  
+  const parts = input.split("_");
+  if (parts.length === 2) {
+    return {
+      entryNumber: parts[0].trim(),
+      entryKey: parts[1].trim()
+    };
+  }
+  
+  return {
+    entryNumber: input.trim(),
+    entryKey: ""
+  };
+};
+
 const getCategoryPrice = (category: string, type?: string) => {
   if (category.includes("Beginner"))
     return { perPlayer: "₱675.00 per player", perPair: "₱1,350.00 per pair" }
@@ -818,6 +837,7 @@ export function CategoryModal({
   const [isCheckingCapacity, setIsCheckingCapacity] = useState(false)
   const [isFull, setIsFull] = useState(false)
   const [eventDetails, setEventDetails] = useState<{ name: string; maxEntries: number } | null>(null)
+  const [isRegistrationEnded, setIsRegistrationEnded] = useState(false)
 
   const { data, loading, error } =
     useQuery<PublicTournamentsData>(PUBLIC_TOURNAMENTS)
@@ -873,9 +893,37 @@ export function CategoryModal({
     checkEventCapacity()
   }, [isOpen, category?.id, getEventDetails, getEntryCount])
 
+  // Get tournament data first
+  const tournament = category?.tournamentId
+    ? data?.publicTournaments?.find((t: ITournament) => t._id === category.tournamentId)
+    : data?.publicTournaments?.find((t: ITournament) => t.isActive) || data?.publicTournaments?.[0]
+
+  // Check if registration has ended based on registrationEnd date
+  useEffect(() => {
+    if (isOpen && tournament?.dates?.registrationEnd) {
+      const now = new Date()
+      const registrationEndDate = new Date(tournament.dates.registrationEnd)
+      // Set end of day for registration end date to compare properly
+      registrationEndDate.setHours(23, 59, 59, 999)
+      
+      if (now >= registrationEndDate) {
+        setIsRegistrationEnded(true)
+      } else {
+        setIsRegistrationEnded(false)
+      }
+    } else {
+      setIsRegistrationEnded(false)
+    }
+  }, [isOpen, tournament?.dates?.registrationEnd])
+
   const handleRegisterClick = () => {
     if (isFull) {
       toast.error("This event has reached its maximum capacity. Registration is closed.")
+      return
+    }
+
+    if (isRegistrationEnded) {
+      toast.error("Registration period has ended. Registration is closed.")
       return
     }
 
@@ -911,10 +959,6 @@ export function CategoryModal({
   if (!isOpen || !category) return null
   if (loading) return <p>Loading...</p>
   if (error) return <p>Error loading tournaments: {error.message}</p>
-
-  const tournament = category.tournamentId
-    ? data?.publicTournaments?.find((t: ITournament) => t._id === category.tournamentId)
-    : data?.publicTournaments?.find((t: ITournament) => t.isActive) || data?.publicTournaments?.[0]
 
   const hasGuidelines = tournament?.settings?.hasGuidelines || false
 
@@ -1047,7 +1091,30 @@ export function CategoryModal({
                 </p>
               </div>
 
-              {isFull && (
+              {/* Registration Ended Warning */}
+              {isRegistrationEnded && tournament?.dates?.registrationEnd && (
+                <div className="mb-4 p-4 bg-red-50 border-2 border-red-400 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-red-100 rounded-full">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-red-800 text-base">
+                        REGISTRATION HAS ENDED
+                      </h3>
+                      <p className="text-sm text-red-700 mt-1">
+                        Registration ended on{" "}
+                        <strong className="text-red-800">
+                          {format(new Date(tournament.dates.registrationEnd), "MMM dd, yyyy")}
+                        </strong>
+                        . Registration is no longer available.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isFull && !isRegistrationEnded && (
                 <div className="mb-4 p-4 bg-red-50 border-2 border-red-400 rounded-lg">
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-red-100 rounded-full">
@@ -1069,7 +1136,7 @@ export function CategoryModal({
                 </div>
               )}
 
-              {!isFull && !isCheckingCapacity && maxEntries > 0 && (
+              {!isFull && !isCheckingCapacity && !isRegistrationEnded && maxEntries > 0 && (
                 <div className={`mb-4 p-3 rounded-lg border ${remainingSlots <= 5
                   ? "bg-amber-50 border-amber-300"
                   : "bg-green-50 border-green-300"
@@ -1227,33 +1294,38 @@ export function CategoryModal({
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-semibold text-gray-700 text-sm">📅</span>
                   <span className="font-semibold text-gray-800 text-sm">
-                    Tournament Details
+                    Registration Details
                   </span>
                 </div>
                 <p className="text-gray-700 text-xs font-medium mb-1">
                   {tournament?.name || "Tournament TBA"}
                 </p>
-                <p
-                  className={`text-sm font-medium ${tournament?.isActive ? "text-green-700" : "text-red-700"
-                    }`}
-                >
-                  {tournament?.isActive ? "Active" : "Inactive"}
-                </p>
                 <p className="text-gray-700 text-xs font-medium">
-                  {tournament
-                    ? `${format(
+                  {tournament && tournament.dates
+                    ? `Registration Period: ${format(
+                      new Date(tournament.dates.registrationStart),
+                      "MMM dd, yyyy",
+                    )} - ${format(
+                      new Date(tournament.dates.registrationEnd),
+                      "MMM dd, yyyy",
+                    )}`
+                    : "Dates TBD"}
+                </p>
+                <p className="text-gray-700 text-xs font-medium mt-1">
+                  {tournament && tournament.dates
+                    ? `Tournament Dates: ${format(
                       new Date(tournament.dates.tournamentStart),
                       "MMM dd, yyyy",
                     )} - ${format(
                       new Date(tournament.dates.tournamentEnd),
                       "MMM dd, yyyy",
                     )}`
-                    : "Dates TBD"}
+                    : "Tournament Dates TBD"}
                 </p>
               </div>
 
               <div className="flex gap-3">
-                {!category?.isClosed && !isFull ? (
+                {!category?.isClosed && !isFull && !isRegistrationEnded ? (
                   <Button
                     onClick={handleRegisterClick}
                     className="flex-1 bg-black text-white cursor-pointer hover:bg-gray-900 px-4 py-2"
@@ -1275,7 +1347,11 @@ export function CategoryModal({
                   >
                     <div className="flex items-center justify-center gap-2">
                       <AlertCircle className="w-4 h-4" />
-                      <span>Event Full - Event Registration Closed</span>
+                      <span>
+                        {isRegistrationEnded 
+                          ? "Registration Period Ended" 
+                          : "Event Full - Registration Closed"}
+                      </span>
                     </div>
                   </Button>
                 )}
@@ -1382,8 +1458,8 @@ export function UploadProofMergedModal({
   onClose: () => void
 }) {
   const [entriesState, setEntriesState] = useState([
-    { entryNumber: "", entryKey: "" },
-  ])
+  { combinedEntry: "", entryNumber: "", entryKey: "" }
+]);
   const [amount, setAmount] = useState("")
   const [isJointPayment, setIsJointPayment] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
@@ -1438,7 +1514,6 @@ export function UploadProofMergedModal({
     paymentMethod: "",
   })
 
-  // New states for duplicate handling
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
   const [duplicateReferenceNumber, setDuplicateReferenceNumber] =
     useState<string>("")
@@ -1479,6 +1554,17 @@ export function UploadProofMergedModal({
   })
 
   const sensors = useSensors(useSensor(PointerSensor))
+
+const handleCombinedEntryChange = (index: number, combinedValue: string) => {
+  const parsed = parseEntryInput(combinedValue);
+  const updated = [...entriesState];
+  updated[index] = {
+    combinedEntry: combinedValue,
+    entryNumber: parsed.entryNumber,
+    entryKey: parsed.entryKey
+  };
+  setEntriesState(updated);
+};
 
   const uploadFile = async (file: File): Promise<string | null> => {
     try {
@@ -1677,7 +1763,7 @@ export function UploadProofMergedModal({
   }
 
   const resetForm = () => {
-    setEntriesState([{ entryNumber: "", entryKey: "" }])
+    setEntriesState([{ combinedEntry: "", entryNumber: "", entryKey: "" }])
     setAmount("")
     setPaymentMethod("GCASH")
     setIsJointPayment(false)
@@ -2338,84 +2424,85 @@ export function UploadProofMergedModal({
   }
 
   const handleAddEntry = () => {
-    setEntriesState([...entriesState, { entryNumber: "", entryKey: "" }])
-  }
+  setEntriesState([...entriesState, { combinedEntry: "", entryNumber: "", entryKey: "" }])
+}
 
   const handleJointPaymentChange = (checked: boolean) => {
-    setIsJointPayment(checked)
-    if (!checked) {
-      setEntriesState([
-        {
-          entryNumber: entriesState[0].entryNumber,
-          entryKey: entriesState[0].entryKey,
-        },
-      ])
-      setEntryAmounts({ 0: entryAmounts[0] || null })
-      setEntryLoadingStates({ 0: entryLoadingStates[0] || false })
-      setEntryErrors({ 0: entryErrors[0] || "" })
-      setEntryDetails({ 0: entryDetails[0] || null })
-    }
+  setIsJointPayment(checked)
+  if (!checked) {
+    setEntriesState([
+      {
+        combinedEntry: entriesState[0].combinedEntry || `${entriesState[0].entryNumber}${entriesState[0].entryKey ? `_${entriesState[0].entryKey}` : ''}`,
+        entryNumber: entriesState[0].entryNumber,
+        entryKey: entriesState[0].entryKey,
+      },
+    ])
+    setEntryAmounts({ 0: entryAmounts[0] || null })
+    setEntryLoadingStates({ 0: entryLoadingStates[0] || false })
+    setEntryErrors({ 0: entryErrors[0] || "" })
+    setEntryDetails({ 0: entryDetails[0] || null })
   }
+}
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (active.id !== over?.id) {
-      const oldIndex = entriesState.findIndex(
-        (_, i) => i.toString() === active.id,
-      )
-      const newIndex = entriesState.findIndex(
-        (_, i) => i.toString() === over?.id,
-      )
+  const { active, over } = event
+  if (active.id !== over?.id) {
+    const oldIndex = entriesState.findIndex(
+      (_, i) => i.toString() === active.id,
+    )
+    const newIndex = entriesState.findIndex(
+      (_, i) => i.toString() === over?.id,
+    )
 
-      const reorderedEntries = arrayMove(entriesState, oldIndex, newIndex)
-      setEntriesState(reorderedEntries)
+    const reorderedEntries = arrayMove(entriesState, oldIndex, newIndex)
+    setEntriesState(reorderedEntries)
 
-      const reorderedAmounts: Record<number, number | null> = {}
-      const reorderedLoadingStates: Record<number, boolean> = {}
-      const reorderedErrors: Record<number, string> = {}
-      const reorderedDetails: Record<number, any | null> = {}
+    const reorderedAmounts: Record<number, number | null> = {}
+    const reorderedLoadingStates: Record<number, boolean> = {}
+    const reorderedErrors: Record<number, string> = {}
+    const reorderedDetails: Record<number, any | null> = {}
 
-      reorderedEntries.forEach((_, newIdx) => {
-        reorderedAmounts[newIdx] =
-          entryAmounts[
-          oldIndex === newIdx
-            ? newIndex
-            : newIdx === newIndex
-              ? oldIndex
-              : newIdx
-          ] || null
-        reorderedLoadingStates[newIdx] =
-          entryLoadingStates[
-          oldIndex === newIdx
-            ? newIndex
-            : newIdx === newIndex
-              ? oldIndex
-              : newIdx
-          ] || false
-        reorderedErrors[newIdx] =
-          entryErrors[
-          oldIndex === newIdx
-            ? newIndex
-            : newIdx === newIndex
-              ? oldIndex
-              : newIdx
-          ] || ""
-        reorderedDetails[newIdx] =
-          entryDetails[
-          oldIndex === newIdx
-            ? newIndex
-            : newIdx === newIndex
-              ? oldIndex
-              : newIdx
-          ] || null
-      })
+    reorderedEntries.forEach((_, newIdx) => {
+      reorderedAmounts[newIdx] =
+        entryAmounts[
+        oldIndex === newIdx
+          ? newIndex
+          : newIdx === newIndex
+            ? oldIndex
+            : newIdx
+        ] || null
+      reorderedLoadingStates[newIdx] =
+        entryLoadingStates[
+        oldIndex === newIdx
+          ? newIndex
+          : newIdx === newIndex
+            ? oldIndex
+            : newIdx
+        ] || false
+      reorderedErrors[newIdx] =
+        entryErrors[
+        oldIndex === newIdx
+          ? newIndex
+          : newIdx === newIndex
+            ? oldIndex
+            : newIdx
+        ] || ""
+      reorderedDetails[newIdx] =
+        entryDetails[
+        oldIndex === newIdx
+          ? newIndex
+          : newIdx === newIndex
+            ? oldIndex
+            : newIdx
+        ] || null
+    })
 
-      setEntryAmounts(reorderedAmounts)
-      setEntryLoadingStates(reorderedLoadingStates)
-      setEntryErrors(reorderedErrors)
-      setEntryDetails(reorderedDetails)
-    }
+    setEntryAmounts(reorderedAmounts)
+    setEntryLoadingStates(reorderedLoadingStates)
+    setEntryErrors(reorderedErrors)
+    setEntryDetails(reorderedDetails)
   }
+}
 
   const calculateCumulativeAmounts = () => {
     const cumulative: Record<number, number> = {}
@@ -3381,52 +3468,78 @@ export function UploadProofMergedModal({
                               </div>
                             )}
 
-                            <SortableEntry
-                              id={index.toString()}
-                              index={index}
-                              entry={entry}
-                              isJointPayment={isJointPayment}
-                              onChange={(i, field, value) => {
-                                const updated = [...entriesState]
-                                updated[i] = { ...updated[i], [field]: value }
-                                setEntriesState(updated)
-                              }}
-                              onDelete={(i) => {
-                                setEntriesState(
-                                  entriesState.filter((_, idx) => idx !== i),
-                                )
-                                setEntryAmounts((prev) => {
-                                  const newAmounts = { ...prev }
-                                  delete newAmounts[i]
-                                  return newAmounts
-                                })
-                                setEntryLoadingStates((prev) => {
-                                  const newLoadingStates = { ...prev }
-                                  delete newLoadingStates[i]
-                                  return newLoadingStates
-                                })
-                                setEntryErrors((prev) => {
-                                  const newErrors = { ...prev }
-                                  delete newErrors[i]
-                                  return newErrors
-                                })
-                                setEntryDetails((prev) => {
-                                  const newDetails = { ...prev }
-                                  delete newDetails[i]
-                                  return newDetails
-                                })
-                                if (hasRejectedEntry) {
-                                  const remainingHasRejected = Object.values(
-                                    entryErrors,
-                                  )
-                                    .filter((_, idx) => idx !== i)
-                                    .some((error) =>
-                                      error?.includes("REJECTED"),
-                                    )
-                                  setHasRejectedEntry(remainingHasRejected)
-                                }
-                              }}
-                            />
+                          <SortableEntry
+  id={index.toString()}
+  index={index}
+  entry={entry}
+  isJointPayment={isJointPayment}
+  onChange={(i, field, value) => {
+    if (field === "combinedEntry") {
+      const parsed = parseEntryInput(value);
+      const updated = [...entriesState];
+      updated[i] = {
+        combinedEntry: value,
+        entryNumber: parsed.entryNumber,
+        entryKey: parsed.entryKey
+      };
+      setEntriesState(updated);
+    } else if (field === "entryNumber") {
+      const updated = [...entriesState];
+      updated[i] = { ...updated[i], entryNumber: value };
+      // Update combinedEntry if both fields have values
+      if (updated[i].entryKey) {
+        updated[i].combinedEntry = `${value}_${updated[i].entryKey}`;
+      } else {
+        updated[i].combinedEntry = value;
+      }
+      setEntriesState(updated);
+    } else if (field === "entryKey") {
+      const updated = [...entriesState];
+      updated[i] = { ...updated[i], entryKey: value };
+      if (updated[i].entryNumber) {
+        updated[i].combinedEntry = `${updated[i].entryNumber}_${value}`;
+      } else {
+        updated[i].combinedEntry = value;
+      }
+      setEntriesState(updated);
+    }
+  }}
+  onDelete={(i) => {
+    setEntriesState(
+      entriesState.filter((_, idx) => idx !== i),
+    )
+    setEntryAmounts((prev) => {
+      const newAmounts = { ...prev }
+      delete newAmounts[i]
+      return newAmounts
+    })
+    setEntryLoadingStates((prev) => {
+      const newLoadingStates = { ...prev }
+      delete newLoadingStates[i]
+      return newLoadingStates
+    })
+    setEntryErrors((prev) => {
+      const newErrors = { ...prev }
+      delete newErrors[i]
+      return newErrors
+    })
+    setEntryDetails((prev) => {
+      const newDetails = { ...prev }
+      delete newDetails[i]
+      return newDetails
+    })
+    if (hasRejectedEntry) {
+      const remainingHasRejected = Object.values(
+        entryErrors,
+      )
+        .filter((_, idx) => idx !== i)
+        .some((error) =>
+          error?.includes("REJECTED"),
+        )
+      setHasRejectedEntry(remainingHasRejected)
+    }
+  }}
+/>
                           </div>
                         )
                       })}
