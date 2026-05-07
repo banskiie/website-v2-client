@@ -118,10 +118,6 @@ const CheckStats = (props: Props) => {
           <DialogHeader>
             <DialogTitle>Check Quick Stats</DialogTitle>
             <DialogDescription>
-              <span className="block text-foreground">
-                Are you sure you want to export the multiple entry report for
-                the selected tournament?
-              </span>
               <Select
                 onValueChange={(value) => setSelectedTournament(value)}
                 value={selectedTournament}
