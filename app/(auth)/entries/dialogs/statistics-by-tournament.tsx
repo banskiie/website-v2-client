@@ -116,7 +116,7 @@ const CheckStats = (props: Props) => {
         </DialogTrigger>
         <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
-            <DialogTitle>Export Multiple Entry Report</DialogTitle>
+            <DialogTitle>Check Quick Stats</DialogTitle>
             <DialogDescription>
               <span className="block text-foreground">
                 Are you sure you want to export the multiple entry report for
