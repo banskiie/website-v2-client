@@ -79,6 +79,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import SoftwareStatusDialog from "./dialogs/add-to-software";
+import CheckStats from "./dialogs/statistics-by-tournament";
 
 const ENTRIES = gql`
   query Entries(
@@ -2305,14 +2306,15 @@ const Page = () => {
         </InputGroup>
         <div className="flex items-center gap-2">
           <ExportMenu />
-          <Button
+          <CheckStats />
+          {/* <Button
             variant="outline"
             onClick={() => setShowDuplicateDialog(true)}
             className="border-amber-500 text-amber-600 hover:bg-amber-50"
           >
             <Flag className="size-3.5 mr-1" />
             Check Duplicates
-          </Button>
+          </Button> */}
           {selectedIds.size > 0 && (
             <>
               <BatchMenu
@@ -2479,11 +2481,12 @@ const Page = () => {
         entryNumber={warningEntryNumber}
       /> */}
 
+      {/* 
       <DuplicateEntriesDialog
         open={showDuplicateDialog}
         onOpenChange={setShowDuplicateDialog}
         tournamentId={selectedTournamentId}
-      />
+      /> */}
     </div>
   );
 };
