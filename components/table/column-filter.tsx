@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react"
-import { Input } from "../ui/input"
-import { Button } from "../ui/button"
+import React, { useEffect, useState } from "react";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
 import {
   CheckIcon,
   ChevronDownIcon,
   ChevronsUpDownIcon,
   Eraser,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -16,7 +16,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Command,
   CommandEmpty,
@@ -24,17 +24,17 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Label } from "@/components/ui/label"
-import { DateRange } from "react-day-picker"
-import { formatDateRange } from "little-date"
-import { Calendar } from "@/components/ui/calendar"
-import { set } from "zod"
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { DateRange } from "react-day-picker";
+import { formatDateRange } from "little-date";
+import { Calendar } from "@/components/ui/calendar";
+import { set } from "zod";
 import {
   addHours,
   endOfDay,
@@ -46,12 +46,14 @@ import {
   startOfMonth,
   startOfWeek,
   startOfYear,
-} from "date-fns"
+} from "date-fns";
+import { useQuery } from "@apollo/client/react";
+import { gql } from "@apollo/client";
 
 type IOption = {
-  label: string
-  value: string
-}
+  label: string;
+  value: string;
+};
 
 const ColumnFilter = ({
   label,
@@ -61,8 +63,8 @@ const ColumnFilter = ({
   onFilterChange,
   options = [],
 }: {
-  label: string
-  filterKey: string
+  label: string;
+  filterKey: string;
   filterType:
     | "TEXT"
     | "SELECT"
@@ -70,22 +72,22 @@ const ColumnFilter = ({
     | "NUMBER_RANGE"
     | "DATE"
     | "DATE_RANGE"
-    | "BOOLEAN"
-  filterValue: { key: string; value: string; type: string }[]
-  onFilterChange: (value: any) => void
-  options?: IOption[]
+    | "BOOLEAN";
+  filterValue: { key: string; value: string; type: string }[];
+  onFilterChange: (value: any) => void;
+  options?: IOption[];
 }) => {
   const [filterTerm, setFilterTerm] = useState(
-    filterValue.find((f) => f.key === filterKey)?.value || ""
-  )
-  let filterComponent
-  const [openCommand, setOpenCommand] = useState(false)
+    filterValue.find((f) => f.key === filterKey)?.value || "",
+  );
+  let filterComponent;
+  const [openCommand, setOpenCommand] = useState(false);
   // Date Range Picker State
-  const [openDateRangePopover, setOpenDateRangePopover] = React.useState(false)
+  const [openDateRangePopover, setOpenDateRangePopover] = React.useState(false);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
     from: undefined,
     to: undefined,
-  })
+  });
 
   useEffect(() => {
     if (
@@ -94,13 +96,13 @@ const ColumnFilter = ({
     ) {
       const [from, to] = filterValue
         .find((f) => f.key === filterKey)!
-        .value.split("_")
+        .value.split("_");
       setDateRange({
         from: from ? new Date(from) : undefined,
         to: to ? new Date(to) : undefined,
-      })
+      });
     }
-  }, [filterType, filterValue, filterKey])
+  }, [filterType, filterValue, filterKey]);
 
   switch (filterType) {
     case "TEXT":
@@ -111,20 +113,20 @@ const ColumnFilter = ({
             onChange={(e) => setFilterTerm(e.target.value)}
             placeholder={`Filter ${label}`}
             onKeyDown={(e) => {
-              const trimmedTerm = filterTerm.trim()
+              const trimmedTerm = filterTerm.trim();
               if (e.key === "Enter") {
                 // If empty, remove filter
                 if (!trimmedTerm) {
-                  setFilterTerm("")
+                  setFilterTerm("");
                   return onFilterChange((prev: any) =>
-                    prev.filter((f: any) => f.key !== filterKey)
-                  )
+                    prev.filter((f: any) => f.key !== filterKey),
+                  );
                 } else {
                   // Add / update filter
                   onFilterChange((prev: any) => [
                     ...prev.filter((f: any) => f.key !== filterKey),
                     { key: filterKey, value: trimmedTerm, type: "TEXT" },
-                  ])
+                  ]);
                 }
               }
             }}
@@ -135,18 +137,18 @@ const ColumnFilter = ({
               className="rounded-tl-none rounded-bl-none"
               variant="destructive"
               onClick={() => {
-                setFilterTerm("")
+                setFilterTerm("");
                 onFilterChange((prev: any) =>
-                  prev.filter((f: any) => f.key !== filterKey)
-                )
+                  prev.filter((f: any) => f.key !== filterKey),
+                );
               }}
             >
               <Eraser />
             </Button>
           )}
         </>
-      )
-      break
+      );
+      break;
     case "SELECT":
       filterComponent = (
         <Popover open={openCommand} onOpenChange={setOpenCommand}>
@@ -158,12 +160,12 @@ const ColumnFilter = ({
                 aria-expanded={openCommand}
                 className={cn(
                   filterTerm && "rounded-tr-none rounded-br-none text-black",
-                  "flex-1 justify-between text-muted-foreground bg-transparent hover:bg-transparent hover:text-muted-foreground capitalize"
+                  "flex-1 justify-between text-muted-foreground bg-transparent hover:bg-transparent hover:text-muted-foreground capitalize",
                 )}
               >
                 {filterValue.some((f: any) => f.key === filterKey)
                   ? options?.find(
-                      (o: IOption) => o.value === filterTerm.toString()
+                      (o: IOption) => o.value === filterTerm.toString(),
                     )?.label
                   : `Filter ${label}`}
                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -173,10 +175,10 @@ const ColumnFilter = ({
                   className="rounded-tl-none rounded-bl-none"
                   variant="destructive"
                   onClick={() => {
-                    setFilterTerm("")
+                    setFilterTerm("");
                     onFilterChange((prev: any) =>
-                      prev.filter((f: any) => f.key !== filterKey)
-                    )
+                      prev.filter((f: any) => f.key !== filterKey),
+                    );
                   }}
                 >
                   <Eraser />
@@ -199,12 +201,12 @@ const ColumnFilter = ({
                       value={o.value}
                       onSelect={(currentValue) => {
                         if (currentValue === filterTerm) {
-                          setFilterTerm("")
+                          setFilterTerm("");
                           onFilterChange((prev: any) =>
-                            prev.filter((f: any) => f.key !== filterKey)
-                          )
+                            prev.filter((f: any) => f.key !== filterKey),
+                          );
                         } else {
-                          setFilterTerm(currentValue)
+                          setFilterTerm(currentValue);
                           onFilterChange((prev: any) => [
                             ...prev.filter((f: any) => f.key !== filterKey),
                             {
@@ -212,9 +214,9 @@ const ColumnFilter = ({
                               value: currentValue,
                               type: "TEXT",
                             },
-                          ])
+                          ]);
                         }
-                        setOpenCommand(false)
+                        setOpenCommand(false);
                       }}
                       className="capitalize"
                     >
@@ -223,7 +225,7 @@ const ColumnFilter = ({
                           "h-4 w-4",
                           filterTerm.toString() === o.value
                             ? "opacity-100"
-                            : "opacity-0"
+                            : "opacity-0",
                         )}
                       />
                       {o.label}
@@ -234,8 +236,8 @@ const ColumnFilter = ({
             </Command>
           </PopoverContent>
         </Popover>
-      )
-      break
+      );
+      break;
     case "BOOLEAN":
       filterComponent = (
         <>
@@ -246,14 +248,14 @@ const ColumnFilter = ({
                 onFilterChange((prev: any) => [
                   ...prev.filter((f: any) => f.key !== filterKey),
                   { key: filterKey, value, type: "BOOLEAN" },
-                ])
+                ]);
             }}
           >
             <SelectTrigger
               className={cn(
                 "w-full",
                 filterValue.find((f) => f.key === filterKey)?.value &&
-                  "rounded-tr-none rounded-br-none"
+                  "rounded-tr-none rounded-br-none",
               )}
             >
               <SelectValue
@@ -279,16 +281,16 @@ const ColumnFilter = ({
               variant="destructive"
               onClick={() => {
                 onFilterChange((prev: any) =>
-                  prev.filter((f: any) => f.key !== filterKey)
-                )
+                  prev.filter((f: any) => f.key !== filterKey),
+                );
               }}
             >
               <Eraser />
             </Button>
           )}
         </>
-      )
-      break
+      );
+      break;
     case "DATE_RANGE":
       filterComponent = (
         <Popover
@@ -304,7 +306,7 @@ const ColumnFilter = ({
                   "flex-1 justify-between font-medium text-muted-foreground",
                   dateRange?.from &&
                     dateRange?.to &&
-                    "text-black rounded-r-none"
+                    "text-black rounded-r-none",
                 )}
               >
                 {dateRange?.from && dateRange?.to
@@ -320,8 +322,8 @@ const ColumnFilter = ({
                   variant="destructive"
                   onClick={() => {
                     onFilterChange((prev: any) =>
-                      prev.filter((f: any) => f.key !== filterKey)
-                    )
+                      prev.filter((f: any) => f.key !== filterKey),
+                    );
                   }}
                 >
                   <Eraser />
@@ -405,10 +407,10 @@ const ColumnFilter = ({
                   variant="outline-destructive"
                   size="sm"
                   onClick={() => {
-                    setDateRange({ from: undefined, to: undefined })
+                    setDateRange({ from: undefined, to: undefined });
                     onFilterChange((prev: any) =>
-                      prev.filter((f: any) => f.key !== filterKey)
-                    )
+                      prev.filter((f: any) => f.key !== filterKey),
+                    );
                   }}
                 >
                   Reset
@@ -417,7 +419,7 @@ const ColumnFilter = ({
                   variant="outline-info"
                   size="sm"
                   onClick={() => {
-                    setDateRange({ from: undefined, to: undefined })
+                    setDateRange({ from: undefined, to: undefined });
                   }}
                 >
                   Clear
@@ -426,11 +428,11 @@ const ColumnFilter = ({
                   variant="outline-success"
                   size="sm"
                   onClick={() => {
-                    if (!dateRange?.from || !dateRange?.to) return
+                    if (!dateRange?.from || !dateRange?.to) return;
                     const dateRangeISO = `${format(
                       new Date(dateRange?.from),
-                      "yyyy-MM-dd"
-                    )}_${format(new Date(dateRange?.to), "yyyy-MM-dd")}`
+                      "yyyy-MM-dd",
+                    )}_${format(new Date(dateRange?.to), "yyyy-MM-dd")}`;
                     onFilterChange((prev: any) => [
                       ...prev.filter((f: any) => f.key !== filterKey),
                       {
@@ -438,7 +440,7 @@ const ColumnFilter = ({
                         value: dateRangeISO,
                         type: "DATE_RANGE",
                       },
-                    ])
+                    ]);
                   }}
                 >
                   Filter
@@ -447,16 +449,40 @@ const ColumnFilter = ({
             </div>
           </PopoverContent>
         </Popover>
-      )
-      break
+      );
+      break;
     default:
-      break
+      break;
   }
   return (
     <div className="flex my-2 items-center justify-center">
       {filterComponent}
     </div>
-  )
-}
+  );
+};
 
-export default ColumnFilter
+const FETCH_ACTIVE_EVENT_OPTIONS = gql`
+  query ActiveEventOptions {
+    activeEventOptions {
+      label
+      value
+      tournament
+    }
+  }
+`;
+
+export const CustomEventColumnFilter = (props: any) => {
+  const { data } = useQuery(FETCH_ACTIVE_EVENT_OPTIONS);
+
+  return (
+    <ColumnFilter
+      {...props}
+      options={(data as any)?.activeEventOptions.map((o: any) => ({
+        label: o.label,
+        value: o.value,
+      }))}
+    />
+  );
+};
+
+export default ColumnFilter;

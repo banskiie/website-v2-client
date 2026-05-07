@@ -1,5 +1,7 @@
 "use client";
-import ColumnFilter from "@/components/table/column-filter";
+import ColumnFilter, {
+  CustomEventColumnFilter,
+} from "@/components/table/column-filter";
 import DataTable from "@/components/table/data-table";
 import SortHeader from "@/components/table/sort-header";
 import { Button } from "@/components/ui/button";
@@ -29,7 +31,13 @@ import { EntryStatus, IEntry, IEntryNode } from "@/types/entry.interface";
 import { gql } from "@apollo/client";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { ColumnDef } from "@tanstack/react-table";
-import { InfoIcon, Settings, Trash2Icon, Flag, CheckCircle } from "lucide-react";
+import {
+  InfoIcon,
+  Settings,
+  Trash2Icon,
+  Flag,
+  CheckCircle,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import FormDialog from "./dialogs/form";
 import { toast } from "sonner";
@@ -62,8 +70,15 @@ import CancelDialog from "./dialogs/cancel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MaxEntriesWarningModal } from "@/components/custom/MaxEntriesWarningModal";
 import ResendDialog from "./dialogs/resend";
-import { DialogContent, DialogFooter, Dialog, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import SoftwareStatusDialog from "./dialogs/add-to-software"
+import {
+  DialogContent,
+  DialogFooter,
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import SoftwareStatusDialog from "./dialogs/add-to-software";
 
 const ENTRIES = gql`
   query Entries(
@@ -458,19 +473,13 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
               onClose={() => setMenuOpen(false)}
             />
           )}
-          {(status === "PAYMENT_PENDING") && (
+          {status === "PAYMENT_PENDING" && (
             <ResendDialog
               _id={entry?._id}
               entryNumber={entry?.entryNumber}
               onClose={() => setMenuOpen(false)}
             />
           )}
-
-          {/* {!hasAvailableSlots && !checkingCapacity && (
-            <div className="px-2 py-1.5 text-xs text-muted-foreground italic">
-              Event full - Approval disabled
-            </div>
-          )} */}
 
           {showLevelMenu && (
             <>
@@ -524,13 +533,23 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
   );
 };
 
-
-const DuplicateEntriesDialog = ({ open, onOpenChange, tournamentId }: { open: boolean; onOpenChange: (open: boolean) => void; tournamentId?: string }) => {
-  const { data, loading, error } = useQuery<DuplicateEntriesData>(GET_DUPLICATE_ENTRIES, {
-    variables: { tournamentId: tournamentId || null },
-    skip: !open,
-    fetchPolicy: "network-only",
-  });
+const DuplicateEntriesDialog = ({
+  open,
+  onOpenChange,
+  tournamentId,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tournamentId?: string;
+}) => {
+  const { data, loading, error } = useQuery<DuplicateEntriesData>(
+    GET_DUPLICATE_ENTRIES,
+    {
+      variables: { tournamentId: tournamentId || null },
+      skip: !open,
+      fetchPolicy: "network-only",
+    },
+  );
 
   const duplicateData = data?.getAllDuplicateEntries;
 
@@ -546,7 +565,8 @@ const DuplicateEntriesDialog = ({ open, onOpenChange, tournamentId }: { open: bo
             Double Entries Report
           </DialogTitle>
           <DialogDescription>
-            Players who appear in multiple entries (same first name, last name, and birth date)
+            Players who appear in multiple entries (same first name, last name,
+            and birth date)
           </DialogDescription>
         </DialogHeader>
 
@@ -558,108 +578,150 @@ const DuplicateEntriesDialog = ({ open, onOpenChange, tournamentId }: { open: bo
           <div className="text-center py-12 text-gray-500">
             <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
             <p className="text-lg font-medium">No duplicate entries found</p>
-            <p className="text-sm">All players appear only once across all entries</p>
+            <p className="text-sm">
+              All players appear only once across all entries
+            </p>
           </div>
         ) : (
           <div className="space-y-6">
-           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-  <div className="flex items-center justify-between mb-3">
-    <div>
-      <p className="text-sm text-blue-700">Total Players with Duplicates</p>
-      <p className="text-2xl font-bold text-blue-800">{duplicateData?.totalGroups}</p>
-    </div>
-  </div>
-  <div className="border-t border-blue-200 pt-3 mt-1">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm text-blue-700">Total Double Entries</p>
-        <p className="text-2xl font-bold text-blue-800">{duplicateData?.totalEntries}</p>
-      </div>
-      <div className="text-right">
-        <p className="text-xs text-blue-600">Entries that have duplicate players</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-            {duplicateData?.duplicateGroups?.map((group: DuplicateEntryGroup) => (
-              <div key={group.key} className="border rounded-lg overflow-hidden">
-                <div className="bg-gray-50 px-4 py-3 border-b">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h3 className="font-semibold text-lg">
-                        {group.playerFirstName} {group.playerLastName}
-                      </h3>
-                      <p className="text-xs text-gray-500">
-                        Birth Date: {group.playerBirthDate ? format(new Date(group.playerBirthDate), "PPP") : "N/A"}
-                      </p>
-                    </div>
-                    <Badge variant="destructive" className="text-sm px-3 py-1">
-                      {group.total} entries
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="divide-y">
-                  {group.entries.map((entry: DuplicateEntryItem) => (
-                    <div key={entry._id} className="p-4 hover:bg-gray-50">
-                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              variant={entry.position === "Player 1" ? "default" : "secondary"}
-                              className="text-xs"
-                            >
-                              {entry.position}
-                            </Badge>
-                            <span className="font-mono text-sm font-medium">
-                              Entry #{entry.entryNumber}
-                            </span>
-                            <span className="text-xs text-gray-500">{entry.entryKey}</span>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Event: {entry.event?.name} ({entry.event?.type?.toLowerCase()})
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Tournament: {entry.event?.tournament?.name}
-                          </p>
-                        </div>
-                        <EntryStatusBadge status={entry.currentStatus as EntryStatus} />
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 text-sm">
-                        <div className="bg-gray-50 p-2 rounded">
-                          <p className="font-medium text-xs text-gray-500 mb-1">Player 1</p>
-                          <p className="text-sm">
-                            {entry.player1Entry?.firstName} {entry.player1Entry?.lastName}
-                          </p>
-                          {entry.player1Entry?.email && (
-                            <p className="text-xs text-gray-500">{entry.player1Entry.email}</p>
-                          )}
-                        </div>
-                        {entry.player2Entry && (
-                          <div className="bg-gray-50 p-2 rounded">
-                            <p className="font-medium text-xs text-gray-500 mb-1">Player 2</p>
-                            <p className="text-sm">
-                              {entry.player2Entry?.firstName} {entry.player2Entry?.lastName}
-                            </p>
-                            {entry.player2Entry?.email && (
-                              <p className="text-xs text-gray-500">{entry.player2Entry.email}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {entry.club && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          Club: {entry.club}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm text-blue-700">
+                    Total Players with Duplicates
+                  </p>
+                  <p className="text-2xl font-bold text-blue-800">
+                    {duplicateData?.totalGroups}
+                  </p>
                 </div>
               </div>
-            ))}
+              <div className="border-t border-blue-200 pt-3 mt-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-700">
+                      Total Double Entries
+                    </p>
+                    <p className="text-2xl font-bold text-blue-800">
+                      {duplicateData?.totalEntries}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-blue-600">
+                      Entries that have duplicate players
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {duplicateData?.duplicateGroups?.map(
+              (group: DuplicateEntryGroup) => (
+                <div
+                  key={group.key}
+                  className="border rounded-lg overflow-hidden"
+                >
+                  <div className="bg-gray-50 px-4 py-3 border-b">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h3 className="font-semibold text-lg">
+                          {group.playerFirstName} {group.playerLastName}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          Birth Date:{" "}
+                          {group.playerBirthDate
+                            ? format(new Date(group.playerBirthDate), "PPP")
+                            : "N/A"}
+                        </p>
+                      </div>
+                      <Badge
+                        variant="destructive"
+                        className="text-sm px-3 py-1"
+                      >
+                        {group.total} entries
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="divide-y">
+                    {group.entries.map((entry: DuplicateEntryItem) => (
+                      <div key={entry._id} className="p-4 hover:bg-gray-50">
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={
+                                  entry.position === "Player 1"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {entry.position}
+                              </Badge>
+                              <span className="font-mono text-sm font-medium">
+                                Entry #{entry.entryNumber}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {entry.entryKey}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Event: {entry.event?.name} (
+                              {entry.event?.type?.toLowerCase()})
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Tournament: {entry.event?.tournament?.name}
+                            </p>
+                          </div>
+                          <EntryStatusBadge
+                            status={entry.currentStatus as EntryStatus}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 text-sm">
+                          <div className="bg-gray-50 p-2 rounded">
+                            <p className="font-medium text-xs text-gray-500 mb-1">
+                              Player 1
+                            </p>
+                            <p className="text-sm">
+                              {entry.player1Entry?.firstName}{" "}
+                              {entry.player1Entry?.lastName}
+                            </p>
+                            {entry.player1Entry?.email && (
+                              <p className="text-xs text-gray-500">
+                                {entry.player1Entry.email}
+                              </p>
+                            )}
+                          </div>
+                          {entry.player2Entry && (
+                            <div className="bg-gray-50 p-2 rounded">
+                              <p className="font-medium text-xs text-gray-500 mb-1">
+                                Player 2
+                              </p>
+                              <p className="text-sm">
+                                {entry.player2Entry?.firstName}{" "}
+                                {entry.player2Entry?.lastName}
+                              </p>
+                              {entry.player2Entry?.email && (
+                                <p className="text-xs text-gray-500">
+                                  {entry.player2Entry.email}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {entry.club && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Club: {entry.club}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ),
+            )}
           </div>
         )}
 
@@ -691,7 +753,9 @@ const Page = () => {
   const [search, setSearch] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
-const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefined>(undefined);
+  const [selectedTournamentId, setSelectedTournamentId] = useState<
+    string | undefined
+  >(undefined);
   // Column Sorting
   const [sort, setSort] = useState<{
     key: string;
@@ -960,23 +1024,23 @@ const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefi
               cancelledEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === cancelledEntry._id
                   ? {
-                    ...edge,
-                    node: {
-                      ...edge.node,
-                      ...cancelledEntry,
-                      currentStatus: "CANCELLED",
-                      hasOverpayment: cancelledEntry.hasOverpayment,
-                      totalExcess: cancelledEntry.totalExcess,
-                      pendingAmount: cancelledEntry.pendingAmount,
-                      totalRefundAmount:
-                        cancelledEntry.totalRefundAmount ||
-                        edge.node.totalRefundAmount,
-                      hasRefunds:
-                        cancelledEntry.hasRefunds || edge.node.hasRefunds,
-                      totalPaid:
-                        cancelledEntry.totalPaid || edge.node.totalPaid,
-                    },
-                  }
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...cancelledEntry,
+                        currentStatus: "CANCELLED",
+                        hasOverpayment: cancelledEntry.hasOverpayment,
+                        totalExcess: cancelledEntry.totalExcess,
+                        pendingAmount: cancelledEntry.pendingAmount,
+                        totalRefundAmount:
+                          cancelledEntry.totalRefundAmount ||
+                          edge.node.totalRefundAmount,
+                        hasRefunds:
+                          cancelledEntry.hasRefunds || edge.node.hasRefunds,
+                        totalPaid:
+                          cancelledEntry.totalPaid || edge.node.totalPaid,
+                      },
+                    }
                   : edge,
               );
             } else {
@@ -1164,7 +1228,7 @@ const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefi
               if (!search && !sort && filter.length === 0) {
                 toast.info(
                   `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
-                  `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
+                    `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
                 );
               }
             } else if (
@@ -1260,7 +1324,6 @@ const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefi
             }
 
             if (approveEntry?.eventName && approveEntry?.entryNumber) {
-
               client
                 .query({
                   query: GET_EVENT_BY_NAME,
@@ -1321,7 +1384,6 @@ const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefi
                             event.maxEntries - totalAfterApproval;
 
                           if (remainingSlots <= 5 && remainingSlots > 0) {
-
                             setWarningEventName(event.name);
                             setWarningMaxEntries(event.maxEntries);
                             setWarningRemainingSlots(remainingSlots);
@@ -1565,8 +1627,8 @@ const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefi
             const filteredBatchEntries =
               userRole === "LEVELLER"
                 ? updatedEntries.filter(
-                  (e: any) => e.currentStatus === "LEVEL_PENDING",
-                )
+                    (e: any) => e.currentStatus === "LEVEL_PENDING",
+                  )
                 : updatedEntries;
 
             if (!search && !sort && filter.length === 0) {
@@ -1585,14 +1647,14 @@ const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefi
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...filteredBatchEntries.find(
-                          (u: any) => u._id === edge.node._id,
-                        ),
-                      },
-                    }
+                        ...edge,
+                        node: {
+                          ...edge.node,
+                          ...filteredBatchEntries.find(
+                            (u: any) => u._id === edge.node._id,
+                          ),
+                        },
+                      }
                     : edge,
                 ),
               },
@@ -1839,10 +1901,10 @@ const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefi
           />
         ),
         footer: () => (
-          <ColumnFilter
+          <CustomEventColumnFilter
             label="Event"
             filterKey="event"
-            filterType="TEXT"
+            filterType="SELECT"
             filterValue={filter}
             onFilterChange={onFilter}
           />
@@ -2243,14 +2305,14 @@ const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefi
         </InputGroup>
         <div className="flex items-center gap-2">
           <ExportMenu />
-           <Button 
-    variant="outline" 
-    onClick={() => setShowDuplicateDialog(true)}
-    className="border-amber-500 text-amber-600 hover:bg-amber-50"
-  >
-    <Flag className="size-3.5 mr-1" />
-    Check Duplicates
-  </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowDuplicateDialog(true)}
+            className="border-amber-500 text-amber-600 hover:bg-amber-50"
+          >
+            <Flag className="size-3.5 mr-1" />
+            Check Duplicates
+          </Button>
           {selectedIds.size > 0 && (
             <>
               <BatchMenu
@@ -2417,11 +2479,11 @@ const [selectedTournamentId, setSelectedTournamentId] = useState<string | undefi
         entryNumber={warningEntryNumber}
       /> */}
 
-      <DuplicateEntriesDialog 
-  open={showDuplicateDialog}
-  onOpenChange={setShowDuplicateDialog}
-  tournamentId={selectedTournamentId}
-/>
+      <DuplicateEntriesDialog
+        open={showDuplicateDialog}
+        onOpenChange={setShowDuplicateDialog}
+        tournamentId={selectedTournamentId}
+      />
     </div>
   );
 };
