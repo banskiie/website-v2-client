@@ -51,6 +51,9 @@ const GET_TOURNAMENT_NAME = gql`
 interface TournamentNameResponse {
   tournament: {
     name: string;
+    settings: {
+      showVerified: boolean;
+    }
   };
 }
 
@@ -112,6 +115,8 @@ function VerifiedEntriesContent() {
       fetchPolicy: "network-only",
     },
   );
+
+  console.log("Fetched verified entries:", data?.verifiedEntriesByTournament, tournamentData);
 
   useEffect(() => {
     if (data?.verifiedEntriesByTournament) {
