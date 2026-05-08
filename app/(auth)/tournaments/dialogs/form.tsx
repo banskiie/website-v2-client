@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import {
   Dialog,
   DialogClose,
@@ -8,27 +8,27 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { TournamentSchema } from "@/validators/tournament.validator"
-import { gql } from "@apollo/client"
-import { useMutation, useQuery } from "@apollo/client/react"
-import { useForm } from "@tanstack/react-form"
-import { useEffect, useState, useTransition } from "react"
-import { Button } from "@/components/ui/button"
-import { CalendarIcon, CirclePlus } from "lucide-react"
-import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field"
-import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
+} from "@/components/ui/dialog";
+import { TournamentSchema } from "@/validators/tournament.validator";
+import { gql } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client/react";
+import { useForm } from "@tanstack/react-form";
+import { useEffect, useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon, CirclePlus } from "lucide-react";
+import { Field, FieldLabel, FieldError, FieldSet } from "@/components/ui/field";
+import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Label } from "@/components/ui/label"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { format } from "date-fns"
-import { Calendar } from "@/components/ui/calendar"
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
 
 const TOURNAMENT = gql`
   query Tournament($_id: ID!) {
@@ -40,6 +40,7 @@ const TOURNAMENT = gql`
         hasGuidelines
         ticket
         maxEntriesPerPlayer
+        showVerified
       }
       dates {
         registrationStart
@@ -57,7 +58,7 @@ const TOURNAMENT = gql`
       }
     }
   }
-`
+`;
 
 const CREATE = gql`
   mutation CreateTournament($input: CreateTournamentInput!) {
@@ -66,7 +67,7 @@ const CREATE = gql`
       message
     }
   }
-`
+`;
 
 const UPDATE = gql`
   mutation UpdateTournament($input: UpdateTournamentInput!) {
@@ -75,29 +76,29 @@ const UPDATE = gql`
       message
     }
   }
-`
+`;
 
 type Props = {
-  _id?: string
-  onClose?: () => void
-}
+  _id?: string;
+  onClose?: () => void;
+};
 
 const FormDialog = (props: Props) => {
   // Dialog open state
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
   // Determine if it's an update or create operation
-  const isUpdate = Boolean(props._id)
-  const [isPending, startTransition] = useTransition()
+  const isUpdate = Boolean(props._id);
+  const [isPending, startTransition] = useTransition();
   // Fetch existing date if updating
   const { data, loading: fetchLoading }: any = useQuery(TOURNAMENT, {
     variables: { _id: props._id },
     skip: !open || !isUpdate,
     fetchPolicy: "no-cache",
-  })
+  });
   // Mutation hook
-  const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE)
+  const [submitForm] = useMutation(isUpdate ? UPDATE : CREATE);
   // Combined loading state
-  const loading = isUpdate ? isPending || fetchLoading : false
+  const loading = isUpdate ? isPending || fetchLoading : false;
   // Form setup
   const form = useForm({
     defaultValues: {
@@ -109,6 +110,7 @@ const FormDialog = (props: Props) => {
         hasGuidelines: false,
         ticket: "",
         maxEntriesPerPlayer: 3,
+        showVerified: false,
       },
       dates: {
         registrationStart: undefined as Date | undefined,
@@ -124,19 +126,19 @@ const FormDialog = (props: Props) => {
     validators: {
       onSubmit: ({ formApi, value }) => {
         try {
-          TournamentSchema.parse(value)
+          TournamentSchema.parse(value);
         } catch (error: any) {
-          const formErrors = JSON.parse(error)
+          const formErrors = JSON.parse(error);
           formErrors.map(
             ({ path, message }: { path: string[]; message: string }) => {
-              const fieldPath = path.join(".")
+              const fieldPath = path.join(".");
               formApi.fieldInfo[
                 fieldPath as keyof typeof formApi.fieldInfo
               ]?.instance?.setErrorMap({
                 onSubmit: { message },
-              })
-            }
-          )
+              });
+            },
+          );
         }
       },
     },
@@ -147,12 +149,12 @@ const FormDialog = (props: Props) => {
             variables: {
               input: isUpdate ? { _id: props._id, ...value } : { ...value },
             },
-          })
-          if (response) onClose()
+          });
+          if (response) onClose();
         } catch (error: any) {
-          console.error(error.errors)
+          console.error(error.errors);
           if (error.name == "CombinedGraphQLErrors") {
-            const fieldErrors = error.errors[0].extensions.fields
+            const fieldErrors = error.errors[0].extensions.fields;
             if (fieldErrors)
               fieldErrors.map(
                 ({ path, message }: { path: string; message: string }) => {
@@ -160,76 +162,77 @@ const FormDialog = (props: Props) => {
                     path as keyof typeof formApi.fieldInfo
                   ]?.instance?.setErrorMap({
                     onSubmit: { message },
-                  })
-                }
-              )
+                  });
+                },
+              );
           }
         }
       }),
-  })
+  });
 
   useEffect(() => {
     if (data) {
-      const { name, settings, banks, dates } = data.tournament
-      form.setFieldValue("name", name)
-      form.setFieldValue("settings.hasEarlyBird", settings.hasEarlyBird)
-      form.setFieldValue("settings.hasFreeJersey", settings.hasFreeJersey)
-      form.setFieldValue("settings.hasGuidelines", settings.hasGuidelines)
-      form.setFieldValue("settings.ticket", settings.ticket)
+      const { name, settings, banks, dates } = data.tournament;
+      form.setFieldValue("name", name);
+      form.setFieldValue("settings.hasEarlyBird", settings.hasEarlyBird);
+      form.setFieldValue("settings.hasFreeJersey", settings.hasFreeJersey);
+      form.setFieldValue("settings.hasGuidelines", settings.hasGuidelines);
+      form.setFieldValue("settings.showVerified", settings.showVerified);
+      form.setFieldValue("settings.ticket", settings.ticket);
       form.setFieldValue(
         "settings.maxEntriesPerPlayer",
-        settings.maxEntriesPerPlayer
-      )
+        settings.maxEntriesPerPlayer,
+      );
       form.setFieldValue(
         "banks",
         banks.map((bank: any) => ({
           name: bank.name,
           accountNumber: bank.accountNumber,
           imageURL: bank.imageURL,
-        }))
-      )
+        })),
+      );
       form.setFieldValue(
         "dates.registrationStart",
-        dates.registrationStart ? new Date(dates.registrationStart) : undefined
-      )
+        dates.registrationStart ? new Date(dates.registrationStart) : undefined,
+      );
       form.setFieldValue(
         "dates.registrationEnd",
-        dates.registrationEnd ? new Date(dates.registrationEnd) : undefined
-      )
+        dates.registrationEnd ? new Date(dates.registrationEnd) : undefined,
+      );
       form.setFieldValue(
         "dates.earlyBirdRegistrationEnd",
         dates.earlyBirdRegistrationEnd
           ? new Date(dates.earlyBirdRegistrationEnd)
-          : undefined
-      )
+          : undefined,
+      );
       form.setFieldValue(
         "dates.earlyBirdPaymentEnd",
         dates.earlyBirdPaymentEnd
           ? new Date(dates.earlyBirdPaymentEnd)
-          : undefined
-      )
+          : undefined,
+      );
       form.setFieldValue(
         "dates.registrationPaymentEnd",
         dates.registrationPaymentEnd
           ? new Date(dates.registrationPaymentEnd)
-          : undefined
-      )
+          : undefined,
+      );
       form.setFieldValue(
         "dates.tournamentStart",
-        dates.tournamentStart ? new Date(dates.tournamentStart) : undefined
-      )
+        dates.tournamentStart ? new Date(dates.tournamentStart) : undefined,
+      );
       form.setFieldValue(
         "dates.tournamentEnd",
-        dates.tournamentEnd ? new Date(dates.tournamentEnd) : undefined
-      )
+        dates.tournamentEnd ? new Date(dates.tournamentEnd) : undefined,
+      );
     }
-  }, [isUpdate, data])
+  }, [isUpdate, data]);
 
   const onClose = () => {
-    setOpen(false)
-    props.onClose?.()
-    form.reset()
-  }
+    setOpen(false);
+    props.onClose?.();
+    form.reset();
+  };
 
   return (
     <Dialog modal open={open} onOpenChange={setOpen}>
@@ -265,8 +268,8 @@ const FormDialog = (props: Props) => {
             className=""
             id="tournament-form"
             onSubmit={(e) => {
-              e.preventDefault()
-              form.handleSubmit()
+              e.preventDefault();
+              form.handleSubmit();
             }}
           >
             <form.Subscribe
@@ -285,7 +288,7 @@ const FormDialog = (props: Props) => {
                         children={(field) => {
                           const isInvalid =
                             field.state.meta.isTouched &&
-                            !field.state.meta.isValid
+                            !field.state.meta.isValid;
                           return (
                             <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>Name</FieldLabel>
@@ -307,7 +310,7 @@ const FormDialog = (props: Props) => {
                                 <FieldError errors={field.state.meta.errors} />
                               )}
                             </Field>
-                          )
+                          );
                         }}
                       />
                       <div className="grid grid-cols-3 gap-2">
@@ -316,7 +319,7 @@ const FormDialog = (props: Props) => {
                           children={(field) => {
                             const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid
+                              !field.state.meta.isValid;
                             return (
                               <Field
                                 data-invalid={isInvalid}
@@ -345,7 +348,7 @@ const FormDialog = (props: Props) => {
                                   />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
                         <form.Field
@@ -353,7 +356,7 @@ const FormDialog = (props: Props) => {
                           children={(field) => {
                             const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid
+                              !field.state.meta.isValid;
                             return (
                               <Field data-invalid={isInvalid}>
                                 <FieldLabel htmlFor={field.name}>
@@ -369,7 +372,7 @@ const FormDialog = (props: Props) => {
                                     onBlur={field.handleBlur}
                                     onChange={(e) =>
                                       field.handleChange(
-                                        parseInt(e.target.value)
+                                        parseInt(e.target.value),
                                       )
                                     }
                                     type="number"
@@ -383,7 +386,7 @@ const FormDialog = (props: Props) => {
                                   />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
                       </div>
@@ -395,7 +398,7 @@ const FormDialog = (props: Props) => {
                             children={(field) => {
                               const isInvalid =
                                 field.state.meta.isTouched &&
-                                !field.state.meta.isValid
+                                !field.state.meta.isValid;
                               return (
                                 <Field data-invalid={isInvalid}>
                                   <div className="flex items-start gap-1 px-1.5">
@@ -405,15 +408,15 @@ const FormDialog = (props: Props) => {
                                       checked={field.state.value}
                                       onBlur={field.handleBlur}
                                       onCheckedChange={(val) => {
-                                        field.handleChange(val as boolean)
+                                        field.handleChange(val as boolean);
                                         form.setFieldValue(
                                           "dates.earlyBirdRegistrationEnd",
-                                          undefined
-                                        )
+                                          undefined,
+                                        );
                                         form.setFieldValue(
                                           "dates.earlyBirdPaymentEnd",
-                                          undefined
-                                        )
+                                          undefined,
+                                        );
                                       }}
                                       className="m-1"
                                       aria-invalid={isInvalid}
@@ -438,7 +441,7 @@ const FormDialog = (props: Props) => {
                                     />
                                   )}
                                 </Field>
-                              )
+                              );
                             }}
                           />
                           <form.Field
@@ -446,7 +449,7 @@ const FormDialog = (props: Props) => {
                             children={(field) => {
                               const isInvalid =
                                 field.state.meta.isTouched &&
-                                !field.state.meta.isValid
+                                !field.state.meta.isValid;
                               return (
                                 <Field data-invalid={isInvalid}>
                                   <div className="flex items-start gap-1 px-1.5">
@@ -456,7 +459,7 @@ const FormDialog = (props: Props) => {
                                       checked={field.state.value}
                                       onBlur={field.handleBlur}
                                       onCheckedChange={(val) => {
-                                        field.handleChange(val as boolean)
+                                        field.handleChange(val as boolean);
                                       }}
                                       className="m-1"
                                       aria-invalid={isInvalid}
@@ -483,7 +486,7 @@ const FormDialog = (props: Props) => {
                                     />
                                   )}
                                 </Field>
-                              )
+                              );
                             }}
                           />
                           <form.Field
@@ -491,7 +494,7 @@ const FormDialog = (props: Props) => {
                             children={(field) => {
                               const isInvalid =
                                 field.state.meta.isTouched &&
-                                !field.state.meta.isValid
+                                !field.state.meta.isValid;
                               return (
                                 <Field data-invalid={isInvalid}>
                                   <div className="flex items-start gap-1 px-1.5">
@@ -501,7 +504,7 @@ const FormDialog = (props: Props) => {
                                       checked={field.state.value}
                                       onBlur={field.handleBlur}
                                       onCheckedChange={(val) => {
-                                        field.handleChange(val as boolean)
+                                        field.handleChange(val as boolean);
                                       }}
                                       className="m-1"
                                       aria-invalid={isInvalid}
@@ -514,7 +517,9 @@ const FormDialog = (props: Props) => {
                                       <span className="text-muted-foreground text-xs">
                                         Tournament{" "}
                                         <span className="font-medium underline">
-                                          {field.state.value ? "has" : "does not have"}{" "}
+                                          {field.state.value
+                                            ? "has"
+                                            : "does not have"}{" "}
                                           guidelines and rules.
                                         </span>
                                       </span>
@@ -526,10 +531,54 @@ const FormDialog = (props: Props) => {
                                     />
                                   )}
                                 </Field>
-                              )
+                              );
                             }}
                           />
-
+                          <form.Field
+                            name="settings.showVerified"
+                            children={(field) => {
+                              const isInvalid =
+                                field.state.meta.isTouched &&
+                                !field.state.meta.isValid;
+                              return (
+                                <Field data-invalid={isInvalid}>
+                                  <div className="flex items-start gap-1 px-1.5">
+                                    <Checkbox
+                                      id={field.name}
+                                      name={field.name}
+                                      checked={field.state.value}
+                                      onBlur={field.handleBlur}
+                                      onCheckedChange={(val) => {
+                                        field.handleChange(val as boolean);
+                                      }}
+                                      className="m-1"
+                                      aria-invalid={isInvalid}
+                                      disabled={loading}
+                                    />
+                                    <div className="grid">
+                                      <FieldLabel htmlFor={field.name}>
+                                        Show Verified Names?
+                                      </FieldLabel>
+                                      <span className="text-muted-foreground text-xs">
+                                        Tournament{" "}
+                                        <span className="font-medium underline">
+                                          {field.state.value
+                                            ? "shows"
+                                            : "does not show"}{" "}
+                                          verified names publicly.
+                                        </span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {isInvalid && (
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                    />
+                                  )}
+                                </Field>
+                              );
+                            }}
+                          />
                         </div>
                       </div>
                     </FieldSet>
@@ -542,7 +591,7 @@ const FormDialog = (props: Props) => {
                           children={(field) => {
                             const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid
+                              !field.state.meta.isValid;
                             return (
                               <Field data-invalid={isInvalid}>
                                 <FieldLabel id="tournament-start-date">
@@ -589,7 +638,7 @@ const FormDialog = (props: Props) => {
                                   />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
                         <form.Field
@@ -597,7 +646,7 @@ const FormDialog = (props: Props) => {
                           children={(field) => {
                             const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid
+                              !field.state.meta.isValid;
                             return (
                               <Field data-invalid={isInvalid}>
                                 <FieldLabel id="tournament-end-date">
@@ -641,7 +690,7 @@ const FormDialog = (props: Props) => {
                                   />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
                       </div>
@@ -651,7 +700,7 @@ const FormDialog = (props: Props) => {
                           children={(field) => {
                             const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid
+                              !field.state.meta.isValid;
                             return (
                               <Field data-invalid={isInvalid}>
                                 <FieldLabel id="registration-start-date">
@@ -695,7 +744,7 @@ const FormDialog = (props: Props) => {
                                   />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
                         <form.Field
@@ -703,7 +752,7 @@ const FormDialog = (props: Props) => {
                           children={(field) => {
                             const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid
+                              !field.state.meta.isValid;
                             return (
                               <Field data-invalid={isInvalid}>
                                 <FieldLabel id="registration-end-date">
@@ -747,7 +796,7 @@ const FormDialog = (props: Props) => {
                                   />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
                         <form.Field
@@ -755,7 +804,7 @@ const FormDialog = (props: Props) => {
                           children={(field) => {
                             const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid
+                              !field.state.meta.isValid;
                             return (
                               <Field data-invalid={isInvalid}>
                                 <FieldLabel id="registration-payment-end-date">
@@ -799,7 +848,7 @@ const FormDialog = (props: Props) => {
                                   />
                                 )}
                               </Field>
-                            )
+                            );
                           }}
                         />
                       </div>
@@ -810,7 +859,7 @@ const FormDialog = (props: Props) => {
                             children={(field) => {
                               const isInvalid =
                                 field.state.meta.isTouched &&
-                                !field.state.meta.isValid
+                                !field.state.meta.isValid;
                               return (
                                 <Field data-invalid={isInvalid}>
                                   <FieldLabel id="eb-end-date">
@@ -856,7 +905,7 @@ const FormDialog = (props: Props) => {
                                     />
                                   )}
                                 </Field>
-                              )
+                              );
                             }}
                           />
                           <form.Field
@@ -864,7 +913,7 @@ const FormDialog = (props: Props) => {
                             children={(field) => {
                               const isInvalid =
                                 field.state.meta.isTouched &&
-                                !field.state.meta.isValid
+                                !field.state.meta.isValid;
                               return (
                                 <Field data-invalid={isInvalid}>
                                   <FieldLabel id="eb-payment-end-date">
@@ -912,7 +961,7 @@ const FormDialog = (props: Props) => {
                                     />
                                   )}
                                 </Field>
-                              )
+                              );
                             }}
                           />
                         </div>
@@ -937,7 +986,7 @@ const FormDialog = (props: Props) => {
                                   children={(subField) => {
                                     const isInvalid =
                                       subField.state.meta.isTouched &&
-                                      !subField.state.meta.isValid
+                                      !subField.state.meta.isValid;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={subField.name}>
@@ -953,7 +1002,7 @@ const FormDialog = (props: Props) => {
                                             onBlur={subField.handleBlur}
                                             onChange={(e) =>
                                               subField.handleChange(
-                                                e.target.value
+                                                e.target.value,
                                               )
                                             }
                                             aria-invalid={isInvalid}
@@ -965,7 +1014,7 @@ const FormDialog = (props: Props) => {
                                           />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
                                 <form.Field
@@ -973,7 +1022,7 @@ const FormDialog = (props: Props) => {
                                   children={(subField) => {
                                     const isInvalid =
                                       subField.state.meta.isTouched &&
-                                      !subField.state.meta.isValid
+                                      !subField.state.meta.isValid;
                                     return (
                                       <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={subField.name}>
@@ -989,7 +1038,7 @@ const FormDialog = (props: Props) => {
                                             onBlur={subField.handleBlur}
                                             onChange={(e) =>
                                               subField.handleChange(
-                                                e.target.value
+                                                e.target.value,
                                               )
                                             }
                                             aria-invalid={isInvalid}
@@ -1001,7 +1050,7 @@ const FormDialog = (props: Props) => {
                                           />
                                         )}
                                       </Field>
-                                    )
+                                    );
                                   }}
                                 />
                                 {field.state.value.length > 1 && (
@@ -1058,7 +1107,7 @@ const FormDialog = (props: Props) => {
         </DialogContent>
       </form>
     </Dialog>
-  )
-}
+  );
+};
 
-export default FormDialog
+export default FormDialog;

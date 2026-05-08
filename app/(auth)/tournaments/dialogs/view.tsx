@@ -41,6 +41,7 @@ const TOURNAMENT = gql`
         hasGuidelines
         ticket
         maxEntriesPerPlayer
+        showVerified
       }
       dates {
         registrationStart
@@ -275,6 +276,29 @@ const ViewDialog = (props: Props) => {
                     <Skeleton className="my-1 w-20 h-4.25" />
                   ) : (
                     <StatusBadge status={tournament?.settings?.hasGuidelines} />
+                  )}
+                </div>
+                <div>
+                  <Label>
+                    Show Verified Names?
+                    <HoverCard>
+                      <HoverCardTrigger className="inline-block -ml-1 hover:cursor-pointer">
+                        <Info className="size-3.25" />
+                      </HoverCardTrigger>
+                      <HoverCardContent
+                        className="p-2 text-xs w-56"
+                        side="right"
+                      >
+                        This tournament{" "}
+                        {tournament?.settings?.showVerified ? "shows" : "does not show"}{" "}
+                        verified names publicly.
+                      </HoverCardContent>
+                    </HoverCard>
+                  </Label>
+                  {loading ? (
+                    <Skeleton className="my-1 w-20 h-4.25" />
+                  ) : (
+                    <StatusBadge status={tournament?.settings?.showVerified} />
                   )}
                 </div>
               </div>

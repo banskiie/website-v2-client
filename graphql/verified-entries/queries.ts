@@ -7,6 +7,11 @@ export const VERIFIED_ENTRIES_BY_TOURNAMENT = gql`
       eventName
       totalEntries
       entryNumbers
+      entries {
+        entryNumber
+        player1Name
+        player2Name
+      }
     }
   }
 `
