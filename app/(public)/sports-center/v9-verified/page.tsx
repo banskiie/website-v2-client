@@ -101,7 +101,7 @@ function VerifiedEntriesContent() {
   const { data: tournamentData, loading: tournamentLoading } =
     useQuery<TournamentNameResponse>(GET_TOURNAMENT_NAME, {
       variables: { id: tournamentId },
-      fetchPolicy: "cache-first",
+      fetchPolicy: "network-only",
       skip: !tournamentId,
     });
 
