@@ -113,6 +113,7 @@ function VerifiedEntriesContent() {
     {
       variables: { tournamentId },
       fetchPolicy: "network-only",
+      pollInterval: 30000, // Poll every 30 seconds for real-time updates
     },
   );
 
