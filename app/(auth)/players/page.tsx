@@ -50,6 +50,7 @@ import { format } from "date-fns/format"
 import StatusDialog from "./dialogs/status"
 import ActiveBadge from "@/components/badges/active-badge"
 import UpdateLevelDialog from "./dialogs/update-level"
+import MergePlayersDialog from "./dialogs/merge-players"
 
 const PLAYERS = gql`
   query Players(
@@ -110,6 +111,7 @@ const PLAYER_CHANGED = gql`
     }
   }
 `
+
 
 const ActionsColumn = ({ data }: { data?: IPlayer }) => {
   const player = useMemo(() => data, [data])
@@ -251,14 +253,14 @@ const Page = () => {
                 edges: prev.players.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                        ...edge,
-                        node: {
-                          ...edge.node,
-                          ...updatedPlayers.find(
-                            (u: any) => u._id === edge.node._id,
-                          ),
-                        },
-                      }
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...updatedPlayers.find(
+                          (u: any) => u._id === edge.node._id,
+                        ),
+                      },
+                    }
                     : edge,
                 ),
               },
@@ -474,9 +476,9 @@ const Page = () => {
                 (
                 {birthDate
                   ? `${Math.floor(
-                      (Date.now() - new Date(birthDate).getTime()) /
-                        (1000 * 60 * 60 * 24 * 365.25),
-                    )} y.o.`
+                    (Date.now() - new Date(birthDate).getTime()) /
+                    (1000 * 60 * 60 * 24 * 365.25),
+                  )} y.o.`
                   : "N/A"}
                 )
               </span>
@@ -597,6 +599,7 @@ const Page = () => {
             </InputGroupAddon>
           )}
         </InputGroup>
+
         <div className="flex items-center gap-2">
           {selectedIds.size > 0 && (
             <>
@@ -625,6 +628,7 @@ const Page = () => {
               Clear Filtering
             </Button>
           )}
+          <MergePlayersDialog />
           {<FormDialog />}
         </div>
       </div>
