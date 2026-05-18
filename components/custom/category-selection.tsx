@@ -3358,12 +3358,12 @@ const handleCombinedEntryChange = (index: number, combinedValue: string) => {
             <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1">
               <div className="w-full">
                 <Separator className="mx-2 mb-2" />
-                <div className="grid grid-cols-2 gap-14 px-14">
+                <div className="flex flex-row gap-5 px-14">
                   <label className="block text-xs md:text-sm lg:text-sm font-medium text-gray-700 text-start">
-                    Entry Number <span className="text-red-500">*</span>
+                    Reference Number <span className="text-red-500">*</span>
                   </label>
-                  <label className="block text-xs md:text-sm lg:text-sm font-medium text-gray-700 text-start">
-                    Entry Key <span className="text-red-500">*</span>
+                  <label className="block text-xs font-medium text-gray-400 text-start">
+                    (EntryNumber_Entry Key) <span className="text-red-500">*</span>
                   </label>
                 </div>
 

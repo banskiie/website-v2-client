@@ -483,6 +483,7 @@ type Props = {
   _id?: string;
   onClose?: () => void;
   title?: string;
+  children?: React.ReactNode;
 };
 
 type DocumentInfo = {
@@ -4330,14 +4331,23 @@ const AssignDialog = (props: Props) => {
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <form>
-          <DialogTrigger asChild>
+          {/* <DialogTrigger asChild>
             <DropdownMenuItem
               className="text-info focus:bg-info/10 focus:text-info"
               onSelect={(e) => e.preventDefault()}
             >
               {props.title}
             </DropdownMenuItem>
-          </DialogTrigger>
+          </DialogTrigger> */}
+           <DialogTrigger asChild>
+    {props.children ? (
+      props.children
+    ) : (
+      <Button variant="outline" size="sm">
+        {props.title || "Assign"}
+      </Button>
+    )}
+  </DialogTrigger>
           <DialogContent
             key={`dialog-${form.getFieldValue("isPlayer1New")}-${form.getFieldValue("isPlayer2New")}`}
             onOpenAutoFocus={(e) => e.preventDefault()}

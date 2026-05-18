@@ -45,6 +45,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuSeparator,
@@ -510,7 +511,11 @@ const ActionsColumn = ({ data }: { data?: IEntryNode }) => {
             _id={entry?._id}
             onClose={() => setMenuOpen(false)}
             title={status === EntryStatus.PENDING ? "Assign" : "Reassign"}
-          />
+          >
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              {status === EntryStatus.PENDING ? "Assign" : "Reassign"}
+            </DropdownMenuItem>
+          </AssignDialog>
           <DropdownMenuSeparator />
           <SoftwareStatusDialog
             _id={entry?._id}
@@ -1025,23 +1030,23 @@ const Page = () => {
               cancelledEdges = prev.entries.edges.map((edge: any) =>
                 edge.node._id === cancelledEntry._id
                   ? {
-                      ...edge,
-                      node: {
-                        ...edge.node,
-                        ...cancelledEntry,
-                        currentStatus: "CANCELLED",
-                        hasOverpayment: cancelledEntry.hasOverpayment,
-                        totalExcess: cancelledEntry.totalExcess,
-                        pendingAmount: cancelledEntry.pendingAmount,
-                        totalRefundAmount:
-                          cancelledEntry.totalRefundAmount ||
-                          edge.node.totalRefundAmount,
-                        hasRefunds:
-                          cancelledEntry.hasRefunds || edge.node.hasRefunds,
-                        totalPaid:
-                          cancelledEntry.totalPaid || edge.node.totalPaid,
-                      },
-                    }
+                    ...edge,
+                    node: {
+                      ...edge.node,
+                      ...cancelledEntry,
+                      currentStatus: "CANCELLED",
+                      hasOverpayment: cancelledEntry.hasOverpayment,
+                      totalExcess: cancelledEntry.totalExcess,
+                      pendingAmount: cancelledEntry.pendingAmount,
+                      totalRefundAmount:
+                        cancelledEntry.totalRefundAmount ||
+                        edge.node.totalRefundAmount,
+                      hasRefunds:
+                        cancelledEntry.hasRefunds || edge.node.hasRefunds,
+                      totalPaid:
+                        cancelledEntry.totalPaid || edge.node.totalPaid,
+                    },
+                  }
                   : edge,
               );
             } else {
@@ -1229,7 +1234,7 @@ const Page = () => {
               if (!search && !sort && filter.length === 0) {
                 toast.info(
                   `Early bird period expired for entry (${updatedEntry?.entryNumber}). ` +
-                    `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
+                  `Amount updated to ₱${updatedEntry?.pendingAmount?.toLocaleString()}`,
                 );
               }
             } else if (
@@ -1628,8 +1633,8 @@ const Page = () => {
             const filteredBatchEntries =
               userRole === "LEVELLER"
                 ? updatedEntries.filter(
-                    (e: any) => e.currentStatus === "LEVEL_PENDING",
-                  )
+                  (e: any) => e.currentStatus === "LEVEL_PENDING",
+                )
                 : updatedEntries;
 
             if (!search && !sort && filter.length === 0) {
@@ -1648,14 +1653,14 @@ const Page = () => {
                 edges: prev.entries.edges.map((edge: any) =>
                   updatedIds.has(edge.node._id)
                     ? {
-                        ...edge,
-                        node: {
-                          ...edge.node,
-                          ...filteredBatchEntries.find(
-                            (u: any) => u._id === edge.node._id,
-                          ),
-                        },
-                      }
+                      ...edge,
+                      node: {
+                        ...edge.node,
+                        ...filteredBatchEntries.find(
+                          (u: any) => u._id === edge.node._id,
+                        ),
+                      },
+                    }
                     : edge,
                 ),
               },

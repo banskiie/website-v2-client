@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { IEntry } from "@/types/entry.interface"
+import { EntryStatus, IEntry } from "@/types/entry.interface"
 import { format, formatDistanceToNowStrict } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -50,6 +50,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import AssignDialog from "./assign"
 import ApproveDialog from "./approve"
 import RejectDialog from "./reject"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -691,7 +692,7 @@ const AddressDisplay = ({ address }: { address: any }) => {
         <MapPin className="h-4 w-4" />
         <Label className="font-medium">Address</Label>
       </div>
-      
+
       {addressFields.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2">
           {addressFields.map((field) => (
@@ -706,7 +707,7 @@ const AddressDisplay = ({ address }: { address: any }) => {
           ))}
         </div>
       )}
-      
+
       {fullAddress && (
         <div className="mt-3 pt-2 border-t pl-2">
           <span className="text-xs text-black block mb-1">
@@ -885,7 +886,7 @@ const ViewDialog = (props: Props) => {
                     onClick={(e) => {
                       toast.success(
                         `${entry?.entryNumber}_${entry?.entryKey}` +
-                          " copied to clipboard!",
+                        " copied to clipboard!",
                       )
                       e.stopPropagation()
                       navigator.clipboard.writeText(
@@ -1277,15 +1278,15 @@ const ViewDialog = (props: Props) => {
                                   ? "font-mono"
                                   : "text-muted-foreground",
                                 isPaymentRemarkEvent(event) &&
-                                  "text-muted-foreground font-medium",
+                                "text-muted-foreground font-medium",
                               )}
                             >
                               {isPaymentRemarkEvent(event)
                                 ? "Payment Remark"
                                 : event.status
-                                    .split("_")
-                                    .join(" ")
-                                    .toLocaleLowerCase()}
+                                  .split("_")
+                                  .join(" ")
+                                  .toLocaleLowerCase()}
                             </span>
                             <span className="text-xs text-muted-foreground block">
                               {format(new Date(event.date), "PPpp")}
@@ -1475,7 +1476,7 @@ const ViewDialog = (props: Props) => {
                                           ?.filter(
                                             (t) =>
                                               t.transactionType ===
-                                                "BALANCE_PAYMENT" &&
+                                              "BALANCE_PAYMENT" &&
                                               t.amountChanged > 0,
                                           )
                                           .reduce(
@@ -1508,7 +1509,7 @@ const ViewDialog = (props: Props) => {
                                     if (
                                       isCancelled &&
                                       transaction.transactionType ===
-                                        "BALANCE_PAYMENT"
+                                      "BALANCE_PAYMENT"
                                     ) {
                                       return "Exceeded Paid"
                                     }
@@ -1523,19 +1524,19 @@ const ViewDialog = (props: Props) => {
                                       (s) => s.status === "CANCELLED",
                                     ) &&
                                     transaction.transactionType ===
-                                      "REFUND_PAYMENT"
+                                    "REFUND_PAYMENT"
                                   ) && (
-                                    <>
-                                      :{" "}
-                                      {Math.abs(
-                                        transaction.pendingAmount,
-                                      ).toLocaleString("en-PH", {
-                                        style: "currency",
-                                        currency: "PHP",
-                                        minimumFractionDigits: 2,
-                                      })}
-                                    </>
-                                  )}
+                                      <>
+                                        :{" "}
+                                        {Math.abs(
+                                          transaction.pendingAmount,
+                                        ).toLocaleString("en-PH", {
+                                          style: "currency",
+                                          currency: "PHP",
+                                          minimumFractionDigits: 2,
+                                        })}
+                                      </>
+                                    )}
                                 </span>
                                 {transaction.amountChanged !== null ? (
                                   <span
@@ -1548,32 +1549,31 @@ const ViewDialog = (props: Props) => {
                                   >
                                     Amount{" "}
                                     {transaction.transactionType ==
-                                    "BALANCE_PAYMENT"
+                                      "BALANCE_PAYMENT"
                                       ? "Paid"
                                       : "Refunded"}
                                     :{" "}
-                                    {`${
-                                      transaction.amountChanged > 0 ? "+" : "-"
-                                    }${Math.abs(
-                                      transaction.amountChanged,
-                                    ).toLocaleString("en-PH", {
-                                      style: "currency",
-                                      currency: "PHP",
-                                      minimumFractionDigits: 2,
-                                    })}`}
+                                    {`${transaction.amountChanged > 0 ? "+" : "-"
+                                      }${Math.abs(
+                                        transaction.amountChanged,
+                                      ).toLocaleString("en-PH", {
+                                        style: "currency",
+                                        currency: "PHP",
+                                        minimumFractionDigits: 2,
+                                      })}`}
                                   </span>
                                 ) : null}
                                 {transaction.transactionId && (
                                   <>
                                     {transaction.transactionType ===
                                       "BALANCE_PAYMENT" && (
-                                      <PaymentViewDialog
-                                        externalUse
-                                        _id={transaction.transactionId}
-                                        title="Click here for more details 🔍"
-                                        titleClassName="block text-xs text-muted-foreground hover:text-foreground"
-                                      />
-                                    )}
+                                        <PaymentViewDialog
+                                          externalUse
+                                          _id={transaction.transactionId}
+                                          title="Click here for more details 🔍"
+                                          titleClassName="block text-xs text-muted-foreground hover:text-foreground"
+                                        />
+                                      )}
                                   </>
                                 )}
 
@@ -1596,6 +1596,11 @@ const ViewDialog = (props: Props) => {
           </div>
           <DialogFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 border-t mt-2">
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <AssignDialog
+                _id={entry?._id}
+                onClose={onClose}
+                title={currentStatus === EntryStatus.PENDING ? "Assign" : "Reassign"}
+              />
               {currentStatus === "LEVEL_PENDING" && (
                 <>
                   <ApproveDialog _id={entry?._id} onClose={onClose} />

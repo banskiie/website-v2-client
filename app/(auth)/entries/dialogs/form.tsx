@@ -416,44 +416,47 @@ const cleanAddressForInput = (address: any) => {
     result.country = convertCountryForGraphQL(address.country);
   }
   
-  // Keep the rest as is (they're already in the correct format)
+  // For region - preserve ALL fields including regionName and psgcCode
   if (address.region) {
     result.region = {
-      code: address.region.code,
-      name: address.region.name,
-      regionName: address.region.regionName,
-      psgcCode: address.region.psgcCode     
+      code: address.region.code || "",
+      name: address.region.name || "",
+      regionName: address.region.regionName || address.region.name || "",  // Fallback to name if regionName missing
+      psgcCode: address.region.psgcCode || address.region.code || ""      // Fallback to code if psgcCode missing
     };
   }
   
+  // For province - preserve ALL required fields
   if (address.province) {
     result.province = {
-      code: address.province.code,
-      name: address.province.name,
-      regionCode: address.province.regionCode,
-      psgcCode: address.province.psgcCode     
+      code: address.province.code || "",
+      name: address.province.name || "",
+      regionCode: address.province.regionCode || "",
+      psgcCode: address.province.psgcCode || address.province.code || ""
     };
   }
   
+  // For city - preserve ALL required fields
   if (address.city) {
     result.city = {
-      code: address.city.code,
-      name: address.city.name,
-      provinceCode: address.city.provinceCode,
-      regionCode: address.city.regionCode,    
-      psgcCode: address.city.psgcCode,        
-      classification: address.city.classification
+      code: address.city.code || "",
+      name: address.city.name || "",
+      provinceCode: address.city.provinceCode || "",
+      regionCode: address.city.regionCode || "",
+      psgcCode: address.city.psgcCode || address.city.code || "",
+      classification: address.city.classification || ""
     };
   }
   
+  // For barangay - preserve ALL fields
   if (address.barangay) {
     result.barangay = {
-      code: address.barangay.code,
-      name: address.barangay.name,
-      cityCode: address.barangay.cityCode,
-      provinceCode: address.barangay.provinceCode,
-      regionCode: address.barangay.regionCode,
-      psgcCode: address.barangay.psgcCode 
+      code: address.barangay.code || "",
+      name: address.barangay.name || "",
+      cityCode: address.barangay.cityCode || "",
+      provinceCode: address.barangay.provinceCode || "",
+      regionCode: address.barangay.regionCode || "",
+      psgcCode: address.barangay.psgcCode || address.barangay.code || ""
     };
   }
   
