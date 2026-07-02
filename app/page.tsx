@@ -18,7 +18,7 @@ import VisitUsSection from "@/components/custom/visit-us-main";
 import { useIsMobile } from "@/hooks/use-mobile";
 import useSmoothScroll from "@/hooks/useSmoothScroll";
 
-const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
+const DRIVE = process.env.NEXT_LOCAL_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
 
 const scrollImages = [
   {

@@ -1,7 +1,7 @@
 import { Award, Clock, Headset, PhilippinePeso, Shield, WrenchIcon } from "lucide-react"
 import { CLOUD } from "../main-faq"
 
-const DRIVE = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
+const DRIVE = process.env.NEXT_LOCAL_PUBLIC_GOOGLE_DRIVE_PUBLIC_FOLDER
 
 // components/custom/data/items.ts
 export const items = [

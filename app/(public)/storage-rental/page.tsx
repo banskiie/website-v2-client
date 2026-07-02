@@ -495,7 +495,7 @@ const Page = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { number: "5000+", label: "Sq Ft Available", icon: Building2 },
+              // { number: "5000+", label: "Sq Ft Available", icon: Building2 },
               { number: "24/7", label: "Security Monitoring", icon: Shield },
               { number: "100%", label: "Clean & Secure", icon: CheckCircle2 },
               { number: "3+", label: "Years Experience", icon: Award },

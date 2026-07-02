@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 certificates
+
+# kubernetes — keep local copies out of git (contain secrets)
+*.yaml

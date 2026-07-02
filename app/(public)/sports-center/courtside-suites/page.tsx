@@ -913,7 +913,7 @@ export default function Page() {
             </p>
           </motion.div>
 
-          <div className="mt-12 md:mt-24 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center">
+          {/* <div className="mt-12 md:mt-24 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center">
             {stats.map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -929,7 +929,7 @@ export default function Page() {
                 <p className="text-gray-300 mt-2 text-sm sm:text-base md:text-lg">{stat.label}</p>
               </motion.div>
             ))}
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -954,10 +954,10 @@ export default function Page() {
             {[
               { icon: "/assets/img/sports-center/suite/cafe.png", title: "Café", desc: "Savor gourmet meals in our premium on-site café." },
               { icon: "/assets/img/sports-center/suite/WiFi.png", title: "Fast WiFi", desc: "Stay connected with high-speed internet access throughout your stay." },
-              { icon: "/assets/img/sports-center/suite/complimentary_drinks.png", title: "Complimentary Drinks", desc: "Enjoy a selection of complimentary beverages and refreshments, served throughout your stay." },
-              { icon: "/assets/img/sports-center/suite/perks.png", title: "ShuttleBrew Perk", desc: "Exclusive 5% OFF at the trendy ShuttleBrew Cafe." },
+              // { icon: "/assets/img/sports-center/suite/complimentary_drinks.png", title: "Complimentary Drinks", desc: "Enjoy a selection of complimentary beverages and refreshments, served throughout your stay." },
+              // { icon: "/assets/img/sports-center/suite/perks.png", title: "ShuttleBrew Perk", desc: "Exclusive 5% OFF at the trendy ShuttleBrew Cafe." },
               { icon: "/assets/img/sports-center/suite/shower.png", title: "Shower", desc: "Convenient shower facilities for a refreshing experience. Modern Hot & Cold shower for a relaxing refresh." },
-              { icon: "/assets/img/sports-center/suite/badminton.png", title: "Badminton Courts", desc: "Enjoy a 1 Hour FREE access to the dynamic C-ONE Sports Center Badminton Court." },
+              // { icon: "/assets/img/sports-center/suite/badminton.png", title: "Badminton Courts", desc: "Enjoy a 1 Hour FREE access to the dynamic C-ONE Sports Center Badminton Court." },
             ].map((item, i) => (
               <motion.div
                 key={i}
